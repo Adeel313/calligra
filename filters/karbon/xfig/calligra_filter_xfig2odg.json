@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Karbon XFig Import Filter",
+        "Name[ar]": "مرشح استيراد XFig لكربون",
+        "Name[ca@valencia]": "Filtre d'importació XFig de Karbon",
+        "Name[ca]": "Filtre d'importació XFig del Karbon",
+        "Name[cs]": "Importní filtr Xfig pro Karbon",
+        "Name[de]": "Karbon XFig-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής Karbon XFig",
+        "Name[en_GB]": "Karbon XFig Import Filter",
+        "Name[eo]": "Karbon XFig Importfiltrilo",
+        "Name[es]": "Filtro de importación XFig de Karbon",
+        "Name[eu]": "Karbon-en XFig inportatzeko iragazkia",
+        "Name[fi]": "Karbonin XFig-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « XFig » de Karbon",
+        "Name[ga]": "Scagaire Iompórtála Karbon XFig",
+        "Name[gl]": "Filtro para Karbon de importación de XFig",
+        "Name[he]": "מסנן ייבוא XFig ל־Karbon",
+        "Name[it]": "Filtro di importazione XFig per Karbon",
+        "Name[ka]": "Karbon XFig -ის შემოტანის ფილტრი",
+        "Name[lv]": "„Karbon“ XFig importa filtrs",
+        "Name[nl]": "Xfig-importfilter voor Karbon",
+        "Name[pl]": "Filtr importu XFig do Karbon",
+        "Name[pt_BR]": "Filtro de importação XFig para o Karbon",
+        "Name[ru]": "Фильтр импорта XFig Karbon",
+        "Name[sa]": "कार्बन XFig आयात फ़िल्टर",
+        "Name[sk]": "Filter importu XFig pre Karbon",
+        "Name[sl]": "Karbon filter uvoza XFig",
+        "Name[sv]": "Karbon XFig-importfilter",
+        "Name[tr]": "Karbon XFig İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування XFig до Karbon",
+        "Name[zh_CN]": "Karbon XFig 导入过滤器",
+        "Name[zh_TW]": "Karbon XFig 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/vnd.oasis.opendocument.graphics",
+    "X-KDE-Import": "image/x-xfig",
+    "X-KDE-Weight": 1
+}

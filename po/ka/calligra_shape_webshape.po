@@ -1,0 +1,35 @@
+# POT_PART_NORMAL only
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR This file is copyright:
+# This file is distributed under the same license as the calligra package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: calligra\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2024-08-28 04:36+0200\n"
+"Last-Translator: Temuri Doghonadze <temuri.doghonadze@gmail.com>\n"
+"Language-Team: Georgian <kde-i18n-doc@kde.org>\n"
+"Language: ka\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.3.2\n"
+
+#: WebShapeFactory.cpp:30
+#, kde-format
+msgid "Web Shape"
+msgstr "Web ფორმა"
+
+#: WebShapeFactory.cpp:32
+#, kde-format
+msgid "A web shape"
+msgstr "Web ფორმა"
+
+#: WebToolFactory.cpp:31
+#, kde-format
+msgid "Web shape editing"
+msgstr "Web ფორმის ჩასწორება"

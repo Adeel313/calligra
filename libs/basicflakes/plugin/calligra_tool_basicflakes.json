@@ -1,0 +1,39 @@
+{
+    "KPlugin": {
+        "Name": "Basic Flakes",
+        "Name[ar]": "فتات مبدئي",
+        "Name[ca@valencia]": "Formes bàsiques",
+        "Name[ca]": "Formes bàsiques",
+        "Name[cs]": "Základní vločky",
+        "Name[de]": "Einfache Flakes",
+        "Name[el]": "Βασικές νιφάδες",
+        "Name[en_GB]": "Basic Flakes",
+        "Name[eo]": "Bazaj Flokoj",
+        "Name[es]": "Láminas básicas",
+        "Name[eu]": "Oinarrizko malutak",
+        "Name[fr]": "Flocons de base",
+        "Name[ga]": "Calóga Bunúsacha",
+        "Name[gl]": "Básico de Flakes",
+        "Name[he]": "פתיתים בסיסיים",
+        "Name[it]": "Oggetti base di Flake",
+        "Name[ka]": "მარტივი ფანტელები",
+        "Name[lv]": "Pamata „Flake“",
+        "Name[nl]": "Basis Flakes",
+        "Name[pl]": "Podstawowe płatki",
+        "Name[pt_BR]": "Flocos básicos",
+        "Name[ru]": "Основные параметры Flake",
+        "Name[sa]": "मूलभूत फ्लेक्स",
+        "Name[sk]": "Základné vločky",
+        "Name[sl]": "Osnovni kosmiči",
+        "Name[sv]": "Grundläggande Flake",
+        "Name[tr]": "Temel Tanecikler",
+        "Name[uk]": "Основні модулі",
+        "Name[zh_CN]": "基本雪花",
+        "Name[zh_TW]": "基本 Flake",
+        "ServiceTypes": [
+            "Calligra/Tool"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

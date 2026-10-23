@@ -1,0 +1,155 @@
+# translation of PictureShape.po to
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Youssef Chahibi <chahibi@gmail.com>, 2007, 2008.
+# SPDX-FileCopyrightText: 2024, 2025 Zayed Al-Saidi <zayed.alsaidi@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: PictureShape\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2025-10-05 13:11+0400\n"
+"Last-Translator: Zayed Al-Saidi <zayed.alsaidi@gmail.com>\n"
+"Language-Team: ar\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+"X-Generator: Lokalize 23.08.5\n"
+
+#: ChangeImageCommand.cpp:26
+msgctxt "(qtundo-format)"
+msgid "Change image"
+msgstr "غيّر الصورة"
+
+#: ChangeImageCommand.cpp:43
+msgctxt "(qtundo-format)"
+msgid "Crop image"
+msgstr "قصّر الصورة"
+
+#: ChangeImageCommand.cpp:57
+msgctxt "(qtundo-format)"
+msgid "Change image color mode"
+msgstr "غير وضع لون الصورة"
+
+#: ClipCommand.cpp:18
+msgctxt "(qtundo-format)"
+msgid "Contour image (by image analysis)"
+msgstr "صورة محيطية (عن طريق تحليل الصورة)"
+
+#: ClipCommand.cpp:20
+msgctxt "(qtundo-format)"
+msgid "Remove image contour"
+msgstr "أزل محيط الصورة"
+
+#. i18n: ectx: property (text), widget (QPushButton, bnImageFile)
+#: forms/wdgPictureTool.ui:20
+#, kde-format
+msgid "Replace image..."
+msgstr "استبدل الصورة..."
+
+#. i18n: ectx: property (text), widget (QCheckBox, cbAspect)
+#: forms/wdgPictureTool.ui:32
+#, kde-format
+msgid "Keep proportions"
+msgstr "إبقاء النّسب"
+
+#. i18n: ectx: property (text), widget (QLabel, leftLabel)
+#: forms/wdgPictureTool.ui:58
+#, kde-format
+msgid "Left:"
+msgstr "اليسار:"
+
+#. i18n: ectx: property (text), widget (QLabel, rightLabel)
+#: forms/wdgPictureTool.ui:68
+#, kde-format
+msgid "Right:"
+msgstr "اليمين:"
+
+#. i18n: ectx: property (text), widget (QLabel, bottomLabel)
+#: forms/wdgPictureTool.ui:91
+#, kde-format
+msgid "Bottom:"
+msgstr "الأسفل:"
+
+#. i18n: ectx: property (text), widget (QLabel, topLabel)
+#: forms/wdgPictureTool.ui:111
+#, kde-format
+msgid "Top:"
+msgstr "الأعلى:"
+
+#. i18n: ectx: property (text), widget (QToolButton, bnFill)
+#: forms/wdgPictureTool.ui:131
+#, kde-format
+msgid "Reset"
+msgstr "صفّر"
+
+#. i18n: ectx: property (text), widget (QCheckBox, cbContour)
+#: forms/wdgPictureTool.ui:148
+#, kde-format
+msgid "Contour (by image analysis)"
+msgstr "المحيط (عن طريق تحليل الصورة)"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: forms/wdgPictureTool.ui:178
+#, kde-format
+msgid "Color mode:"
+msgstr "نمط الألوان:"
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: forms/wdgPictureTool.ui:193
+#, kde-format
+msgid "Crop"
+msgstr "اقتصّ"
+
+#: PictureShapeFactory.cpp:31
+#, kde-format
+msgid "Image"
+msgstr "صورة"
+
+#: PictureShapeFactory.cpp:33
+#, kde-format
+msgid "Image shape that can display jpg, png etc."
+msgstr "شكل الصورة الذي يمكنه عرض jpg و png وما إلى ذلك."
+
+#: PictureTool.cpp:94
+#, kde-format
+msgid "Standard"
+msgstr "قياسي"
+
+#: PictureTool.cpp:95
+#, kde-format
+msgid "Greyscale"
+msgstr "التدرج الرمادي"
+
+#: PictureTool.cpp:96
+#, kde-format
+msgid "Monochrome"
+msgstr "أحاديّ اللون"
+
+#: PictureTool.cpp:97
+#, kde-format
+msgid "Watermark"
+msgstr "علامة مائيّة"
+
+#: PictureToolFactory.cpp:18
+#, kde-format
+msgid "Picture editing"
+msgstr "تحرير الصورة"
+
+#, fuzzy
+#~| msgid "Picture editing tool"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Picture editing"
+#~ msgstr "أداة تحرير الصورة"
+
+#~ msgid "Picture Tool"
+#~ msgstr "أداة الصورة"
+
+#~ msgid "Picture Shape"
+#~ msgstr "شكل صورة"
+
+#~ msgid "A shape which displays a picture"
+#~ msgstr "شكل يعرض صورة"

@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "SpellCheck plugin",
+        "Name[ar]": "ملحق التدقيق الإملائي",
+        "Name[ca@valencia]": "Connector d'ortografia",
+        "Name[ca]": "Connector d'ortografia",
+        "Name[cs]": "Modul pro kontrolu pravopisu",
+        "Name[de]": "Rechtschreibprüfung-Modul",
+        "Name[el]": "Πρόσθετο Ορθογραφικού ελέγχου",
+        "Name[en_GB]": "SpellCheck plugin",
+        "Name[eo]": "SpellCheck kromaĵo",
+        "Name[es]": "Complemento de comprobación ortográfica",
+        "Name[eu]": "Ortografia-aztertzeko plugina",
+        "Name[fi]": "Oikeinkirjoituksentarkistusliitännäinen",
+        "Name[fr]": "Module externe de vérification orthographique",
+        "Name[ga]": "Breiseán LitriúCheck",
+        "Name[gl]": "Complemento de corrección ortográfica",
+        "Name[he]": "תוסף בדיקת איות",
+        "Name[it]": "Estensione di correzione ortografica",
+        "Name[ka]": "მართლწერის შემოწმების დამატება",
+        "Name[lv]": "Pareizrakstības pārbaudes spraudnis",
+        "Name[nl]": "Spellingcontroleplug-in",
+        "Name[pl]": "Wtyczka sprawdzania pisowni",
+        "Name[pt_BR]": "Plugin de Verificação Ortográfica",
+        "Name[ru]": "Модуль проверки правописания",
+        "Name[sa]": "SpellCheck प्लगइन",
+        "Name[sk]": "Zásuvný modul kontroly pravopisu",
+        "Name[sl]": "Vtičnik črkovalnika",
+        "Name[sv]": "Insticksprogram för stavningskontroll",
+        "Name[tr]": "Yazım Denetimi Eklentisi",
+        "Name[uk]": "Додаток перевірки правопису",
+        "Name[zh_CN]": "拼写检查插件",
+        "Name[zh_TW]": "SpellCheck 外掛程式",
+        "ServiceTypes": [
+            "Calligra/Text-EditingPlugin"
+        ]
+    },
+    "X-KoText-MinVersion": "28",
+    "X-KoText-PluginVersion": "28"
+}

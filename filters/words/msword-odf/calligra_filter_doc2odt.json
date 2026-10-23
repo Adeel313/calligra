@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "Words MS Word-ODF Import Filter",
+        "Name[ar]": "مرشح استيراد MS Word-ODF لـ Words",
+        "Name[ca@valencia]": "Filtre d'importació MS Word-ODF de Words",
+        "Name[ca]": "Filtre d'importació MS Word-ODF del Words",
+        "Name[cs]": "Importní filtr formátu MS Word-ODF pro Words",
+        "Name[de]": "Words MS-Word-ODF-Importfilter",
+        "Name[el]": "Λέξεις φίλτρο εισαγωγής MS Word-ODF",
+        "Name[en_GB]": "Words MS Word-ODF Import Filter",
+        "Name[eo]": "Words MS Word-ODF Importfiltrilo",
+        "Name[es]": "Filtro de importación MS Word-ODF de Words",
+        "Name[eu]": "Words-en MS Word-ODF inportatzeko iragazkia",
+        "Name[fi]": "Wordsin MS Word-ODF -tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « MS Word-ODF » de Words",
+        "Name[ga]": "Scagaire Iompórtála MS Word-ODF",
+        "Name[gl]": "Filtro para Words de importación de MS Word-ODF",
+        "Name[it]": "Filtro di importazione MS Word-ODF per Words",
+        "Name[ka]": "Words -დან MS Word-ODF -ში გატანის ფილტრი",
+        "Name[lv]": "„Words“ „MS Word-ODF“ importa filtrs",
+        "Name[nl]": "MS Word-ODF-importfilter voor Word",
+        "Name[pl]": "Filtr importu MS Word-ODF do Słów",
+        "Name[pt_BR]": "Filtro de importação MS Word-ODF para o Words",
+        "Name[ru]": "Фильтр импорта MS Word-ODF Words",
+        "Name[sa]": "शब्दाः MS Word-ODF आयात फ़िल्टर",
+        "Name[sk]": "Filter importu MS Word-ODF pre Words",
+        "Name[sl]": "Filter uvoza Words MS-Word-ODF",
+        "Name[sv]": "Words MS Word-ODF-importfilter",
+        "Name[tr]": "Sözcükler MS Word–ODF İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування даних MS Word-ODF для Words",
+        "Name[zh_CN]": "Words MS Word-ODF 导入过滤器",
+        "Name[zh_TW]": "Words MS Word-ODF 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/vnd.oasis.opendocument.text",
+    "X-KDE-Import": "application/msword",
+    "X-KDE-Weight": 1
+}

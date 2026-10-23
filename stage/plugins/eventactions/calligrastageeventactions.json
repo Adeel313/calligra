@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Icon": "",
+        "Name": "Presentation Event Actions",
+        "Name[ar]": "أفعال حدث العرض",
+        "Name[ca@valencia]": "Accions de presentació d'esdeveniments",
+        "Name[ca]": "Accions de presentació d'esdeveniments",
+        "Name[cs]": "Akce prezentační události",
+        "Name[de]": "Präsentationsaktionsereignisse",
+        "Name[el]": "Ενέργειες γεγονότων παρουσίασης",
+        "Name[en_GB]": "Presentation Event Actions",
+        "Name[eo]": "Prezentad-Eventaj Agoj",
+        "Name[es]": "Acciones de eventos de presentaciones",
+        "Name[eu]": "Aurkezpen ekitaldi ekintzak",
+        "Name[fi]": "Esitystapahtumatoiminnot",
+        "Name[fr]": "Actions d'évènement de présentation",
+        "Name[ga]": "Gníomhartha Imeachta Cur i Láthair",
+        "Name[gl]": "Accións do evento de presentación",
+        "Name[he]": "פעולות אירוע הצגה",
+        "Name[it]": "Azioni d'evento delle presentazioni",
+        "Name[ka]": "პრეზენტაციის მოვლენის ქმედებები",
+        "Name[lv]": "Prezentācijas notikuma darbības",
+        "Name[nl]": "Acties na presentatie-events",
+        "Name[pl]": "Przypadki działania prezentacji",
+        "Name[pt_BR]": "Transições da Apresentação",
+        "Name[ru]": "Действия для событий презентации",
+        "Name[sa]": "प्रस्तुति घटना क्रियाः",
+        "Name[sk]": "Akcie udalostí prezentácie",
+        "Name[sl]": "Dejanja predstavitvenih dogodkov",
+        "Name[sv]": "Händelseåtgärder för presentationer",
+        "Name[tr]": "Sunum Olayı Eylemi",
+        "Name[uk]": "Реакція на події у презентації",
+        "Name[zh_CN]": "演示事件操作",
+        "Name[zh_TW]": "展示事件動作",
+        "ServiceTypes": [
+            "Calligra/PresentationEventAction"
+        ]
+    },
+    "X-PresentationEventAction-MinVersion": "28",
+    "X-PresentationEventAction-PluginVersion": "28"
+}

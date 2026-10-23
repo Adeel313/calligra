@@ -1,0 +1,310 @@
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Toussis Manolis <manolis@koppermind.homelinux.org>, 2008.
+# Petros <pvidalis@gmail.com>, 2010.
+# Stelios <sstavra@gmail.com>, 2011, 2017.
+# Dimitrys Meliates <demetresmeliates+i18n@gmail.com>, 2024.
+msgid ""
+msgstr ""
+"Project-Id-Version: ArtisticTextShape\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2024-08-28 22:33+0300\n"
+"Last-Translator: Αντώνης Γέραλης <capoiosct@gmail.com>\n"
+"Language-Team: Greek <kde-i18n-doc@kde.org>\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Lokalize 24.08.0\n"
+
+#: AddTextRangeCommand.cpp:19 AddTextRangeCommand.cpp:29
+msgctxt "(qtundo-format)"
+msgid "Add text range"
+msgstr "Προσθήκη εύρους κειμένου"
+
+#: ArtisticTextShapeFactory.cpp:17
+#, kde-format
+msgid "ArtisticTextShape"
+msgstr "Σχήμα καλλιτεχνικού κειμένου"
+
+#: ArtisticTextShapeFactory.cpp:19
+#, kde-format
+msgid "A shape which shows a single text line"
+msgstr "Ένα σχήμα που εμφανίζει μια γραμμή κειμένου"
+
+#: ArtisticTextShapeFactory.cpp:29
+#, kde-format
+msgid "Artistic Text"
+msgstr "Καλλιτεχνικό κείμενο"
+
+#: ArtisticTextTool.cpp:72
+#, kde-format
+msgid "Detach Path"
+msgstr "Αποκόλληση διαδρομής"
+
+#: ArtisticTextTool.cpp:77
+#, kde-format
+msgid "Convert to Path"
+msgstr "Μετατροπή σε διαδρομή"
+
+#: ArtisticTextTool.cpp:82
+#, kde-format
+msgid "Bold text"
+msgstr "Έντονο κείμενο"
+
+#: ArtisticTextTool.cpp:87
+#, kde-format
+msgid "Italic text"
+msgstr "Πλάγιο κείμενο"
+
+#: ArtisticTextTool.cpp:92
+#, kde-format
+msgid "Superscript"
+msgstr "Δείκτης"
+
+#: ArtisticTextTool.cpp:97
+#, kde-format
+msgid "Subscript"
+msgstr "Εκθέτης"
+
+#: ArtisticTextTool.cpp:102
+#, kde-format
+msgid "Anchor at Start"
+msgstr "Άγκυρα στην αρχή"
+
+#: ArtisticTextTool.cpp:107
+#, kde-format
+msgid "Anchor at Middle"
+msgstr "Άγκυρα στη μέση"
+
+#: ArtisticTextTool.cpp:112
+#, kde-format
+msgid "Anchor at End"
+msgstr "Άγκυρα στο τέλος"
+
+#: ArtisticTextTool.cpp:303
+#, kde-format
+msgid "Click to change cursor position."
+msgstr "Κάνετε κλικ για αλλαγή της θέσης του δρομέα."
+
+#: ArtisticTextTool.cpp:305
+#, kde-format
+msgid "Click to select text shape."
+msgstr "Κάνετε κλικ για επιλογή σχήματος κειμένου."
+
+#: ArtisticTextTool.cpp:308
+#, kde-format
+msgid "Double click to put text on path."
+msgstr "Με διπλό κλικ τοποθετείτε κείμενο στη διαδρομή."
+
+#: ArtisticTextTool.cpp:311
+#, kde-format
+msgid "Drag handle to change start offset."
+msgstr "Σύρετε το χειριστήριο για τροποποίηση της μετατόπισης εκκίνησης."
+
+#: ArtisticTextTool.cpp:315
+#, kde-format
+msgid "Press escape to finish editing."
+msgstr "Πιέστε το escape για τον τερματισμό επεξεργασίας."
+
+#: ArtisticTextTool.cpp:494
+#, kde-format
+msgid "Press return to finish editing."
+msgstr "Πιέστε το return για τον τερματισμό επεξεργασίας."
+
+#: ArtisticTextTool.cpp:588
+msgctxt "(qtundo-format)"
+msgid "Convert to Path"
+msgstr "Μετατροπή σε διαδρομή"
+
+#: ArtisticTextTool.cpp:601
+#, kde-format
+msgid "Text Properties"
+msgstr "Ιδιότητες κειμένου"
+
+#: ArtisticTextTool.cpp:610
+#, kde-format
+msgid "Text On Path"
+msgstr "Κείμενο σε διαδρομή"
+
+#: ArtisticTextToolFactory.cpp:17
+#, kde-format
+msgid "Artistic text editing"
+msgstr "Επεξεργασία καλλιτεχνικού κειμένου"
+
+#: AttachTextToPathCommand.cpp:17
+msgctxt "(qtundo-format)"
+msgid "Attach Path"
+msgstr "Επισύναψη διαδρομής"
+
+#: ChangeTextAnchorCommand.cpp:15
+msgctxt "(qtundo-format)"
+msgid "Change text anchor"
+msgstr "Αλλαγή άγκυρας κειμένου"
+
+#: ChangeTextFontCommand.cpp:20
+msgctxt "(qtundo-format)"
+msgid "Change font"
+msgstr "Τροποποίηση γραμματοσειράς"
+
+#: ChangeTextOffsetCommand.cpp:18
+msgctxt "(qtundo-format)"
+msgid "Change Text Offset"
+msgstr "Τροποποίηση μετατόπισης κειμένου"
+
+#: DetachTextFromPathCommand.cpp:16
+msgctxt "(qtundo-format)"
+msgid "Detach Path"
+msgstr "Απόσπαση διαδρομής"
+
+#: RemoveTextRangeCommand.cpp:19
+msgctxt "(qtundo-format)"
+msgid "Remove text range"
+msgstr "Αφαίρεση εύρους κειμένου"
+
+#: ReplaceTextRangeCommand.cpp:23 ReplaceTextRangeCommand.cpp:40
+#: ReplaceTextRangeCommand.cpp:57
+msgctxt "(qtundo-format)"
+msgid "Replace text range"
+msgstr "Αντικατάσταση εύρους κειμένου"
+
+#, fuzzy
+#~| msgid "ArtisticTextShape"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "ArtisticTextShape"
+#~ msgstr "Σχήμα καλλιτεχνικού κειμένου"
+
+#, fuzzy
+#~| msgid "A shape which shows a single text line"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A shape which shows a single text line"
+#~ msgstr "Ένα σχήμα που εμφανίζει μια γραμμή κειμένου"
+
+#, fuzzy
+#~| msgid "Artistic Text"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Artistic Text"
+#~ msgstr "Καλλιτεχνικό κείμενο"
+
+#, fuzzy
+#~| msgid "Bold text"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Bold text"
+#~ msgstr "Έντονο κείμενο"
+
+#, fuzzy
+#~| msgid "Italic text"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Italic text"
+#~ msgstr "Πλάγιο κείμενο"
+
+#, fuzzy
+#~| msgid "Superscript"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Superscript"
+#~ msgstr "Δείκτης"
+
+#, fuzzy
+#~| msgid "Subscript"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Subscript"
+#~ msgstr "Εκθέτης"
+
+#, fuzzy
+#~| msgid "Anchor at Start"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Anchor at Start"
+#~ msgstr "Άγκυρα στην αρχή"
+
+#, fuzzy
+#~| msgid "Anchor at Middle"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Anchor at Middle"
+#~ msgstr "Άγκυρα στη μέση"
+
+#, fuzzy
+#~| msgid "Anchor at End"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Anchor at End"
+#~ msgstr "Άγκυρα στο τέλος"
+
+#, fuzzy
+#~| msgid "Click to change cursor position."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Click to change cursor position."
+#~ msgstr "Κάνετε κλικ για αλλαγή της θέσης του δρομέα."
+
+#, fuzzy
+#~| msgid "Click to select text shape."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Click to select text shape."
+#~ msgstr "Κάνετε κλικ για επιλογή σχήματος κειμένου."
+
+#, fuzzy
+#~| msgid "Double click to put text on path."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Double click to put text on path."
+#~ msgstr "Με διπλό κλικ τοποθετείτε κείμενο στη διαδρομή."
+
+#, fuzzy
+#~| msgid "Drag handle to change start offset."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Drag handle to change start offset."
+#~ msgstr "Σύρετε το χειριστήριο για τροποποίηση της μετατόπισης εκκίνησης."
+
+#, fuzzy
+#~| msgid "Press escape to finish editing."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Press escape to finish editing."
+#~ msgstr "Πιέστε το escape για τον τερματισμό επεξεργασίας."
+
+#, fuzzy
+#~| msgid "Press return to finish editing."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Press return to finish editing."
+#~ msgstr "Πιέστε το return για τον τερματισμό επεξεργασίας."
+
+#, fuzzy
+#~| msgid "Text Properties"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Text Properties"
+#~ msgstr "Ιδιότητες κειμένου"
+
+#, fuzzy
+#~| msgid "Text On Path"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Text On Path"
+#~ msgstr "Κείμενο σε διαδρομή"
+
+#, fuzzy
+#~| msgid "Artistic Text Editing Tool"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Artistic text editing"
+#~ msgstr "Εργαλείο επεξεργασίας καλλιτεχνικού κειμένου"
+
+#~ msgid "Form"
+#~ msgstr "Φόρμα"
+
+#~ msgid "Family:"
+#~ msgstr "Οικογένεια:"
+
+#~ msgid "Size:"
+#~ msgstr "Μέγεθος:"
+
+#~ msgid "Offset:"
+#~ msgstr "Μετατόπιση:"
+
+#~ msgid "Artistic Text Tool"
+#~ msgstr "Εργαλείο καλλιτεχνικού κειμένου"
+
+#~ msgid "Style:"
+#~ msgstr "Στυλ:"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Text:"
+#~ msgstr "Κείμενο:"

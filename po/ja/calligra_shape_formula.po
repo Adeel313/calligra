@@ -1,0 +1,331 @@
+# Translation of FormulaShape into Japanese.
+# Yukiko Bando <ybando@k6.dion.ne.jp>, 2009.
+# Taiki Komoda <kom@kde.gr.jp>, 2010.
+# Fumiaki Okushi <fumiaki.okushi@gmail.com>, 2013, 2015.
+msgid ""
+msgstr ""
+"Project-Id-Version: FormulaShape\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-09-10 00:46+0000\n"
+"PO-Revision-Date: 2015-06-23 23:44-0700\n"
+"Last-Translator: Fumiaki Okushi <fumiaki.okushi@gmail.com>\n"
+"Language-Team: Japanese <kde-jp@kde.org>\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Accelerator-Marker: &\n"
+"X-Text-Markup: kde4\n"
+"X-Generator: Lokalize 1.0\n"
+
+#, kde-format
+msgctxt "NAME OF TRANSLATORS"
+msgid "Your names"
+msgstr ""
+
+#, kde-format
+msgctxt "EMAIL OF TRANSLATORS"
+msgid "Your emails"
+msgstr ""
+
+#: FormulaCommand.cpp:59
+msgctxt "(qtundo-format)"
+msgid "Add text to formula"
+msgstr "数式にテキストを追加"
+
+#: FormulaCommand.cpp:218
+msgctxt "(qtundo-format)"
+msgid "Change rows"
+msgstr "行を変更"
+
+#: FormulaEditor.cpp:79
+msgctxt "(qtundo-format)"
+msgid "Add text"
+msgstr "テキストを追加"
+
+#: FormulaEditor.cpp:112
+msgctxt "(qtundo-format)"
+msgid "Insert row"
+msgstr "行を挿入"
+
+#: FormulaEditor.cpp:117
+msgctxt "(qtundo-format)"
+msgid "Remove row"
+msgstr "行を削除"
+
+#: FormulaEditor.cpp:125
+msgctxt "(qtundo-format)"
+msgid "Insert column"
+msgstr "列を挿入"
+
+#: FormulaEditor.cpp:130
+msgctxt "(qtundo-format)"
+msgid "Remove column"
+msgstr "列を削除"
+
+#: FormulaEditor.cpp:164
+msgctxt "(qtundo-format)"
+msgid "Insert formula elements."
+msgstr "数式要素を挿入。"
+
+#: FormulaEditor.cpp:200
+msgctxt "(qtundo-format)"
+msgid "Remove formula elements"
+msgstr "数式要素を削除"
+
+#: FormulaToolEditWidget.cpp:28
+#, fuzzy, kde-format
+#| msgid "Edit"
+msgctxt "@title:group"
+msgid "Edit"
+msgstr "編集"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: FormulaToolEditWidget.ui:17
+#, kde-format
+msgid "Font:"
+msgstr "フォント:"
+
+#: FormulaToolWidget.cpp:28
+#, fuzzy, kde-format
+#| msgid "Insert"
+msgctxt "@title:group"
+msgid "Insert"
+msgstr "挿入"
+
+#: FormulaToolWidget.cpp:70
+#, kde-format
+msgid "Arrows"
+msgstr "矢印"
+
+#: FormulaToolWidget.cpp:72
+#, kde-format
+msgid "Greek"
+msgstr "ギリシャ文字"
+
+#: FormulaToolWidget.cpp:74
+#, kde-format
+msgid "Relations"
+msgstr "関係子"
+
+#: FormulaToolWidget.cpp:78
+#, kde-format
+msgid "Operators"
+msgstr "演算子"
+
+#: FormulaToolWidget.cpp:81
+#, kde-format
+msgid "Miscellaneous"
+msgstr "その他"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: FormulaToolWidget.ui:17
+#, fuzzy, kde-format
+#| msgid "Elements"
+msgid "Elements:"
+msgstr "要素"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: FormulaToolWidget.ui:106
+#, fuzzy, kde-format
+#| msgid "Symbols"
+msgid "Symbols:"
+msgstr "記号"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: FormulaToolWidget.ui:195
+#, fuzzy, kde-format
+#| msgid "Actions"
+msgid "Actions:"
+msgstr "アクション"
+
+#. i18n: ectx: property (text), widget (QPushButton, buttonLoad)
+#: FormulaToolWidget.ui:245
+#, kde-format
+msgctxt "This button opens a file dialog to load a MathML file"
+msgid "Load..."
+msgstr "読み込み..."
+
+#. i18n: ectx: property (text), widget (QPushButton, buttonSave)
+#: FormulaToolWidget.ui:252
+#, kde-format
+msgid "Save..."
+msgstr "保存..."
+
+#: KoFormulaShape.cpp:195
+#, kde-format
+msgid ""
+"This document contains an external link to a remote document\n"
+"%1"
+msgstr ""
+"このドキュメントはリモートドキュメントへの外部リンクを含みます\n"
+"%1"
+
+#: KoFormulaShape.cpp:196
+#, kde-format
+msgid "Confirmation Required"
+msgstr "確認が必要です"
+
+#: KoFormulaShape.cpp:197
+#, kde-format
+msgid "Download"
+msgstr "ダウンロード"
+
+#: KoFormulaShape.cpp:198
+#, kde-format
+msgid "Skip"
+msgstr "スキップ"
+
+#: KoFormulaShapeFactory.cpp:20
+#, kde-format
+msgid "Formula"
+msgstr "数式"
+
+#: KoFormulaShapeFactory.cpp:22
+#, kde-format
+msgid "A formula"
+msgstr "数式"
+
+#: KoFormulaTool.cpp:404
+#, kde-format
+msgid "Insert fenced element"
+msgstr "囲まれた要素を挿入"
+
+#: KoFormulaTool.cpp:405
+#, kde-format
+msgid "Insert enclosed element"
+msgstr "閉じられた要素を挿入"
+
+#: KoFormulaTool.cpp:407
+#, kde-format
+msgid "Insert root"
+msgstr "ルートを挿入"
+
+#: KoFormulaTool.cpp:408
+#, kde-format
+msgid "Insert square root"
+msgstr "平方根を挿入"
+
+#: KoFormulaTool.cpp:410
+#, kde-format
+msgid "Insert fraction"
+msgstr "分数を挿入"
+
+#: KoFormulaTool.cpp:411
+#, kde-format
+msgid "Insert bevelled fraction"
+msgstr "斜め表示の分数を挿入"
+
+#: KoFormulaTool.cpp:416
+#, kde-format
+msgid "Insert 3x3 table"
+msgstr "3x3 のテーブルを挿入"
+
+#: KoFormulaTool.cpp:422
+#, kde-format
+msgid "Insert 2 dimensional vector"
+msgstr "二次元ベクトルを挿入"
+
+#: KoFormulaTool.cpp:427
+#, kde-format
+msgid "Insert subscript"
+msgstr "下付き文字を挿入"
+
+#: KoFormulaTool.cpp:428
+#, kde-format
+msgid "Insert superscript"
+msgstr "上付き文字を挿入"
+
+#: KoFormulaTool.cpp:429
+#, kde-format
+msgid "Insert sub- and superscript"
+msgstr "下付き/上付き文字を挿入"
+
+#: KoFormulaTool.cpp:433
+#, kde-format
+msgid "Insert overscript"
+msgstr "上文字を挿入"
+
+#: KoFormulaTool.cpp:434
+#, kde-format
+msgid "Insert underscript"
+msgstr "下文字を挿入"
+
+#: KoFormulaTool.cpp:435
+#, kde-format
+msgid "Insert under- and overscript"
+msgstr "下/上文字を挿入"
+
+#: KoFormulaTool.cpp:446
+#, kde-format
+msgid "Insert row"
+msgstr "行を挿入"
+
+#: KoFormulaTool.cpp:453
+#, kde-format
+msgid "Insert column"
+msgstr "列を挿入"
+
+#: KoFormulaTool.cpp:460
+#, kde-format
+msgid "Remove row"
+msgstr "行を削除"
+
+#: KoFormulaTool.cpp:467
+#, kde-format
+msgid "Remove column"
+msgstr "列を削除"
+
+#: KoFormulaToolFactory.cpp:17
+#, kde-format
+msgid "Formula editing"
+msgstr "数式編集"
+
+#: KoM2MMLForumulaTool.cpp:98
+#, kde-format
+msgid "Mode: "
+msgstr ""
+
+#: KoM2MMLForumulaTool.cpp:101
+#, kde-format
+msgid "LaTeX"
+msgstr ""
+
+#: KoM2MMLForumulaTool.cpp:103
+#, kde-format
+msgid "Matlab"
+msgstr ""
+
+#: KoM2MMLForumulaTool.cpp:175
+#, kde-format
+msgid "Parse error."
+msgstr ""
+
+#: KoM2MMLForumulaTool.cpp:204
+#, kde-format
+msgid "Edit formula with LaTeX/Matlab syntax"
+msgstr ""
+
+#: KoM2MMLForumulaTool.cpp:206
+#, kde-format
+msgid "Edit formula with LaTeX syntax"
+msgstr ""
+
+#~ msgid "General options"
+#~ msgstr "全般オプション"
+
+#~ msgid "Colors:"
+#~ msgstr "色:"
+
+#~ msgid "Specific options"
+#~ msgstr "特有のオプション"
+
+#~ msgid "Rows:"
+#~ msgstr "行:"
+
+#~ msgid "Columns:"
+#~ msgstr "列:"
+
+#~ msgid "View MathML"
+#~ msgstr "MathML を表示"

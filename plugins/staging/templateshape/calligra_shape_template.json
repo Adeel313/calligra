@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Template Shape",
+        "Name[ar]": "شكل قالب",
+        "Name[ca@valencia]": "Forma de plantilla",
+        "Name[ca]": "Forma de plantilla",
+        "Name[cs]": "Šablonový tvar",
+        "Name[de]": "Vorlagen-Objekt",
+        "Name[el]": "Πρότυπο σχήμα",
+        "Name[en_GB]": "Template Shape",
+        "Name[eo]": "Ŝablona Formo",
+        "Name[es]": "Forma de plantilla",
+        "Name[eu]": "Txantiloi-forma",
+        "Name[fi]": "Mallipohjakuvio",
+        "Name[fr]": "Forme de modèle",
+        "Name[ga]": "Cruth Teimpléid",
+        "Name[gl]": "Obxecto de modelo",
+        "Name[he]": "צורת תבנית",
+        "Name[ia]": "Forma de patrono",
+        "Name[it]": "Forma di modello",
+        "Name[ka]": "ნიმუშის ფორმა",
+        "Name[lv]": "Veidnes objekts",
+        "Name[nl]": "Vorm van sjabloon",
+        "Name[pl]": "Szablon kształtu",
+        "Name[pt_BR]": "Forma de Modelo",
+        "Name[ru]": "Объект шаблона",
+        "Name[sa]": "टेम्पलेट आकार",
+        "Name[sk]": "Tvar šablóny",
+        "Name[sl]": "Oblika predloge",
+        "Name[sv]": "Mallform",
+        "Name[tr]": "Şablon Şekli",
+        "Name[uk]": "Форма-шаблон",
+        "Name[zh_CN]": "模板图形",
+        "Name[zh_TW]": "樣本元件",
+        "ServiceTypes": [
+            "Calligra/Shape"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

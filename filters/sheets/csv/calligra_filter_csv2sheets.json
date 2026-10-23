@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "CSV Import Filter for KSpread",
+        "Name[ar]": "مرشح استيراد CSV لـ KSpread",
+        "Name[ca@valencia]": "Filtre d'importació CSV per a KSpread",
+        "Name[ca]": "Filtre d'importació CSV per al KSpread",
+        "Name[cs]": "Exportní filtr CSV pro KSpread",
+        "Name[de]": "KSpread CSV-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής CSV για το KSpread",
+        "Name[en_GB]": "CSV Import Filter for KSpread",
+        "Name[eo]": "CSV-Importa Filtrilo por KSpread",
+        "Name[es]": "Filtro de importación CSV para KSpread",
+        "Name[eu]": "KSpread-en CSV inportatzeko iragazkia",
+        "Name[fi]": "KSpreadin CSV-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « CSV » de KSpread",
+        "Name[ga]": "Scagaire Iompórtála CSV do KSpread",
+        "Name[gl]": "Filtro para KSpread de importación de CSV",
+        "Name[he]": "מסנן ייבוא מ־CSV ל־KSpread",
+        "Name[it]": "Filtro di importazione CSV per KSpread",
+        "Name[ka]": "CSV-ის შემოტანის ფილტრი KSpread-ისთვის",
+        "Name[lv]": "„KSpread“ CSV importa filtrs",
+        "Name[nl]": "CSV-importfilter voor KSpread",
+        "Name[pl]": "Filtr importu CSV dla KSpread",
+        "Name[pt_BR]": "Filtro de importação CSV para o KSpread",
+        "Name[ru]": "Фильтр импорта CSV для KSpread",
+        "Name[sa]": "KSpread कृते CSV आयात-छिद्रम्",
+        "Name[sk]": "Filter importu CSV pre KSpread",
+        "Name[sl]": "Karbon filter uvoza za KSpread",
+        "Name[sv]": "CSV-importfilter för Kspread",
+        "Name[tr]": "KSpread için CSV İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування CSV для KSpread",
+        "Name[zh_CN]": "KSpread CSV 导入过滤器",
+        "Name[zh_TW]": "KSpread 的 CSV 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/vnd.oasis.opendocument.spreadsheet",
+    "X-KDE-Import": "text/csv,text/tab-separated-values,text/plain",
+    "X-KDE-Weight": 50
+}

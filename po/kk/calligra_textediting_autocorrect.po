@@ -1,0 +1,603 @@
+# translation of AutocorrectPlugin.po to Kazakh
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Sairan Kikkarin <sairan@computer.org>, 2008.
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2008-11-14 06:51-0500\n"
+"Last-Translator: Sairan Kikkarin <sairan@computer.org>\n"
+"Language-Team: Kazakh\n"
+"Language: kk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: KBabel 1.11.4\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"\n"
+"\n"
+"\n"
+"\n"
+"\n"
+"\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "&Автотүзетуді баптау..."
+
+#: Autocorrect.cpp:30
+#, fuzzy, kde-format
+#| msgid "Autocorrection"
+msgid "Enable Autocorrection"
+msgstr "Автотүзету"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "Автотүзету"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Қа&рапайым автотүзету"
+
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr "Жаңа сөйлем бастауын байқап, алғашқы әріпі үлкен болуын қадағалау"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Сөйлемінің &алғашқы әріпі автоматты түрде үлкен болсын\n"
+#~ "(мысалы, \"менің үйім. осы қалада\" деген \"менің үйім. Осы қалада\"\n"
+#~ "деп түзеледі)"
+
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Барлық сөздер екі үлкен әріптен басталу қатесіне тексеріледі. Бұл shift "
+#~ "перенесін тым ұзақ басып ұстағаннан пайда болатын, жиі кездесетін қате. "
+#~ "Кейбір сөздер шынымен екі бас әріптен басталатын болса - оларды "
+#~ "'Ерекшеліктер' қойындысында белгілеп қойыңыз."
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Сөйлемдің алғашқы &екі бас әріпі үлкен және кіші әріптерге ауыстырылсын\n"
+#~ "(мысалы, \"МӘселен\" деген \"Мәселен\" деп түзеледі)"
+
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "URL (Uniform Resource Locator сілтемесі) терілгенін байқап, ол Интернет "
+#~ "шолғыш пайдаланатын URL пішіміне келтіріледі."
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "&URL-дер автопішімделсін"
+
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Екі қатар бос орын ендірілмесін деп қадағалау. Бұл жиі кездесетін бірақ "
+#~ "пішімделген мәтінде көзге оңай ілекпейтін қате."
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Қатар бос орындарды &болдырмау"
+
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Сөйлемдердің пішімдеу мен шегініс ережелерін, абзацтың алдындағы және "
+#~ "соңындағы бос орындарды автоматты түрде алып тастап, ұстану."
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Абзацтың алдындағы және соңындағы бос орындар ал&ынып тасталсын"
+
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "_астын сызу_ және *қалың* деп жазғанда, асты сызықтар мен жұлдызшалар "
+#~ "арасындағы мәтін асты сызық немесе қалың мәтінге айналады."
+
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Қа&лың қылу және астын сызу автопішімдеу болсын"
+
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "Жиі пайдаланатын бөлшектер өз таңбаларымен ауыстырылады"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "1/2... деген ½... деп а&уыстырылсын"
+
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Абзацтың алдында '1)' деп не басқаша нөмірлесе, ол осы нөмірлеу тәсілін "
+#~ "қабылдайды. Ыңғайлығы - келесі абзацтар да автоматты түрде жалғасып, осы "
+#~ "түрде нөмірленеді."
+
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "&Нөмірленген абзацтар автонөмірленсін"
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "1st... деген 1^st... деп ауыс&тырылсын"
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "Апта күндер атауын үлкен әріптермен жазылсын"
+
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Абзацтың алдында '*' не '-' деп жазса, ол осы тізмдеу әдісін қабылдайды. "
+#~ "Ыңғайлығы - келесі абзацтар да автоматты түрде жалғасып, осы түрдегі "
+#~ "таңбаланған тізімді құрады."
+
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Маркерленген абзацтарға т&ізім пішімі қолданылсын"
+
+#~ msgid "Default"
+#~ msgstr "Әдетті"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "Өзгеше &тырнақшалар"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Қ&ос тырнақшалар типографикалық тырнақшаларымен ауыстырылсын"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Жа&лғыз тырнақшалар типографикалық тырнақшаларымен ауыстырылсын"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Қо&сымша автотүзету"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Алмастыру мен ерекшеліктері келесі тіл үшін:"
+
+#~ msgid "All Languages"
+#~ msgstr "Барлық тілдер"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "Сөз алмастыруы &болсын"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "Пішімделген &мәтін алмастырылсын"
+
+#~ msgid "&Find"
+#~ msgstr "&Іздеу"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "Ал&мастыру"
+
+#~ msgid "&Add"
+#~ msgstr "Қ&осу"
+
+#~ msgid "Remove"
+#~ msgstr "Өшіру"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "Пі&шімін өзгерту..."
+
+#~ msgid "C&lear Format"
+#~ msgstr "Пішімін алып &тастау"
+
+#~ msgid "Find"
+#~ msgstr "Іздеу"
+
+#~ msgid "Replace"
+#~ msgstr "Алмастыру"
+
+#~ msgid "E&xceptions"
+#~ msgstr "Е&рекшеліктер"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Келесі сөйлемнің соңы деп саналмасын:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "Автоендіру"
+
+#~ msgid "R&emove"
+#~ msgstr "Ө&шіру"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Келесіде екі бас әріп рұқсат етіледі:"
+
+#~ msgid "A&dd"
+#~ msgstr "Қ&осу"
+
+#~ msgid "&Modify"
+#~ msgstr "Ө&згерту"
+
+#~ msgid "Select Character"
+#~ msgstr "Таңбаны таңдау"
+
+#, fuzzy
+#~| msgid "Si&mple Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Қа&рапайым автотүзету"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a new sentence is started and always ensure that the first "
+#~| "character is an uppercase character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr "Жаңа сөйлем бастауын байқап, алғашқы әріпі үлкен болуын қадағалау"
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &first letter of a sentence automatically to uppercase\n"
+#~| "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Сөйлемінің &алғашқы әріпі автоматты түрде үлкен болсын\n"
+#~ "(мысалы, \"менің үйім. осы қалада\" деген \"менің үйім. Осы қалада\"\n"
+#~ "деп түзеледі)"
+
+#, fuzzy
+#~| msgid ""
+#~| "All words are checked for the common mistake of holding the shift key "
+#~| "down a bit too long. If some words must have two uppercase characters, "
+#~| "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Барлық сөздер екі үлкен әріптен басталу қатесіне тексеріледі. Бұл shift "
+#~ "перенесін тым ұзақ басып ұстағаннан пайда болатын, жиі кездесетін қате. "
+#~ "Кейбір сөздер шынымен екі бас әріптен басталатын болса - оларды "
+#~ "'Ерекшеліктер' қойындысында белгілеп қойыңыз."
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &two uppercase characters to one uppercase and one lowercase "
+#~| "character\n"
+#~| " (e.g. PErfect to Perfect)"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Сөйлемдің алғашқы &екі бас әріпі үлкен және кіші әріптерге ауыстырылсын\n"
+#~ "(мысалы, \"МӘселен\" деген \"Мәселен\" деп түзеледі)"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~| "formatting that matches the way an Internet browser would show a URL."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "URL (Uniform Resource Locator сілтемесі) терілгенін байқап, ол Интернет "
+#~ "шолғыш пайдаланатын URL пішіміне келтіріледі."
+
+#, fuzzy
+#~| msgid "Autoformat &URLs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "&URL-дер автопішімделсін"
+
+#, fuzzy
+#~| msgid ""
+#~| "Make sure that more than one space cannot be typed, as this is a common "
+#~| "mistake which is quite hard to find in formatted text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Екі қатар бос орын ендірілмесін деп қадағалау. Бұл жиі кездесетін бірақ "
+#~ "пішімделген мәтінде көзге оңай ілекпейтін қате."
+
+#, fuzzy
+#~| msgid "&Suppress double spaces"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Қатар бос орындарды &болдырмау"
+
+#, fuzzy
+#~| msgid ""
+#~| "Keep correct formatting and indenting of sentences by automatically "
+#~| "removing spaces typed at the beginning and end of a paragraph."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Сөйлемдердің пішімдеу мен шегініс ережелерін, абзацтың алдындағы және "
+#~ "соңындағы бос орындарды автоматты түрде алып тастап, ұстану."
+
+#, fuzzy
+#~| msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Абзацтың алдындағы және соңындағы бос орындар ал&ынып тасталсын"
+
+#, fuzzy
+#~| msgid ""
+#~| "When you use _underline_ or *bold*, the text between the underscores or "
+#~| "asterisks will be converted to underlined or bold text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "_астын сызу_ және *қалың* деп жазғанда, асты сызықтар мен жұлдызшалар "
+#~ "арасындағы мәтін асты сызық немесе қалың мәтінге айналады."
+
+#, fuzzy
+#~| msgid "Automatically do &bold and underline formatting"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Қа&лың қылу және астын сызу автопішімдеу болсын"
+
+#, fuzzy
+#~| msgid "Most standard fraction notations will be converted when available"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "Жиі пайдаланатын бөлшектер өз таңбаларымен ауыстырылады"
+
+#, fuzzy
+#~| msgid "Re&place 1/2... with ½..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "1/2... деген ½... деп а&уыстырылсын"
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '1)' or similar in front of a paragraph, automatically "
+#~| "convert the paragraph to use that numbering style. This has the "
+#~| "advantage that further paragraphs will also be numbered and the spacing "
+#~| "is done correctly."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Абзацтың алдында '1)' деп не басқаша нөмірлесе, ол осы нөмірлеу тәсілін "
+#~ "қабылдайды. Ыңғайлығы - келесі абзацтар да автоматты түрде жалғасып, осы "
+#~ "түрде нөмірленеді."
+
+#, fuzzy
+#~| msgid "Use &autonumbering for numbered paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "&Нөмірленген абзацтар автонөмірленсін"
+
+#, fuzzy
+#~| msgid "Rep&lace 1st... with 1^st..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "1st... деген 1^st... деп ауыс&тырылсын"
+
+#, fuzzy
+#~| msgid "Capitalize name of days"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "Апта күндер атауын үлкен әріптермен жазылсын"
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '*' or '-' in front of a paragraph, automatically convert "
+#~| "the paragraph to use that list-style. Using a list-style formatting "
+#~| "means that a correct bullet is used to draw the list."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Абзацтың алдында '*' не '-' деп жазса, ол осы тізмдеу әдісін қабылдайды. "
+#~ "Ыңғайлығы - келесі абзацтар да автоматты түрде жалғасып, осы түрдегі "
+#~ "таңбаланған тізімді құрады."
+
+#, fuzzy
+#~| msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Маркерленген абзацтарға т&ізім пішімі қолданылсын"
+
+#, fuzzy
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "Әдетті"
+
+#, fuzzy
+#~| msgid "Custom &Quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "Өзгеше &тырнақшалар"
+
+#, fuzzy
+#~| msgid "Replace &double quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Қ&ос тырнақшалар типографикалық тырнақшаларымен ауыстырылсын"
+
+#, fuzzy
+#~| msgid "Replace &single quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Жа&лғыз тырнақшалар типографикалық тырнақшаларымен ауыстырылсын"
+
+#, fuzzy
+#~| msgid "Ad&vanced Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Қо&сымша автотүзету"
+
+#, fuzzy
+#~| msgid "Replacements and exceptions for language:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Алмастыру мен ерекшеліктері келесі тіл үшін:"
+
+#, fuzzy
+#~| msgid "All Languages"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "Барлық тілдер"
+
+#, fuzzy
+#~| msgid "&Enable word replacement"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "Сөз алмастыруы &болсын"
+
+#, fuzzy
+#~| msgid "Replace &text with format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "Пішімделген &мәтін алмастырылсын"
+
+#, fuzzy
+#~| msgid "&Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "&Іздеу"
+
+#, fuzzy
+#~| msgid "..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#, fuzzy
+#~| msgid "Re&place"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "Ал&мастыру"
+
+#, fuzzy
+#~| msgid "Remove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "Өшіру"
+
+#, fuzzy
+#~| msgid "C&hange Format..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "Пі&шімін өзгерту..."
+
+#, fuzzy
+#~| msgid "C&lear Format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "Пішімін алып &тастау"
+
+#, fuzzy
+#~| msgid "Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "Іздеу"
+
+#, fuzzy
+#~| msgid "Replace"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "Алмастыру"
+
+#, fuzzy
+#~| msgid "E&xceptions"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "Е&рекшеліктер"
+
+#, fuzzy
+#~| msgid "Do not treat as the end of a sentence:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Келесі сөйлемнің соңы деп саналмасын:"
+
+#, fuzzy
+#~| msgid "Autoinclude"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "Автоендіру"
+
+#, fuzzy
+#~| msgid "R&emove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "Ө&шіру"
+
+#, fuzzy
+#~| msgid "Accept two uppercase letters in:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Келесіде екі бас әріп рұқсат етіледі:"
+
+#, fuzzy
+#~| msgid "A&dd"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "Қ&осу"
+
+#, fuzzy
+#~| msgid "Configure &Autocorrection..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "&Автотүзетуді баптау..."
+
+#, fuzzy
+#~| msgid "Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "Автотүзету"
+
+#, fuzzy
+#~| msgid "&Modify"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "Ө&згерту"
+
+#, fuzzy
+#~| msgid "&Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "Қ&осу"
+
+#, fuzzy
+#~| msgid "Select Character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "Таңбаны таңдау"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "Автотүзету"

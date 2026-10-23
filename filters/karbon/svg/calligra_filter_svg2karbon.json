@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Karbon SVG Import Filter",
+        "Name[ar]": "مرشح استيراد SVG لكربون",
+        "Name[ca@valencia]": "Filtre d'importació SVG de Karbon",
+        "Name[ca]": "Filtre d'importació SVG del Karbon",
+        "Name[cs]": "Exportní filtr do formátu SVG pro Karbon",
+        "Name[de]": "Karbon SVG-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής SVG Karbon",
+        "Name[en_GB]": "Karbon SVG Import Filter",
+        "Name[eo]": "Karbon SVG Importfiltrilo",
+        "Name[es]": "Filtro de importación SVG de Karbon",
+        "Name[eu]": "Karbon-en SVG inportatzeko iragazkia",
+        "Name[fi]": "Karbonin SVG-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « SVG » de Karbon",
+        "Name[ga]": "Scagaire Iompórtála Karbon SVG",
+        "Name[gl]": "Filtro para Karbon de importación de SVG",
+        "Name[he]": "מסנן ייבוא SVG ל־Karbon",
+        "Name[it]": "Filtro di importazione SVG per Karbon",
+        "Name[ka]": "Karbon SVG -ის შემოტანის ფილტრი",
+        "Name[lv]": "„Karbon“ SVG importa filtrs",
+        "Name[nl]": "SVG-importfilter voor Karbon",
+        "Name[pl]": "Filtr importu SVG do Karbon",
+        "Name[pt_BR]": "Filtro de importação SVG para o Karbon",
+        "Name[ru]": "Фильтр импорта SVG Karbon",
+        "Name[sa]": "कार्बन SVG आयात फ़िल्टर",
+        "Name[sk]": "Filter importu SVG pre Karbon",
+        "Name[sl]": "Karbon filter uvoza SVG",
+        "Name[sv]": "Karbon SVG-importfilter",
+        "Name[tr]": "Karbon SVG İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування малюнків SVG до Karbon",
+        "Name[zh_CN]": "Karbon SVG 导入过滤器",
+        "Name[zh_TW]": "Karbon SVG 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/vnd.oasis.opendocument.graphics",
+    "X-KDE-Import": "image/svg+xml,image/svg+xml-compressed",
+    "X-KDE-Weight": 1
+}

@@ -1,0 +1,42 @@
+{
+    "KPlugin": {
+        "Name": "State Shape",
+        "Name[ar]": "حالة الشكل",
+        "Name[ca@valencia]": "Forma d'estat",
+        "Name[ca]": "Forma d'estat",
+        "Name[cs]": "Stavový tvar",
+        "Name[de]": "Status-Objekt",
+        "Name[el]": "Σχήμα Κατάστασης",
+        "Name[en_GB]": "State Shape",
+        "Name[eo]": "Stata Formo",
+        "Name[es]": "Forma de estado",
+        "Name[eu]": "Estatu forma",
+        "Name[fi]": "Tilakuvio",
+        "Name[fr]": "Forme d'état",
+        "Name[ga]": "Cruth an Stáit",
+        "Name[gl]": "Obxecto de estado",
+        "Name[he]": "צורת מצב",
+        "Name[ia]": "Forma de stato",
+        "Name[it]": "Forma di stato",
+        "Name[ka]": "მდგომარეობის ობიექტი",
+        "Name[lv]": "Stāvokļa objekts",
+        "Name[nl]": "Statusvorm",
+        "Name[pl]": "Kształt stanu",
+        "Name[pt_BR]": "Forma de Estado",
+        "Name[ru]": "Объект состояния",
+        "Name[sa]": "राज्याकारः",
+        "Name[sk]": "Tvar stavu",
+        "Name[sl]": "Oblika stanja",
+        "Name[sv]": "Tillståndsform",
+        "Name[tr]": "Şekil Durumu",
+        "Name[ug]": "ھالەت شەكىللىرى",
+        "Name[uk]": "Форма стану",
+        "Name[zh_CN]": "状态形状",
+        "Name[zh_TW]": "狀態元件",
+        "ServiceTypes": [
+            "Calligra/Shape"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

@@ -1,0 +1,39 @@
+{
+    "KPlugin": {
+        "Name": "Chart Shape",
+        "Name[ar]": "شكل رسم بياني",
+        "Name[ca@valencia]": "Forma del diagrama",
+        "Name[ca]": "Forma del diagrama",
+        "Name[cs]": "Tvar grafu",
+        "Name[de]": "Diagramm-Objekt",
+        "Name[el]": "Σχήμα διαγράμματος",
+        "Name[en_GB]": "Chart Shape",
+        "Name[eo]": "Chart Formo",
+        "Name[es]": "Forma de mapa",
+        "Name[eu]": "Diagrama-forma",
+        "Name[fi]": "Kaaviokuvio",
+        "Name[fr]": "Forme de graphique",
+        "Name[ga]": "Cruth Cairte",
+        "Name[gl]": "Obxecto de gráfico",
+        "Name[it]": "Forma di grafico",
+        "Name[ka]": "გრაფიკის ფორმა",
+        "Name[lv]": "Diagrammas objekts",
+        "Name[nl]": "Grafiekvorm",
+        "Name[pl]": "Kształt wykresu",
+        "Name[pt_BR]": "Forma de Gráfico",
+        "Name[ru]": "Объект диаграммы",
+        "Name[sa]": "चार्ट आकार",
+        "Name[sk]": "Tvar grafu",
+        "Name[sl]": "Oblika grafikona",
+        "Name[sv]": "Diagramform",
+        "Name[tr]": "Çizelge Şekli",
+        "Name[uk]": "Форма діаграми",
+        "Name[zh_CN]": "图表形状",
+        "Name[zh_TW]": "圖表元件",
+        "ServiceTypes": [
+            "Calligra/Shape"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

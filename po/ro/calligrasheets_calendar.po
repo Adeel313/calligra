@@ -1,0 +1,117 @@
+# translation of kspreadinsertcalendar.po to Romanian
+#
+# Claudiu Costin <claudiuc@kde.org>, 2005.
+# Sergiu Bivol <sergiu@cip.md>, 2009.
+msgid ""
+msgstr ""
+"Project-Id-Version: kspreadinsertcalendar\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2009-01-02 15:32+0200\n"
+"Last-Translator: Sergiu Bivol <sergiu@cip.md>\n"
+"Language-Team: Romanian <kde-i18n-ro@lists.kde.org>\n"
+"Language: ro\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
+"20)) ? 1 : 2;\n"
+
+#: CalendarTool.cpp:62
+#, kde-format
+msgid ""
+"End date is before start date! Please make sure that end date comes after "
+"start date."
+msgstr ""
+
+#: CalendarTool.cpp:62 CalendarTool.cpp:69
+#, kde-format
+msgid "Error"
+msgstr "Eroare"
+
+#: CalendarTool.cpp:68
+#, kde-format
+msgid ""
+"Calendars should not be longer than 10 years. If you really need such long "
+"periods you need to split them up."
+msgstr ""
+
+#: CalendarTool.cpp:76
+#, kde-format
+msgid ""
+"Start and end dates are equal! Only one day will be inserted, do you want to "
+"continue?"
+msgstr ""
+
+#: CalendarTool.cpp:77 CalendarTool.cpp:87 CalendarTool.cpp:111
+#, kde-format
+msgid "Warning"
+msgstr "Avertisment"
+
+#: CalendarTool.cpp:86
+#, kde-format
+msgid ""
+"Creating a calendar for a longer period than a year can take up a lot of "
+"space, do you want to continue?"
+msgstr ""
+
+#: CalendarTool.cpp:109
+#, kde-format
+msgid ""
+"The area where the calendar is inserted is NOT empty, are you sure you want "
+"to continue, overwriting existing data? If you choose No the area that would "
+"be required for the desired calendar will be selected so you can see what "
+"data would be overwritten."
+msgstr ""
+
+#: CalendarTool.cpp:120
+#, fuzzy
+#| msgid "Insert Calendar..."
+msgctxt "(qtundo-format)"
+msgid "Insert Calendar"
+msgstr "Inserare calendar..."
+
+#: CalendarTool.cpp:126
+#, fuzzy, kde-format
+#| msgid "Insert Calendar..."
+msgid "Calendar from %1 to %2"
+msgstr "Inserare calendar..."
+
+#: CalendarTool.cpp:166
+#, kde-format
+msgid "week"
+msgstr "săptămână"
+
+#: CalendarToolFactory.cpp:22
+#, fuzzy, kde-format
+#| msgid "Insert Calendar..."
+msgid "Calendar"
+msgstr "Inserare calendar..."
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, CalendarToolWidget)
+#: CalendarToolWidget.ui:14
+#, fuzzy, kde-format
+#| msgid "Insert Calendar..."
+msgid "Calendar Tool"
+msgstr "Inserare calendar..."
+
+#. i18n: ectx: property (text), widget (QPushButton, m_insertButton)
+#: CalendarToolWidget.ui:20
+#, fuzzy, kde-format
+#| msgid "&Insert"
+msgid "Insert"
+msgstr "&Inserează"
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: CalendarToolWidget.ui:27
+#, fuzzy, kde-format
+#| msgid "End Date"
+msgid "End date:"
+msgstr "Data de sfârșit"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: CalendarToolWidget.ui:47
+#, fuzzy, kde-format
+#| msgid "Start Date"
+msgid "Start date:"
+msgstr "Data de început"

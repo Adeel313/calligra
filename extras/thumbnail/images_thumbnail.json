@@ -1,0 +1,50 @@
+{
+    "CacheThumbnail": true,
+    "KPlugin": {
+        "MimeTypes": [
+            "application/vnd.oasis.opendocument.graphics",
+            "application/vnd.oasis.opendocument.graphics-template",
+            "application/vnd.visio",
+            "application/x-wpg",
+            "application/x-karbon",
+            "image/x-wmf",
+            "application/x-wpg",
+            "image/x-xfig",
+            "application/x-iwork-keynote-sffkey"
+        ],
+        "Name": "Images (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[ar]": "الصور (OpenDocument، ‏MS Visio، ‏WordPerfect، ...)",
+        "Name[ca@valencia]": "Imatges (OpenDocument, MS Visio, WordPerfect…)",
+        "Name[ca]": "Imatges (OpenDocument, MS Visio, WordPerfect,...)",
+        "Name[cs]": "Obrázky (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[de]": "Bilder (OpenDocument, MS Visio, WordPerfect, …)",
+        "Name[el]": "Εικόνες (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[en_GB]": "Images (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[eo]": "Bildoj (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[es]": "Imágenes (OpenDocument, MS Visio, WordPerfect…)",
+        "Name[eu]": "Irudiak (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[fi]": "Kuvat (OpenDocument, MS Visio, WordPerfect…)",
+        "Name[fr]": "Images (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[ga]": "Íomhánna (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[gl]": "Imaxes (OpenDocument, MS Visio, WordPerfect…)",
+        "Name[he]": "תמונות (OpenDocument,‏ MS Visio,‏ WordPerfect…)",
+        "Name[it]": "Immagini (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[ka]": "გამოსახულებები (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[lv]": "Attēli („OpenDocument“, „MS Visio“, „WordPerfect“ ...)",
+        "Name[nl]": "Afbeeldingen (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[pl]": "Obrazy (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[pt_BR]": "Imagens (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[ru]": "Изображения (OpenDocument, MS Visio, WordPerfect, …)",
+        "Name[sa]": "चित्राणि (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[sk]": "Obrázky (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[sl]": "Slike (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[sv]": "Bilder (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[tr]": "Görseller (OpenDocument, MS Visio, WordPerfect, …)",
+        "Name[uk]": "Зображення (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[zh_CN]": "图像 (OpenDocument, MS Visio, WordPerfect, ...)",
+        "Name[zh_TW]": "影像 (OpenDocument、MS Visio、WordPerfect…)",
+        "ServiceTypes": [
+            "ThumbCreator"
+        ]
+    }
+}

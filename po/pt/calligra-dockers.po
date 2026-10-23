@@ -1,0 +1,129 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: koffice-dockers\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2016-11-20 12:51+0000\n"
+"Last-Translator: José Nuno Coelho Pires <zepires@gmail.com>\n"
+"Language-Team: pt <kde-i18n-pt@kde.org>\n"
+"Language: pt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-POFile-SpellExtra: body drawing office bisel\n"
+"X-POFile-IgnoreConsistency: Funny\n"
+
+#: snapguidedocker/SnapGuideDocker.cpp:39
+#, kde-format
+msgid "Snap Settings"
+msgstr "Configuração do Ajuste"
+
+#~ msgid "Shape Properties"
+#~ msgstr "Propriedades da Forma"
+
+#~ msgid "Found no shapes in the collection! %1"
+#~ msgstr "Não foram encontradas formas na colecção! %1"
+
+#~ msgid "Not a valid Calligra file: %1"
+#~ msgstr "Não é um ficheiro do Calligra válido: %1"
+
+#~ msgid "No body tag found in file: %1"
+#~ msgstr "Não foi encontrada a marca 'body' no ficheiro: %1"
+
+#~ msgid "No office:drawing tag found in file: %1"
+#~ msgstr "Não foi encontrada a marca 'office:drawing' no ficheiro: %1"
+
+#~ msgid "No shapes found in file: %1"
+#~ msgstr "Não foram encontradas formas no ficheiro: %1"
+
+#~ msgid "Add Shape"
+#~ msgstr "Adicionar uma Forma"
+
+#~ msgid "More"
+#~ msgstr "Mais"
+
+#~ msgid "Open Shape Collection"
+#~ msgstr "Abrir a Colecção de Formas"
+
+#~ msgid "Remove Shape Collection"
+#~ msgstr "Remover a Colecção de Formas"
+
+#~ msgid "Default"
+#~ msgstr "Predefinição"
+
+#~ msgid "Geometrics"
+#~ msgstr "Geométricas"
+
+#~ msgid "Arrows"
+#~ msgstr "Setas"
+
+#~ msgid "Funny"
+#~ msgstr "Engraçadas"
+
+#~ msgid "Collection Error"
+#~ msgstr "Erro da Colecção"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Found no shapes in the collection! %1"
+#~ msgstr "Não foram encontradas formas na colecção! %1"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Not a valid Calligra file: %1"
+#~ msgstr "Não é um ficheiro do Calligra válido: %1"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "No body tag found in file: %1"
+#~ msgstr "Não foi encontrada a marca 'body' no ficheiro: %1"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "No office:drawing tag found in file: %1"
+#~ msgstr "Não foi encontrada a marca 'office:drawing' no ficheiro: %1"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "No shapes found in file: %1"
+#~ msgstr "Não foram encontradas formas no ficheiro: %1"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Add Shape"
+#~ msgstr "Adicionar uma Forma"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "More"
+#~ msgstr "Mais"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Open Shape Collection"
+#~ msgstr "Abrir a Colecção de Formas"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove Shape Collection"
+#~ msgstr "Remover a Colecção de Formas"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "Predefinição"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Geometrics"
+#~ msgstr "Geométricas"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Arrows"
+#~ msgstr "Setas"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Funny"
+#~ msgstr "Engraçadas"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Collection Error"
+#~ msgstr "Erro da Colecção"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Shape Properties"
+#~ msgstr "Propriedades da Forma"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Snap Settings"
+#~ msgstr "Configuração do Ajuste"

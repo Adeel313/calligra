@@ -1,0 +1,333 @@
+<chapter id="options">
+<chapterinfo>
+<authorgroup>
+<author
+><firstname
+>Neil</firstname
+> <surname
+>Lucock</surname
+> <affiliation
+> <address
+><email
+>neil@nlucock.freeserve.co.uk</email
+></address>
+</affiliation>
+</author>
+<author
+><firstname
+>Krishna</firstname
+> <surname
+>Tateneni</surname
+> <affiliation
+> <address
+><email
+>tateneni@pluto.njcc.com</email
+></address>
+</affiliation>
+</author>
+<author
+><firstname
+>Anne-Marie</firstname
+> <surname
+>Mahfouf</surname
+> <affiliation
+> <address
+><email
+>annemarie.mahfouf@free.fr</email
+></address>
+</affiliation>
+</author>
+<othercredit role="translator"
+><firstname
+>Алексей</firstname
+><surname
+>Опарин</surname
+><affiliation
+><address
+><email
+>opaleksej@yandex.ru</email
+></address
+></affiliation
+><contrib
+>Перевод на русский</contrib
+></othercredit
+> 
+</authorgroup>
+</chapterinfo>
+<title
+>Настройка &stage;</title>
+
+<sect1 id="configure-dialog">
+<title
+>Диалоговое окно настройки Stage</title>
+
+<sect2 id="configure-misc">
+<title
+>Разное</title>
+
+<screenshot>
+<screeninfo
+>Дополнительно</screeninfo>
+<mediaobject>
+<imageobject>
+<imagedata fileref="configure-misc.png" format="PNG"/>
+</imageobject>
+<textobject
+><phrase
+>Дополнительно</phrase
+></textobject>
+</mediaobject>
+</screenshot>
+
+<variablelist>
+<varlistentry>
+<term
+><guilabel
+>Единицы</guilabel
+></term>
+<listitem
+><para
+>Выберите единицу измерения по умолчанию, которая будет использоваться на слайдах.</para
+></listitem>
+</varlistentry>
+
+<varlistentry>
+<term
+><guilabel
+>Радиус маркера</guilabel
+></term>
+<listitem
+><para
+>Если выбрать фигуру инструментом по умолчанию (стрелкой), появляются жёлтый и красный прямоугольники. Они называются маркерами (используются для изменения размера, поворота, …). Радиус маркеров изменяет их размер. Чем они больше, тем легче по ним попасть.</para
+></listitem>
+</varlistentry>
+
+<varlistentry>
+<term
+><guilabel
+>Чувствительность захвата</guilabel
+></term>
+<listitem
+><para
+>Этот параметр определяет, насколько точно нужно попасть по маркеру, чтобы его выбрать.</para
+></listitem>
+</varlistentry>
+
+<varlistentry>
+<term
+><guilabel
+>Смещение при вставке</guilabel
+></term>
+<listitem
+><para
+>Этот параметр действует, только если отключён параметр <guilabel
+>Вставить под курсором</guilabel
+>. Если скопировать фигуру комбинацией клавиш <keycombo action="simul"
+>&Ctrl;<keycap
+>C</keycap
+></keycombo
+> и вставить её комбинацией <keycombo action="simul"
+>&Ctrl;<keycap
+>V</keycap
+></keycombo
+> в место, где уже есть фигура, это смещение используется для вставки новой фигуры ниже или правее.</para
+></listitem>
+</varlistentry>
+
+<varlistentry>
+<term
+><guilabel
+>Вставить под курсором</guilabel
+></term>
+<listitem
+><para
+>Отключает смещение при вставке и помещает вставляемую фигуру в позиции курсора мыши.</para
+></listitem>
+</varlistentry>
+
+</variablelist>
+
+</sect2>
+
+<sect2 id="configure-grid">
+<title
+>Сетка</title>
+
+<screenshot>
+<screeninfo
+>Сетка</screeninfo>
+<mediaobject>
+<imageobject>
+<imagedata fileref="configure-grid.png" format="PNG"/>
+</imageobject>
+<textobject
+><phrase
+>Сетка</phrase
+></textobject>
+</mediaobject>
+</screenshot>
+
+<variablelist>
+<title
+><guilabel
+>Сетка</guilabel
+></title>
+<varlistentry>
+<term
+><guilabel
+>Показывать сетку</guilabel
+></term>
+<listitem
+><para
+>Если включить, &stage; будет показывать сетку из точек, обозначающих пересечения воображаемых горизонтальных и вертикальных линий. Эти точки позволяют точно размещать объекты на слайде.</para
+></listitem>
+</varlistentry>
+
+<varlistentry>
+<term
+><guilabel
+>Прилипать к сетке</guilabel
+></term>
+<listitem
+><para
+>Если этот параметр включён, при перетаскивании или перемещении объектов на слайде верхний левый угол объекта будет <quote
+>привязываться</quote
+> или смещаться к ближайшей точке сетки.</para>
+<para
+>Правда, это ограничивает свободу произвольного размещения объектов на слайде, но зато помогает точно выравнивать объекты. Этот параметр легко включается и отключается, что позволяет совместить преимущества обоих вариантов.</para
+></listitem>
+</varlistentry>
+
+<varlistentry>
+<term
+><guilabel
+>Цвет сетки:</guilabel
+></term>
+<listitem
+><para
+>Здесь можно настроить цвет сетки, по умолчанию он чёрный.</para
+></listitem>
+</varlistentry>
+
+</variablelist>
+
+<variablelist>
+<title
+><guilabel
+>Интервал</guilabel
+></title>
+<para
+>Вы можете связать две настройки, описанные ниже, с помощью значка <inlinemediaobject
+><imageobject
+><imagedata fileref="link.png" format="PNG"/></imageobject
+></inlinemediaobject
+> или разделить обе настройки при помощи значка <inlinemediaobject
+><imageobject
+><imagedata fileref="break.png" format="PNG"/></imageobject
+></inlinemediaobject
+>.</para>
+<varlistentry>
+<term
+><guilabel
+>По горизонтали:</guilabel
+></term>
+<listitem
+><para
+>Установка расстояния в сантиметрах между двумя соседними точками сетки по горизонтали. По умолчанию 0,5 сантиметра.</para
+></listitem>
+</varlistentry>
+
+<varlistentry>
+<term
+><guilabel
+>Выравнивание по вертикали:</guilabel
+></term>
+<listitem
+><para
+>Установка расстояния между двумя соседними точками сетки по вертикали. По умолчанию 0,5 сантиметра.</para
+></listitem>
+</varlistentry>
+</variablelist>
+
+</sect2>
+
+<sect2 id="configure-document">
+<title
+>Документ</title>
+
+<screenshot>
+<screeninfo
+>Документ</screeninfo>
+<mediaobject>
+<imageobject>
+<imagedata fileref="configure-document.png" format="PNG"/>
+</imageobject>
+<textobject
+><phrase
+>Документ</phrase
+></textobject>
+</mediaobject>
+</screenshot>
+
+<variablelist>
+<title
+><guilabel
+>Настройка документа</guilabel
+></title>
+<varlistentry>
+<term
+><guilabel
+>Автосохранение (мин.):</guilabel
+></term>
+<listitem
+><para
+>Здесь можно установить, как часто &stage; будет сохранять временный файл. Если установить параметр <guilabel
+>Без автосохранения</guilabel
+>, &stage; не будет делать этого совсем. Период между автосохранениями можно установить от 1 до 60 минут.</para
+></listitem>
+</varlistentry>
+
+<varlistentry>
+<term
+><guilabel
+>Создавать резервную копию:</guilabel
+></term>
+<listitem
+><para
+>Если этот параметр включён, то в папке, где хранится редактируемый файл, будет создан файл <filename
+>.&lt;name&gt;.odp.autosave.odp</filename
+>. Это делается на случай возникновения проблем. Файл обновляется всякий раз, когда вы сохраняете документ, а также при каждом автосохранении.</para
+></listitem>
+</varlistentry>
+
+</variablelist>
+
+</sect2>
+
+<sect2 id="configure-author">
+<title
+>Автор</title>
+
+<screenshot>
+<screeninfo
+>Автор</screeninfo>
+<mediaobject>
+<imageobject>
+<imagedata fileref="configure-author.png" format="PNG"/>
+</imageobject>
+<textobject
+><phrase
+>Документ</phrase
+></textobject>
+</mediaobject>
+</screenshot>
+
+<para
+>Выберите профиль автора для документа. </para>
+<para
+>Кнопки справа от раскрывающегося списка профилей позволяют добавить новый профиль или удалить текущий. </para>
+</sect2>
+
+</sect1>
+
+</chapter>

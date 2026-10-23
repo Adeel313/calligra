@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component type="desktop">
+  <id>org.kde.calligra.braindump</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+  <launchable type="desktop-id">org.kde.calligra.braindump.desktop</launchable>
+  <developer id="org.kde">
+    <name>The KDE Community</name>
+    <url>https://kde.org</url>
+  </developer>
+  <name>Braindump</name>
+  <name xml:lang="ar">تفريغ الأفكار</name>
+  <name xml:lang="bs">Braindump</name>
+  <name xml:lang="ca">Braindump</name>
+  <name xml:lang="ca-valencia">Braindump</name>
+  <name xml:lang="cs">Braindump</name>
+  <name xml:lang="da">Braindump</name>
+  <name xml:lang="de">Braindump</name>
+  <name xml:lang="el">Braindump</name>
+  <name xml:lang="en-GB">Braindump</name>
+  <name xml:lang="eo">Braindump</name>
+  <name xml:lang="es">Braindump</name>
+  <name xml:lang="et">Braindump</name>
+  <name xml:lang="eu">Braindump</name>
+  <name xml:lang="fi">Braindump</name>
+  <name xml:lang="fr">Braindump</name>
+  <name xml:lang="ga">Braindump</name>
+  <name xml:lang="gl">Braindump</name>
+  <name xml:lang="he">סיעור מוחין</name>
+  <name xml:lang="hu">Braindump</name>
+  <name xml:lang="ia">Braindump</name>
+  <name xml:lang="id">Braindump</name>
+  <name xml:lang="it">Braindump</name>
+  <name xml:lang="ka">Braindump</name>
+  <name xml:lang="ko">브레인덤프</name>
+  <name xml:lang="lv">Braindump</name>
+  <name xml:lang="nl">Braindump</name>
+  <name xml:lang="pl">Braindump</name>
+  <name xml:lang="pt">BrainDump</name>
+  <name xml:lang="pt-BR">Braindump</name>
+  <name xml:lang="ru">Braindump</name>
+  <name xml:lang="sa">ब्रैण्डम्प</name>
+  <name xml:lang="sk">Braindump</name>
+  <name xml:lang="sl">Braindump</name>
+  <name xml:lang="sv">Braindump</name>
+  <name xml:lang="tr">Braindump</name>
+  <name xml:lang="uk">Braindump</name>
+  <name xml:lang="zh-CN">Braindump</name>
+  <name xml:lang="zh-TW">Braindump</name>
+  <summary>Notes and ideas gathering</summary>
+  <summary xml:lang="ar">تدوين الملاحظات وتجميع الأفكار</summary>
+  <summary xml:lang="bs">Sakupljanje poruka i ideja</summary>
+  <summary xml:lang="ca">Notes i recull d'idees</summary>
+  <summary xml:lang="ca-valencia">Notes i arreplega d'idees</summary>
+  <summary xml:lang="cs">Shromažďování nápadů poznámek</summary>
+  <summary xml:lang="de">Notizen und Ideen sammeln</summary>
+  <summary xml:lang="el">Συλλογή σημειώσεων και ιδεών</summary>
+  <summary xml:lang="en-GB">Notes and ideas gathering</summary>
+  <summary xml:lang="eo">Kolektado de notoj kaj ideoj</summary>
+  <summary xml:lang="es">Recopilación de notas e ideas</summary>
+  <summary xml:lang="et">Märkmed ja ideede kogumine</summary>
+  <summary xml:lang="eu">Oharrak eta ideiak biltzea</summary>
+  <summary xml:lang="fi">Muistiinpanot ja ideointi</summary>
+  <summary xml:lang="fr">Notes et ensemble d'idées</summary>
+  <summary xml:lang="ga">Nótaí agus bailiú smaointe</summary>
+  <summary xml:lang="gl">Recolección de notas e ideas</summary>
+  <summary xml:lang="he">איסוף הערות ורעיונות</summary>
+  <summary xml:lang="hu">Jegyzetek és ötletek gyűjtése</summary>
+  <summary xml:lang="id">Penghasil gagasan dan catatan</summary>
+  <summary xml:lang="it">Note e raccolta di idee</summary>
+  <summary xml:lang="ka">შენიშვნების და იდეების შეგროვება</summary>
+  <summary xml:lang="ko">메모 및 아이디어 수집</summary>
+  <summary xml:lang="lv">Piezīmju un ideju vākšana</summary>
+  <summary xml:lang="nl">Notities en ideeën verzamelen</summary>
+  <summary xml:lang="pl">Zbieranie uwag i pomysłów</summary>
+  <summary xml:lang="pt">Recolha de notas e ideias</summary>
+  <summary xml:lang="pt-BR">Juntando notas e ideias</summary>
+  <summary xml:lang="ru">Программа для хранения заметок и идей</summary>
+  <summary xml:lang="sa">टिप्पण्यानि विचारसङ्ग्रहः च</summary>
+  <summary xml:lang="sk">Zbieranie poznámok a nápadov</summary>
+  <summary xml:lang="sl">Zbiranje zapiskov in idej</summary>
+  <summary xml:lang="sv">Anteckningar och idéinsamling</summary>
+  <summary xml:lang="tr">Notları ve fikirleri toplama</summary>
+  <summary xml:lang="ug">خاتىرە ۋە پىكىر توپلاش</summary>
+  <summary xml:lang="uk">Програма для впорядковування нотаток та ідей</summary>
+  <summary xml:lang="zh-CN">笔记和思路速记工具</summary>
+  <summary xml:lang="zh-TW">筆記與想法收集</summary>
+  <description>
+    <p>
+      Braindump is a tool to dump and organize the content of your brain (ideas, drawings, images, texts…) to your computer.
+      It works by allowing to create and edit whiteboards, which are infinite canvas on which you can add texts, images, charts, drawings, etc.
+    </p>
+    <p xml:lang="ar">تفريغ الأفكار هي أداة لتفريغ وتنظيم محتوى عقلك (الأفكار والرسومات والصور والنصوص...) على حاسوبك. وهي تعمل من خلال السماح بإنشاء وتحرير ألواح بيضاء، وهي عبارة عن لوحات قماشية لا نهائية يمكنك إضافة نصوص وصور ومخططات ورسومات وغيرها إليها.</p>
+    <p xml:lang="bs">Braindump je alat za slanje i organizaciju sadržaja vašeg mozga (ideja, crteža, slika, teksta...) na računar. Radi tako što vam dopušta da kreirate i uređujete table koja su beskonačna platna na koje možete dodati tekstove, slike, dijagrame, crteže itd.</p>
+    <p xml:lang="ca">El Braindump és una eina per a bolcar i organitzar el contingut del cervell (idees, dibuixos, imatges, texts…) a l'ordinador. Funciona permetent crear i editar pissarres, que tenen llenços infinits en els quals es pot afegir texts, imatges, diagrames, dibuixos, etc.</p>
+    <p xml:lang="ca-valencia">Braindump és una eina per a bolcar i organitzar el contingut del cervell (idees, dibuixos, imatges, texts…) a l'ordinador. Funciona permetent crear i editar pissarres, que tenen llenços infinits en els quals es pot afegir texts, imatges, diagrames, dibuixos, etc.</p>
+    <p xml:lang="cs">Braindump je nástroj, který slouží k zaznamenávání a uspořádání obsahu vaší hlavy (nápady, kresby, obrázky, texty…) do počítače. Funguje tak, že umožňuje vytvářet a upravovat bílé tabule, což jsou nekonečná plátna, na která můžete přidávat texty, obrázky, grafy, kresby atd.</p>
+    <p xml:lang="el">Το Braindump είναι ένα εργαλείο αποθήκευσης και οργάνωσης του περιεχομένου του εγκεφάλου σου (ιδέες, σχήματα, εικόνες, κείμενα…) στον υπολογιστή σου. Λειτουργεί με το να επιτρέπει τη δημιουργία και την επεξεργασία λευκοπινάκων, οι οποίοι αποτελούν έναν απεριόριστο καμβά για την προσθήκη κειμένων, εικόνων, διαγραμμάτων, σχημάτων, κλπ.</p>
+    <p xml:lang="en-GB">Braindump is a tool to dump and organise the content of your brain (ideas, drawings, images, texts…) to your computer. It works by allowing to create and edit whiteboards, which are infinite canvas on which you can add texts, images, charts, drawings, etc.</p>
+    <p xml:lang="eo">Braindump estas ilo por ŝuti kaj organizi la enhavon de via cerbo (ideoj, desegnaĵoj, bildoj, tekstoj…) al via komputilo. Ĝi funkcias permesante krei kaj redakti blanktabulojn, kiuj estas senfinaj kanvasoj, sur kiuj vi povas aldoni tekstojn, bildojn, diagramojn, desegnaĵojn ktp.</p>
+    <p xml:lang="es">Braindump es una herramienta para volcar y organizar el contenido de su cerebro (ideas, dibujos, imágenes, texto…) en su equipo. Permite crear y editar pizarras en blanco, es decir, lienzos infinitos en los que puede añadir textos, imágenes, diagramas, dibujos, etc.</p>
+    <p xml:lang="et">Braindump on tööriist sinu ajus peituva sisu (mõtted, joonised, pildid, tekst jms) esitamiseks ja korraldamiseks arvutis. See võimaldab luua ja muuta nõndanimetatud valgetahvleid, mis kujutavad endast piiramata lõuendeid, kuhu lisada teksti, pilte, skeeme, diagramme, joonistusi ja kõike muud vajalikku.</p>
+    <p xml:lang="eu">Braindump, zure buruan darabilzuna (ideiak, marrazkiak, irudiak, testuak…) zure ordenagailura eraman eta antolatzeko tresna bat da. Arbel zuriak sortu eta editatzeko aukera ematen du, testuak, irudiak, diagramak, eta abar gehitu ditzakezun oihal infinituak.</p>
+    <p xml:lang="fi">Braindump on työkalu aivojesi sisällön (ajatusten, piirrosten, kuvien, tekstin…) purkamiseksi ja järjestämiseksi. Se toimii antamalla sinun luoda ja muokata valkotauluja, jotka ovat rajaton kangas tekstillesi, kuvillesi, kaavioillesi, piirroksillesi jne.</p>
+    <p xml:lang="fr">Braindump est un outil pour mettre en ordre le contenu de votre cerveau (idées, dessins, images, textes…) sur votre ordinateur. Il vous permet de créer et d'éditer des tableaux blancs illimités sur lesquels vous pouvez ajouter des textes, des images, des graphiques, des dessins, etc.</p>
+    <p xml:lang="ga">Is uirlis é Braindump chun ábhar d’inchinne (smaointe, líníochtaí, íomhánna, téacsanna…) a dhumpáil agus a eagrú chuig do ríomhaire. Oibríonn sé trí ligean duit cláir bhána a chruthú agus a chur in eagar, ar chanbhás gan teorainn iad ar féidir leat téacsanna, íomhánna, cairteacha, líníochtaí, srl. a chur leis.</p>
+    <p xml:lang="gl">Braindump é unha ferramenta para envorcar e organizar o que pasa pola súa cabeza (ideas, debuxos, imaxes, textos…) no seu computador. Permítelle crear e editar encerados, que son lenzos infinitos nos que pode engadir textos, imaxes, gráficos, debuxos…</p>
+    <p xml:lang="he">סיעור מוחין הוא כלי לתיעוד וסידור תוכן המוח שלך (רעיונות, ציורים, תמונות, טקסטים…) למחשב שלך. הוא עובד דרך הרשאה ליצירת ועריכת לוחות תכנון, שהן משטחי ציור אינסופיים שאפשר להוסיף להם טקסטים, תמונות, תרשימים, ציורים ועוד.</p>
+    <p xml:lang="hu">A Braindump egy eszköz, amellyel az ötleteit, rajzait, képeit, szövegeit és egyéb gondolatait „kiöntheti” és rendszerezheti a számítógépén. Úgy működik, hogy lehetővé teszi digitális rajztáblák létrehozását és szerkesztését, amelyekre szövegeket, képeket, diagramokat, rajzokat és sok egyebet helyezhet el.</p>
+    <p xml:lang="ia">Braindump es un instrumento pro discargar e organizar le contento de tu cerebro (ideas, designos, imagines, textos...) in tu computator. Illo functiona per permitter crear e modificar tabula blanc, que es telas infinite sur le qual on pote adder textos, imagines, diagrammas, designos, etc.</p>
+    <p xml:lang="id">Braindump adalah alat untuk membuang dan mengorganisir konten pikiran Anda (gagasan, gambar, citra, teks ...) ke komputer Anda. Ini bekerja dengan membolehkankan untuk menciptakan dan mengedit papan tulis, yang merupakan kanvas tanpa batas di mana kamu bisa menambahkan teks, gambar, grafik, citra, dll.</p>
+    <p xml:lang="it">Braindump è uno strumento per estrarre e organizzare il contenuto del tuo cervello (idee, disegni, immagini, testi...) sul tuo computer. Ti consente di creare e modificare lavagne bianche, che sono tele infinite sulle quali puoi aggiungere testi, immagini, grafici, disegni, ecc.</p>
+    <p xml:lang="ka">Braindump ხელსაწყოა თქვენი ტვინიდან იდეების (იდეები, ნახაზები, სურათები, ტექსტები) კომპიუტერში მოსაგროვებლად. ის მუშაობს დაფების შექმნის და ჩასწორების საშუალებიც, რაც უსასრულო ტილოს წარმოადგენს, სადაც ტექსტის, სურათების, გრაფიკების, ნახატების და ა.შ. დალაგება შეგიძლიათ.</p>
+    <p xml:lang="ko">브레인덤프는 두뇌의 내용(아이디어, 그림, 이미지, 텍스트 등)을 컴퓨터에 떠넘기고 정리하는 도구입니다. 텍스트, 이미지, 차트, 그림 등을 추가할 수 있는 무한 캔버스인 화이트 보드를 만들고 편집할 수 있습니다.</p>
+    <p xml:lang="lv">„Braindump“ ir rīks, kas ir paredzēts prāta satura (ideju, skiču, attēlu, teksta...) nomešanai datorā. Tas ļauj veidot un rediģēt bezgalīgas tāfeles, uz kurām varat novietot tekstus, attēlus, diagrammas, zīmējumu utt.</p>
+    <p xml:lang="nl">Braindump is een hulpmiddel om de inhoud van uw brein te dumpen en te organiseren (ideeën, tekeningen, afbeeldingen, teksten…) naar uw computer. Het werkt door u instaat te stellen whiteboards te bewerken, die oneindige werkvelden zijn waarop u teksten, afbeeldingen, grafieken, tekeningen, etc. kunt toevoegen.</p>
+    <p xml:lang="pl">Braindump jest narzędziem do zrzucania i porządkowania zawartości twojego umysłu (pomysły, rysunki, obrazy, teksty...) na komputer. Działa przez umożliwianie tworzenia i edytowania białych tablic, które są bezgranicznym płótnem, na które można dodawać teksty, obrazy, wykresy, rysunki, itp.</p>
+    <p xml:lang="pt">O Braindump é uma ferramenta para descarregar e organizar o conteúdo do seu cérebro (ideias, desenhos, imagens, textos, ...) para o seu computador. Permite criar e editar quadros, que são uma "tela" infinita onde poderá adicionar textos, imagens, gráficos, desenhos, etc.</p>
+    <p xml:lang="pt-BR">Braindump é uma ferramenta para descarregar e organizar o conteúdo do seu cérebro (ideias, desenhos, imagens, textos, …) para o seu computador. Permite-lhe criar e editar quadros, que são uma espécie de "tela infinita" onde poderá adicionar textos, imagens, gráficos, desenhos, etc.</p>
+    <p xml:lang="ru">Braindump — это утилита для сохранения и организации мыслей (идей, рисунков, изображений, фрагментов…) с помощью компьютера. Программа позволяет создавать и редактировать так называемые «доски» — бесконечные полотна, на которые можно добавлять фрагменты текста, изображения, диаграммы, рисунки и так далее.</p>
+    <p xml:lang="sa">Braindump इति भवतः मस्तिष्कस्य सामग्रीं (विचाराः, रेखाचित्रं, चित्राणि, पाठाः…) भवतः सङ्गणके डम्प् कृत्वा व्यवस्थितं कर्तुं एकं साधनम् अस्ति । इदं श्वेतफलकानां निर्माणं सम्पादनं च कर्तुं अनुमतिं दत्त्वा कार्यं करोति, ये अनन्ताः कैनवासाः सन्ति यस्मिन् भवान् पाठाः, चित्राणि, चार्ट्स्, रेखाचित्रम् इत्यादीन् योजयितुं शक्नोति ।</p>
+    <p xml:lang="sk">Braindump je nástroj na prenos a organizáciu obsahu vášho mozgu (nápady, kresby, obrázky, texty...) do vášho počítača. Umožňuje vytvárať a upravovať tabule, ktoré sú neurčitým plátnom, kam môžete pridávať texty, obrázky, grafy, kresby atď.</p>
+    <p xml:lang="sl">Braindump je orodje za zajem in organiziranje vsebine vaših možganov (ideje, risbe, slike, besedila…) v računalnik. Deluje tako, da omogoča ustvarjanje in ureditev tabel, ki so neskončno platno, na katerega lahko dodate besedila, slike, grafikone, risbe itd.</p>
+    <p xml:lang="sv">Braindump är ett verktyg för att hämta och organisera innehållet i din hjärna (idéer, ritningar, bilder, texter …) på datorn. Det fungerar genom att låta dig skapa och redigera skrivtavlor, som är oändliga ytor där du kan lägga till texter, bilder, diagram, ritningar, etc.</p>
+    <p xml:lang="tr">Braindump, aklınızdaki içerikleri (fikirler, çizimler, görseller, metinler…) bilgisayarına dökmenize ve organize etmenize yardımcı olan bir araçtır. Metin, görsel, çizelge, çizimler, vb. ekleyebileceğiniz sonsuz tuval olan beyaz tahtalar oluşturup düzenlemenize izin vererek çalışır.</p>
+    <p xml:lang="uk">Braindump — програма для запису та упорядкування ваших думок (ідей, креслень, зображень, фрагментів тексту…) за допомогою вашого комп’ютера. У цій програмі ви можете створювати та редагувати так звані «дошки» — нескінченні полотна, на які можна додавати фрагменти тексту, зображення, діаграми, креслення тощо.</p>
+    <p xml:lang="zh-CN">Braindump 是一款用于快速记录和组织思路和信息的工具。您可以创建和编辑白板，在无限大小的画布中随意添加文字、图像、图表、绘图等。</p>
+    <p xml:lang="zh-TW">Braindump 是一個用來將頭腦中的資訊（想法、繪圖、圖片、文字等等）記錄到電腦上並進行管理的工具。它提供建立與編輯數位白板的功能，讓您在無限畫布上可以加入文字、圖片、圖表、繪圖等等。</p>
+  </description>
+  <url type="homepage">https://calligra.org/components/old-components/#braindump</url>
+  <url type="bugtracker">https://bugs.kde.org/enter_bug.cgi?format=guided&amp;product=braindump</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://cdn.kde.org/screenshots/calligra/braindump.png</image>
+      <caption>Main window of Braindump showing a music partition and many other shapes</caption>
+      <caption xml:lang="ar">النافذة الرئيسة لبرنامج تفريغ الأفكار تعرض قسمًا موسيقيًا والعديد من الأشكال الأخرى</caption>
+      <caption xml:lang="ca">Finestra principal del Braindump que mostra una partitura musical i moltes altres formes</caption>
+      <caption xml:lang="ca-valencia">Finestra principal de Braindump que mostra una partitura musical i moltes altres formes</caption>
+      <caption xml:lang="cs">Hlavní okno aplikace Braindump zobrazující hudební notovou osnovu a mnoho dalších tvarů</caption>
+      <caption xml:lang="en-GB">Main window of Braindump showing a music partition and many other shapes</caption>
+      <caption xml:lang="eo">Ĉeffenestro de Braindump montrante muzikpartigon kaj multajn aliajn formojn</caption>
+      <caption xml:lang="es">Ventana principal de Braindump que muestra una partitura musical y otras formas</caption>
+      <caption xml:lang="eu">Braindump-en leiho nagusia musika partizio bat eta beste forma asko erakusten duena</caption>
+      <caption xml:lang="fi">Braindumpin pääikkuna, jossa näkyy musiikkiosio ja muita kuvioita</caption>
+      <caption xml:lang="fr">Fenêtre principale de Braindump affichant une partition musicale et de nombreuses autres formes</caption>
+      <caption xml:lang="ga">Príomhfhuinneog Braindump ina bhfuil críochdheighilt cheoil agus go leor cruthanna eile</caption>
+      <caption xml:lang="gl">Xanela principal de Braindump amosando unha división musical e moitas outras formas.</caption>
+      <caption xml:lang="he">החלון הראשי של סיעור מוחין שמציג חלק מוזיקלי ושלל צורות נוספות</caption>
+      <caption xml:lang="hu">A Braindump főablaka, amely egy kottát és számos egyéb alakzatot jelenít meg</caption>
+      <caption xml:lang="it">Finestra principale di Braindump che mostra una partitura musicale e molte altre forme</caption>
+      <caption xml:lang="ka">Braindump-ის მთავარი ფანჯარა, რომელიც მუსიკის დანაყოფს და ბევრ სხვა ფიგურას აჩვენებს</caption>
+      <caption xml:lang="lv">„Brandump“ galvenais logs ar nošu pierakstu un citiem objektiem.</caption>
+      <caption xml:lang="nl">Hoofdvenster van Braindump die een muziekpartitie en vele andere vormen toont</caption>
+      <caption xml:lang="pl">Główne okno Braindump, pokazujące partyturę muzyczną i wiele innych kształtów</caption>
+      <caption xml:lang="pt-BR">Janela principal do Braindump mostrando uma partitura musical e muitas outras formas</caption>
+      <caption xml:lang="ru">Главное окно Braindump с музыкальной партитурой и многими другими объектами</caption>
+      <caption xml:lang="sa">Braindump इत्यस्य मुख्यविण्डो यत्र संगीतविभाजनं अन्ये च बहवः आकाराः दृश्यन्ते</caption>
+      <caption xml:lang="sk">Hlavné okno Braindump zobrazujúce hudobnú partitúru a mnoho iných tvarov</caption>
+      <caption xml:lang="sl">Glavno okno Braindumpa, ki prikazuje glasbeno particijo in številne druge oblike</caption>
+      <caption xml:lang="sv">Huvudfönster i Braindump som visar en musikpartition och många andra former</caption>
+      <caption xml:lang="tr">Braindump’ın bir müzik partisyonu ve birçok başka şekli gösteren ana penceresi</caption>
+      <caption xml:lang="uk">Головне вікно Braindump із показаною музичною партитурою та багатьма іншими формами</caption>
+      <caption xml:lang="zh-CN">Braindump 主窗口展示了一个音乐分区以及许多其他图形</caption>
+      <caption xml:lang="zh-TW">Braindump 主視窗，顯示音樂區域與其他多種物件</caption>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1"/>
+  <branding>
+    <color type="primary" scheme_preference="light">#ffd28f</color>
+    <color type="primary" scheme_preference="dark">#643a00</color>
+  </branding>
+  <custom>
+    <value key="KDE::matrix">#calligra:kde.org</value>
+  </custom>
+  <project_group>KDE</project_group>
+  <provides>
+    <binary>braindump</binary>
+  </provides>
+  <releases>
+    <release version="26.08.2" date="2026-10-08"/>
+    <release version="26.08.1" date="2026-09-10"/>
+    <release version="26.08.0" date="2026-08-20"/>
+    <release version="26.04.3" date="2026-07-02"/>
+    <release version="26.04.2" date="2026-06-04"/>
+    <release version="26.04.1" date="2026-05-07"/>
+    <release version="26.04.0" date="2026-04-16"/>
+    <release version="25.12.3" date="2026-03-05"/>
+    <release version="25.12.2" date="2026-02-05"/>
+    <release version="25.12.1" date="2026-01-08"/>
+    <release version="25.12.0" date="2025-12-11"/>
+    <release version="25.08.3" date="2025-11-06"/>
+    <release version="25.08.2" date="2025-10-09"/>
+    <release version="25.08.1" date="2025-09-11"/>
+    <release version="25.08.0" date="2025-08-14"/>
+    <release version="25.04.3" date="2025-07-03"/>
+    <release version="25.04.2" date="2025-06-05"/>
+    <release version="25.04.1" date="2025-05-08"/>
+    <release version="25.04.0" date="2025-04-17"/>
+    <release version="24.12.3" date="2025-03-06"/>
+    <release version="24.12.2" date="2025-02-06"/>
+    <release version="24.12.1" date="2025-01-09"/>
+    <release version="24.12.0" date="2024-12-12"/>
+    <release version="4.0.1" date="2024-09-03">
+      <url>https://carlschwan.eu/2024/09/02/calligra-office-4.0.1/</url>
+      <description>
+        <p>This release add flatpak support to the Calligra Office suite.</p>
+        <p xml:lang="ar">يضيف هذا الإصدار دعم ”فلاتباك“ إلى مجموعة برامج كاليغرا أوفيس.</p>
+        <p xml:lang="ca">Aquesta versió afegeix el suport per a flatpak a la suite Calligra Office.</p>
+        <p xml:lang="ca-valencia">Esta versió afig el suport per a flatpak a la suite Calligra Office.</p>
+        <p xml:lang="cs">Tato verze přidává podporu pro Flatpak do kancelářského balíku Calligra Office.</p>
+        <p xml:lang="es">Esta versión añade compatibilidad con flatpak al paquete Calligra Office.</p>
+        <p xml:lang="fi">Tämä julkaisu lisää Calligra-toimisto-ohjelmistoon Flatpak-tuen.</p>
+        <p xml:lang="fr">Cette version ajoute la prise en charge de FlatPak à la suite Calligra Office.</p>
+        <p xml:lang="ga">Cuireann an eisiúint seo tacaíocht flatpak leis an tsraith Calligra Office.</p>
+        <p xml:lang="he">המהדורה הזאת מוסיפה תמיכה ב־Flatpak לחבילת הכלים המשרדיים Calligra.</p>
+        <p xml:lang="ia">Iste version adde supporto de flatpak al suite de Calligra Office</p>
+        <p xml:lang="it">Questa versione aggiunge il supporto flatpak alla suite Calligra Office.</p>
+        <p xml:lang="ka">ეს ვერსია ამატებს flatpak-ის მხარდაჭერა საოფისე პაკეტში Calligra.</p>
+        <p xml:lang="lv">Šī relīze „Calligra Office“ svītai pievienot „Flatpak“ atbalstu.</p>
+        <p xml:lang="nl">Deze uitgave voegt ondersteuning voor flatpak toe aan de Calligra kantoorsuite.</p>
+        <p xml:lang="pt-BR">Esta versão adiciona suporte ao Flatpak ao pacote Calligra Office.</p>
+        <p xml:lang="ru">В этом выпуске добавлена поддержка Flatpak для офисного пакета Calligra.</p>
+        <p xml:lang="sk">Toto vydanie pridáva podporu flatpak do kancelárskeho balíka Calligra.</p>
+        <p xml:lang="sl">Ta izdaja dodaja podporo za flatpak v paket Calligra Office.</p>
+        <p xml:lang="sv">Den här utgåvan lägger till stöd för flatpak i Calligra-kontorssviten.</p>
+        <p xml:lang="tr">Bu yayım, Calligra ofis paketine Flatpak desteği ekler.</p>
+        <p xml:lang="uk">У цьому випуску додано підтримку flatpak для усього комплекту програм Calligra Office.</p>
+        <p xml:lang="zh-CN">这个版本为 Calligra Office 套件添加了 flatpak 支持。</p>
+        <p xml:lang="zh-TW">這個版本為 Calligra 辦公軟體新增 Flatpak 支援。</p>
+      </description>
+    </release>
+    <release version="4.0.0" date="2024-08-27">
+      <url>https://carlschwan.eu/2024/08/27/calligra-office-4.0-is-out/</url>
+      <description>
+        <p>The most significant changes are that Calligra has been fully transitioned to Qt6 and KF6, along with a major overhaul of its user interface.</p>
+        <p xml:lang="ar">التغييرات الأكثر أهمية هي أن كالغرا قد انتقلت بالكامل إلى Qt6 و KF6، إلى جانب إجراء تعديل جذري على واجهة المستخدم الخاصة بها.</p>
+        <p xml:lang="ca">Els canvis més significatius són que el Calligra s'ha transformat completament a les Qt6 i els KF6, juntament amb una revisió important de la seva interfície d'usuari.</p>
+        <p xml:lang="ca-valencia">Els canvis més significatius són que Calligra s'ha transformat completament a les Qt6 i els KF6, juntament amb una revisió important de la seua interfície d'usuari.</p>
+        <p xml:lang="cs">Nejvýznamnějšími změnami jsou úplný přechod Calligry na Qt6 a KF6 a zásadní přepracování uživatelského rozhraní.</p>
+        <p xml:lang="es">Los cambios más significativos son que Calligra ha realizado la transición completa a Qt6 y KF6, y que se ha llevado a cabo una gran reorganización de la interfaz de usuario.</p>
+        <p xml:lang="fi">Merkittävimpiä muutoksia on Calligran siirros kokonaisuudessaan Qt6:een ja KF6:een sekä käyttöliittymän iso uudistus.</p>
+        <p xml:lang="fr">Les modifications les plus significatives sont que Calligra a été entièrement migré vers Qt6 et KF6 et une refonte majeure de son interface utilisateur.</p>
+        <p xml:lang="ga">Is iad na hathruithe is suntasaí ná gur aistríodh Calligra go hiomlán go Qt6 agus KF6, mar aon le hathchóiriú mór ar a chomhéadan úsáideora.</p>
+        <p xml:lang="he">השינויים המשמעותיים ביותר ב־Calligra הם המעבר המלא ל־Qt6 ו־KF6, לרבות מתיחת פנים משמעותית של ממשק המשתמש.</p>
+        <p xml:lang="it">Le modifiche più significative riguardano la transizione completa di Calligra a Qt6 e KF6, nonché una revisione radicale della sua interfaccia utente.</p>
+        <p xml:lang="ka">ყველაზე მნიშვნელოვანი ცვლილება ისაა, რომ Calligra ახლა სრულადაა გადატანილი Qt6-ზე და KF6-ზე, ინტერფეისის ძირეული ცვლილების ჩათვლით.</p>
+        <p xml:lang="lv">Nozīmīgākās izmaiņas ir tas, ka „Calligra“ tagad pilnībā izmanto „Qt6“ un KF6, kā arī ir pilnīgi pārstrādāta programmas saskarne.</p>
+        <p xml:lang="nl">De belangrijkste wijzigingen zijn dat Calligra volledig is overgezet naar Qt6 en KF6, samen met een belangrijke herziening van zijn gebruikersinterface.</p>
+        <p xml:lang="pt-BR">As mudanças mais significativas são a transição completa do Calligra para Qt6 e KF6, juntamente com uma grande reformulação de sua interface de usuário.</p>
+        <p xml:lang="ru">Наиболее значительные изменения: полный перевод Calligra на Qt6 и KF6, а также значительная переработка пользовательского интерфейса.</p>
+        <p xml:lang="sk">Najvýznamnejšie zmeny sú, že Calligra bola úplne prevedená na Qt6 a KF6, spolu s výraznou prestavbou používateľského rozhrania.</p>
+        <p xml:lang="sl">Najpomembnejše spremembe so, da je bila Calligra v celoti preusmerjena na Qt6 in KF6, skupaj z obsežno prenovo uporabniškega vmesnika.</p>
+        <p xml:lang="sv">De viktigaste förändringarna är att Calligra har helt övergått till Qt6 och KF6, tillsammans med en större översyn av användargränssnittet.</p>
+        <p xml:lang="tr">En önemli değişikliklerden biri, Calligra’nın artık Qt6’ya ve KF6’ya tümüyle geçmiş olması ve kullanıcı arayüzünün tümüyle elden geçirilmesidir.</p>
+        <p xml:lang="uk">Найбільш суттєвими змінами є повний перехід Calligra на Qt6 та KF6, а також значний перегляд інтерфейсу користувача.</p>
+        <p xml:lang="zh-CN">最重要的变化是 Calligra 已经完全过渡到 Qt6 和 KF6，同时对其用户界面进行了大修。</p>
+        <p xml:lang="zh-TW">最大的變更是 Calligra 已完全移植到 Qt6 與 KF6，同時大幅更新使用者介面。</p>
+      </description>
+    </release>
+  </releases>
+</component>

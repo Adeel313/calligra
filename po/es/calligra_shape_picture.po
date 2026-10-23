@@ -1,0 +1,141 @@
+# Spanish translations for calligra_shape_picture.po package.
+# Copyright (C) 2007-2025 This file is copyright:
+# This file is distributed under the same license as the calligra package.
+#
+# SPDX-FileCopyrightText: 2007, 2009 Enrique Matias Sanchez (Quique) <cronopios@gmail.com>
+# SPDX-FileCopyrightText: 2011, 2012, 2014 Raul Gonzalez <raulgf83@gmail.com>
+# SPDX-FileCopyrightText: 2025 Sofía Priego <spriego@darksylvania.net>
+msgid ""
+msgstr ""
+"Project-Id-Version: calligra_shape_picture\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2025-07-06 22:12+0100\n"
+"Last-Translator: Sofía Priego <spriego@darksylvania.net>\n"
+"Language-Team: Spanish <kde-l10n-es@kde.org>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 1.5\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: ChangeImageCommand.cpp:26
+msgctxt "(qtundo-format)"
+msgid "Change image"
+msgstr "Cambiar la imagen"
+
+#: ChangeImageCommand.cpp:43
+msgctxt "(qtundo-format)"
+msgid "Crop image"
+msgstr "Recortar imagen"
+
+#: ChangeImageCommand.cpp:57
+msgctxt "(qtundo-format)"
+msgid "Change image color mode"
+msgstr "Cambiar el modo de color de la imagen"
+
+#: ClipCommand.cpp:18
+msgctxt "(qtundo-format)"
+msgid "Contour image (by image analysis)"
+msgstr "Contornear la imagen (analizando la imagen)"
+
+#: ClipCommand.cpp:20
+msgctxt "(qtundo-format)"
+msgid "Remove image contour"
+msgstr "Eliminar contorno de la imagen"
+
+#. i18n: ectx: property (text), widget (QPushButton, bnImageFile)
+#: forms/wdgPictureTool.ui:20
+#, kde-format
+msgid "Replace image..."
+msgstr "Sustituir imagen…"
+
+#. i18n: ectx: property (text), widget (QCheckBox, cbAspect)
+#: forms/wdgPictureTool.ui:32
+#, kde-format
+msgid "Keep proportions"
+msgstr "Mantener proporciones"
+
+#. i18n: ectx: property (text), widget (QLabel, leftLabel)
+#: forms/wdgPictureTool.ui:58
+#, kde-format
+msgid "Left:"
+msgstr "Izquierda:"
+
+#. i18n: ectx: property (text), widget (QLabel, rightLabel)
+#: forms/wdgPictureTool.ui:68
+#, kde-format
+msgid "Right:"
+msgstr "Derecha:"
+
+#. i18n: ectx: property (text), widget (QLabel, bottomLabel)
+#: forms/wdgPictureTool.ui:91
+#, kde-format
+msgid "Bottom:"
+msgstr "Abajo:"
+
+#. i18n: ectx: property (text), widget (QLabel, topLabel)
+#: forms/wdgPictureTool.ui:111
+#, kde-format
+msgid "Top:"
+msgstr "Arriba:"
+
+#. i18n: ectx: property (text), widget (QToolButton, bnFill)
+#: forms/wdgPictureTool.ui:131
+#, kde-format
+msgid "Reset"
+msgstr "Reiniciar"
+
+#. i18n: ectx: property (text), widget (QCheckBox, cbContour)
+#: forms/wdgPictureTool.ui:148
+#, kde-format
+msgid "Contour (by image analysis)"
+msgstr "Contornear (analizando la imagen)"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: forms/wdgPictureTool.ui:178
+#, kde-format
+msgid "Color mode:"
+msgstr "Modo de color:"
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: forms/wdgPictureTool.ui:193
+#, kde-format
+msgid "Crop"
+msgstr "Recortar"
+
+#: PictureShapeFactory.cpp:31
+#, kde-format
+msgid "Image"
+msgstr "Imagen"
+
+#: PictureShapeFactory.cpp:33
+#, kde-format
+msgid "Image shape that can display jpg, png etc."
+msgstr "Forma de imagen que puede mostrar jpg, png, etc."
+
+#: PictureTool.cpp:94
+#, kde-format
+msgid "Standard"
+msgstr "Estándar"
+
+#: PictureTool.cpp:95
+#, kde-format
+msgid "Greyscale"
+msgstr "Escala de grises"
+
+#: PictureTool.cpp:96
+#, kde-format
+msgid "Monochrome"
+msgstr "Monocromo"
+
+#: PictureTool.cpp:97
+#, kde-format
+msgid "Watermark"
+msgstr "Marca de agua"
+
+#: PictureToolFactory.cpp:18
+#, kde-format
+msgid "Picture editing"
+msgstr "Edición de imágenes"

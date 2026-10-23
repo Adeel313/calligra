@@ -1,0 +1,98 @@
+# translation of ChangecasePlugin.po to
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Youssef Chahibi <chahibi@gmail.com>, 2007.
+# SPDX-FileCopyrightText: 2024 Zayed Al-Saidi <zayed.alsaidi@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: ChangecasePlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2024-09-07 21:23+0400\n"
+"Last-Translator: Zayed Al-Saidi <zayed.alsaidi@gmail.com>\n"
+"Language-Team: ar\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+"X-Generator: Lokalize 23.08.5\n"
+
+#: Changecase.cpp:49 Changecase.cpp:77
+#, kde-format
+msgid "Change case"
+msgstr "غيّر الحالة"
+
+#: Changecase.cpp:54
+#, kde-format
+msgid "Sentence case"
+msgstr "حالة الجملة"
+
+#: Changecase.cpp:55
+#, kde-format
+msgid "lowercase"
+msgstr "الأحرف السفلية"
+
+#: Changecase.cpp:56
+#, kde-format
+msgid "UPPER CASE"
+msgstr "الأحرف العلوية"
+
+#: Changecase.cpp:57
+#, kde-format
+msgid "Initial Caps"
+msgstr "الحروف العلوية الأولى"
+
+#: Changecase.cpp:58
+#, kde-format
+msgid "tOGGLE cASE"
+msgstr "اعكس حالة الأحرف"
+
+#: ChangecaseFactory.cpp:16
+#, kde-format
+msgid "Change Case..."
+msgstr "غيّر الحالة..."
+
+#, fuzzy
+#~| msgid "Change case"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Change case"
+#~ msgstr "غيّر الحالة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Sentence case"
+#~ msgstr "حالة الجملة"
+
+#, fuzzy
+#~| msgid "lowercase"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "lowercase"
+#~ msgstr "الأحرف السفلية"
+
+#, fuzzy
+#~| msgid "UPPER CASE"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "UPPER CASE"
+#~ msgstr "الأحرف العلوية"
+
+#, fuzzy
+#~| msgid "Initial Caps"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Initial Caps"
+#~ msgstr "الحروف العلوية الأولى"
+
+#, fuzzy
+#~| msgid "tOGGLE cASE"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "tOGGLE cASE"
+#~ msgstr "ثبّت الحالة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Change Case..."
+#~ msgstr "غيّر الحالة"
+
+#~ msgid "Changecase"
+#~ msgstr "غير الحالة"

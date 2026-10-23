@@ -1,0 +1,39 @@
+{
+    "KPlugin": {
+        "Name": "Animation Tool",
+        "Name[ar]": "أداة الحركة",
+        "Name[ca@valencia]": "Eina d'animació",
+        "Name[ca]": "Eina d'animació",
+        "Name[cs]": "Nástroj pro animaci",
+        "Name[de]": "Animationswerkzeug",
+        "Name[el]": "Εργαλείο κινούμενων σχεδίων",
+        "Name[en_GB]": "Animation Tool",
+        "Name[eo]": "Animacia Ilo",
+        "Name[es]": "Herramienta de animación",
+        "Name[eu]": "Animazio-tresna",
+        "Name[fi]": "Animointityökalu",
+        "Name[fr]": "Outils d'animation",
+        "Name[ga]": "Uirlis Beochana",
+        "Name[gl]": "Ferramenta de animación",
+        "Name[he]": "כלי הנפשה",
+        "Name[it]": "Strumento di animazione",
+        "Name[ka]": "ანიმაციის ხელსაწყო",
+        "Name[lv]": "Animāciju rīks",
+        "Name[nl]": "Animatie-hulpmiddel",
+        "Name[pl]": "Narzędzie animacji",
+        "Name[pt_BR]": "Ferramenta de Animação",
+        "Name[ru]": "Инструмент анимации",
+        "Name[sa]": "एनिमेशन टूल",
+        "Name[sk]": "Nástroj animácií",
+        "Name[sl]": "Orodje animacije",
+        "Name[sv]": "Animeringsverktyg",
+        "Name[tr]": "Canlandırma Aracı",
+        "Name[uk]": "Засіб для анімації",
+        "Name[zh_CN]": "动画工具",
+        "Name[zh_TW]": "動畫工具",
+        "ServiceTypes": [
+            "CalligraStage/Tool"
+        ]
+    },
+    "X-KPresenter-Version": "28"
+}

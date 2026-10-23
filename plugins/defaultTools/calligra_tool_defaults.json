@@ -1,0 +1,38 @@
+{
+    "KPlugin": {
+        "Name": "Default Flake Tools",
+        "Name[ar]": "أدوات الفتات المبدئية",
+        "Name[ca@valencia]": "Eines de floc predeterminades",
+        "Name[ca]": "Eines de floc per defecte",
+        "Name[cs]": "Výchozí nástroje pro práci s vločkami",
+        "Name[de]": "Flake-Standardwerkzeuge",
+        "Name[el]": "Προεπιλεγμένα εργαλεία νιφάδας",
+        "Name[en_GB]": "Default Flake Tools",
+        "Name[eo]": "Defaŭltaj Flakaj Iloj",
+        "Name[es]": "Herramientas de láminas predeterminadas",
+        "Name[eu]": "Lehenetsitako maluta tresnak",
+        "Name[fr]": "Outils de flocons par défaut",
+        "Name[ga]": "Uirlisí Flake Réamhshocraithe",
+        "Name[gl]": "Ferramentas predeterminadas de Flake",
+        "Name[it]": "Strumenti predefiniti di Flake",
+        "Name[ka]": "ფიფქის ნაგულისხმევი ხელასწყოები",
+        "Name[lv]": "Noklusējuma „Flake“ rīki",
+        "Name[nl]": "Standaard Flake-gereedschappen",
+        "Name[pl]": "Domyślne narzędzia płatków",
+        "Name[pt_BR]": "Ferramentas de Floco Padrão",
+        "Name[ru]": "Стандартные инструменты Flake",
+        "Name[sa]": "पूर्वनिर्धारित Flake Tools",
+        "Name[sk]": "Predvolené nástroje Flake",
+        "Name[sl]": "Orodja privzetih kosmičev",
+        "Name[sv]": "Flake standardverktyg",
+        "Name[tr]": "Öntanımlı Tanecik Araçları",
+        "Name[uk]": "Типові інструменти Flake",
+        "Name[zh_CN]": "默认 Flake 工具",
+        "Name[zh_TW]": "預設 Flake 工具",
+        "ServiceTypes": [
+            "Calligra/Tool"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

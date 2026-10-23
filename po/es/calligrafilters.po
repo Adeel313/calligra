@@ -1,0 +1,935 @@
+# Spanish translations for calligrafilters.po package.
+# Copyright (C) 2004-2025 This file is copyright:
+# This file is distributed under the same license as the calligra package.
+#
+# SPDX-FileCopyrightText: 2004, 2005, 2006 Juan Manuel García Molina <juanma@superiodico.net>
+# SPDX-FileCopyrightText: 2007, 2009, 2010 Enrique Matias Sanchez (Quique) <cronopios@gmail.com>
+# SPDX-FileCopyrightText: 2007, 2008 Jaime Robles <jaime@kde.org>
+# SPDX-FileCopyrightText: 2008, 2017, 2019, 2024 Eloy Cuadra <ecuadra@eloihr.net>
+# SPDX-FileCopyrightText: 2011, 2012, 2013 Raul Gonzalez <raulgf83@gmail.com>
+# SPDX-FileCopyrightText: 2017, 2023, 2024, 2025 Sofía Priego <spriego@darksylvania.net>
+msgid ""
+msgstr ""
+"Project-Id-Version: calligrafilters\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-09-10 00:46+0000\n"
+"PO-Revision-Date: 2025-07-06 22:18+0100\n"
+"Last-Translator: Sofía Priego <spriego@darksylvania.net>\n"
+"Language-Team: Spanish <kde-l10n-es@kde.org>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 24.05.2\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: karbon/image/ImageExport.cpp:88
+#, kde-format
+msgid "%1 Export Options"
+msgstr "Opciones de exportación a %1"
+
+#: karbon/image/ImageExportOptionsWidget.cpp:48
+#, kde-format
+msgid "Page %1"
+msgstr "Página %1"
+
+#. i18n: ectx: property (text), widget (QLabel, m_pageLabel)
+#: karbon/image/ImageExportOptionsWidget.ui:19
+#, kde-format
+msgid "Page:"
+msgstr "Página:"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox)
+#: karbon/image/ImageExportOptionsWidget.ui:34
+#, kde-format
+msgid "Size in Pixels"
+msgstr "Tamaño en píxeles"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#. i18n: ectx: property (text), widget (QLabel, label_6)
+#: karbon/image/ImageExportOptionsWidget.ui:43
+#: karbon/image/ImageExportOptionsWidget.ui:78
+#, kde-format
+msgid "Image width:"
+msgstr "Anchura de la imagen:"
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#. i18n: ectx: property (text), widget (QLabel, label_7)
+#: karbon/image/ImageExportOptionsWidget.ui:53
+#: karbon/image/ImageExportOptionsWidget.ui:88
+#, kde-format
+msgid "Image height:"
+msgstr "Altura de la imagen:"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_2)
+#: karbon/image/ImageExportOptionsWidget.ui:69
+#, kde-format
+msgid "Size in Units"
+msgstr "Tamaño en unidades"
+
+#. i18n: ectx: property (text), widget (QLabel, label_5)
+#: karbon/image/ImageExportOptionsWidget.ui:98
+#, kde-format
+msgid "Resolution:"
+msgstr "Resolución:"
+
+#. i18n: ectx: property (text), widget (QLabel, label_9)
+#: karbon/image/ImageExportOptionsWidget.ui:108
+#, kde-format
+msgid "Unit:"
+msgstr "Unidad:"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_3)
+#: karbon/image/ImageExportOptionsWidget.ui:124
+#, kde-format
+msgid "Background Color"
+msgstr "Color de fondo"
+
+#. i18n: ectx: property (text), widget (QLabel, labelColor)
+#: karbon/image/ImageExportOptionsWidget.ui:133
+#, kde-format
+msgid "Color"
+msgstr "Color"
+
+#. i18n: ectx: property (text), widget (QLabel, labelOpacity)
+#: karbon/image/ImageExportOptionsWidget.ui:143
+#, kde-format
+msgid "Opacity"
+msgstr "Opacidad"
+
+#: libmsooxml/MsooXmlDocPropertiesReader.cpp:63
+#: libmsooxml/MsooXmlReader.cpp:163 libmsooxml/MsooXmlThemesReader.cpp:334
+#: sheets/xlsx/XlsxXmlCommentsReader.cpp:91
+#: sheets/xlsx/XlsxXmlDocumentReader.cpp:126
+#: sheets/xlsx/XlsxXmlSharedStringsReader.cpp:103
+#: sheets/xlsx/XlsxXmlStylesReader.cpp:450
+#: sheets/xlsx/XlsxXmlTableReader.cpp:66
+#: sheets/xlsx/XlsxXmlWorksheetReader.cpp:295
+#: stage/pptx/PptxXmlDocumentReader.cpp:148
+#: stage/pptx/PptxXmlSlideReader.cpp:316
+#: words/docx/import/DocxXmlCommentsReader.cpp:82
+#: words/docx/import/DocxXmlDocumentReader.cpp:185
+#: words/docx/import/DocxXmlEndnoteReader.cpp:83
+#: words/docx/import/DocxXmlFontTableReader.cpp:78
+#: words/docx/import/DocxXmlFooterReader.cpp:88
+#: words/docx/import/DocxXmlFootnoteReader.cpp:83
+#: words/docx/import/DocxXmlHeaderReader.cpp:88
+#: words/docx/import/DocxXmlNumberingReader.cpp:75
+#: words/docx/import/DocxXmlSettingsReader.cpp:75
+#, kde-format
+msgid "Namespace \"%1\" not found"
+msgstr "Espacio de nombres «%1» no encontrado"
+
+#: libmsooxml/MsooXmlImport.cpp:94
+#, kde-format
+msgid "Could not open the requested file %1"
+msgstr "No fue posible abrir el archivo solicitado %1"
+
+#: libmsooxml/MsooXmlImport.cpp:117
+#, kde-format
+msgid "Could not read ZIP directory of the requested file %1"
+msgstr "No fue posible leer el directorio ZIP del archivo solicitado %1"
+
+#: libmsooxml/MsooXmlImport.cpp:329 libmsooxml/MsooXmlImport.cpp:452
+#, kde-format
+msgid "Enter password"
+msgstr "Introduzca contraseña"
+
+#: libmsooxml/MsooXmlImport.cpp:330 libmsooxml/MsooXmlImport.cpp:453
+#, kde-format
+msgid "This document is encrypted, please enter the password to decrypt it:"
+msgstr ""
+"Este documento está cifrado, por favor introduzca la contraseña para "
+"descifrarlo:"
+
+#: libmsooxml/MsooXmlImport.cpp:331 libmsooxml/MsooXmlImport.cpp:454
+#, kde-format
+msgid "Incorrect password, please enter the password to decrypt this document:"
+msgstr ""
+"Contraseña incorrecta: por favor introduzca la contraseña para descifrar "
+"este documento:"
+
+#: libmsooxml/MsooXmlImport.cpp:632
+#, kde-format
+msgid "Could not find path for type %1"
+msgstr "No fue posible encontrar la ruta del tipo %1"
+
+#: libmsooxml/MsooXmlReader.cpp:130
+#, kde-format
+msgid "%1 (line %2, column %3)"
+msgstr "%1 (línea %2, columna %3)"
+
+#: libmsooxml/MsooXmlReader.cpp:131
+#, kde-format
+msgid "%1 (%2, line %3, column %4)"
+msgstr "%1 (%2, línea %3, columna %4)"
+
+#: libmsooxml/MsooXmlReader.cpp:153
+#, kde-format
+msgid "Element \"%1\" not found"
+msgstr "Elemento «%1» no encontrado"
+
+#: libmsooxml/MsooXmlReader.cpp:158
+#, kde-format
+msgid "Attribute \"%1\" not found"
+msgstr "Atributo «%1» no encontrado"
+
+#: libmsooxml/MsooXmlReader.cpp:168
+#, kde-format
+msgid "Unexpected value \"%1\" of attribute \"%2\""
+msgstr "Valor inesperado «%1» del atributo «%2»"
+
+#: libmsooxml/MsooXmlReader.cpp:173
+#, kde-format
+msgid "Unexpected second occurrence of \"%1\" element"
+msgstr "Inesperada segunda aparición del elemento «%1»"
+
+#: libmsooxml/MsooXmlReader.cpp:190 libmsooxml/MsooXmlReader.cpp:241
+#, kde-format
+msgid "Expected closing of element \"%1\""
+msgstr "Se esperaba el cierre del elemento «%1»"
+
+#: libmsooxml/MsooXmlReader.cpp:232
+#, kde-format
+msgid "None of expected elements found: %1"
+msgstr "No se ha encontrado ninguno de los elementos esperados: %1"
+
+#: libmsooxml/MsooXmlRelationships.cpp:85
+#, kde-format
+msgid "Could not find target for id \"%1\" in file \"%2\""
+msgstr "No fue posible encontrar el destino para el id «%1» en el archivo «%2»"
+
+#: libmsooxml/MsooXmlRelationships.cpp:89
+#: libmsooxml/MsooXmlRelationships.cpp:108
+#, kde-format
+msgid "Could not find relationships file \"%1\""
+msgstr "No fue posible encontrar el archivo de relaciones «%1»"
+
+#: libmsooxml/MsooXmlRelationships.cpp:104
+#, kde-format
+msgid "Could not find target for relationship \"%1\" in file \"%2\""
+msgstr ""
+"No fue posible encontrar el destino para la relación «%1» en el archivo «%2»"
+
+#: libmsooxml/MsooXmlUtils.cpp:166
+#, kde-format
+msgid ""
+"Parsing error in the main document at line %1, column %2.\n"
+"Error message: %3"
+msgstr ""
+"Se ha producido un error al analizar el documento principal en la línea %1, "
+"columna %2.\n"
+"Mensaje de error: %3"
+
+#: libmsooxml/MsooXmlUtils.cpp:213
+#, kde-format
+msgid "Entry '%1' not found."
+msgstr "Entrada «%1» no encontrada."
+
+#: libmsooxml/MsooXmlUtils.cpp:219
+#, kde-format
+msgid "Entry '%1' is not a file."
+msgstr "La entrada «%1» no es un archivo."
+
+#: libmsooxml/MsooXmlUtils.cpp:295 libmsooxml/MsooXmlUtils.cpp:337
+#: libmsooxml/MsooXmlUtils.cpp:379
+#, kde-format
+msgid "Could not open entry \"%1\" for writing."
+msgstr "No fue posible abrir la entrada «%1» para escritura."
+
+#: libmsooxml/MsooXmlUtils.cpp:309 libmsooxml/MsooXmlUtils.cpp:347
+#: libmsooxml/MsooXmlUtils.cpp:390
+#, kde-format
+msgid "Could not write block"
+msgstr "No fue posible escribir el bloque"
+
+#: sheets/csv/csvexport.cc:253
+#, kde-format
+msgid "<SHEETNAME>"
+msgstr "<SHEETNAME>"
+
+#: sheets/csv/csvexportdialog.cpp:37
+#, kde-format
+msgctxt "@title:dialog"
+msgid "Export to CVS"
+msgstr "Exportar a CVS"
+
+#: sheets/csv/csvexportdialog.cpp:46
+#: sheets/latex/export/latexexportdialog.cc:152
+#, kde-format
+msgctxt "@action:button"
+msgid "Export"
+msgstr "Exportar"
+
+#: sheets/csv/csvimport.cc:74
+#, kde-format
+msgid "CSV filter cannot open input file - please report."
+msgstr ""
+"El filtro CSV no puede abrir el archivo de entrada - por favor, envíe un "
+"informe."
+
+#. i18n: ectx: attribute (title), widget (QWidget, encodingPage)
+#: sheets/csv/exportdialogui.ui:48
+#, kde-format
+msgid "End of Line"
+msgstr "Fin de línea"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: sheets/csv/exportdialogui.ui:56
+#, kde-format
+msgid "End of Line:"
+msgstr "Fin de línea:"
+
+#. i18n: ectx: property (text), widget (QRadioButton, radioEndOfLineLF)
+#: sheets/csv/exportdialogui.ui:63
+#, kde-format
+msgid "&UNIX style (recommended; line feed only)"
+msgstr "Estilo &UNIX (recomendado, solo salto de línea)"
+
+#. i18n: ectx: property (text), widget (QRadioButton, radioEndOfLineCRLF)
+#: sheets/csv/exportdialogui.ui:73
+#, kde-format
+msgid "&Windows style (carriage return and line feed)"
+msgstr "Estilo &Windows (retorno de carro y salto de línea)"
+
+#. i18n: ectx: property (text), widget (QRadioButton, radioEndOfLineCR)
+#: sheets/csv/exportdialogui.ui:83
+#, kde-format
+msgid "&MacOS style (carriage return only)"
+msgstr "Estilo &MacOS (solo retorno de carro)"
+
+#. i18n: ectx: attribute (title), widget (QWidget, tab)
+#: sheets/csv/exportdialogui.ui:96
+#, kde-format
+msgid "Sheets"
+msgstr "Hojas"
+
+#. i18n: ectx: property (text), widget (QLabel, TextLabel4)
+#: sheets/csv/exportdialogui.ui:109
+#, kde-format
+msgid "Select sheets to export:"
+msgstr "Seleccione las hojas a exportar:"
+
+#. i18n: ectx: property (title), widget (QGroupBox, m_delimiterLineBox)
+#: sheets/csv/exportdialogui.ui:125
+#, kde-format
+msgid "Delimiter Line"
+msgstr "Línea delimitadora"
+
+#. i18n: ectx: property (text), widget (QLineEdit, m_sheetDelimiter)
+#: sheets/csv/exportdialogui.ui:131
+#, kde-format
+msgid "********<SHEETNAME>********"
+msgstr "********<SHEETNAME>********"
+
+#. i18n: ectx: property (text), widget (QLabel, TextLabel6)
+#: sheets/csv/exportdialogui.ui:144
+#, kde-format
+msgid "<SHEETNAME> gets replaced by the name of the next sheet."
+msgstr "<SHEETNAME> se reemplaza por el nombre de la siguiente hoja."
+
+#. i18n: ectx: property (text), widget (QCheckBox, m_delimiterAboveAll)
+#: sheets/csv/exportdialogui.ui:163
+#, kde-format
+msgid "Print delimiter line above every sheet"
+msgstr "Imprimir línea delimitadora encima de cada hoja"
+
+#. i18n: ectx: attribute (title), widget (QWidget, tab2)
+#: sheets/csv/exportdialogui.ui:174
+#, kde-format
+msgid "Cells"
+msgstr "Celdas"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: sheets/csv/exportdialogui.ui:182
+#, kde-format
+msgid "Delimiter:"
+msgstr "Delimitador:"
+
+#. i18n: ectx: property (text), widget (QRadioButton, m_radioComma)
+#: sheets/csv/exportdialogui.ui:189
+#, kde-format
+msgid "Comma"
+msgstr "Coma"
+
+#. i18n: ectx: property (text), widget (QRadioButton, m_radioSemicolon)
+#: sheets/csv/exportdialogui.ui:199
+#, kde-format
+msgid "Semicolon"
+msgstr "Punto y coma"
+
+#. i18n: ectx: property (text), widget (QRadioButton, m_radioTab)
+#: sheets/csv/exportdialogui.ui:206
+#, kde-format
+msgid "Tabulator"
+msgstr "Tabulador"
+
+#. i18n: ectx: property (text), widget (QRadioButton, m_radioSpace)
+#: sheets/csv/exportdialogui.ui:213
+#, kde-format
+msgid "Space"
+msgstr "Espacio"
+
+#. i18n: ectx: property (text), widget (QRadioButton, m_radioOther)
+#: sheets/csv/exportdialogui.ui:222
+#, kde-format
+msgid "Other:"
+msgstr "Otro:"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: sheets/csv/exportdialogui.ui:250
+#, kde-format
+msgid "Quotes:"
+msgstr "Comillas:"
+
+#. i18n: ectx: property (text), item, widget (QComboBox, m_comboQuote)
+#: sheets/csv/exportdialogui.ui:270
+#, kde-format
+msgid "\""
+msgstr "\""
+
+#. i18n: ectx: property (text), item, widget (QComboBox, m_comboQuote)
+#: sheets/csv/exportdialogui.ui:275
+#, kde-format
+msgid "'"
+msgstr "'"
+
+#. i18n: ectx: property (text), widget (QCheckBox, m_selectionOnly)
+#: sheets/csv/exportdialogui.ui:301
+#, kde-format
+msgid "Export selection only"
+msgstr "Exportar solo la selección"
+
+#: sheets/dbase/dbaseimport.cc:44
+#, kde-format
+msgid "File format is not supported."
+msgstr "No se acepta el formato de archivo."
+
+#: sheets/dbase/dbaseimport.cc:49
+#, kde-format
+msgid "Could not read from file."
+msgstr "No fue posible leer el archivo."
+
+#: sheets/html/exportdialog.cc:20
+#, kde-format
+msgid "Export Sheet to HTML"
+msgstr "Exportar la hoja a HTML"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox3)
+#: sheets/html/exportwidget.ui:17
+#, kde-format
+msgid "Sheet Selection"
+msgstr "Selección de hoja"
+
+#. i18n: ectx: property (whatsThis), widget (QPushButton, mSelectAllButton)
+#. i18n: ectx: property (whatsThis), widget (QPushButton, mDeselectAllButton)
+#: sheets/html/exportwidget.ui:32 sheets/html/exportwidget.ui:42
+#, kde-format
+msgid "Click here to select all sheets in the list."
+msgstr "Pulse aquí para seleccionar todas las hojas de la lista."
+
+#. i18n: ectx: property (text), widget (QPushButton, mSelectAllButton)
+#: sheets/html/exportwidget.ui:35
+#, kde-format
+msgid "Select &All"
+msgstr "Seleccion&ar todo"
+
+#. i18n: ectx: property (text), widget (QPushButton, mDeselectAllButton)
+#: sheets/html/exportwidget.ui:45
+#, kde-format
+msgid "Desele&ct All"
+msgstr "Desele&ccionar todo"
+
+#. i18n: ectx: property (whatsThis), widget (QCheckBox, mSeparateFiles)
+#: sheets/html/exportwidget.ui:70
+#, kde-format
+msgid ""
+"This option will make the HTML export filter generate a new page for each "
+"sheet. If you disable this option, all sheets are written on one page."
+msgstr ""
+"Esta opción hará que el filtro de exportación a HTML genere una página nueva "
+"por cada hoja. Si desactiva esta opción, se escribirán todas las hojas en "
+"una sola página."
+
+#. i18n: ectx: property (text), widget (QCheckBox, mSeparateFiles)
+#: sheets/html/exportwidget.ui:73
+#, kde-format
+msgid "Use &separate files for each table"
+msgstr "Usar archivos di&stintos para cada tabla"
+
+#. i18n: ectx: property (title), widget (QGroupBox, buttonGroup4)
+#: sheets/html/exportwidget.ui:83
+#, kde-format
+msgid "Style"
+msgstr "Estilo"
+
+#. i18n: ectx: property (whatsThis), widget (QRadioButton, mDefaultButton)
+#: sheets/html/exportwidget.ui:89
+#, kde-format
+msgid ""
+"Select this option to use the default fonts and colors for the HTML page."
+msgstr ""
+"Seleccione esta opción para usar los tipos de letra y los colores "
+"predeterminados para la página HTML."
+
+#. i18n: ectx: property (text), widget (QRadioButton, mDefaultButton)
+#: sheets/html/exportwidget.ui:92
+#, kde-format
+msgid "Use &default style"
+msgstr "Usar el estilo pre&determinado"
+
+#. i18n: ectx: property (whatsThis), widget (QRadioButton, mCustomButton)
+#: sheets/html/exportwidget.ui:102
+#, kde-format
+msgid ""
+"Select this option to specify a separate stylesheet for the HTML page. You "
+"can select or type on in the field below."
+msgstr ""
+"Seleccione esta opción para indicar una hoja de estilos externa para la "
+"página HTML. Puede seleccionarla o teclearla en el campo de abajo."
+
+#. i18n: ectx: property (text), widget (QRadioButton, mCustomButton)
+#: sheets/html/exportwidget.ui:105
+#, kde-format
+msgid "Use &external stylesheet:"
+msgstr "Usar hoja de estilos &externa:"
+
+#. i18n: ectx: property (whatsThis), widget (KUrlRequester, mCustomURL)
+#: sheets/html/exportwidget.ui:115
+#, kde-format
+msgid ""
+"In this field you can enter an URL for your stylesheet. It is possible to "
+"point to a stylesheet on disk, or to somewhere on the Internet."
+msgstr ""
+"En este campo puede introducir una URL para su hoja de estilos. Es posible "
+"apuntar a una hoja de estilos de su disco duro o de algún lugar de Internet."
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox2)
+#: sheets/html/exportwidget.ui:125
+#, kde-format
+msgid "Layout"
+msgstr "Disposición"
+
+#. i18n: ectx: property (whatsThis), widget (QCheckBox, mUseBorders)
+#: sheets/html/exportwidget.ui:131
+#, kde-format
+msgid "Use this option to enable or disable borders around the cells."
+msgstr "Use esta opción para activar o desactivar los bordes de las celdas."
+
+#. i18n: ectx: property (text), widget (QCheckBox, mUseBorders)
+#: sheets/html/exportwidget.ui:134
+#, kde-format
+msgid "Use &borders"
+msgstr "Usar &bordes"
+
+#. i18n: ectx: property (whatsThis), widget (QLabel, textLabel1_2)
+#. i18n: ectx: property (whatsThis), widget (QSpinBox, mPixelsBetweenCells)
+#: sheets/html/exportwidget.ui:146 sheets/html/exportwidget.ui:168
+#, kde-format
+msgid ""
+"Use this option to define how many pixels there should be between the cells. "
+"This effect is better visible if you check <b>Use borders</b> too."
+msgstr ""
+"Use esta opción para definir cuántos píxeles debe haber entre las celdas. "
+"Este efecto es más visible si también marca <b>Usar bordes</b>."
+
+#. i18n: ectx: property (text), widget (QLabel, textLabel1_2)
+#: sheets/html/exportwidget.ui:149
+#, kde-format
+msgid "Pi&xels between cells:"
+msgstr "Pí&xeles entre celdas:"
+
+#: sheets/html/htmlexport.cc:191 sheets/html/htmlexport.cc:366
+#, kde-format
+msgid "Top"
+msgstr "Superior"
+
+#: sheets/latex/export/latexexportdialog.cc:155
+#, kde-format
+msgid "Latex Export Filter Configuration"
+msgstr "Configuración del filtro de exportación a LaTeX"
+
+#. i18n: ectx: attribute (title), widget (QWidget, Widget2)
+#: sheets/latex/export/latexexportwidget.ui:36
+#, kde-format
+msgid "Document"
+msgstr "Documento"
+
+#. i18n: ectx: property (text), widget (QLabel, groupBox)
+#: sheets/latex/export/latexexportwidget.ui:44
+#, kde-format
+msgid "Document style:"
+msgstr "Estilo del documento:"
+
+#. i18n: ectx: property (text), widget (QRadioButton, latexStyleButton)
+#: sheets/latex/export/latexexportwidget.ui:51
+#, kde-format
+msgid "Latex style"
+msgstr "Estilo de LaTeX"
+
+#. i18n: ectx: property (text), widget (QRadioButton, wordsStyleButton)
+#: sheets/latex/export/latexexportwidget.ui:58
+#, kde-format
+msgid "Words style"
+msgstr "Estilo de Words"
+
+#. i18n: ectx: property (text), widget (QLabel, groupBox)
+#: sheets/latex/export/latexexportwidget.ui:68
+#, kde-format
+msgid "Document type:"
+msgstr "Tipo de documento:"
+
+#. i18n: ectx: property (toolTip), widget (QRadioButton, fullDocButton)
+#: sheets/latex/export/latexexportwidget.ui:75
+#, kde-format
+msgid "The document will be able to be compiled alone"
+msgstr "El documento se podrá compilar solo"
+
+#. i18n: ectx: property (whatsThis), widget (QRadioButton, fullDocButton)
+#: sheets/latex/export/latexexportwidget.ui:78
+#, kde-format
+msgid ""
+"The document will be generated as a full latex document since all the "
+"include will be generated before the \\begin{document} and \\end{document} "
+"commands."
+msgstr ""
+"El documento se generará como un documento de LaTeX completo porque todas "
+"las inclusiones se generarán antes de las órdenes \\begin{document} y "
+"\\end{document}."
+
+#. i18n: ectx: property (text), widget (QRadioButton, fullDocButton)
+#: sheets/latex/export/latexexportwidget.ui:81
+#, kde-format
+msgid "Independent document"
+msgstr "Documento independiente"
+
+#. i18n: ectx: property (toolTip), widget (QRadioButton, embededButton)
+#: sheets/latex/export/latexexportwidget.ui:91
+#, kde-format
+msgid "Do not generate either the latex header or the document environment"
+msgstr "No generar ni la cabecera LaTeX ni el entorno del documento"
+
+#. i18n: ectx: property (whatsThis), widget (QRadioButton, embededButton)
+#: sheets/latex/export/latexexportwidget.ui:94
+#, kde-format
+msgid ""
+"The document will be generated as a latex document which will have to be "
+"included in a main latex document. It will allow you to generate several "
+"little files for each chapter of your document."
+msgstr ""
+"El documento se generará como un documento de LaTeX que se tendrá que "
+"incluir en un documento principal de LaTeX. Le permitirá generar varios "
+"archivos pequeños para cada capítulo de su documento."
+
+#. i18n: ectx: property (text), widget (QRadioButton, embededButton)
+#: sheets/latex/export/latexexportwidget.ui:97
+#, kde-format
+msgid "Document to include"
+msgstr "Documento a incluir"
+
+#. i18n: ectx: property (text), widget (QLabel, TextLabel1_2)
+#: sheets/latex/export/latexexportwidget.ui:104
+#, kde-format
+msgid "Document class:"
+msgstr "Clase de documento:"
+
+#. i18n: ectx: property (text), widget (QLabel, TextLabel2)
+#: sheets/latex/export/latexexportwidget.ui:124
+#, kde-format
+msgid "Quality:"
+msgstr "Calidad:"
+
+#. i18n: ectx: property (text), item, widget (KComboBox, qualityComboBox)
+#: sheets/latex/export/latexexportwidget.ui:141
+#, kde-format
+msgid "Final"
+msgstr "Final"
+
+#. i18n: ectx: property (text), item, widget (KComboBox, qualityComboBox)
+#: sheets/latex/export/latexexportwidget.ui:146
+#, kde-format
+msgid "Draft"
+msgstr "Borrador"
+
+#. i18n: ectx: property (text), widget (QLabel, defaultFontSizeTextZone)
+#: sheets/latex/export/latexexportwidget.ui:154
+#, kde-format
+msgid "Default font size:"
+msgstr "Tamaño de letra predeterminado:"
+
+#. i18n: ectx: attribute (title), widget (QWidget, Widget3)
+#: sheets/latex/export/latexexportwidget.ui:186
+#, kde-format
+msgid "Pictures"
+msgstr "Imágenes"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: sheets/latex/export/latexexportwidget.ui:192
+#, kde-format
+msgid "Convert the pictures:"
+msgstr "Convertir las imágenes:"
+
+#. i18n: ectx: property (text), widget (QLabel, TextLabel1)
+#: sheets/latex/export/latexexportwidget.ui:209
+#, kde-format
+msgid "Pictures directory:"
+msgstr "Directorio de las imágenes:"
+
+#. i18n: ectx: attribute (title), widget (QWidget, tab)
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_4)
+#: sheets/latex/export/latexexportwidget.ui:223
+#: sheets/latex/export/latexexportwidget.ui:269
+#, kde-format
+msgid "Language"
+msgstr "Idioma"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: sheets/latex/export/latexexportwidget.ui:244
+#, kde-format
+msgid "Encoding:"
+msgstr "Codificación:"
+
+#. i18n: ectx: property (text), widget (QPushButton, addLanguageBtn)
+#: sheets/latex/export/latexexportwidget.ui:289
+#, kde-format
+msgid "Add"
+msgstr "Añadir"
+
+#. i18n: ectx: property (text), widget (QPushButton, rmLanguageBtn)
+#: sheets/latex/export/latexexportwidget.ui:296
+#, kde-format
+msgid "Remove"
+msgstr "Eliminar"
+
+#. i18n: ectx: attribute (title), widget (QWidget, tab_2)
+#: sheets/latex/export/latexexportwidget.ui:321
+#, kde-format
+msgid "Contents"
+msgstr "Contenido"
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: sheets/latex/export/latexexportwidget.ui:329
+#, kde-format
+msgid "Export information about author:"
+msgstr "Exportar la información sobre el autor:"
+
+#. i18n: ectx: property (text), widget (QLabel, label_3)
+#: sheets/latex/export/latexexportwidget.ui:349
+#, kde-format
+msgid "Add a table of content:"
+msgstr "Añadir una tabla de contenido:"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_5)
+#: sheets/latex/export/latexexportwidget.ui:368
+#, kde-format
+msgid "Notes"
+msgstr "Notas"
+
+#. i18n: ectx: property (text), widget (QRadioButton, RadioButton7)
+#: sheets/latex/export/latexexportwidget.ui:374
+#, kde-format
+msgid "Don't export"
+msgstr "No exportar"
+
+#. i18n: ectx: property (text), widget (QRadioButton, RadioButton5)
+#: sheets/latex/export/latexexportwidget.ui:381
+#, kde-format
+msgid "Export notes in margin notes"
+msgstr "Exportar avisos en las notas al margen"
+
+#. i18n: ectx: property (text), widget (QRadioButton, RadioButton6)
+#: sheets/latex/export/latexexportwidget.ui:388
+#, kde-format
+msgid "Export notes in comments"
+msgstr "Exportar notas en los comentarios"
+
+#: sheets/opencalc/opencalcexport.cc:889
+#, kde-format
+msgid "Page "
+msgstr "Página "
+
+#: sheets/opencalc/opencalcimport.cc:1198
+#, kde-format
+msgid "The file seems to be corrupt. Skipping a table."
+msgstr "El archivo parece estar dañado. Omitiendo una tabla."
+
+#: sheets/opencalc/opencalcimport.cc:1210
+#, kde-format
+msgid "Skipping a table."
+msgstr "Omitiendo una tabla."
+
+#: sheets/opencalc/opencalcimport.cc:1909
+#, kde-format
+msgid ""
+"This document was created with OpenOffice.org version '%1'. This filter was "
+"written for version 1.0. Reading this file could cause strange behavior, "
+"crashes or incorrect display of the data. Do you want to continue converting "
+"the document?"
+msgstr ""
+"Este documento se creó con la versión «%1» de OpenOffice.org. Este filtro se "
+"escribió para la versión 1.0. La lectura de este archivo podría provocar "
+"comportamientos extraños, caídas o visualización incorrecta de datos. "
+"¿Quiere seguir adelante con la conversión del documento?"
+
+#: sheets/opencalc/opencalcimport.cc:1910
+#, kde-format
+msgid "Unsupported document version"
+msgstr "Versión del documento no aceptada"
+
+#: sheets/qpro/qproimport.cc:114
+#, kde-format
+msgid "QPRO filter cannot open input file - please report."
+msgstr ""
+"El filtro de QPRO no puede abrir el archivo de entrada - por favor, envíe un "
+"informe."
+
+#: sheets/qpro/qproimport.cc:219
+#, kde-format
+msgid ""
+"Unable to open password protected files.\n"
+"The password algorithm has not been published"
+msgstr ""
+"No se pueden abrir los archivos protegidos con contraseña.\n"
+"El algoritmo de la contraseña no se ha publicado"
+
+#: sheets/xlsx/XlsxImport.cpp:577 stage/pptx/PptxImport.cpp:1314
+#: words/docx/import/DocxImport.cpp:146
+#, kde-format
+msgid "Unable to find part for type %1"
+msgstr "No fue posible encontrar un componente del tipo %1"
+
+#: sheets/xlsx/XlsxXmlSharedStringsReader.cpp:171
+#, kde-format
+msgid "Declared number of shared strings too small (%1)"
+msgstr "El número de cadenas compartidas declarado es demasiado pequeño (%1)"
+
+#: sheets/xlsx/XlsxXmlStylesReader.cpp:564
+#, kde-format
+msgid "Declared number of font styles too small (%1)"
+msgstr "El número de estilos de letra declarado es demasiado pequeño (%1)"
+
+#: sheets/xlsx/XlsxXmlStylesReader.cpp:920
+#, kde-format
+msgid "Declared number of cell formats too small (%1)"
+msgstr "El número de formatos de celda declarado es demasiado pequeño (%1)"
+
+#: sheets/xlsx/XlsxXmlStylesReader.cpp:1047
+#: sheets/xlsx/XlsxXmlStylesReader.cpp:1368
+#, kde-format
+msgid "Declared number of fill styles too small (%1)"
+msgstr "El número de estilos de relleno declarado es demasiado pequeño (%1)"
+
+#: sheets/xlsx/XlsxXmlWorksheetReader.cpp:341
+#, kde-format
+msgid ""
+"The data could not be loaded completely because the maximum size of sheet "
+"was exceeded."
+msgstr ""
+"Los datos podrían no cargarse completamente porque se ha sobrepasado el "
+"tamaño máximo de la hoja de estilo."
+
+#: sheets/xlsx/XlsxXmlWorksheetReader.cpp:1403
+#, kde-format
+msgid "Expected integer or floating point number"
+msgstr "Se esperaba un número entero o de coma flotante"
+
+#: stage/pptx/PptxXmlDocumentReader.cpp:289
+#, kde-format
+msgid "Slide layout \"%1\" not found"
+msgstr "Diseño de diapositivas «%1» no encontrado"
+
+#: stage/pptx/PptxXmlSlideReader.cpp:569
+#, kde-format
+msgid "Slide %1"
+msgstr "Diapositiva %1"
+
+#: words/ascii/ImportDialog.cc:30
+#, kde-format
+msgid "Words's Plain Text Import Filter"
+msgstr "Filtro de importación de texto sin formato de Words"
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, ImportDialogUI)
+#: words/ascii/ImportDialogUI.ui:16
+#, kde-format
+msgid "Plain Text Import Dialog"
+msgstr "Diálogo de importación de texto sin formato"
+
+#. i18n: ectx: property (title), widget (QGroupBox, buttonGroupParagraph)
+#: words/ascii/ImportDialogUI.ui:22
+#, kde-format
+msgid "End of Paragraph"
+msgstr "Fin de párrafo"
+
+#. i18n: ectx: property (text), widget (QRadioButton, radioParagraphAsIs)
+#: words/ascii/ImportDialogUI.ui:28
+#, kde-format
+msgid "&As is: At the end of line"
+msgstr "T&al cual: al final de la línea"
+
+#. i18n: ectx: property (text), widget (QRadioButton, radioParagraphSentence)
+#: words/ascii/ImportDialogUI.ui:38
+#, kde-format
+msgid "&Sentence: If the end of line is the end of a sentence"
+msgstr "Fra&se: si el fin de línea está el fin de una frase"
+
+#. i18n: ectx: property (text), widget (QRadioButton, radioParagraphEmptyLine)
+#: words/ascii/ImportDialogUI.ui:45
+#, kde-format
+msgid "&Empty Line: If the line is empty"
+msgstr "Lín&ea vacía: si la línea está vacía"
+
+#: words/epub/OdtHtmlConverter.cpp:259 words/mobi/OdtMobiHtmlConverter.cpp:284
+#, kde-format
+msgid "End notes"
+msgstr "Notas al final"
+
+#: words/msword-odf/conversion.cpp:787
+#, kde-format
+msgid "Even Pages Header"
+msgstr "Cabecera de las páginas pares"
+
+#: words/msword-odf/conversion.cpp:789
+#, kde-format
+msgid "Odd Pages Header"
+msgstr "Cabecera de las páginas impares"
+
+#: words/msword-odf/conversion.cpp:791
+#, kde-format
+msgid "Even Pages Footer"
+msgstr "Pie de las páginas pares"
+
+#: words/msword-odf/conversion.cpp:793
+#, kde-format
+msgid "Odd Pages Footer"
+msgstr "Pie de las páginas impares"
+
+#: words/msword-odf/conversion.cpp:795
+#, kde-format
+msgid "First Page Header"
+msgstr "Cabecera de la primera página"
+
+#: words/msword-odf/conversion.cpp:797
+#, kde-format
+msgid "First Page Footer"
+msgstr "Pie de la primera página"
+
+#: words/msword-odf/texthandler.cpp:623
+#, kde-format
+msgid "Table %1"
+msgstr "Tabla %1"
+
+#: words/rtf/import/rtfimport.cpp:56
+#, kde-format
+msgid "The file cannot be loaded, as it seems not to be an RTF document."
+msgstr "No se puede cargar el archivo porque no parece ser un documento RTF."
+
+#: words/rtf/import/rtfimport.cpp:57 words/rtf/import/rtfimport.cpp:70
+#: words/rtf/import/rtfimport.cpp:78
+#, kde-format
+msgid "Words's RTF Import Filter"
+msgstr "Filtro de importación de RTF de Words"
+
+#: words/rtf/import/rtfimport.cpp:70 words/rtf/import/rtfimport.cpp:78
+#, kde-format
+msgid "The file cannot be loaded."
+msgstr "El archivo no se puede cargar."

@@ -1,0 +1,52 @@
+{
+    "KPlugin": {
+        "Icon": "calligrastage",
+        "MimeTypes": [
+            "application/vnd.oasis.opendocument.presentation",
+            "application/vnd.oasis.opendocument.presentation-template",
+            "application/x-kpresenter",
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.openxmlformats-officedocument.presentationml.template",
+            "application/vnd.openxmlformats-officedocument.presentationml.slideshow"
+        ],
+        "Name": "Calligra Stage Component",
+        "Name[ar]": "عنصر Calligra Stage",
+        "Name[ca@valencia]": "Component Stage de Calligra",
+        "Name[ca]": "Component Stage del Calligra",
+        "Name[cs]": "Komponenta Calligra Stage",
+        "Name[de]": "Calligra-Komponente für Tabellenkalkulation",
+        "Name[el]": "Εξάρτημα Calligra Stage",
+        "Name[en_GB]": "Calligra Stage Component",
+        "Name[eo]": "Calligra Stage-Komponanto",
+        "Name[es]": "Componente Stage de Calligra",
+        "Name[eu]": "Calligra Stage osagaia",
+        "Name[fi]": "Calligran Stage-osa",
+        "Name[fr]": "Composant Stage de Calligra",
+        "Name[ga]": "Comhpháirt Céime Calligra",
+        "Name[gl]": "Compoñente de Calligra Stage",
+        "Name[he]": "רכיב של Calligra Stage",
+        "Name[it]": "Componente di Calligra Stage",
+        "Name[ka]": "Calligra Stage-ის კომონენტი",
+        "Name[lv]": "„Calligra Stage“ komponente",
+        "Name[nl]": "Component van Calligra Stage",
+        "Name[pl]": "Składnik Scena Calligra",
+        "Name[pt_BR]": "Componente do Calligra Stage",
+        "Name[ru]": "Компонент Calligra для работы с презентациями",
+        "Name[sa]": "कैलिग्रा स्टेज घटक",
+        "Name[sk]": "Komponent Stage Calligra",
+        "Name[sl]": "Komponenta Calligra Stage",
+        "Name[sv]": "Calligra Stage-komponent",
+        "Name[tr]": "Calligra Sahne Bileşeni",
+        "Name[uk]": "Компонент Calligra Stage",
+        "Name[zh_CN]": "Calligra Stage 组件",
+        "Name[zh_TW]": "Calligra Stage 組件",
+        "ServiceTypes": [
+            "Calligra/Part"
+        ]
+    },
+    "MimeType": "application/vnd.oasis.opendocument.presentation;application/vnd.oasis.opendocument.presentation-template;application/x-kpresenter;application/vnd.ms-powerpoint;application/vnd.openxmlformats-officedocument.presentationml.presentation;application/vnd.openxmlformats-officedocument.presentationml.template;application/vnd.openxmlformats-officedocument.presentationml.slideshow;",
+    "X-KDE-ExtraNativeMimeTypes": "application/vnd.oasis.opendocument.presentation-template",
+    "X-KDE-NativeMimeType": "application/vnd.oasis.opendocument.presentation",
+    "X-KDE-NativeOasisMimeType": "application/vnd.oasis.opendocument.presentation"
+}

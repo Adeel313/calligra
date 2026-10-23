@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "Artistic Text Shape",
+        "Name[ar]": "شكل نص فني",
+        "Name[ca@valencia]": "Forma de text artístic",
+        "Name[ca]": "Forma de text artístic",
+        "Name[cs]": "Tvar Umělecký text",
+        "Name[de]": "Künstlerisches Text-Objekt",
+        "Name[el]": "Καλλιτεχνικό σχήμα κειμένου",
+        "Name[en_GB]": "Artistic Text Shape",
+        "Name[eo]": "Arta Teksto Formo",
+        "Name[es]": "Forma de texto artístico",
+        "Name[eu]": "Testu artistikoaren forma",
+        "Name[fi]": "Taiteellinen tekstikuvio",
+        "Name[fr]": "Forme de texte artistique",
+        "Name[ga]": "Cruth Téacs Ealaíonta",
+        "Name[gl]": "Obxecto de texto artístico",
+        "Name[he]": "צורת טקסט אומנותית",
+        "Name[it]": "Forma di testo artistica",
+        "Name[ka]": "ტექსტის უცნაური ფორმა",
+        "Name[lv]": "Mākslinieciskā teksta objekts",
+        "Name[nl]": "Artistieke tekstvorm",
+        "Name[pl]": "Artystyczny kształt tekstu",
+        "Name[pt_BR]": "Forma de Texto Artístico",
+        "Name[ru]": "Объект художественного текста",
+        "Name[sa]": "कलात्मक पाठ आकार",
+        "Name[sk]": "Umelecký tvar textu",
+        "Name[sl]": "Oblika umetniškega besedila",
+        "Name[sv]": "Artistisk textform",
+        "Name[tr]": "Sanatsal Metin Şekli",
+        "Name[uk]": "Художній текст",
+        "Name[zh_CN]": "艺术字形状",
+        "Name[zh_TW]": "藝術文字元件",
+        "ServiceTypes": [
+            "Calligra/Shape"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

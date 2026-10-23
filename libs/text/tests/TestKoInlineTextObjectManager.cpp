@@ -1,0 +1,173 @@
+/* This file is part of the KDE project
+ *
+ * SPDX-FileCopyrightText: 2011 Boudewijn Rempt <boud@kogmbh.com>
+ *
+ * SPDX-License-Identifier: LGPL-2.0-or-later
+ */
+#include "TestKoInlineTextObjectManager.h"
+
+#include <QTest>
+#include <kundo2stack.h>
+
+const QString lorem(
+    "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor"
+    "incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud"
+    "exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n"
+    "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla"
+    "pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia"
+    "deserunt mollit anim id est laborum.\n");
+
+void TestKoInlineTextObjectManager::testCreation()
+{
+    KoInlineTextObjectManager *manager = new KoInlineTextObjectManager();
+    Q_ASSERT(manager);
+    Q_ASSERT(manager->variableManager());
+    delete manager;
+}
+
+void TestKoInlineTextObjectManager::testInsertInlineObject()
+{
+    QTextDocument doc;
+    KoInlineTextObjectManager manager;
+    KoTextDocument textDoc(&doc);
+    textDoc.setInlineTextObjectManager(&manager);
+    KUndo2Stack undoStack;
+    textDoc.setUndoStack(&undoStack);
+
+    KoTextEditor editor(&doc);
+    editor.insertText(lorem);
+
+    DummyInlineObject *obj = new DummyInlineObject(false);
+    Q_ASSERT(obj->id() == -1);
+    Q_ASSERT(obj->manager() == nullptr);
+    manager.insertInlineObject(*editor.cursor(), obj);
+    Q_ASSERT(obj->id() == 1);
+    Q_ASSERT(obj->manager() == &manager);
+
+    // we should have a replacement char associated with this item
+    QTextCursor cursor = doc.find(QString(QChar::ObjectReplacementCharacter), 0);
+    Q_ASSERT(cursor.position() != 0);
+
+    // the associated character format should be the same as the one of the object
+    QTextCharFormat fmt = cursor.charFormat();
+    Q_ASSERT(fmt.property(KoInlineTextObjectManager::InlineInstanceId).toInt() == obj->id());
+
+    // before updatePosition() is called, the object doesn't know the position of the
+    // replacement character
+    Q_ASSERT(obj->m_position == -1);
+
+    // call updateposition -- it is the position of the replacement character.
+    obj->updatePosition(&doc, cursor.position(), fmt);
+
+    Q_ASSERT(obj->m_position == cursor.position());
+
+    // KoInlineTextObjectManager doesn't own its inline objects.
+    delete obj;
+}
+
+void TestKoInlineTextObjectManager::testRetrieveInlineObject()
+{
+    QTextDocument doc;
+    KoInlineTextObjectManager manager;
+    KoTextDocument textDoc(&doc);
+    textDoc.setInlineTextObjectManager(&manager);
+    KUndo2Stack undoStack;
+    textDoc.setUndoStack(&undoStack);
+
+    KoTextEditor editor(&doc);
+    editor.insertText(lorem);
+
+    DummyInlineObject *obj = new DummyInlineObject(false);
+    Q_ASSERT(obj->id() == -1);
+    Q_ASSERT(obj->manager() == nullptr);
+    manager.insertInlineObject(*editor.cursor(), obj);
+    Q_ASSERT(obj->id() == 1);
+    Q_ASSERT(obj->manager() == &manager);
+
+    DummyInlineObject *obj3 = new DummyInlineObject(false);
+    manager.insertInlineObject(*editor.cursor(), obj3);
+    editor.insertText(lorem);
+    DummyInlineObject *obj4 = new DummyInlineObject(false);
+    manager.insertInlineObject(*editor.cursor(), obj4);
+    editor.insertText(lorem);
+    DummyInlineObject *obj5 = new DummyInlineObject(false);
+    manager.insertInlineObject(*editor.cursor(), obj5);
+    editor.insertText(lorem);
+
+    // by id
+    KoInlineObject *obj2 = manager.inlineTextObject(1);
+    Q_ASSERT(obj2 == obj);
+    Q_UNUSED(obj2) // not really unused, but gcc thinks so.
+
+    // by cursor
+    editor.setPosition(444);
+    obj2 = manager.inlineTextObject(*editor.cursor());
+    Q_ASSERT(obj2 == obj);
+
+    // by charformat
+    // we should have a replacement char associated with this item
+    QTextCursor cursor = doc.find(QString(QChar::ObjectReplacementCharacter), 0);
+    QTextCharFormat fmt = cursor.charFormat();
+    obj2 = manager.inlineTextObject(fmt);
+    Q_ASSERT(obj2 == obj);
+
+    // KoInlineTextObjectManager doesn't own its inline objects.
+    delete obj;
+    delete obj3;
+    delete obj4;
+    delete obj5;
+}
+
+void TestKoInlineTextObjectManager::testRemoveInlineObject()
+{
+    QTextDocument doc;
+    KoInlineTextObjectManager manager;
+    KoTextDocument textDoc(&doc);
+    textDoc.setInlineTextObjectManager(&manager);
+    KUndo2Stack undoStack;
+    textDoc.setUndoStack(&undoStack);
+    KoTextEditor editor(&doc);
+    DummyInlineObject *obj = new DummyInlineObject(true);
+    manager.insertInlineObject(*editor.cursor(), obj);
+
+    int id = obj->id();
+
+    manager.removeInlineObject(obj);
+
+    KoInlineObject *obj2 = manager.inlineTextObject(id);
+    Q_ASSERT(obj2 == nullptr);
+    Q_UNUSED(obj2);
+
+    // this should not crash, even though we were a listener
+    manager.setProperty(KoInlineObject::UserGet, "bla");
+
+    // KoInlineTextObjectManager doesn't own its inline objects, even removed ones.
+    delete obj;
+}
+
+void TestKoInlineTextObjectManager::testListenToProperties()
+{
+    QTextDocument doc;
+    KoInlineTextObjectManager manager;
+    KoTextDocument textDoc(&doc);
+    textDoc.setInlineTextObjectManager(&manager);
+    KUndo2Stack undoStack;
+    textDoc.setUndoStack(&undoStack);
+    KoTextEditor editor(&doc);
+
+    DummyInlineObject *obj1 = new DummyInlineObject(true);
+    manager.insertInlineObject(*editor.cursor(), obj1);
+    manager.setProperty(KoInlineObject::UserGet, "bla1");
+    Q_ASSERT(obj1->m_property.toString() == "bla1");
+
+    DummyInlineObject *obj2 = new DummyInlineObject(true);
+    manager.insertInlineObject(*editor.cursor(), obj2);
+    manager.setProperty(KoInlineObject::UserInput, "bla2");
+    Q_ASSERT(obj2->m_property.toString() == "bla2");
+
+    // KoInlineTextObjectManager doesn't own its inline objects.
+    delete obj1;
+    delete obj2;
+}
+
+QTEST_MAIN(TestKoInlineTextObjectManager)

@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Icon": "",
+        "Name": "Path Shapes",
+        "Name[ar]": "أشكال المسارات",
+        "Name[ca@valencia]": "Formes de camí",
+        "Name[ca]": "Formes de camí",
+        "Name[cs]": "Tvary cest",
+        "Name[de]": "Pfad-Objekte",
+        "Name[el]": "Σχήματα διαδρομής",
+        "Name[en_GB]": "Path Shapes",
+        "Name[eo]": "Padaj Formoj",
+        "Name[es]": "Formas de rutas",
+        "Name[eu]": "Bide-formak",
+        "Name[fi]": "Polkukuviot",
+        "Name[fr]": "Formes d'emplacements",
+        "Name[ga]": "Cruthanna Cosáin",
+        "Name[gl]": "Obxecto de ruta",
+        "Name[he]": "צורות נתיב",
+        "Name[it]": "Forme di percorsi",
+        "Name[ka]": "ბილიკის ფორმები",
+        "Name[lv]": "Ceļu objekti",
+        "Name[nl]": "Padvormen",
+        "Name[pl]": "Kształty ścieżek",
+        "Name[pt_BR]": "Formas de caminho",
+        "Name[ru]": "Объект контура",
+        "Name[sa]": "पथ आकृतयः",
+        "Name[sk]": "Tvary cesty",
+        "Name[sl]": "Oblike poti",
+        "Name[sv]": "Konturformer",
+        "Name[tr]": "Yol Şekilleri",
+        "Name[uk]": "Форми контурів",
+        "Name[zh_CN]": "路径形状",
+        "Name[zh_TW]": "路徑元件",
+        "ServiceTypes": [
+            "Calligra/Shape"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

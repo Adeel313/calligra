@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component type="desktop">
+  <id>org.kde.calligra.sheets</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+  <name>Calligra Sheets</name>
+  <name xml:lang="ar">كاليغرا شيت</name>
+  <name xml:lang="ca">Sheets del Calligra</name>
+  <name xml:lang="ca-valencia">Sheets de Calligra</name>
+  <name xml:lang="cs">Calligra Sheets</name>
+  <name xml:lang="de">Calligra Sheets</name>
+  <name xml:lang="el">Calligra Sheets</name>
+  <name xml:lang="en-GB">Calligra Sheets</name>
+  <name xml:lang="eo">Calligra Sheets</name>
+  <name xml:lang="es">Calligra Sheets</name>
+  <name xml:lang="et">Calligra Sheets</name>
+  <name xml:lang="eu">Calligra Sheets</name>
+  <name xml:lang="fi">Calligra Sheets</name>
+  <name xml:lang="fr">Calligra Sheets</name>
+  <name xml:lang="ga">Bileoga Calligra</name>
+  <name xml:lang="gl">Calligra Sheets</name>
+  <name xml:lang="he">גיליונות של Calligra</name>
+  <name xml:lang="hu">Calligra Sheets</name>
+  <name xml:lang="id">Calligra Sheets</name>
+  <name xml:lang="it">Calligra Sheets</name>
+  <name xml:lang="ka">Calligra Sheets</name>
+  <name xml:lang="ko">Calligra 시트</name>
+  <name xml:lang="lv">Calligra Sheets</name>
+  <name xml:lang="nl">Calligra Sheets</name>
+  <name xml:lang="pl">Arkusze Calligra</name>
+  <name xml:lang="pt">Calligra Sheets</name>
+  <name xml:lang="pt-BR">Calligra Sheets</name>
+  <name xml:lang="ru">Calligra Sheets</name>
+  <name xml:lang="sa">कैलिग्रा शीट्स</name>
+  <name xml:lang="sk">Calligra Sheets</name>
+  <name xml:lang="sl">Calligra Sheets</name>
+  <name xml:lang="sv">Calligra Sheets</name>
+  <name xml:lang="tr">Calligra Tablolar</name>
+  <name xml:lang="ug">Calligra ۋاراقلار</name>
+  <name xml:lang="uk">Calligra Sheets</name>
+  <name xml:lang="zh-CN">Calligra Sheets</name>
+  <name xml:lang="zh-TW">Calligra Sheets</name>
+  <summary>Spreadsheet</summary>
+  <summary xml:lang="ar">جدول بيانات</summary>
+  <summary xml:lang="bs">Tablica</summary>
+  <summary xml:lang="ca">Full de càlcul</summary>
+  <summary xml:lang="ca-valencia">Full de càlcul</summary>
+  <summary xml:lang="cs">Sešit</summary>
+  <summary xml:lang="de">Tabellenkalkulation</summary>
+  <summary xml:lang="el">Λογιστικό φύλλο</summary>
+  <summary xml:lang="en-GB">Spreadsheet</summary>
+  <summary xml:lang="eo">Tabelfolio</summary>
+  <summary xml:lang="es">Hoja de cálculo</summary>
+  <summary xml:lang="et">Tabelitöötlus</summary>
+  <summary xml:lang="eu">Kalkulu-orria</summary>
+  <summary xml:lang="fi">Taulukkolaskenta</summary>
+  <summary xml:lang="fr">Tableur</summary>
+  <summary xml:lang="ga">Scarbhileog</summary>
+  <summary xml:lang="gl">Follas de cálculo</summary>
+  <summary xml:lang="he">גיליון נתונים</summary>
+  <summary xml:lang="hu">Munkafüzet</summary>
+  <summary xml:lang="ia">Folio de calculo electronic</summary>
+  <summary xml:lang="id">Lembar-sebar</summary>
+  <summary xml:lang="it">Foglio elettronico</summary>
+  <summary xml:lang="ja">スプレッドシート</summary>
+  <summary xml:lang="ka">ელექტრონული ცხრილი</summary>
+  <summary xml:lang="ko">스프레드시트</summary>
+  <summary xml:lang="lv">Izklājlapas</summary>
+  <summary xml:lang="nl">Rekenblad</summary>
+  <summary xml:lang="pl">Arkusz kalkulacyjny</summary>
+  <summary xml:lang="pt">Folha de Cálculo</summary>
+  <summary xml:lang="pt-BR">Planilha</summary>
+  <summary xml:lang="ru">Электронная таблица</summary>
+  <summary xml:lang="sa">स्प्रेडशीट</summary>
+  <summary xml:lang="sk">Zošit</summary>
+  <summary xml:lang="sl">Preglednica</summary>
+  <summary xml:lang="sv">Kalkylark</summary>
+  <summary xml:lang="tr">Hesap Tablosu</summary>
+  <summary xml:lang="ug">ئېلېكترونلۇق جەدۋەل</summary>
+  <summary xml:lang="uk">Електронні таблиці</summary>
+  <summary xml:lang="zh-CN">电子表格处理软件</summary>
+  <summary xml:lang="zh-TW">工作表</summary>
+  <description>
+    <p>
+      Calligra Sheets is a fully-featured calculation and spreadsheet tool.
+      Use it to quickly create and calculate various business-related spreadsheets, such as income and expenditure, employee working hours, etc.
+    </p>
+    <p xml:lang="ar">كاليغرا شيت هي أداة حاسوبية وجدول بيانات ذات ميزات كاملة. استخدمها لإنشاء وحساب جداول بيانات سريعة ومتنوعة متعلقة بالأعمال، مثل الكسب والإنفاق، وساعات عمل الموظفين، وغيرها.</p>
+    <p xml:lang="bs">Calligra ListoviSheets je kompletno opremljen kalkulacijski i tabelarni alat. Koristite ga da brzo kreirate i izračunati različite poslovne vezane tabele, kao što su prihodi i rashodi, radno vrijeme, itd</p>
+    <p xml:lang="ca">El Sheets del Calligra és una eina de full de càlcul plenament funcional. S'usa per a crear i calcular ràpidament diversos fulls de càlcul relacionats amb els negocis, com els ingressos i despeses, les hores de treball dels empleats, etc.</p>
+    <p xml:lang="ca-valencia">Sheets de Calligra és una eina de full de càlcul plenament funcional. S'utilitza per a crear i calcular ràpidament diversos fulls de càlcul relacionats amb els negocis, com els ingressos i despeses, les hores de treball dels empleats, etc.</p>
+    <p xml:lang="cs">Calligra Sheets je plně vybavený nástroj pro výpočty a práci s tabulkami. Využijte jej k rychlému vytváření a výpočtům různých pracovních tabulek, jako jsou příjmy a výdaje, pracovní doba zaměstnanců atd.</p>
+    <p xml:lang="de">Calligra Sheets ist ein voll funktionsfähiges Berechnungs- und Tabellenkalkulationsprogramm. Verwenden Sie es schnell verschiedene geschäftsbezogene Tabellenkalkulationen zu erstellen und zu berechnen, wie wie z. B. Einnahmen und Ausgaben, Arbeitszeiten der Mitarbeiter usw.</p>
+    <p xml:lang="el">Το Calligra Sheets είναι ένα πλήρες λειτουργιών εργαλείο υπολογισμών και λογιστικών πράξεων. Χρησιμοποιήστε το για να δημιουργήσετε και να υπολογίσετε γρήγορα επιχειρησιακά φύλλα εργασίας, όπως εισόδημα και έξοδα, εργάσιμες ώρες προσωπικού κτλ.</p>
+    <p xml:lang="en-GB">Calligra Sheets is a fully-featured calculation and spreadsheet tool. Use it to quickly create and calculate various business-related spreadsheets, such as income and expenditure, employee working hours, etc.</p>
+    <p xml:lang="eo">Calligra Sheets estas plene elstara kalkulo kaj kalkultabelo. Uzu ĝin por rapide krei kaj kalkuli diversajn komercajn kalkultabelojn, kiel enspezoj kaj elspezoj, laborhoroj de dungitoj ktp.</p>
+    <p xml:lang="es">Calligra Sheets es una herramienta de hojas de cálculo completa. Puede utilizarla para crear y calcular rápidamente varias hojas de cálculo relacionadas con la empresa, como por ejemplo ingresos y gastos, horas de trabajo de los empleados, etc.</p>
+    <p xml:lang="et">Calligra Sheets on kõiki võimaliku pakkuv tabelitöötluse ja arvutamise tööriist. Selle abil saab kiiresti luua ja välja arvutada mitmesuguseid ärimaailmas vajalikke tabeleid, näiteks tulud ja kulud, töötunnid jms.</p>
+    <p xml:lang="eu">Calligra Sheets, kalkulatzeko tresna eta kalkulu-orri tresna guztiz funtzional bat da. Erabil ezazu negozioarekin lotutako hainbat kalkulu-orri azkar sortzeko eta kalkulatzeko, hala nola, diru-sarrerak eta gastuak, enplegatuen lanorduak, etab.</p>
+    <p xml:lang="fi">Calligra Sheets on täysominaisuuksinen taulukkolaskentasovellus. Luot sillä nopeasti erilaisia talouslaskentaan liittyviä taulukoita kuten tulo- ja menotaulukoita, työntekijöiden työtuntitaulukoita jne.</p>
+    <p xml:lang="fr">Calligra Sheets est un tableur complet. Utilisez-le pour créer rapidement différents tableaux et calculs, comme les revenus, les dépenses, les heures de travail de vos employés, etc.</p>
+    <p xml:lang="ga">Is uirlis ríofa agus scarbhileog lánfheistithe í Calligra Sheets. Bain úsáid as chun scarbhileoga éagsúla a bhaineann le gnó a chruthú agus a ríomh go tapa, amhail ioncam agus caiteachas, uaireanta oibre fostaithe, srl.</p>
+    <p xml:lang="gl">Calligra Sheets é unha ferramenta completa de follas de cálculo. Úsea para crear rapidamente follas de cálculo de negocios, como por exemplo follas de gastos e ingresos, de horas de traballo…</p>
+    <p xml:lang="he">גיליונות של Calligra הוא כלי חישוב וגיליון נתונים עתיר יכולות. אפשר להשתמש בו כדי ליצור ולחשב גיליונות נתונים עסקיים במהירות, כגון הכנסות והוצאות, שעות עבודה של עובדים ועוד.</p>
+    <p xml:lang="hu">A Calligra Sheets egy teljes funkcionalitású táblázatkezelő és számítási eszköz. Használhatja különféle üzleti táblázatok — például bevétel- és kiadáskimutatások, munkavállalói munkaidő-nyilvántartások, stb. — gyors létrehozására és számítására.</p>
+    <p xml:lang="ia">Calligra Sheets es un instrumento de calculation complete de characteristicas e un folio de calculo electronic. Usa lo per crear rapidemente e calcular varie folios de calculo relate a affaires, tal como ganio e expensa, horas de labor de empleato, etc. </p>
+    <p xml:lang="id">Calligra Sheets adalah alat penghitungan dan lembar-kerja berfitur lengkap. Gunakanlah ini agar secara cepat untuk membuat dan menghitung berbagai lembar-kerja yang terkait dengan bisnis, seperti pendapatan dan pengeluaran, jam kerja karyawan, dll</p>
+    <p xml:lang="it">Calligra Sheets è uno strumento di calcolo e un foglio elettronico completo. Usalo per calcolare e creare rapidamente vari fogli elettronici per i tuoi affari, come entrate e spese, ore lavorate dai dipendenti, ecc.</p>
+    <p xml:lang="ja">Calligra Sheets は豊富な機能を持った表計算ツールです。収入と支出、従業員の労働時間などビジネスなどに必要なスプレッドシートの作成、計算を短時間で行うことができます。</p>
+    <p xml:lang="ka">Calligra Sheets სრული ფუნქციონალის მქონე გამოთვლისა და ელცხრილების პროგრამაა. გამოიყენეთ ის სხვადასხვა ბიზნესთან დაკავშირებული ელცხრილების, როგორიცაა შემოსავლები, შექმნისა და გამოთვლისათვის.</p>
+    <p xml:lang="ko">Caligra 시트는 모든 기능을 갖춘 계산 및 스프레드시트 도구입니다. 소득 및 지출, 직원 근무 시간 등 다양한 비즈니스 관련 스프레드시트를 신속하게 작성 및 계산할 수 있습니다.</p>
+    <p xml:lang="lv">„Calligra Sheets“ ir iespējām bagāts aprēķinu un izklājlapu rīks. Izmantojiet to, lai ātri izveidotu un aprēķinātu dažādas ar uzņēmējdarbību saistītas izklājlapas, piemēram, ienākumus, izdevumus, darbinieku darba stundas u.c. vajadzībām.</p>
+    <p xml:lang="nl">Calligra Sheets is een hulpmiddel voor rekenen en rekenblad rijk aan functies. Gebruik het om snel verschillende zakelijke rekenbladen te maken, zoals inkomsten en uitgaven, werkuren van werknemers, etc.</p>
+    <p xml:lang="pl">Arkusze Calligra jest pełnowartościowym narzędziem arkusza kalkulacyjnego i obliczeń. Użyj go do szybkiego tworzenia i obliczania rozmaitych biznesowych arkuszy kalkulacyjnych, takich jak przychód i rozchód, godziny pracy pracowników, itp.</p>
+    <p xml:lang="pt">O Calligra Sheets é uma folha de cálculo poderosa. Use-o para criar e calcular rapidamente várias folhas de cálculo relacionadas com o negócio, como receitas e despesas, horas de trabalho de empregados, etc.</p>
+    <p xml:lang="pt-BR">Calligra Sheets é uma planilha de cálculo poderosa. Use-o para criar e calcular rapidamente várias planilhas relacionadas com negócios, como receitas e despesas, horas de trabalho de empregados, etc.</p>
+    <p xml:lang="ru">Calligra Sheets — это полнофункциональный инструмент для расчётов и работы с электронными таблицами. Используйте его для быстрого создания и расчёта различных электронных таблиц, связанных с бизнесом, таких как доходы и расходы, часы работы сотрудников и так далее.</p>
+    <p xml:lang="sa">Calligra Sheets इति पूर्णविशेषतायुक्तं गणना-स्प्रेड्शीट्-उपकरणम् अस्ति । तस्य उपयोगं शीघ्रं विविधव्यापारसम्बद्धानि स्प्रेडशीट्-निर्माणार्थं गणनायाश्च कुर्वन्तु, यथा आयव्ययः, कर्मचारीकार्यसमयः इत्यादयः ।</p>
+    <p xml:lang="sk">Calligra Sheets je plnohodnotný tabuľkový a výpočtový nástroj. Použite ho na rýchle vytvorenie a výpočet rôznych obchodných tabuliek, ako príjmy a výdavky, pracovné hodiny zamestnancov, atď.</p>
+    <p xml:lang="sl">Calligra Sheets je orodje z mnogo možnostmi izračuna in urejanja preglednic. Uporabno je za hitro ustvarjanje in izračun različnih poslovnih preglednic, kot so kot prihodki in odhodki, delovni čas zaposlenih itd.</p>
+    <p xml:lang="sv">Calligra Sheets är ett fullfjädrat beräknings- och kalkylarksverktyg. Använd det för att snabbt skapa och beräkna diverse affärsrelaterade kalkylark, såsom inkomster och utgifter, anställdas arbetstimmar, etc.</p>
+    <p xml:lang="tr">Calligra Tablolar, tam özellikli bir hesap tablosu uygulamasıdır. Bu uygulamayı, çeşitli iş ile ilgili birçok hesap tablosunu; örneğin gelir/gider, çalışan mesai saatleri gibi, yaratmak için kullanabilirsiniz.</p>
+    <p xml:lang="uk">Calligra Sheets — повноцінне середовище для обчислень та роботи з електронними таблицями. Програмою можна скористатися для швидкого створення та обчислень на різноманітних пов’язаних із бізнесом електронних таблицях, зокрема вхідних та вихідних рахунках, табелів робочого часу тощо.</p>
+    <p xml:lang="zh-CN">Calligra Sheets 是一款全功能的电子表格和计算统计程序。您可以使用它来快速创建电子表格并对数据进行各种计算处理，例如用度、工时等。</p>
+    <p xml:lang="zh-TW">Calligra Sheets 是一個功能完善的計算與工作表工具。您可以使用它來快速建立並計算各種商業用工作表，像是收入與支出、員工工作時間等等。</p>
+    <p>Features:</p>
+    <p xml:lang="ar">الميزات:</p>
+    <p xml:lang="bs">Svojstva:</p>
+    <p xml:lang="ca">Característiques:</p>
+    <p xml:lang="ca-valencia">Característiques:</p>
+    <p xml:lang="cs">Vlastnosti:</p>
+    <p xml:lang="de">Funktionen:</p>
+    <p xml:lang="el">Χαρακτηριστικά:</p>
+    <p xml:lang="en-GB">Features:</p>
+    <p xml:lang="eo">Trajtoj:</p>
+    <p xml:lang="es">Características:</p>
+    <p xml:lang="et">Omadused:</p>
+    <p xml:lang="eu">Ezaugarriak:</p>
+    <p xml:lang="fi">Ominaisuuksia:</p>
+    <p xml:lang="fr">Fonctionnalités :</p>
+    <p xml:lang="ga">Gnéithe:</p>
+    <p xml:lang="gl">Funcionalidades:</p>
+    <p xml:lang="he">יכולות:</p>
+    <p xml:lang="hu">Funkciók:</p>
+    <p xml:lang="ia">Characteristicas:</p>
+    <p xml:lang="id">Fitur:</p>
+    <p xml:lang="it">Funzionalità:</p>
+    <p xml:lang="ja">機能:</p>
+    <p xml:lang="ka">თვისებები:</p>
+    <p xml:lang="ko">기능:</p>
+    <p xml:lang="lv">Iespējas:</p>
+    <p xml:lang="nl">Mogelijkheden:</p>
+    <p xml:lang="pl">Możliwości:</p>
+    <p xml:lang="pt">Funcionalidades:</p>
+    <p xml:lang="pt-BR">Funcionalidades:</p>
+    <p xml:lang="ru">Возможности:</p>
+    <p xml:lang="sa">गुणाः:</p>
+    <p xml:lang="sk">Funkcie:</p>
+    <p xml:lang="sl">Možnosti:</p>
+    <p xml:lang="sv">Funktioner:</p>
+    <p xml:lang="tr">Özellikler:</p>
+    <p xml:lang="ug">ئىقتىدار:</p>
+    <p xml:lang="uk">Можливості:</p>
+    <p xml:lang="zh-CN">程序功能：</p>
+    <p xml:lang="zh-TW">功能：</p>
+    <ul>
+      <li>Use shapes to take notes or mind maps</li>
+      <li xml:lang="ar">استخدم الأشكال لتدوين الملاحظات أو الخرائط الذهنية</li>
+      <li xml:lang="bs">Koristite likove za uzimanje zabilješki ili mapa uma</li>
+      <li xml:lang="ca">Usa formes per a prendre notes o mapes mentals</li>
+      <li xml:lang="ca-valencia">Utilitza formes per a prendre notes o mapes mentals</li>
+      <li xml:lang="cs">Pomocí tvarů si pořizujte poznámky nebo vytvářejte myšlenkové mapy</li>
+      <li xml:lang="de">Objekte für Notizen oder Mind-Maps</li>
+      <li xml:lang="el">Χρησιμοποιήστε σχήματα για να κρατήσετε σημειώσεις ή νοηματικούς χάρτες</li>
+      <li xml:lang="en-GB">Use shapes to take notes or mind maps</li>
+      <li xml:lang="eo">Uzi formojn por preni notojn aŭ mensmapojn</li>
+      <li xml:lang="es">Usa formas para tomar notas o crear mapas mentales</li>
+      <li xml:lang="et">Kujundite kasutamine märkmete või ideekaardi loomiseks</li>
+      <li xml:lang="eu">Erabili formak, oharrak edo gogoeta-mapak egiteko</li>
+      <li xml:lang="fi">Muotojen käyttö muistiinpanojen tai miellekarttojen tallentamiseen</li>
+      <li xml:lang="fr">Utilisez des formes pour prendre des notes ou des cartes heuristiques</li>
+      <li xml:lang="ga">Úsáid cruthanna chun nótaí nó léarscáileanna intinne a ghlacadh</li>
+      <li xml:lang="gl">Use formas para tomar notas ou mapas mentais.</li>
+      <li xml:lang="he">להשתמש בצורות כדי לתעד בפתקיות או למפות את המחשבות שלך</li>
+      <li xml:lang="hu">Használjon alakzatokat jegyzeteléshez vagy gondolattérképek készítéséhez</li>
+      <li xml:lang="ia">Tu usa shapes per prender notas o mappas de mente</li>
+      <li xml:lang="id">Gunakan shapes untuk membuat catatan atau rancangan</li>
+      <li xml:lang="it">Usa le forme per creare note o mappe mentali</li>
+      <li xml:lang="ja">シェイプを使用したメモの貼り付けやマインドマップの作成</li>
+      <li xml:lang="ka">გამოიყენეთ მოხაზულობები რუკების და შენიშვნების შესაქმნელად</li>
+      <li xml:lang="ko">도형을 사용하여 노트 또는 마인드맵 작성</li>
+      <li xml:lang="lv">Izmantojiet objektus, lai rakstītu piezīmes vai prāta kartes</li>
+      <li xml:lang="nl">Gebruik vormen om notities of bedenksels vast te leggen</li>
+      <li xml:lang="pl">Używa kształtów do robienia notatek i map umysłu</li>
+      <li xml:lang="pt">Usar formas para tirar notas ou mapas mentais</li>
+      <li xml:lang="pt-BR">Usa formas para fazer anotações ou mapas mentais</li>
+      <li xml:lang="ru">Использование форм для создания заметок или диаграмм связей</li>
+      <li xml:lang="sa">टिप्पणीं कर्तुं वा मनःचित्रं ग्रहीतुं आकृतीनां उपयोगं कुर्वन्तु</li>
+      <li xml:lang="sk">Použite tvary na vytváranie poznámok alebo myšlienkových máp</li>
+      <li xml:lang="sl">Uporablja oblike za zbiranje opomb ali miselnih vzorcev</li>
+      <li xml:lang="sv">Använd former för att göra anteckningar eller tankekartor</li>
+      <li xml:lang="tr">Notlar tutmak veya düşünce haritaları oluşturmak için şekilleri kullanın</li>
+      <li xml:lang="uk">Використання форм для зберігання нотаток або записів на пам’ять.</li>
+      <li xml:lang="zh-CN">插入各种图形来进行标记或制作思维导图</li>
+      <li xml:lang="zh-TW">用元件來做備註或是製作心智圖</li>
+      <li>Large range of pre-defined templates</li>
+      <li xml:lang="ar">نطاق واسع من القوالب المبدئية المعرّفة مسبقًا</li>
+      <li xml:lang="bs">Širok opseg predefinisanih predložaka</li>
+      <li xml:lang="ca">Àmplia gamma de plantilles predefinides</li>
+      <li xml:lang="ca-valencia">Àmplia gamma de plantilles predefinides</li>
+      <li xml:lang="cs">Široký výběr předdefinovaných šablon</li>
+      <li xml:lang="de">Viele vordefinierte Vorlagen aus vielen Bereichen</li>
+      <li xml:lang="el">Μεγάλο εύρος προκαθορισμένος προτύπων</li>
+      <li xml:lang="en-GB">Large range of pre-defined templates</li>
+      <li xml:lang="eo">Granda gamo de antaŭdifinitaj ŝablonoj</li>
+      <li xml:lang="es">Dispone de una amplia gama de plantillas predefinidas</li>
+      <li xml:lang="et">Suur valik valmismalle</li>
+      <li xml:lang="eu">Aurrez definitutako txantiloien aukera zabala</li>
+      <li xml:lang="fi">Laajalti erilaisia esimääritettyjä mallipohjia</li>
+      <li xml:lang="fr">Large éventail de modèles prédéfinis</li>
+      <li xml:lang="ga">Raon mór teimpléid réamhshainithe</li>
+      <li xml:lang="gl">Gran variedade de modelos predefinidos.</li>
+      <li xml:lang="he">מגוון רחב של תבניות שסופקו מראש</li>
+      <li xml:lang="hu">Széles választék előre definiált sablonokból</li>
+      <li xml:lang="id">Berbagai macam templat yang telah ditentukan sebelumnya</li>
+      <li xml:lang="it">Ampia gamma di modelli predefiniti</li>
+      <li xml:lang="ja">幅広い種類のテンプレート</li>
+      <li xml:lang="ka">წინასწარ განსაზღვრული შაბლონების გრძელი სია</li>
+      <li xml:lang="ko">광범위한 사전 정의된 템플릿</li>
+      <li xml:lang="lv">Daudzas iepriekš sagatavotas veidnes</li>
+      <li xml:lang="nl">Grote reeks van voorgedefinieerde sjablonen</li>
+      <li xml:lang="pl">Szeroki wybór uprzednio stworzonych szablonów</li>
+      <li xml:lang="pt">Gama alargada de modelos predefinidos</li>
+      <li xml:lang="pt-BR">Grande variedade de modelos predefinidos</li>
+      <li xml:lang="ru">Большой диапазон предустановленных шаблонов</li>
+      <li xml:lang="sa">पूर्वनिर्धारितसारूप्यानां विशालपरिधिः</li>
+      <li xml:lang="sk">Veľký rozsah preddefinovaných šablón</li>
+      <li xml:lang="sl">Velik nabor vnaprej določenih predlog</li>
+      <li xml:lang="sv">Stort antal fördefinierade mallar</li>
+      <li xml:lang="tr">Birçok amaç için önceden tanımlanmış şablonlar</li>
+      <li xml:lang="uk">Широкий діапазон попередньо визначених шаблонів.</li>
+      <li xml:lang="zh-CN">种类丰富的预制模板</li>
+      <li xml:lang="zh-TW">種類廣泛的樣本</li>
+      <li>Powerful and comprehensive formula list</li>
+      <li xml:lang="ar">قائمة صيغ قوية وشاملة</li>
+      <li xml:lang="bs">Moćna i kompaktna lista formula</li>
+      <li xml:lang="ca">Llista de fórmules potent i extensa</li>
+      <li xml:lang="ca-valencia">Llista de fórmules potent i extensa</li>
+      <li xml:lang="cs">Obsáhlý a podrobný seznam vzorců</li>
+      <li xml:lang="de">Leistungsfähige und umfassende Liste von Formeln</li>
+      <li xml:lang="el">Ισχυρή και κατανοητή λίστα μαθηματικών σχέσεων</li>
+      <li xml:lang="en-GB">Powerful and comprehensive formula list</li>
+      <li xml:lang="eo">Potenca kaj ampleksa formullisto</li>
+      <li xml:lang="es">Dispone de una lista de fórmulas potente y completa</li>
+      <li xml:lang="et">Võimas ja põhjalik valemikogu</li>
+      <li xml:lang="eu">Formula-zerrenda ahaltsu eta zehatza</li>
+      <li xml:lang="fi">Tehokas ja kattava kaavaluettelo</li>
+      <li xml:lang="fr">Liste de formules complète et variée</li>
+      <li xml:lang="ga">Liosta foirmlí cumhachtach agus cuimsitheach</li>
+      <li xml:lang="gl">Lista de fórmulas potentes e fáciles de entender.</li>
+      <li xml:lang="he">רשימת נוסחאות מקיפה ועוצמתית</li>
+      <li xml:lang="hu">Hatékony és átfogó képletlista</li>
+      <li xml:lang="id">Daftar rumus komprehensif dan kuat</li>
+      <li xml:lang="it">Elenco completo e potente di formule</li>
+      <li xml:lang="ja">強力かつ包括的な数式</li>
+      <li xml:lang="ka">ფორმულების მძლავრი და სრული სია</li>
+      <li xml:lang="ko">강력하고 포괄적인 수식 목록</li>
+      <li xml:lang="lv">Jaudīgs un plašs formulu saraksts</li>
+      <li xml:lang="nl">Krachtige en uitgebreide lijst met formules</li>
+      <li xml:lang="pl">Przydatny i wyczerpujący spis równań</li>
+      <li xml:lang="pt">Lista de fórmulas poderosa e compreensiva</li>
+      <li xml:lang="pt-BR">Lista de fórmulas poderosa e compreensiva</li>
+      <li xml:lang="ru">Мощный и полный список формул</li>
+      <li xml:lang="sa">शक्तिशाली एवं व्यापक सूत्र सूची</li>
+      <li xml:lang="sk">Silný a úplný zoznam vzorcov</li>
+      <li xml:lang="sl">Zmogljiv in široko obsegajoč seznam formul</li>
+      <li xml:lang="sv">Kraftfull och omfattande formellista</li>
+      <li xml:lang="tr">Güçlü ve anlaşılabilir formüller listesi</li>
+      <li xml:lang="uk">Потужний і повний список функцій.</li>
+      <li xml:lang="zh-CN">强大的和全面的公式列表</li>
+      <li xml:lang="zh-TW">強大且完整的公式列表</li>
+      <li>Work in a familiar environment</li>
+      <li xml:lang="ar">اعمل في بيئة مألوفة</li>
+      <li xml:lang="bs">Rad u poznatom okruženju</li>
+      <li xml:lang="ca">Treball en un entorn familiar</li>
+      <li xml:lang="ca-valencia">Treball en un entorn familiar</li>
+      <li xml:lang="cs">Práce ve známém prostředí</li>
+      <li xml:lang="de">Arbeiten in einer bekannten Arbeitsumgebung</li>
+      <li xml:lang="el">Εργαστείτε σε γνώριμο περιβάλλον</li>
+      <li xml:lang="en-GB">Work in a familiar environment</li>
+      <li xml:lang="eo">Laboru en konata medio</li>
+      <li xml:lang="es">Funciona en un entorno familiar</li>
+      <li xml:lang="et">Töötamine harjumuspärases keskkonnas</li>
+      <li xml:lang="eu">Ingurune ezagun batean lan egitea</li>
+      <li xml:lang="fi">Työskentely tutussa ympäristössä</li>
+      <li xml:lang="fr">Travaillez dans un environnement familier</li>
+      <li xml:lang="ga">Obair i dtimpeallacht eolach</li>
+      <li xml:lang="gl">Traballe nun ambiente familiar.</li>
+      <li xml:lang="he">עבודה בסביבה מוכרת</li>
+      <li xml:lang="hu">Dolgozzon ismerős környezetben</li>
+      <li xml:lang="id">Bekerja dalam lingkungan yang familiar</li>
+      <li xml:lang="it">Opera in un ambiente familiare</li>
+      <li xml:lang="ja">使い慣れた環境での操作</li>
+      <li xml:lang="ka">იმუშავეთ ნაცნობ გარემოში</li>
+      <li xml:lang="ko">익숙한 환경에서 작업</li>
+      <li xml:lang="lv">Darbs pazīstamā vidē.</li>
+      <li xml:lang="nl">Werk in een bekende omgeving</li>
+      <li xml:lang="pl">Praca w znajomym środowisku</li>
+      <li xml:lang="pt">Funciona num ambiente familiar</li>
+      <li xml:lang="pt-BR">Funciona em um ambiente familiar</li>
+      <li xml:lang="ru">Работа в знакомом окружении</li>
+      <li xml:lang="sa">परिचिते वातावरणे कार्यं कुर्वन्तु</li>
+      <li xml:lang="sk">Práca v známom prostredí</li>
+      <li xml:lang="sl">Delo v že znanem okolju</li>
+      <li xml:lang="sv">Arbeta i en välbekant omgivning</li>
+      <li xml:lang="tr">Tanıdık bir çevrede çalışın</li>
+      <li xml:lang="uk">Робота у знайомому середовищі.</li>
+      <li xml:lang="zh-CN">与现有同类软件操作类似易上手</li>
+      <li xml:lang="zh-TW">在習慣的環境下操作</li>
+    </ul>
+  </description>
+  <url type="homepage">https://www.calligra.org/sheets/</url>
+  <url type="bugtracker">https://bugs.kde.org/enter_bug.cgi?format=guided&amp;product=calligrasheets</url>
+  <url type="help">https://docs.kde.org/?application=sheets</url>
+  <content_rating type="oars-1.1"/>
+  <custom>
+    <value key="KDE::matrix">#calligra:kde.org</value>
+  </custom>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://cdn.kde.org/screenshots/calligrasheets/calligrasheets.png</image>
+    </screenshot>
+  </screenshots>
+  <project_group>KDE</project_group>
+  <provides>
+    <binary>calligrasheets</binary>
+  </provides>
+  <launchable type="desktop-id">org.kde.calligra.sheets.desktop</launchable>
+  <developer id="org.kde">
+    <name>The KDE Community</name>
+    <url>https://kde.org</url>
+  </developer>
+  <releases>
+    <release version="26.08.2" date="2026-10-08"/>
+    <release version="26.08.1" date="2026-09-10"/>
+    <release version="26.08.0" date="2026-08-20"/>
+    <release version="26.04.3" date="2026-07-02"/>
+    <release version="26.04.2" date="2026-06-04"/>
+    <release version="26.04.1" date="2026-05-07"/>
+    <release version="26.04.0" date="2026-04-16"/>
+    <release version="25.12.3" date="2026-03-05"/>
+    <release version="25.12.2" date="2026-02-05"/>
+    <release version="25.12.1" date="2026-01-08"/>
+    <release version="25.12.0" date="2025-12-11"/>
+    <release version="25.08.3" date="2025-11-06"/>
+    <release version="25.08.2" date="2025-10-09"/>
+    <release version="25.08.1" date="2025-09-11"/>
+    <release version="25.08.0" date="2025-08-14"/>
+    <release version="25.04.3" date="2025-07-03"/>
+    <release version="25.04.2" date="2025-06-05"/>
+    <release version="25.04.1" date="2025-05-08"/>
+    <release version="25.04.0" date="2025-04-17"/>
+    <release version="24.12.3" date="2025-03-06"/>
+    <release version="24.12.2" date="2025-02-06"/>
+    <release version="24.12.1" date="2025-01-09"/>
+    <release version="24.12.0" date="2024-12-12"/>
+    <release version="4.0.1" date="2024-09-03">
+      <url>https://carlschwan.eu/2024/09/02/calligra-office-4.0.1/</url>
+      <description>
+        <p>This release add flatpak support to the Calligra Office suite.</p>
+        <p xml:lang="ar">يضيف هذا الإصدار دعم ”فلاتباك“ إلى مجموعة برامج كاليغرا أوفيس.</p>
+        <p xml:lang="ca">Aquesta versió afegeix el suport per a flatpak a la suite Calligra Office.</p>
+        <p xml:lang="ca-valencia">Esta versió afig el suport per a flatpak a la suite Calligra Office.</p>
+        <p xml:lang="cs">Tato verze přidává podporu pro Flatpak do kancelářského balíku Calligra Office.</p>
+        <p xml:lang="es">Esta versión añade compatibilidad con flatpak al paquete Calligra Office.</p>
+        <p xml:lang="fi">Tämä julkaisu lisää Calligra-toimisto-ohjelmistoon Flatpak-tuen.</p>
+        <p xml:lang="fr">Cette version ajoute la prise en charge de FlatPak à la suite Calligra Office.</p>
+        <p xml:lang="ga">Cuireann an eisiúint seo tacaíocht flatpak leis an tsraith Calligra Office.</p>
+        <p xml:lang="he">המהדורה הזאת מוסיפה תמיכה ב־Flatpak לחבילת הכלים המשרדיים Calligra.</p>
+        <p xml:lang="ia">Iste version adde supporto de flatpak al suite de Calligra Office</p>
+        <p xml:lang="it">Questa versione aggiunge il supporto flatpak alla suite Calligra Office.</p>
+        <p xml:lang="ka">ეს ვერსია ამატებს flatpak-ის მხარდაჭერა საოფისე პაკეტში Calligra.</p>
+        <p xml:lang="lv">Šī relīze „Calligra Office“ svītai pievienot „Flatpak“ atbalstu.</p>
+        <p xml:lang="nl">Deze uitgave voegt ondersteuning voor flatpak toe aan de Calligra kantoorsuite.</p>
+        <p xml:lang="pt-BR">Esta versão adiciona suporte ao Flatpak ao pacote Calligra Office.</p>
+        <p xml:lang="ru">В этом выпуске добавлена поддержка Flatpak для офисного пакета Calligra.</p>
+        <p xml:lang="sk">Toto vydanie pridáva podporu flatpak do kancelárskeho balíka Calligra.</p>
+        <p xml:lang="sl">Ta izdaja dodaja podporo za flatpak v paket Calligra Office.</p>
+        <p xml:lang="sv">Den här utgåvan lägger till stöd för flatpak i Calligra-kontorssviten.</p>
+        <p xml:lang="tr">Bu yayım, Calligra ofis paketine Flatpak desteği ekler.</p>
+        <p xml:lang="uk">У цьому випуску додано підтримку flatpak для усього комплекту програм Calligra Office.</p>
+        <p xml:lang="zh-CN">这个版本为 Calligra Office 套件添加了 flatpak 支持。</p>
+        <p xml:lang="zh-TW">這個版本為 Calligra 辦公軟體新增 Flatpak 支援。</p>
+      </description>
+    </release>
+    <release version="4.0.0" date="2024-08-27">
+      <url>https://carlschwan.eu/2024/08/27/calligra-office-4.0-is-out/</url>
+      <description>
+        <p>The most significant changes are that Calligra has been fully transitioned to Qt6 and KF6, along with a major overhaul of its user interface.</p>
+        <p xml:lang="ar">التغييرات الأكثر أهمية هي أن كالغرا قد انتقلت بالكامل إلى Qt6 و KF6، إلى جانب إجراء تعديل جذري على واجهة المستخدم الخاصة بها.</p>
+        <p xml:lang="ca">Els canvis més significatius són que el Calligra s'ha transformat completament a les Qt6 i els KF6, juntament amb una revisió important de la seva interfície d'usuari.</p>
+        <p xml:lang="ca-valencia">Els canvis més significatius són que Calligra s'ha transformat completament a les Qt6 i els KF6, juntament amb una revisió important de la seua interfície d'usuari.</p>
+        <p xml:lang="cs">Nejvýznamnějšími změnami jsou úplný přechod Calligry na Qt6 a KF6 a zásadní přepracování uživatelského rozhraní.</p>
+        <p xml:lang="es">Los cambios más significativos son que Calligra ha realizado la transición completa a Qt6 y KF6, y que se ha llevado a cabo una gran reorganización de la interfaz de usuario.</p>
+        <p xml:lang="fi">Merkittävimpiä muutoksia on Calligran siirros kokonaisuudessaan Qt6:een ja KF6:een sekä käyttöliittymän iso uudistus.</p>
+        <p xml:lang="fr">Les modifications les plus significatives sont que Calligra a été entièrement migré vers Qt6 et KF6 et une refonte majeure de son interface utilisateur.</p>
+        <p xml:lang="ga">Is iad na hathruithe is suntasaí ná gur aistríodh Calligra go hiomlán go Qt6 agus KF6, mar aon le hathchóiriú mór ar a chomhéadan úsáideora.</p>
+        <p xml:lang="he">השינויים המשמעותיים ביותר ב־Calligra הם המעבר המלא ל־Qt6 ו־KF6, לרבות מתיחת פנים משמעותית של ממשק המשתמש.</p>
+        <p xml:lang="it">Le modifiche più significative riguardano la transizione completa di Calligra a Qt6 e KF6, nonché una revisione radicale della sua interfaccia utente.</p>
+        <p xml:lang="ka">ყველაზე მნიშვნელოვანი ცვლილება ისაა, რომ Calligra ახლა სრულადაა გადატანილი Qt6-ზე და KF6-ზე, ინტერფეისის ძირეული ცვლილების ჩათვლით.</p>
+        <p xml:lang="lv">Nozīmīgākās izmaiņas ir tas, ka „Calligra“ tagad pilnībā izmanto „Qt6“ un KF6, kā arī ir pilnīgi pārstrādāta programmas saskarne.</p>
+        <p xml:lang="nl">De belangrijkste wijzigingen zijn dat Calligra volledig is overgezet naar Qt6 en KF6, samen met een belangrijke herziening van zijn gebruikersinterface.</p>
+        <p xml:lang="pt-BR">As mudanças mais significativas são a transição completa do Calligra para Qt6 e KF6, juntamente com uma grande reformulação de sua interface de usuário.</p>
+        <p xml:lang="ru">Наиболее значительные изменения: полный перевод Calligra на Qt6 и KF6, а также масштабная переработка пользовательского интерфейса.</p>
+        <p xml:lang="sk">Najvýznamnejšie zmeny sú, že Calligra bola úplne prevedená na Qt6 a KF6, spolu s výraznou prestavbou používateľského rozhrania.</p>
+        <p xml:lang="sl">Najpomembnejše spremembe so, da je bila Calligra v celoti preusmerjena na Qt6 in KF6, skupaj z obsežno prenovo uporabniškega vmesnika.</p>
+        <p xml:lang="sv">De viktigaste förändringarna är att Calligra har helt övergått till Qt6 och KF6, tillsammans med en större översyn av användargränssnittet.</p>
+        <p xml:lang="tr">En önemli değişikliklerden biri, Calligra’nın artık Qt6’ya ve KF6’ya tümüyle geçmiş olması ve kullanıcı arayüzünün tümüyle elden geçirilmesidir.</p>
+        <p xml:lang="uk">Найбільш суттєвими змінами є повний перехід Calligra на Qt6 та KF6, а також значний перегляд інтерфейсу користувача.</p>
+        <p xml:lang="zh-CN">最重要的变化是 Calligra 已经完全过渡到 Qt6 和 KF6，同时对其用户界面进行了大修。</p>
+        <p xml:lang="zh-TW">最大的變更是 Calligra 已完全移植到 Qt6 與 KF6，同時大幅更新使用者介面。</p>
+        <p>As part of the Qt6 port, Sheets lost its scripting system based on the unmaintained Kross framework. Visually a noticable change is that the cell editor moved from a docker positioned on the left of the spreadsheet view by default to a normal widget on the top. This takes a lot less space which can be used by the spreadsheet.</p>
+        <p xml:lang="ar">كجزء من منفذ Qt6، فقد شيت نظام البرمجة النصية الخاص به القائم على إطار عمل Kross غير المدعوم. ومن التغييرات الملحوظة بصريًا أن محرر الخلايا انتقل من موضعه الافتراضي على يسار عرض جدول البيانات إلى عنصر واجهة مستخدم عادي في الأعلى. وهذا يستهلك مساحة أقل بكثير يمكن استخدامها في جدول البيانات.</p>
+        <p xml:lang="ca">Com a part de l'adaptació a les Qt6, el Sheets ha perdut el seu sistema de creació de scripts basat en l'entorn de treball Kross que no tenia manteniment. Visualment un canvi notable és que l'editor de cel·les s'ha mogut des d'un acoblador situat a l'esquerra de la vista del full de càlcul de manera predeterminada a un giny normal a la part superior. Això necessita molt menys espai que pot ser utilitzat pel full de càlcul.</p>
+        <p xml:lang="ca-valencia">Com a part de l'adaptació a les Qt6, Sheets ha perdut el seu sistema de creació de scripts basat en l'entorn de treball Kross que no tenia manteniment. Visualment un canvi notable és que l'editor de cel·les s'ha mogut des d'un acoblador situat a l'esquerra de la vista del full de càlcul de manera predeterminada a un giny normal a la part superior. Açò necessita molt menys espai que pot ser utilitzat pel full de càlcul.</p>
+        <p xml:lang="cs">V rámci portování na Qt6 přišel program Sheets o svůj skriptovací systém založený na již neudržovaném frameworku Kross. Z vizuálního hlediska je patrnou změnou to, že editor buněk se přesunul z panelu, který byl ve výchozím nastavení umístěn vlevo od zobrazení tabulky, na běžný widget v horní části. To zabírá mnohem méně místa, které tak může tabulka využít.</p>
+        <p xml:lang="es">Como parte de la adaptación a Qt6, Sheets ha perdido su sistema de guiones basado en la infraestructura Kross, que carecía de mantenimiento. Un notable cambio visual es que el editor de celdas se ha movido de un panel situado a la izquierda de la vista de la hoja de cálculo (de forma predeterminada) a un widget normal en la parte superior, que ocupa mucho menos espacio que puede usar la hoja de cálculo.</p>
+        <p xml:lang="fi">Osana Qt6-siirrosta Sheets menettii ylläpitämättömään Kross-kehykseen pohjautuvan skriptausjärjestelmänsä. Ulkoisesti huomattava muutos on, että solumuokkain siirtyi laskentataulukkonäkymän vasemman puolen telakasta oletuksena tavalliseksi alkioksi yläosaan. Näin saatiin laskentataulukkolle lisää tilaa.</p>
+        <p xml:lang="fr">Dans le cadre du portage vers Qt6, Sheets a perdu son système de langage de scripts reposant sur l'environnement de développement Kross, qui n'est plus maintenu. Un changement visuel notable est que l'éditeur de cellules est passé d'un panneau positionné par défaut à gauche de la vue de la feuille de calcul à un composant graphique normal en haut. Cela prend beaucoup moins de place, qui peut être utilisée par la feuille de calcul.</p>
+        <p xml:lang="ga">Mar chuid den phort Qt6, chaill Sheets a chóras scriptithe bunaithe ar chreatlach Kross neamhchothabháilte. Athrú suntasach ó thaobh amhairc de ná gur bhog an t-eagarthóir cealla ó dhocálaí suite ar thaobh na láimhe clé den radharc scarbhileog de réir réamhshocraithe go giuirléid gnáth ar an mbarr. Tógann sé seo i bhfad níos lú spáis is féidir leis an scarbhileog a úsáid.</p>
+        <p xml:lang="he">כחלק מההסבה ל־Qt6, „גיליונות” איבדה את מערכת הסקריפטים שלה שמבוססת על תשתית Kross שאינה מתעדכנת יותר. השינוי החזותי המובהק הוא שעורך התאים הועבר ממעגן שמוצב מימין לתצוגת גיליון הנתונים כברירת מחדל לווידג׳ט רגיל למעלה. זה דורש פחות מקום שמעתה ניתן לפנות אותו לטובת גיליון הנתונים.</p>
+        <p xml:lang="it">Con parte della conversione a Qt6, Sheets ha perso il suo sistema di scripting basato sul framework Kross, ormai non più supportato. Visivamente, un cambiamento notevole è che l'editor di celle è passato da un'area di aggancio posizionata in modo predefinito a sinistra della vista del foglio di calcolo a un normale oggetto nella parte alta. Questo occupa molto meno spazio, che può essere utilizzato dal foglio di calcolo.</p>
+        <p xml:lang="ka">როგორც Qt6-ზე გადატანის ნაწილი, Sheets-მა დაკარგა თავისი სკრიტინგის სისტემა, რომელიც ყურადღებამიუქცეველ Kross ბიბლიოთეკაზე იყო დაფუძნებული. ვიზუალურად შესამჩნევი თვისება ისაა, რომ უჯრედის რედაქტორი გადატანილია ელცხრილის მარცხენა მხარეს არსებული პანელიდან ზედა მხარეს ნორმალურ ვიჯეტში. ამას ნაკლები ადგილი მიაქვს, რომელიც, შეგიძლიათ, ელცხრილისთვის გამოიყენოთ.</p>
+        <p xml:lang="lv">Kā daļa no „Qt6“ porta, „Sheets“ ir zaudējis skriptēšanas sistēmu, kuras pamatā bija vairs neuzturētais „Kross“ satvars. Starp vizuāli redzamajām izmaiņām jāmin tad, ka šūnu redaktors ir pārvietots no dokota lodziņa izklājlapas skata kreisajā pusē pēc noklusējuma ir normālu logdaļu augšpusē. Tādējādi tas izklājlapā aizņem daudz mazāk vietas.</p>
+        <p xml:lang="nl">Als onderdeel van de overzetting naar Qt6 verloor Sheets zijn scriptingsysteem, gebaseerd op het niet langer onderhouden Kross-framework. Visueel is een opvallende verandering dat de celbewerker is verplaatst van een vastzetter aan de linkerkant van de rekenbladweergave naar een normaal widget bovenaan. Dit neemt veel minder ruimte in beslag, die nu door het rekenblad zelf kan worden gebruikt.</p>
+        <p xml:lang="pt-BR">Como parte da migração para o Qt6, o Sheets perdeu seu sistema de scripts baseado no framework Kross, que não recebe mais manutenção. Visualmente, uma mudança perceptível é que o editor de células passou de um painel posicionado à esquerda da visualização da planilha por padrão para um widget normal na parte superior. Isso ocupa muito menos espaço, que pode ser usado pela planilha.</p>
+        <p xml:lang="ru">В рамках перехода на Qt6 в Sheets была удалена система сценариев, основанная на более не поддерживаемом фреймворке Kross. Заметным визуальным изменением стало перемещение редактора ячеек из панели, по умолчанию расположенной слева от представления электронной таблицы, в обычный виджет сверху. Это занимает значительно меньше места, которое теперь может использоваться электронной таблицей.</p>
+        <p xml:lang="sk">Ako súčasť portu na Qt6, Sheets stratil svoj skriptovací systém založený na neudržiavanom frameworku Kross. Vizuálne výraznou zmenou je, že editor buniek sa teraz zobrazuje v hornej časti editovacej oblasti a nie ako súčasť panela nástrojov.</p>
+        <p xml:lang="sl">Kot del prenosa na Qt6 je Sheets izgubil svoj skriptni sistem, ki je temeljil na nevzdrževanem ogrodju Kross. Vizualno opazna sprememba je, da se je urejevalnik celic premaknil iz priklopnega okna, ki je bilo privzeto nameščeno na levi strani pogleda preglednice, v običajen pripomoček na vrhu. To zavzame veliko manj prostora, ki ga lahko uporabi preglednica.</p>
+        <p xml:lang="sv">Som en del av konverteringen till Qt6 förlorade Sheets sitt skriptsystem baserat på det Kross-ramverket som inte längre underhålls. Visuellt sett är en märkbar förändring att celleditorn flyttats från en panel placerad till vänster på kalkylbladet till en vanlig grafisk komponent längst upp. Det tar upp mycket mindre utrymme som kan användas av kalkylbladet.</p>
+        <p xml:lang="tr">Qt6 aktarımının bir parçası olarak Tablolar, artık bakımı yapılmayan Kross çatısının sağladığı betik yazımı desteğini kaybetti. Görsel bir değişiklik olarak, hücre düzenleyicisi soldaki panel konumundan üstteki normal bir konuma taşındı. Bu, hesap sayfasının kullanabileceği bayağı bir alan açtı.</p>
+        <p xml:lang="uk">У рамках портування Qt6, Таблиці втратили свою систему скриптів, засновану на непідтримуваних бібліотеках Kross. Візуально помітною зміною є те, що редактор комірок перемістився з бічної панелі, типово розташованої ліворуч від панелі перегляду електронної таблиці, до звичайного віджета згори. Це набагато зменшує займане місце, яке може використати для електронної таблиці.</p>
+        <p xml:lang="zh-CN">作为 Qt6 移植工作的一部分，Sheets 失去了基于失去维护的 Kross 框架的脚本系统。视觉上可注意的更改是单元格编辑器默认从位于电子表格视图左侧的停靠处移至顶部的普通部件。这花费的空间要少得多，这样电子表格就能使用空出的。</p>
+        <p xml:lang="zh-TW">移植到 Qt6 的同時 Sheets 也不再使用舊的 Kross 框架提供指令稿系統。這代表指令稿功能已移除。在外觀上，儲存格編輯器原本預設會作為工具面板放在工作表的左邊，現在它被改成放在上方的普通元件，來大幅節省空間給工作表利用。</p>
+      </description>
+    </release>
+  </releases>
+</component>

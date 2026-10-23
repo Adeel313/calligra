@@ -1,0 +1,47 @@
+# translation of SpellCheckPlugin.po to hebrew
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# tahmar1900 <tahmar1900@gmail.com>, 2008.
+# Elkana Bardugo <ttv200@gmail.com>, 2017. #zanata
+# SPDX-FileCopyrightText: 2024 Yaron Shahrabani <sh.yaron@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: calligra_textediting_spellcheck\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2024-05-11 06:39+0300\n"
+"Last-Translator: Yaron Shahrabani <sh.yaron@gmail.com>\n"
+"Language-Team: צוות התרגום של KDE ישראל\n"
+"Language: he\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 23.08.5\n"
+"Plural-Forms: nplurals=4; plural=(n == 1) ? 0 : ((n == 2) ? 1 : ((n > 10 && "
+"n % 10 == 0) ? 2 : 3));\n"
+
+#: SpellCheck.cpp:45
+#, kde-format
+msgid "Configure &Spell Checking..."
+msgstr "הגדרת &בדיקת איות…"
+
+#: SpellCheck.cpp:49
+#, kde-format
+msgid "Auto Spell Check"
+msgstr "בדיקת איות אוטומטית"
+
+#: SpellCheckFactory.cpp:16
+#, kde-format
+msgid "Check Spelling"
+msgstr "בדיקת איות"
+
+#: SpellCheckMenu.cpp:28
+#, kde-format
+msgid "Spelling"
+msgstr "איות"
+
+#: SpellCheckMenu.cpp:32
+#, kde-format
+msgid "Add to Dictionary"
+msgstr "הוספה למילון"

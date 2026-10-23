@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "Formula Shape",
+        "Name[ar]": "شكل صيغة",
+        "Name[ca@valencia]": "Forma de la fórmula",
+        "Name[ca]": "Forma de la fórmula",
+        "Name[cs]": "Tvar vzorce",
+        "Name[de]": "Formel-Objekt",
+        "Name[el]": "Σχήμα φόρμουλας",
+        "Name[en_GB]": "Formula Shape",
+        "Name[eo]": "Formulo Formo",
+        "Name[es]": "Forma de fórmula",
+        "Name[eu]": "Formula-forma",
+        "Name[fi]": "Kaavakuvio",
+        "Name[fr]": "Forme de formule",
+        "Name[ga]": "Cruth Foirmle",
+        "Name[gl]": "Obxecto de fórmula",
+        "Name[he]": "צורת נוסחה",
+        "Name[it]": "Forma di formula",
+        "Name[ka]": "ფორმულის ფორმა",
+        "Name[lv]": "Formulas objekts",
+        "Name[nl]": "Formula-vorm",
+        "Name[pl]": "Kształt formuły",
+        "Name[pt_BR]": "Forma de Fórmula",
+        "Name[ru]": "Объект формулы",
+        "Name[sa]": "सूत्राकारः",
+        "Name[sk]": "Tvar vzorca",
+        "Name[sl]": "Oblika formule",
+        "Name[sv]": "Formelform",
+        "Name[tr]": "Formül Şekli",
+        "Name[uk]": "Форма формули",
+        "Name[zh_CN]": "公式形状",
+        "Name[zh_TW]": "公式元件",
+        "ServiceTypes": [
+            "Calligra/Flake"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

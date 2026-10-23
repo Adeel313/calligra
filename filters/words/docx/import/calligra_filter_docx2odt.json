@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "MS Word 2007 Import Filter for Words",
+        "Name[ar]": "مرشح استيراد MS Word 2007 لـ Words",
+        "Name[ca@valencia]": "Filtre d'importació MS Word 2007 per a Words",
+        "Name[ca]": "Filtre d'importació MS Word 2007 per al Words",
+        "Name[cs]": "Importní filtr MS Word 2007 pro Words",
+        "Name[de]": "MS-Word-2007-Importfilter",
+        "Name[el]": "MS Word 2007 φίλτρο εισαγωγής για λέξεις",
+        "Name[en_GB]": "MS Word 2007 Import Filter for Words",
+        "Name[eo]": "MS Word 2007 Importfiltrilo por Words",
+        "Name[es]": "Filtro de importación MS Word 2007 para Words",
+        "Name[eu]": "Words-en MS Word 2007 inportatzeko iragazkia",
+        "Name[fi]": "Wordsin MS Word 2007 -tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « MS Word 2007 » de Words",
+        "Name[ga]": "Scagaire Iompórtála MS Word 2007 do Words",
+        "Name[gl]": "Filtro para Words de importación de MS Word 2007",
+        "Name[it]": "Filtro di importazione MS Word 2007 per Words",
+        "Name[ka]": "MS Word 2007 -ის გატანის ფილტრი Words-სთვის",
+        "Name[lv]": "„Words“ „MS Word 2007“ importa filtrs",
+        "Name[nl]": "MS Word 2007-importfilter voor Words",
+        "Name[pl]": "Filtr importu MS Word 2007 dla Słów",
+        "Name[pt_BR]": "Filtro de importação MS Word 2007 para o Words",
+        "Name[ru]": "Фильтр импорта MS Word 2007 для Words",
+        "Name[sa]": "MS Word 2007 शब्दानां कृते आयात फ़िल्टर",
+        "Name[sk]": "Filter importu MS Word 2007 pre Words",
+        "Name[sl]": "MS Word 2007 filter uvoza za Words",
+        "Name[sv]": "MS Word 2007-importfilter för Words",
+        "Name[tr]": "Sözcükler için MS Word 2007 İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування даних MS Word 2007 для Words",
+        "Name[zh_CN]": "Words MS Word 2007 导入过滤器",
+        "Name[zh_TW]": "Words 的 Microsoft Word 2007 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/vnd.oasis.opendocument.text",
+    "X-KDE-Import": "application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.wordprocessingml.template,application/vnd.ms-word.document.macroEnabled.12,application/vnd.ms-word.template.macroEnabled.12",
+    "X-KDE-Weight": 1
+}

@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "ODT to Mobi Export Filter",
+        "Name[ar]": "مرشح تصدير ODT إلى Mobi",
+        "Name[ca@valencia]": "Filtre d'exportació ODT a Mobi",
+        "Name[ca]": "Filtre d'exportació ODT a Mobi",
+        "Name[cs]": "Exportní filtr ODT do Mobi",
+        "Name[de]": "Exportfilter ODT zu Mobi",
+        "Name[el]": "Φίλτρο εξαγωγής ODT σε Mobi",
+        "Name[en_GB]": "ODT to Mobi Export Filter",
+        "Name[eo]": "ODT al Mobi Eksporta Filtrilo",
+        "Name[es]": "Filtro de exportación ODT a Mobi",
+        "Name[eu]": "ODT-tik Mobi-ra esportatzeko iragazkia",
+        "Name[fi]": "ODT → Mobi -vientisuodatin",
+        "Name[fr]": "Filtre d'exportation du format « ODT » vers « Mobi »",
+        "Name[ga]": "Scagaire Easpórtála ODT go Mobi",
+        "Name[gl]": "Filtro de exportacións de ODT a Mobi",
+        "Name[he]": "מסנן ייצוא ODT ל־Mobi",
+        "Name[it]": "Filtro di esportazione da ODT a Mobi",
+        "Name[ka]": "ODT -დან Mobi -ში გატანის ფილტრი",
+        "Name[lv]": "No ODT uz „Mobi“ eksporta filtrs",
+        "Name[nl]": "ODT naar Mobi exportfilter",
+        "Name[pl]": "Filtr eksportu ODT do Mobi",
+        "Name[pt_BR]": "Filtro de exportação ODT para Mobi",
+        "Name[ru]": "Фильтр экспорта из ODT в Mobi",
+        "Name[sa]": "ODT to Mobi निर्यात फ़िल्टर",
+        "Name[sk]": "Filter exportu ODT do Mobi",
+        "Name[sl]": "Filter izvoza ODT v Mobi",
+        "Name[sv]": "ODT till Mobi-exportfilter",
+        "Name[tr]": "ODT–Mobi Dışa Aktarma Süzgeci",
+        "Name[uk]": "Фільтр експорту ODT до Mobi",
+        "Name[zh_CN]": "ODT 到 Mobi 导出过滤器",
+        "Name[zh_TW]": "ODT 到 Mobi 匯出過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/x-mobipocket-ebook",
+    "X-KDE-Import": "application/vnd.oasis.opendocument.text",
+    "X-KDE-Weight": 1
+}

@@ -1,0 +1,238 @@
+/* This file is part of the KDE project
+   SPDX-FileCopyrightText: 1998, 1999, 2000 Torben Weis <weis@kde.org>
+   SPDX-FileCopyrightText: 2004 David Faure <faure@kde.org>
+   SPDX-FileCopyrightText: 2006 Martin Pfeiffer <hubipete@gmx.net>
+
+   SPDX-License-Identifier: LGPL-2.0-or-later
+*/
+
+#ifndef KO_DOCUMENT_INFO_H
+#define KO_DOCUMENT_INFO_H
+
+#include <QMap>
+#include <QObject>
+#include <QString>
+#include <QStringList>
+
+#include "koodf_export.h"
+#include <KoXmlReader.h>
+#include <QXmlStreamReader>
+
+class QDomDocument;
+class QDomElement;
+class QXmlStreamWriter;
+class KoStore;
+
+/**
+ * @short The class containing all meta information about a document
+ *
+ * @author Torben Weis <weis@kde.org>
+ * @author David Faure <faure@kde.org>
+ * @author Martin Pfeiffer <hubipete@gmx.net>
+ * @see KoDocumentInfoDlg
+ *
+ * This class contains the meta information for a document. They are
+ * stored in two QMap and can be accessed through aboutInfo() and authorInfo().
+ * The about info can be changed with setAboutInfo() and setAuthorInfo()
+ */
+class KOODF_EXPORT KoDocumentInfo : public QObject
+{
+    Q_OBJECT
+
+public:
+    /**
+     * The constructor
+     * @param parent a pointer to the parent object
+     */
+    explicit KoDocumentInfo(QObject *parent = nullptr);
+
+    /** The destructor */
+    ~KoDocumentInfo() override;
+
+    /**
+     * Load the KoDocumentInfo from an OASIS document
+     * @param reader the QXmlStreamReader with the metaInformation
+     * @return true if success
+     */
+    bool loadOasis(QXmlStreamReader &reader);
+
+    /**
+     * Save the KoDocumentInfo to an OASIS document
+     * @param store a pointer to a KoStore to save in
+     * @return true if success
+     */
+    bool saveOasis(KoStore *store);
+
+    /**
+     * Load the KoDocumentInfo from an Calligra-1.3 DomDocument
+     * @param doc the QDomDocument to load from
+     * @return true if success
+     */
+    bool load(const KoXmlDocument &doc);
+
+    /**
+     * Save the KoDocumentInfo to an Calligra-1.3 DomDocument
+     * @return the QDomDocument to which was saved
+     */
+    QDomDocument save(QDomDocument &doc);
+
+    /**
+     * Set information about the author.
+     * This will override any information retrieved from the author profile
+     * But it does not change the author profile
+     * Note: authorInfo() will not return the new value until the document has been
+     * saved by the user.(autosave doesn't count)
+     * @param info the kind of information to set
+     * @param data the data to set for this information
+     */
+    void setAuthorInfo(const QString &info, const QString &data);
+
+    /**
+     * Obtain information about the author
+     * @param info the kind of information to obtain
+     * @return a QString with the information
+     */
+    QString authorInfo(const QString &info) const;
+
+    /**
+     * Set information about the document
+     * @param info the kind of information to set
+     * @param data the data to set for this information
+     */
+    void setAboutInfo(const QString &info, const QString &data);
+
+    /**
+     * Obtain information about the document
+     * @param info the kind of information to obtain
+     * @return a QString with the information
+     */
+    QString aboutInfo(const QString &info) const;
+
+    /**
+     * Obtain the generator of the document, as it was loaded from the document
+     */
+    QString originalGenerator() const;
+
+    /**
+     * Sets the original generator of the document. This does not affect what gets
+     * saved to a document in the meta:generator field, it only changes what
+     * originalGenerator() will return.
+     */
+    void setOriginalGenerator(const QString &generator);
+
+    /** Resets part of the meta data */
+    void resetMetaData();
+
+    /** Takes care of updating the document info from configuration correctly */
+    void updateParameters();
+
+    /**
+     * The names of the document's custom properties, i.e. the meta:user-defined entries
+     * that aren't one of Calligra's own extended author fields (see authorInfo()).
+     */
+    QStringList customPropertyNames() const;
+
+    /**
+     * A custom property's value, as its literal ODF text representation (e.g. "3.14",
+     * "2024-01-02", "PT1H30M", "true", or plain text for an untyped/string property).
+     */
+    QString customPropertyValue(const QString &name) const;
+
+    /**
+     * A custom property's meta:value-type ("float", "date", "time", "boolean" or "string"),
+     * or an empty string if it was saved without one (a plain untyped value).
+     */
+    QString customPropertyValueType(const QString &name) const;
+
+    /**
+     * Sets a custom document property, saved as its own ODF meta:user-defined element.
+     * @param name the property's name (meta:name)
+     * @param value the property's ODF text representation
+     * @param valueType meta:value-type ("float", "date", "time", "boolean", "string"), or empty for untyped
+     */
+    void setCustomProperty(const QString &name, const QString &value, const QString &valueType = QString());
+
+    /** Removes a custom document property. */
+    void removeCustomProperty(const QString &name);
+
+private:
+    /// Bumps the editing cycles count and save date, and then calls updateParameters
+    void updateParametersAndBumpNumCycles();
+
+    /**
+     * Set information about the author
+     * This sets what is actually saved to file. The public method setAuthorInfo() can be used to set
+     * values that override what is fetched from the author profile. During saveParameters() author
+     * profile and any overrides is combined resulting in calls to this method.
+     * @param info the kind of information to set
+     * @param data the data to set for this information
+     */
+    void setActiveAuthorInfo(const QString &info, const QString &data);
+
+    /**
+     * Save the information about the document to an OASIS file
+     * @param writer a reference to the QXmlStreamWriter to write in
+     * @return true if success
+     */
+    bool saveOasisAboutInfo(QXmlStreamWriter &writer);
+
+    /**
+     * Load the information about the document from a Calligra-1.3 file
+     * @param e the element to load from
+     * @return true if success
+     */
+    bool loadAboutInfo(const KoXmlElement &e);
+
+    /**
+     * Save the information about the document to a Calligra-1.3 file
+     * @param doc the QDomDocument to save in
+     * @return the QDomElement to which was saved
+     */
+    QDomElement saveAboutInfo(QDomDocument &doc);
+
+    /**
+     * Load the information about the document from a Calligra-1.3 file
+     * @param e the element to load from
+     * @return true if success
+     */
+    bool loadAuthorInfo(const KoXmlElement &e);
+
+    /**
+     * Save the information about the author to a Calligra-1.3 file
+     * @param doc the QDomDocument to save in
+     * @return the QDomElement to which was saved
+     */
+    QDomElement saveAuthorInfo(QDomDocument &doc);
+
+    /**
+     * Save the information about the document to an OASIS file
+     * @param writer a reference to the QXmlStreamWriter to write in
+     * @return true if success
+     */
+    bool saveOasisAuthorInfo(QXmlStreamWriter &writer);
+
+    /** A QStringList containing all tags for the document information */
+    QStringList m_aboutTags;
+    /** The subset of m_aboutTags that are serialized as meta:document-statistic's attributes */
+    QStringList m_documentStatisticTags;
+    /** A QStringList containing all tags for the author information */
+    QStringList m_authorTags;
+    /** The map containing information about the author */
+    QMap<QString, QString> m_authorInfo;
+    /** The map containing information about the author set programmatically*/
+    QMap<QString, QString> m_authorInfoOverride;
+    /** The map containing information about the document */
+    QMap<QString, QString> m_aboutInfo;
+    /** Custom (meta:user-defined) document properties, keyed by name */
+    QMap<QString, QString> m_customProperties;
+    /** meta:value-type of each entry in m_customProperties that has one */
+    QMap<QString, QString> m_customPropertyTypes;
+    /** The original meta:generator of the document */
+    QString m_generator;
+    const QString m_keywordSeparator = QStringLiteral(";");
+
+Q_SIGNALS:
+    void infoUpdated(const QString &info, const QString &data);
+};
+
+#endif

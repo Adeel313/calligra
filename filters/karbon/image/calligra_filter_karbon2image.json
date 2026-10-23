@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Karbon JPEG/PNG Export Filter",
+        "Name[ar]": "مرشح تصدير JPEG/PNG لكربون",
+        "Name[ca@valencia]": "Filtre d'exportació JPEG/PNG de Karbon",
+        "Name[ca]": "Filtre d'exportació JPEG/PNG del Karbon",
+        "Name[cs]": "Exportní filtr do formátu JPEG/PNG pro Karbon",
+        "Name[de]": "Karbon JPEG-/PNG-Exportfilter",
+        "Name[el]": "Φίλτρο εξαγωγής Karbon JPEG/PNG",
+        "Name[en_GB]": "Karbon JPEG/PNG Export Filter",
+        "Name[eo]": "Karbon JPEG/PNG-Eksportfiltrilo",
+        "Name[es]": "Filtro de exportación JPEG/PNG de Karbon",
+        "Name[eu]": "Karbon-en JPEG/PNG esportatzeko iragazkia",
+        "Name[fi]": "Karbonin JPEG/PNG-vientisuodatin",
+        "Name[fr]": "Filtre d'exportation « JPEG » / « PNG » de Karbon",
+        "Name[ga]": "Scagaire Easpórtála JPEG/PNG Karbon",
+        "Name[gl]": "Filtro para Karbon de exportación de JPEG e PNG",
+        "Name[he]": "מסנן ייצוא JPEG/PNG של Karbon",
+        "Name[it]": "Filtro di esportazione JPEG/PNG per Karbon",
+        "Name[ka]": "Karbon JPEG/PNG გატანის ფილტრი",
+        "Name[lv]": "„Karbon“ JPEG/PNG eksporta filtrs",
+        "Name[nl]": "JPEG/PNG-exportfilter voor Karbon",
+        "Name[pl]": "Filtr eksportu JPEG/PNG z Karbon",
+        "Name[pt_BR]": "Filtro de exportação JPEG/PNG para o Karbon",
+        "Name[ru]": "Фильтр экспорта JPEG/PNG Karbon",
+        "Name[sa]": "कार्बन JPEG/PNG निर्यात फ़िल्टर",
+        "Name[sk]": "Filter exportu JPEG/PNG pre Karbon",
+        "Name[sl]": "Karbon filter izvoza JPEG/PNG",
+        "Name[sv]": "Karbon JPEG/PNG-exportfilter",
+        "Name[tr]": "Karbon JPEG/PNG Dışa Aktarma Süzgeci",
+        "Name[uk]": "Фільтр експорту JPEG/PNG для Karbon",
+        "Name[zh_CN]": "Karbon 的 JPEG/PNG 导出过滤器",
+        "Name[zh_TW]": "Karbon JPEG/PNG 匯出過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "image/jpeg,image/png",
+    "X-KDE-Import": "application/vnd.oasis.opendocument.graphics",
+    "X-KDE-Weight": 1
+}

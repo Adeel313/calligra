@@ -1,0 +1,597 @@
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Andrej Vernekar <andrej.vernekar@moj.net>, 2008, 2012, 2013.
+# Matjaž Jeran <matjaz.jeran@amis.net>, 2020.
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2022-11-10 12:05+0100\n"
+"Last-Translator: Matjaž Jeran <matjaz.jeran@amis.net>\n"
+"Language-Team: Slovenian <lugos-slo@lugos.si>\n"
+"Language: sl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%100==1 ? 1 : n%100==2 ? 2 : n%100==3 || n"
+"%100==4 ? 3 : 0);\n"
+"X-Generator: Poedit 3.1.1\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "N&astavi samodejno popravljanje..."
+
+#: Autocorrect.cpp:30
+#, kde-format
+msgid "Enable Autocorrection"
+msgstr "Omogoči samodejno popravljanje"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "Samodejno popravi"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Preprosto samodejno popravljanje"
+
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Zaznaj začetek novega stavka in poskrbi da bo prvi znak vedno velika črka"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Samodejno pretvori prvo črko stavka v veliko črko\n"
+#~ "(npr. »moja hiša. v tem mestu« v »moja hiša. V tem mestu«)"
+
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "V vseh besedah se preveri če je prišlo do pogoste napake ko je bila tipka "
+#~ "»Shift« pritisnjena nekoliko predolgo. Če morajo imeti katere izmed besed "
+#~ "dve veliki črki, potem morajo te biti dodane v zavihku »Izjeme«."
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Pretvori dva velika znaka v enega velikega in enega majhnega\n"
+#~ " (npr. ODlično v Odlično)"
+
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Zaznaj ko je vnešen URL in poskrbi za oblikovanje ki ustreza načinu kot "
+#~ "bi URL prikazal spletni brskalnik."
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "Samodejno oblikuj &URL-je"
+
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Poskrbi da ni moč vnesti več kot en presledek, saj je to običajna napaka, "
+#~ "ki jo je v oblikovanem besedilu težko najti."
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Prepreči dvojne presledke"
+
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Ohrani pravilno oblikovanje in zamikanje stavkov tako da so presledki na "
+#~ "začetku in koncu odstavka samodejno odstranjeni."
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Odstrani presledke na začetku in koncu odstavkov"
+
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Ko porabite _podčrtanje_ ali *poudarjanje* bo besedilo med podčrtajema "
+#~ "ali zvezdicama samodejno podčrtano ali poudarjeno."
+
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Samodejno poudari in podčrtaj"
+
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "Večina običajnih ulomkov bo pretvorjena v kolikor so na razpolago"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "Zamenjaj 1/2... z  ½..."
+
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Pri tipkanju »1)« ali podobnega na začetku odstavka, samodejno pretvori "
+#~ "odstavek da bo uporabljal ta slog številčenja. Prednost pri tem je, da "
+#~ "bodo naslednji odstavki prav tako številčeni in bodo razmiki pravilno "
+#~ "narejeni."
+
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "Uporabi s&amodejno številčenje za oštevilčene odstavke"
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "Zamenjaj 1st ... z 1^st ..."
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "Imena dni se prično z veliko črko"
+
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Samodejno pretvori odstavek v obliko seznama ko vtipkate »*« ali »-« na "
+#~ "začetek odstavka. Uporabe oblike seznama pomeni, da se za izris seznama "
+#~ "uporabi pravilna krogla (točka)."
+
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Uporabi obl&iko seznama za odstavke s točkami"
+
+#~ msgid "Default"
+#~ msgstr "Privzeto"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "Narekovaji po meri"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Zamenjaj &dvojne narekovaje s tipografskimi"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Zamenjaj enojne narekovaje s tipografskimi"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Napredno samodejno popravljanje"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Zamenjave in izjeme za jezik:"
+
+#~ msgid "All Languages"
+#~ msgstr "Vsi jeziki"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "Omogči zamenjavo besed"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "Zamenjaj besedilo z obliko"
+
+#~ msgid "&Find"
+#~ msgstr "Najdi"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "Nadomesti"
+
+#~ msgid "&Add"
+#~ msgstr "Dod&aj"
+
+#~ msgid "Remove"
+#~ msgstr "Odstrani"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "Spremeni obliko..."
+
+#~ msgid "C&lear Format"
+#~ msgstr "Počisti obliko"
+
+#~ msgid "Find"
+#~ msgstr "Najdi"
+
+#~ msgid "Replace"
+#~ msgstr "Nadomesti"
+
+#~ msgid "E&xceptions"
+#~ msgstr "Izjeme"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Ne obravnavaj kot konec stavka:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "Samodejno vključi"
+
+#~ msgid "R&emove"
+#~ msgstr "Odstrani"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Sprejmi dve veliki črki v:"
+
+#~ msgid "A&dd"
+#~ msgstr "&Dodaj"
+
+#~ msgid "&Modify"
+#~ msgstr "Spremeni"
+
+#~ msgid "Select Character"
+#~ msgstr "Izberite znak"
+
+#, fuzzy
+#~| msgid "Si&mple Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Preprosto samodejno popravljanje"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a new sentence is started and always ensure that the first "
+#~| "character is an uppercase character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Zaznaj začetek novega stavka in poskrbi da bo prvi znak vedno velika črka"
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &first letter of a sentence automatically to uppercase\n"
+#~| "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Samodejno pretvori p&rvo črko stavka v veliko črko\n"
+#~ "(npr. »moja hiša. v tem mestu« v »moja hiša. V tem mestu«)"
+
+#, fuzzy
+#~| msgid ""
+#~| "All words are checked for the common mistake of holding the shift key "
+#~| "down a bit too long. If some words must have two uppercase characters, "
+#~| "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "V vseh besedah se preveri če je prišlo do pogoste napake ko je bila tipka "
+#~ "»Shift« pritisnjena nekoliko predolgo. Če morajo imeti katere izmed besed "
+#~ "dve veliki črki, potem morajo te biti dodane v zavihku »Izjeme«."
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &two uppercase characters to one uppercase and one lowercase "
+#~| "character\n"
+#~| " (e.g. PErfect to Perfect)"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Pretvori &dva velika znaka v enega velikega in enega majhnega\n"
+#~ " (npr. ODlično v Odlično)"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~| "formatting that matches the way an Internet browser would show a URL."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Zaznaj ko je vnešen URL in poskrbi za oblikovanje ki ustreza načinu kot "
+#~ "bi URL prikazal spletni brskalnik."
+
+#, fuzzy
+#~| msgid "Autoformat &URLs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "Samodejno oblikuj &URL-je"
+
+#, fuzzy
+#~| msgid ""
+#~| "Make sure that more than one space cannot be typed, as this is a common "
+#~| "mistake which is quite hard to find in formatted text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Poskrbi da ni moč vnesti več kot en presledek, saj je to običajna napaka, "
+#~ "ki jo je v oblikovanem besedilu težko najti."
+
+#, fuzzy
+#~| msgid "&Suppress double spaces"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "P&repreči dvojne presledke"
+
+#, fuzzy
+#~| msgid ""
+#~| "Keep correct formatting and indenting of sentences by automatically "
+#~| "removing spaces typed at the beginning and end of a paragraph."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Ohrani pravilno oblikovanje in zamikanje stavkov tako da so presledki na "
+#~ "začetku in koncu odstavka samodejno odstranjeni."
+
+#, fuzzy
+#~| msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Od&strani presledke na začetku in koncu odstavkov"
+
+#, fuzzy
+#~| msgid ""
+#~| "When you use _underline_ or *bold*, the text between the underscores or "
+#~| "asterisks will be converted to underlined or bold text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Ko porabite _podčrtanje_ ali *poudarjanje* bo besedilo med podčrtajema "
+#~ "ali zvezdicama samodejno podčrtano ali poudarjeno."
+
+#, fuzzy
+#~| msgid "Automatically do &bold and underline formatting"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Samodejno pou&dari in podčrtaj"
+
+#, fuzzy
+#~| msgid "Most standard fraction notations will be converted when available"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "Večina običajnih ulomkov bo pretvorjena v kolikor so na razpolago"
+
+#, fuzzy
+#~| msgid "Re&place 1/2... with ½..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "Zamenjaj 1/2... z  ½..."
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '1)' or similar in front of a paragraph, automatically "
+#~| "convert the paragraph to use that numbering style. This has the "
+#~| "advantage that further paragraphs will also be numbered and the spacing "
+#~| "is done correctly."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Pri tipkanju »1)« ali podobnega na začetku odstavka, samodejno pretvori "
+#~ "odstavek da bo uporabljal ta slog številčenja. Prednost pri tem je, da "
+#~ "bodo naslednji odstavki prav tako številčeni in bodo razmiki pravilno "
+#~ "narejeni."
+
+#, fuzzy
+#~| msgid "Use &autonumbering for numbered paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "Uporabi s&amodejno številčenje za oštevilčene odstavke"
+
+#, fuzzy
+#~| msgid "Rep&lace 1st... with 1^st..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "Zamenjaj 1st ... z 1^st ..."
+
+#, fuzzy
+#~| msgid "Capitalize name of days"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "Imena dni se prično z veliko črko"
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '*' or '-' in front of a paragraph, automatically convert "
+#~| "the paragraph to use that list-style. Using a list-style formatting "
+#~| "means that a correct bullet is used to draw the list."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Samodejno pretvori odstavek v obliko seznama ko vtipkate »*« ali »-« na "
+#~ "začetek odstavka. Uporabe oblike seznama pomeni, da se za izris seznama "
+#~ "uporabi pravilna krogla (točka)."
+
+#, fuzzy
+#~| msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Uporabi obl&iko seznama za odstavke s točkami"
+
+#, fuzzy
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "Privzeto"
+
+#, fuzzy
+#~| msgid "Custom &Quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "Narekovaji po &meri"
+
+#, fuzzy
+#~| msgid "Replace &double quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Zamenjaj &dvojne narekovaje s tipografskimi"
+
+#, fuzzy
+#~| msgid "Replace &single quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Zamenjaj &enojne narekovaje s tipografskimi"
+
+#, fuzzy
+#~| msgid "Ad&vanced Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "N&apredno samodejno popravljanje"
+
+#, fuzzy
+#~| msgid "Replacements and exceptions for language:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Zamenjave in izjeme za jezik:"
+
+#, fuzzy
+#~| msgid "All Languages"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "Vsi jeziki"
+
+#, fuzzy
+#~| msgid "&Enable word replacement"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "&Omogči zamenjavo besed"
+
+#, fuzzy
+#~| msgid "Replace &text with format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "Zamenjaj &besedilo z obliko"
+
+#, fuzzy
+#~| msgid "&Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "&Najdi"
+
+#, fuzzy
+#~| msgid "..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#, fuzzy
+#~| msgid "Re&place"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "Na&domesti"
+
+#, fuzzy
+#~| msgid "Remove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "Odstrani"
+
+#, fuzzy
+#~| msgid "C&hange Format..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "Spre&meni obliko ..."
+
+#, fuzzy
+#~| msgid "C&lear Format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "Poči&sti obliko"
+
+#, fuzzy
+#~| msgid "Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "Najdi"
+
+#, fuzzy
+#~| msgid "Replace"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "Nadomesti"
+
+#, fuzzy
+#~| msgid "E&xceptions"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "Izj&eme"
+
+#, fuzzy
+#~| msgid "Do not treat as the end of a sentence:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Ne obravnavaj kot konec stavka:"
+
+#, fuzzy
+#~| msgid "Autoinclude"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "Samodejno vključi"
+
+#, fuzzy
+#~| msgid "R&emove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "&Odstrani"
+
+#, fuzzy
+#~| msgid "Accept two uppercase letters in:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Sprejmi dve veliki črki v:"
+
+#, fuzzy
+#~| msgid "A&dd"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "&Dodaj"
+
+#, fuzzy
+#~| msgid "Configure &Autocorrection..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "N&astavi samodejno popravljanje ..."
+
+#, fuzzy
+#~| msgid "Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "Samodejno popravljanje"
+
+#, fuzzy
+#~| msgid "&Modify"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "&Spremeni"
+
+#, fuzzy
+#~| msgid "&Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "&Dodaj"
+
+#, fuzzy
+#~| msgid "Select Character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "Izberite znak"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "Samodejno popravi"

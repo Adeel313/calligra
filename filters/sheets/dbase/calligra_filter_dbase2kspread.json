@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "KSpread dBASE Import Filter",
+        "Name[ar]": "مرشح استيراد dBASE لـ KSpread",
+        "Name[ca@valencia]": "Filtre d'importació dBASE de KSpread",
+        "Name[ca]": "Filtre d'importació dBASE del KSpread",
+        "Name[cs]": "Importní filtr dBASE pro KSpread",
+        "Name[de]": "KSpread dBASE-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής KSpread dBASE",
+        "Name[en_GB]": "KSpread dBASE Import Filter",
+        "Name[eo]": "KSpread dBASE Importfiltrilo",
+        "Name[es]": "Filtro de importación dBASE de KSpread",
+        "Name[eu]": "KSpread-en dBASE inportatzeko iragazkia",
+        "Name[fi]": "KSpreadin dBase-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « dBase » de KSpread",
+        "Name[ga]": "Scagaire Iompórtála dBASE KSpread",
+        "Name[gl]": "Filtro para KSpread de importación de dBASE",
+        "Name[he]": "מסנן ייבוא מ־dBASE ל־KSpread",
+        "Name[it]": "Filtro di importazione dBASE per KSpread",
+        "Name[ka]": "KSpread dBASE -ის შემოტანის ფილტრი",
+        "Name[lv]": "„KSpread“ „dBASE“ importa filtrs",
+        "Name[nl]": "dBASE-importfilter voor KSpread",
+        "Name[pl]": "Filtr importu dBASE do KSpread",
+        "Name[pt_BR]": "Filtro de importação dBASE para o KSpread",
+        "Name[ru]": "Фильтр импорта dBASE KSpread",
+        "Name[sa]": "KSpread dBASE आयात फ़िल्टर",
+        "Name[sk]": "Filter importu dBASE pre KSpread",
+        "Name[sl]": "KSpread filter uvoza dBASE",
+        "Name[sv]": "KSpread dBASE-importfilter",
+        "Name[tr]": "KSpread dBASE İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування dBASE для KSpread",
+        "Name[zh_CN]": "KSpread dBASE 导入过滤器",
+        "Name[zh_TW]": "KSpread dBASE 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/x-kspread",
+    "X-KDE-Import": "application/x-dbf",
+    "X-KDE-Weight": 1
+}

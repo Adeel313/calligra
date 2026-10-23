@@ -1,0 +1,132 @@
+# Translation of koconverter to Norwegian Bokmål
+#
+# Nils Kristian Tomren <slx@nilsk.net>, 2005.
+# Axel Bojer <fri_programvare@bojer.no>, 2005.
+# Bjørn Steensrud <bjornst@skogkatt.homelinux.org>, 2008, 2010, 2011, 2012.
+msgid ""
+msgstr ""
+"Project-Id-Version: koconverter\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2012-11-23 21:03+0100\n"
+"Last-Translator: Bjørn Steensrud <bjornst@skogkatt.homelinux.org>\n"
+"Language-Team: Norwegian Bokmål <l10n-no@nuug.no>\n"
+"Language: nb\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 1.4\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Environment: kde\n"
+"X-Accelerator-Marker: &\n"
+"X-Text-Markup: kde4\n"
+
+#, kde-format
+msgctxt "NAME OF TRANSLATORS"
+msgid "Your names"
+msgstr "Axel Bojer"
+
+#, kde-format
+msgctxt "EMAIL OF TRANSLATORS"
+msgid "Your emails"
+msgstr "fri_programvare@bojer.no"
+
+#: calligraconverter.cpp:179
+#, kde-format
+msgid "CalligraConverter"
+msgstr "Calligrakonvertering"
+
+#: calligraconverter.cpp:181
+#, kde-format
+msgid "Calligra Document Converter"
+msgstr "Calligra dokumentkonvertering"
+
+#: calligraconverter.cpp:183
+#, kde-format
+msgid "Copyright 2001-%1 Calligra developers"
+msgstr ""
+
+#: calligraconverter.cpp:184
+#, kde-format
+msgid "David Faure"
+msgstr "David Faure"
+
+#: calligraconverter.cpp:185
+#, kde-format
+msgid "Nicolas Goutte"
+msgstr "Nicolas Goutte"
+
+#: calligraconverter.cpp:186
+#, kde-format
+msgid "Dan Leinir Turthra Jensen"
+msgstr "Dan Leinir Turthra Jensen"
+
+#: calligraconverter.cpp:193
+#, kde-format
+msgid "Input file"
+msgstr "Fil for inndata"
+
+#: calligraconverter.cpp:194
+#, kde-format
+msgid "Output file"
+msgstr "Fil for utdata"
+
+#: calligraconverter.cpp:195
+#, kde-format
+msgid "Make a backup of the destination file"
+msgstr "Ta en sikkerhetskopi av målfila"
+
+#: calligraconverter.cpp:196
+#, kde-format
+msgid "Batch mode: do not show dialogs"
+msgstr "Skriptmodus: ikke vis dialogvinduer"
+
+#: calligraconverter.cpp:197
+#, kde-format
+msgid "Interactive mode: show dialogs (default)"
+msgstr "Interaktiv modus: vis dialogvinduer (standard)"
+
+#: calligraconverter.cpp:198
+#, kde-format
+msgid "Mimetype of the output file"
+msgstr "Mimetypen i målfila"
+
+#: calligraconverter.cpp:202
+#, kde-format
+msgid "The print orientation. This could be either Portrait or Landscape."
+msgstr "Utskriftsretning. Enten stående eller liggende."
+
+#: calligraconverter.cpp:205
+#, kde-format
+msgid "The paper size. A4, Legal, Letter, ..."
+msgstr "Papirstørrelse.  A4, Legal, Letter, …"
+
+#: calligraconverter.cpp:207
+#, kde-format
+msgid "The size of the paper margin. By default this is 0.2."
+msgstr "Størrelse på sidemarg, 0.2 er standarden."
+
+#: calligraconverter.cpp:215
+#, kde-format
+msgid "Two arguments required"
+msgstr "Det trengs to argumenter"
+
+#: calligraconverter.cpp:243
+#, kde-format
+msgid "Mimetype for input file %1 not found!"
+msgstr "Fant ikke den mimetypen som ble angitt for inndatafila %1."
+
+#: calligraconverter.cpp:252
+#, kde-format
+msgid "Mimetype not found %1"
+msgstr "Fant ikke mimetypen %1"
+
+#: calligraconverter.cpp:258
+#, kde-format
+msgid "Mimetype not found, try using the -mimetype option"
+msgstr "Fant ikke mimetypen, prøv å bruke alternativet «-mimetype»"
+
+#: calligraconverter.cpp:282
+#, kde-format
+msgid "*** The conversion failed! ***"
+msgstr "*** Konverteringen mislyktes. ***"

@@ -1,0 +1,307 @@
+# Irish translation of karbon
+# Copyright (C) 2009 This_file_is_part_of_KDE
+# This file is distributed under the same license as the karbon package.
+# Kevin Scannell <kscanne@gmail.com>, 2009.
+# Aindriú Mac Giolla Eoin <aindriu80@yahoo.com>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: koffice/karbon.po\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2026-02-22 16:58+0000\n"
+"Last-Translator: Aindriú Mac Giolla Eoin <aindriu80@yahoo.com>\n"
+"Language-Team: Irish \n"
+"Language: ga\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=5; plural=n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n < 11 ? "
+"3 : 4\n"
+"X-Generator: Weblate 5.16\n"
+
+#: BlendEffect.cpp:18 BlendEffectFactory.cpp:14
+#, kde-format
+msgid "Blend"
+msgstr "Meascán"
+
+#: BlendEffectConfigWidget.cpp:23
+#, kde-format
+msgid "Blend mode"
+msgstr "Mód chumaisc"
+
+#: BlendEffectConfigWidget.cpp:25
+#, kde-format
+msgid "Normal"
+msgstr "Gnách"
+
+#: BlendEffectConfigWidget.cpp:26
+#, kde-format
+msgid "Multiply"
+msgstr "Iolraigh"
+
+#: BlendEffectConfigWidget.cpp:27
+#, kde-format
+msgid "Screen"
+msgstr "Scáileán"
+
+#: BlendEffectConfigWidget.cpp:28
+#, kde-format
+msgid "Darken"
+msgstr "Dorchaigh"
+
+#: BlendEffectConfigWidget.cpp:29
+#, kde-format
+msgid "Lighten"
+msgstr "Sorchaigh"
+
+#: BlurEffect.cpp:257 BlurEffectFactory.cpp:14
+#, kde-format
+msgid "Gaussian blur"
+msgstr "Geamhú Gaussach"
+
+#: BlurEffectConfigWidget.cpp:23
+#, kde-format
+msgid "Radius"
+msgstr "Ga"
+
+#: ColorMatrixEffect.cpp:25
+#, kde-format
+msgid "Color Matrix"
+msgstr "Maitrís Dathanna"
+
+#: ColorMatrixEffectConfigWidget.cpp:29
+#, kde-format
+msgid "Apply color matrix"
+msgstr "Cuir maitrís dathanna i bhfeidhm"
+
+#: ColorMatrixEffectConfigWidget.cpp:30
+#, kde-format
+msgid "Saturate colors"
+msgstr "Sáithigh dathanna"
+
+#: ColorMatrixEffectConfigWidget.cpp:31
+#, kde-format
+msgid "Rotate hue"
+msgstr "Rothlaigh an lí"
+
+#: ColorMatrixEffectConfigWidget.cpp:32
+#, kde-format
+msgid "Luminance to alpha"
+msgstr "Lonras go halfa"
+
+#: ColorMatrixEffectConfigWidget.cpp:51
+#, kde-format
+msgid "Saturate value"
+msgstr "Luach sáithithe"
+
+#: ColorMatrixEffectConfigWidget.cpp:62
+#, kde-format
+msgid "Angle"
+msgstr "Uillinn"
+
+#: ColorMatrixEffectFactory.cpp:14
+#, kde-format
+msgid "Color matrix"
+msgstr "Maitrís dathanna"
+
+#: ComponentTransferEffect.cpp:19 ComponentTransferEffectFactory.cpp:14
+#, kde-format
+msgid "Component transfer"
+msgstr "Aistriú comhpháirte"
+
+#: ComponentTransferEffectConfigWidget.cpp:46
+#, kde-format
+msgid "Function"
+msgstr "Feidhm"
+
+#: ComponentTransferEffectConfigWidget.cpp:48
+#, kde-format
+msgid "Identity"
+msgstr "Aitheantas"
+
+#: ComponentTransferEffectConfigWidget.cpp:49
+#, kde-format
+msgid "Table"
+msgstr "Tábla"
+
+#: ComponentTransferEffectConfigWidget.cpp:50
+#, kde-format
+msgid "Discrete"
+msgstr "Scoite"
+
+#: ComponentTransferEffectConfigWidget.cpp:51
+#, kde-format
+msgid "Linear"
+msgstr "Líneach"
+
+#: ComponentTransferEffectConfigWidget.cpp:52
+#, kde-format
+msgid "Gamma"
+msgstr "Gáma"
+
+#: ComponentTransferEffectConfigWidget.cpp:65
+#: ComponentTransferEffectConfigWidget.cpp:75
+#, kde-format
+msgid "Values"
+msgstr "Luachanna"
+
+#: ComponentTransferEffectConfigWidget.cpp:85
+#, kde-format
+msgid "Slope"
+msgstr "Fána"
+
+#: ComponentTransferEffectConfigWidget.cpp:90
+#, kde-format
+msgid "Intercept"
+msgstr "Idirlíne"
+
+#: ComponentTransferEffectConfigWidget.cpp:102
+#, kde-format
+msgid "Amplitude"
+msgstr "Aimplitiúid"
+
+#: ComponentTransferEffectConfigWidget.cpp:107
+#, kde-format
+msgid "Exponent"
+msgstr "Easpónant"
+
+#: ComponentTransferEffectConfigWidget.cpp:112 OffsetEffect.cpp:17
+#: OffsetEffectFactory.cpp:13
+#, kde-format
+msgid "Offset"
+msgstr "Fritháireamh"
+
+#: CompositeEffect.cpp:19 CompositeEffectFactory.cpp:14
+#, kde-format
+msgid "Composite"
+msgstr "Ilchodach"
+
+#: CompositeEffectConfigWidget.cpp:24
+#, kde-format
+msgid "Operation"
+msgstr "Oibríocht"
+
+#: ConvolveMatrixEffect.cpp:22 ConvolveMatrixEffectFactory.cpp:14
+#, kde-format
+msgid "Convolve Matrix"
+msgstr "Maitrís Chonbhlóidithe"
+
+#: ConvolveMatrixEffectConfigWidget.cpp:33
+#, kde-format
+msgid "Duplicate"
+msgstr "Dúblach"
+
+#: ConvolveMatrixEffectConfigWidget.cpp:34
+#, kde-format
+msgid "Wrap"
+msgstr "Timfhill"
+
+#: ConvolveMatrixEffectConfigWidget.cpp:35
+#, kde-format
+msgid "None"
+msgstr "Neamhní"
+
+#: ConvolveMatrixEffectConfigWidget.cpp:36
+#, kde-format
+msgid "Edge mode:"
+msgstr "Mód ciumhaise:"
+
+#: ConvolveMatrixEffectConfigWidget.cpp:43
+#, kde-format
+msgid "Kernel size:"
+msgstr "Méid eithne:"
+
+#: ConvolveMatrixEffectConfigWidget.cpp:52
+#, kde-format
+msgid "Target point:"
+msgstr "Spriocphointe:"
+
+#: ConvolveMatrixEffectConfigWidget.cpp:59
+#, kde-format
+msgid "Divisor:"
+msgstr "Roinnteoir:"
+
+#: ConvolveMatrixEffectConfigWidget.cpp:61
+#, kde-format
+msgid "Bias:"
+msgstr "Laofacht:"
+
+#: ConvolveMatrixEffectConfigWidget.cpp:64
+#, kde-format
+msgid "Preserve alpha"
+msgstr "Caomhnaigh alfa"
+
+#: ConvolveMatrixEffectConfigWidget.cpp:67
+#, kde-format
+msgid "Edit kernel"
+msgstr "Cuir eithne in eagar"
+
+#: FloodEffect.cpp:16 FloodEffectFactory.cpp:14
+#, kde-format
+msgid "Flood fill"
+msgstr "Tuileadh"
+
+#: FloodEffectConfigWidget.cpp:25
+#, kde-format
+msgid "Flood color"
+msgstr "Dath tuile"
+
+#: ImageEffect.cpp:24 ImageEffectFactory.cpp:13
+#, kde-format
+msgid "Image"
+msgstr "Íomhá"
+
+#: ImageEffectConfigWidget.cpp:28
+#, kde-format
+msgid "Select image..."
+msgstr "Roghnaigh íomhá..."
+
+#: ImageEffectConfigWidget.cpp:55
+#, kde-format
+msgid "Select image"
+msgstr "Roghnaigh íomhá"
+
+#: MergeEffect.cpp:16 MergeEffectFactory.cpp:14
+#, kde-format
+msgid "Merge"
+msgstr "Cumaisc"
+
+#: MorphologyEffect.cpp:19 MorphologyEffectFactory.cpp:14
+#, kde-format
+msgid "Morphology"
+msgstr "Moirfeolaíocht"
+
+#: MorphologyEffectConfigWidget.cpp:26
+#, kde-format
+msgid "Erode"
+msgstr "Creim"
+
+#: MorphologyEffectConfigWidget.cpp:27
+#, kde-format
+msgid "Dilate"
+msgstr "Leath"
+
+#: MorphologyEffectConfigWidget.cpp:30
+#, kde-format
+msgid "Operator:"
+msgstr "Oibreoir:"
+
+#: MorphologyEffectConfigWidget.cpp:34
+#, kde-format
+msgid "Radius x:"
+msgstr "Ga x:"
+
+#: MorphologyEffectConfigWidget.cpp:40
+#, kde-format
+msgid "Radius y:"
+msgstr "Ga y:"
+
+#: OffsetEffectConfigWidget.cpp:23
+#, kde-format
+msgid "dx"
+msgstr "dx"
+
+#: OffsetEffectConfigWidget.cpp:29
+#, kde-format
+msgid "dy"
+msgstr "dy"

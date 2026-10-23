@@ -1,0 +1,44 @@
+[Desktop Entry]
+Type=ServiceType
+X-KDE-ServiceType=CalligraPageApp/Tool
+Comment=Tool for Calligra Page Applications
+Comment[ar]=أداة لتطبيقات صفحة كاليغرا
+Comment[bs]=Alat za Calligra aplikacije stranice
+Comment[ca]=Eina per a les aplicacions de pàgina del Calligra
+Comment[ca@valencia]=Eina per a les aplicacions de pàgina de Calligra
+Comment[cs]=Nástroj pro aplikace Calligra Page
+Comment[da]=Værktøj til Calligra Page-programmer
+Comment[de]=Werkzeug für Calligra-Seitenanwendungen
+Comment[el]=Εργαλείο για εφαρμογές Calligra Page
+Comment[en_GB]=Tool for Calligra Page Applications
+Comment[eo]=Ilo por Calligra Paĝaj Aplikoj
+Comment[es]=Herramienta para las aplicaciones de páginas de Calligra
+Comment[et]=Calligra leheküljepõhiste rakenduste tööriist
+Comment[eu]=Calligra-ren «orri» aplikazioetarako tresna
+Comment[fi]=Calligran sivupohjaisten sovellusten työkalu
+Comment[fr]=Outil pour les applications « Page » de Calligra
+Comment[ga]=Uirlis d'Fheidhmchláir Leathanach Calligra
+Comment[gl]=Ferramenta para aplicacións de páxinas de Calligra.
+Comment[it]=Strumento per le applicazioni di Calligra Page
+Comment[ja]=Calligra Page 用ツール
+Comment[ka]=Calligra Page-ის აპლიკაციების ხელსაწყო
+Comment[ko]=Calligra 페이지 앱용 도구
+Comment[lv]=Rīks „Calligra“ lapu programmām
+Comment[nb]=Verktøy for Calligra side-programmer
+Comment[nl]=Hulpmiddel voor Calligra pagina-applicatie
+Comment[pl]=Narzędzie dla aplikacji Stron Calligry
+Comment[pt]=Ferramenta para as Aplicações de Páginas do Calligra
+Comment[pt_BR]=Ferramenta para os Aplicativos de Páginas do Calligra
+Comment[ru]=Инструмент для приложений Calligra Page
+Comment[sa]=Calligra पृष्ठ अनुप्रयोगानाम् कृते साधनम्
+Comment[sk]=Nástroj pre aplikácie Calligra Page
+Comment[sl]=Orodje za aplikacije Calligra Page
+Comment[sv]=Verktyg för Calligra sidprogram
+Comment[tr]=Calligra Sayfa uygulaması için araç
+Comment[uk]=Інструмент для програм Calligra Page
+Comment[zh_CN]=Calligra 页面应用工具
+Comment[zh_TW]=Calligra Page 應用程式的工具
+[PropertyDef::X-KoPageApp-Version]
+Type=int
+[PropertyDef::X-KDE-PluginInfo-Name]
+Type=QString

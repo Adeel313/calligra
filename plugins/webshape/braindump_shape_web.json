@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Web Shape",
+        "Name[ar]": "شكل وب",
+        "Name[ca@valencia]": "Forma de web",
+        "Name[ca]": "Forma de web",
+        "Name[cs]": "Tvar pro web",
+        "Name[de]": "Web-Objekt",
+        "Name[en_GB]": "Web Shape",
+        "Name[eo]": "TTT-Formo",
+        "Name[es]": "Forma web",
+        "Name[eu]": "Web forma",
+        "Name[fi]": "Verkkokuvio",
+        "Name[fr]": "Forme Internet",
+        "Name[ga]": "Cruth Gréasáin",
+        "Name[gl]": "Obxecto web",
+        "Name[he]": "צורת אתר",
+        "Name[ia]": "Web Shape",
+        "Name[it]": "Forma Web",
+        "Name[ka]": "Web ფორმა",
+        "Name[lv]": "Tīmekļa objekts",
+        "Name[nl]": "Webvorm",
+        "Name[pl]": "Kształt sieci",
+        "Name[pt_BR]": "Forma de Web",
+        "Name[ru]": "Веб-объект",
+        "Name[sa]": "Web Shape इति",
+        "Name[sk]": "Webový tvar",
+        "Name[sl]": "Oblika splet",
+        "Name[sv]": "Webbform",
+        "Name[tr]": "Web Şekli",
+        "Name[ug]": "تور شەكلى",
+        "Name[uk]": "Форма мережі",
+        "Name[zh_CN]": "网络形状",
+        "Name[zh_TW]": "網頁元件",
+        "ServiceTypes": [
+            "Calligra/Shape"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

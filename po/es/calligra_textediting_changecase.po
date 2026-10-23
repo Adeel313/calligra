@@ -1,0 +1,56 @@
+# Spanish translations for calligra_textediting_changecase.po package.
+# Copyright (C) 2007-2025 This file is copyright:
+# This file is distributed under the same license as the calligra package.
+#
+# SPDX-FileCopyrightText: 2007 Enrique Matias Sanchez (aka Quique) <cronopios@gmail.com>
+# SPDX-FileCopyrightText: 2016 Eloy Cuadra <ecuadra@eloihr.net>
+# SPDX-FileCopyrightText: 2016, 2025 Sofía Priego <spriego@darksylvania.net>
+msgid ""
+msgstr ""
+"Project-Id-Version: calligra_textediting_changecase\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2025-07-06 22:16+0100\n"
+"Last-Translator: Sofía Priego <spriego@darksylvania.net>\n"
+"Language-Team: Spanish <kde-l10n-es@kde.org>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 2.0\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: Changecase.cpp:49 Changecase.cpp:77
+#, kde-format
+msgid "Change case"
+msgstr "Cambiar mayúsculas/minúsculas"
+
+#: Changecase.cpp:54
+#, kde-format
+msgid "Sentence case"
+msgstr "Caja de la frase"
+
+#: Changecase.cpp:55
+#, kde-format
+msgid "lowercase"
+msgstr "minúsculas"
+
+#: Changecase.cpp:56
+#, kde-format
+msgid "UPPER CASE"
+msgstr "MAYÚSCULAS"
+
+#: Changecase.cpp:57
+#, kde-format
+msgid "Initial Caps"
+msgstr "Iniciales En Mayúsculas"
+
+#: Changecase.cpp:58
+#, kde-format
+msgid "tOGGLE cASE"
+msgstr "cONMUTAR mAYÚSCULAS/mINÚSCULAS"
+
+#: ChangecaseFactory.cpp:16
+#, kde-format
+msgid "Change Case..."
+msgstr "Cambiar mayúsculas/minúsculas…"

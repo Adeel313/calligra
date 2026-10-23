@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Karbon EPS Import Filter",
+        "Name[ar]": "مرشح استيراد EPS لكربون",
+        "Name[ca@valencia]": "Filtre d'importació EPS de Karbon",
+        "Name[ca]": "Filtre d'importació EPS del Karbon",
+        "Name[cs]": "Importní filtr do formátu EPS pro Karbon",
+        "Name[de]": "Karbon EPS-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής Karbon EPS",
+        "Name[en_GB]": "Karbon EPS Import Filter",
+        "Name[eo]": "Karbon EPS-Importfiltrilo",
+        "Name[es]": "Filtro de importación EPS de Karbon",
+        "Name[eu]": "Karbon-en EPS inportatzeko iragazkia",
+        "Name[fi]": "Karbonin EPS-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « EPS » de Karbon",
+        "Name[ga]": "Scagaire Iompórtála Karbon EPS",
+        "Name[gl]": "Filtro para Karbon de importación de EPS",
+        "Name[he]": "מסנן ייבוא EPS של Karbon",
+        "Name[it]": "Filtro di importazione EPS per Karbon",
+        "Name[ka]": "Karbon EPS შემოტანის ფილტრი",
+        "Name[lv]": "„Karbon“ EPS importa filtrs",
+        "Name[nl]": "EPS-importfilter voor Karbon",
+        "Name[pl]": "Filtr importu EPS do Karbon",
+        "Name[pt_BR]": "Filtro de importação EPS para o Karbon",
+        "Name[ru]": "Фильтр импорта EPS Karbon",
+        "Name[sa]": "कार्बन ईपीएस आयात फ़िल्टर",
+        "Name[sk]": "Filter importu EPS pre Karbon",
+        "Name[sl]": "Karbon filter uvoza EPS",
+        "Name[sv]": "Karbon EPS-importfilter",
+        "Name[tr]": "Karbon EPS İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр експорту EPS для Karbon",
+        "Name[zh_CN]": "Karbon EPS 导入过滤器",
+        "Name[zh_TW]": "Karbon EPS 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/illustrator",
+    "X-KDE-Import": "application/postscript",
+    "X-KDE-Weight": 1
+}

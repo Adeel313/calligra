@@ -1,0 +1,53 @@
+{
+    "KPlugin": {
+        "Icon": "calligrasheets",
+        "MimeTypes": [
+            "application/vnd.oasis.opendocument.spreadsheet",
+            "application/vnd.oasis.opendocument.spreadsheet-template",
+            "application/x-kspread",
+            "application/vnd.ms-excel",
+            "text/csv",
+            "application/x-quattropro",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.template"
+        ],
+        "Name": "Calligra Spreadsheet Component",
+        "Name[ar]": "عنصر جداول كاليغرا",
+        "Name[ca@valencia]": "Component de full de càlcul de Calligra",
+        "Name[ca]": "Component de full de càlcul del Calligra",
+        "Name[cs]": "Komponenta Calligra pro tabulky",
+        "Name[de]": "Calligra-Komponente für Tabellenkalkulation",
+        "Name[el]": "Συστατικό φύλλου εργασίας Calligra",
+        "Name[en_GB]": "Calligra Spreadsheet Component",
+        "Name[eo]": "Calligra Spreadsheet-Komponanto",
+        "Name[es]": "Componente de hoja de cálculo de Calligra",
+        "Name[eu]": "Calligraren kalkulu-orri osagaia",
+        "Name[fi]": "Calligran laskentataulukko-osa",
+        "Name[fr]": "Composant de feuille de calcul de Calligra",
+        "Name[ga]": "Comhpháirt Scarbhileog Calligra",
+        "Name[gl]": "Compoñente para Calligra de follas de cálculo",
+        "Name[he]": "רכיב גיליון נתונים של Calligra",
+        "Name[it]": "Componente per il foglio elettronico di Calligra",
+        "Name[ka]": "Calligra Spreadsheet-ის კომპონენტი",
+        "Name[lv]": "„Calligra“ izklājlapu komponente",
+        "Name[nl]": "Component van Calligra Rekenblad",
+        "Name[pl]": "Składnik arkusza kalkulacyjnego dla Calligry",
+        "Name[pt_BR]": "Componente de Planilha do Calligra",
+        "Name[ru]": "Компонент Calligra для работы с электронными таблицами",
+        "Name[sa]": "कैलिग्रा स्प्रेडशीट घटक",
+        "Name[sk]": "Komponent tabuliek Calligra",
+        "Name[sl]": "Komponenta preglednice Calligra",
+        "Name[sv]": "Calligra-kalkylarkskomponent",
+        "Name[tr]": "Calligra Hesap Tablosu Bileşeni",
+        "Name[uk]": "Компонент електронних таблиць Calligra",
+        "Name[zh_CN]": "Calligra Spreadsheet 组件",
+        "Name[zh_TW]": "Calligra 工作表組件",
+        "ServiceTypes": [
+            "Calligra/Part"
+        ]
+    },
+    "MimeType": "application/vnd.oasis.opendocument.spreadsheet;application/vnd.oasis.opendocument.spreadsheet-template;application/x-kspread;application/vnd.ms-excel;text/csv;application/x-quattropro;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;application/vnd.openxmlformats-officedocument.spreadsheetml.template;",
+    "X-KDE-ExtraNativeMimeTypes": "application/vnd.oasis.opendocument.spreadsheet-template,application/x-kspread",
+    "X-KDE-NativeMimeType": "application/vnd.oasis.opendocument.spreadsheet",
+    "X-KDE-NativeOasisMimeType": "application/vnd.oasis.opendocument.spreadsheet"
+}

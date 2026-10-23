@@ -1,0 +1,59 @@
+# Uyghur translation for VectorShape.
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Sahran <sahran.ug@gmail.com>, 2011.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: VectorShape\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2026-09-23 06:56+0900\n"
+"Last-Translator: Abduqadir Abliz <sahranbay@gmail.com>\n"
+"Language-Team: Uyghur <kde-i18n-doc@kde.org>\n"
+"Language: ug\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 3.9\n"
+
+#: ChangeVectorDataCommand.cpp:27
+msgctxt "(qtundo-format)"
+msgid "Change Vector Data"
+msgstr "ۋېكتورلۇق سانلىق مەلۇماتلارنى ئۆزگەرتىش"
+
+#: VectorShapeFactory.cpp:26
+#, kde-format
+msgid "Vector image"
+msgstr "ۋېكتورلۇق سۈرەت"
+
+#: VectorShapeFactory.cpp:28
+#, kde-format
+msgid "A shape that shows a vector image (EMF/WMF/SVM)"
+msgstr ""
+
+#: VectorTool.cpp:63
+#, kde-format
+msgid "Open Vector Image (EMF/WMF/SVM)"
+msgstr "ۋېكتورلۇق سۈرەت (EMF/WMF/SVM) نى ئېچىش"
+
+#: VectorToolFactory.cpp:19
+#, kde-format
+msgid "Vector Image (EMF/WMF/SVM/SVG) tool"
+msgstr ""
+
+#~| msgid "Vector image"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Vector image"
+#~ msgstr "ۋېكتورلۇق سۈرەت"
+
+#~| msgid "Open Vector Image (EMF/WMF/SVM)"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Open Vector Image (EMF/WMF/SVM)"
+#~ msgstr "ۋېكتورلۇق سۈرەت (EMF/WMF/SVM) نى ئېچىش"
+
+#~| msgid "Vector Image (EMF/WMF/SVM) tool"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Vector Image (EMF/WMF/SVM/SVG) tool"
+#~ msgstr "ۋېكتورلۇق سۈرەت (EMF/WMF/SVM) قورالى"

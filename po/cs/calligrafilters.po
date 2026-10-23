@@ -1,0 +1,920 @@
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# SPDX-FileCopyrightText: 2010, 2011, 2012, 2013, 2017, 2019, 2024 Vít Pelčák <vit@pelcak.org>
+# Tomáš Chvátal <tomas.chvatal@gmail.com>, 2012, 2013.
+# Vit Pelcak <vit@pelcak.org>, 2022.
+# SPDX-FileCopyrightText: 2026 Libor Filípek <filipek.libor@protonmail.com>
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: kofficefilters\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-09-10 00:46+0000\n"
+"PO-Revision-Date: 2026-04-21 19:12+0200\n"
+"Last-Translator: Libor Filípek <filipek.libor@protonmail.com>\n"
+"Language-Team: \n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"X-Generator: Lokalize 26.04.0\n"
+
+#: karbon/image/ImageExport.cpp:88
+#, kde-format
+msgid "%1 Export Options"
+msgstr "%1 Možnosti exportu"
+
+#: karbon/image/ImageExportOptionsWidget.cpp:48
+#, kde-format
+msgid "Page %1"
+msgstr "Strana %1"
+
+#. i18n: ectx: property (text), widget (QLabel, m_pageLabel)
+#: karbon/image/ImageExportOptionsWidget.ui:19
+#, kde-format
+msgid "Page:"
+msgstr "Strana:"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox)
+#: karbon/image/ImageExportOptionsWidget.ui:34
+#, kde-format
+msgid "Size in Pixels"
+msgstr "Velikost v pixelech"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#. i18n: ectx: property (text), widget (QLabel, label_6)
+#: karbon/image/ImageExportOptionsWidget.ui:43
+#: karbon/image/ImageExportOptionsWidget.ui:78
+#, kde-format
+msgid "Image width:"
+msgstr "Šířka obrázku:"
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#. i18n: ectx: property (text), widget (QLabel, label_7)
+#: karbon/image/ImageExportOptionsWidget.ui:53
+#: karbon/image/ImageExportOptionsWidget.ui:88
+#, kde-format
+msgid "Image height:"
+msgstr "Výška obrázku:"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_2)
+#: karbon/image/ImageExportOptionsWidget.ui:69
+#, kde-format
+msgid "Size in Units"
+msgstr "Velikost v jednotkách"
+
+#. i18n: ectx: property (text), widget (QLabel, label_5)
+#: karbon/image/ImageExportOptionsWidget.ui:98
+#, kde-format
+msgid "Resolution:"
+msgstr "Rozlišení:"
+
+#. i18n: ectx: property (text), widget (QLabel, label_9)
+#: karbon/image/ImageExportOptionsWidget.ui:108
+#, kde-format
+msgid "Unit:"
+msgstr "Jednotka:"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_3)
+#: karbon/image/ImageExportOptionsWidget.ui:124
+#, kde-format
+msgid "Background Color"
+msgstr "Barva pozadí"
+
+#. i18n: ectx: property (text), widget (QLabel, labelColor)
+#: karbon/image/ImageExportOptionsWidget.ui:133
+#, kde-format
+msgid "Color"
+msgstr "Barva"
+
+#. i18n: ectx: property (text), widget (QLabel, labelOpacity)
+#: karbon/image/ImageExportOptionsWidget.ui:143
+#, kde-format
+msgid "Opacity"
+msgstr "Krytí"
+
+#: libmsooxml/MsooXmlDocPropertiesReader.cpp:63
+#: libmsooxml/MsooXmlReader.cpp:163 libmsooxml/MsooXmlThemesReader.cpp:334
+#: sheets/xlsx/XlsxXmlCommentsReader.cpp:91
+#: sheets/xlsx/XlsxXmlDocumentReader.cpp:126
+#: sheets/xlsx/XlsxXmlSharedStringsReader.cpp:103
+#: sheets/xlsx/XlsxXmlStylesReader.cpp:450
+#: sheets/xlsx/XlsxXmlTableReader.cpp:66
+#: sheets/xlsx/XlsxXmlWorksheetReader.cpp:295
+#: stage/pptx/PptxXmlDocumentReader.cpp:148
+#: stage/pptx/PptxXmlSlideReader.cpp:316
+#: words/docx/import/DocxXmlCommentsReader.cpp:82
+#: words/docx/import/DocxXmlDocumentReader.cpp:185
+#: words/docx/import/DocxXmlEndnoteReader.cpp:83
+#: words/docx/import/DocxXmlFontTableReader.cpp:78
+#: words/docx/import/DocxXmlFooterReader.cpp:88
+#: words/docx/import/DocxXmlFootnoteReader.cpp:83
+#: words/docx/import/DocxXmlHeaderReader.cpp:88
+#: words/docx/import/DocxXmlNumberingReader.cpp:75
+#: words/docx/import/DocxXmlSettingsReader.cpp:75
+#, kde-format
+msgid "Namespace \"%1\" not found"
+msgstr "Jmenný prostor \"%1\" nenalezen"
+
+#: libmsooxml/MsooXmlImport.cpp:94
+#, kde-format
+msgid "Could not open the requested file %1"
+msgstr "Nelze otevřít požadovaný soubor %1"
+
+#: libmsooxml/MsooXmlImport.cpp:117
+#, kde-format
+msgid "Could not read ZIP directory of the requested file %1"
+msgstr "Nelze přečíst adresář ZIP požadovaného souboru \"%1\""
+
+#: libmsooxml/MsooXmlImport.cpp:329 libmsooxml/MsooXmlImport.cpp:452
+#, kde-format
+msgid "Enter password"
+msgstr "Zadejte heslo"
+
+#: libmsooxml/MsooXmlImport.cpp:330 libmsooxml/MsooXmlImport.cpp:453
+#, kde-format
+msgid "This document is encrypted, please enter the password to decrypt it:"
+msgstr ""
+"Tento dokument je zašifrovaný. Prosím, zadejte heslo pro jeho dešifrování."
+
+#: libmsooxml/MsooXmlImport.cpp:331 libmsooxml/MsooXmlImport.cpp:454
+#, kde-format
+msgid "Incorrect password, please enter the password to decrypt this document:"
+msgstr ""
+"Neplatné heslo. Prosím, zadejte heslo pro dešifrování tohoto dokumentu."
+
+#: libmsooxml/MsooXmlImport.cpp:632
+#, kde-format
+msgid "Could not find path for type %1"
+msgstr "Nelze najít vestu pro typ \"%1\""
+
+#: libmsooxml/MsooXmlReader.cpp:130
+#, kde-format
+msgid "%1 (line %2, column %3)"
+msgstr "%1 (řádek %2, sloupec %3)"
+
+#: libmsooxml/MsooXmlReader.cpp:131
+#, kde-format
+msgid "%1 (%2, line %3, column %4)"
+msgstr "%1 (%2, řádek %3, sloupec %4)"
+
+#: libmsooxml/MsooXmlReader.cpp:153
+#, kde-format
+msgid "Element \"%1\" not found"
+msgstr "Prvek \"%1\" nenalezen"
+
+#: libmsooxml/MsooXmlReader.cpp:158
+#, kde-format
+msgid "Attribute \"%1\" not found"
+msgstr "Atribut \"%1\" nenalezen"
+
+#: libmsooxml/MsooXmlReader.cpp:168
+#, kde-format
+msgid "Unexpected value \"%1\" of attribute \"%2\""
+msgstr "neočekávaná hodnota \"%1\" atributu \"%2\""
+
+#: libmsooxml/MsooXmlReader.cpp:173
+#, kde-format
+msgid "Unexpected second occurrence of \"%1\" element"
+msgstr "Neočekávaný druhý výskyt prvku \"%1\""
+
+#: libmsooxml/MsooXmlReader.cpp:190 libmsooxml/MsooXmlReader.cpp:241
+#, kde-format
+msgid "Expected closing of element \"%1\""
+msgstr "Očekáváno uzavření prvku \"%1\""
+
+#: libmsooxml/MsooXmlReader.cpp:232
+#, kde-format
+msgid "None of expected elements found: %1"
+msgstr "Nebyl nalezen žádný s očekávaných prvků: %1"
+
+#: libmsooxml/MsooXmlRelationships.cpp:85
+#, kde-format
+msgid "Could not find target for id \"%1\" in file \"%2\""
+msgstr "V souboru \"%2\" nebylo nalezeno cílové místo s identifikátorem \"%1\""
+
+#: libmsooxml/MsooXmlRelationships.cpp:89
+#: libmsooxml/MsooXmlRelationships.cpp:108
+#, kde-format
+msgid "Could not find relationships file \"%1\""
+msgstr "Nelze najít soubor se vztahy \"%1\""
+
+#: libmsooxml/MsooXmlRelationships.cpp:104
+#, kde-format
+msgid "Could not find target for relationship \"%1\" in file \"%2\""
+msgstr "V souboru \"%2\" nebylo nalezeno cílové místo pro vztah \"%1\""
+
+#: libmsooxml/MsooXmlUtils.cpp:166
+#, kde-format
+msgid ""
+"Parsing error in the main document at line %1, column %2.\n"
+"Error message: %3"
+msgstr ""
+"Chyba při analýze hlavního dokumentu; řádek %1, sloupec %2.\n"
+"Chybová zpráva: %3"
+
+#: libmsooxml/MsooXmlUtils.cpp:213
+#, kde-format
+msgid "Entry '%1' not found."
+msgstr "Záznam '%1' nenalezen"
+
+#: libmsooxml/MsooXmlUtils.cpp:219
+#, kde-format
+msgid "Entry '%1' is not a file."
+msgstr "Položka \"%1\" není soubor."
+
+#: libmsooxml/MsooXmlUtils.cpp:295 libmsooxml/MsooXmlUtils.cpp:337
+#: libmsooxml/MsooXmlUtils.cpp:379
+#, kde-format
+msgid "Could not open entry \"%1\" for writing."
+msgstr "Nelze otevřít záznam \"%1\" pro zápis."
+
+#: libmsooxml/MsooXmlUtils.cpp:309 libmsooxml/MsooXmlUtils.cpp:347
+#: libmsooxml/MsooXmlUtils.cpp:390
+#, kde-format
+msgid "Could not write block"
+msgstr "Blok nelze zapsat"
+
+#: sheets/csv/csvexport.cc:253
+#, kde-format
+msgid "<SHEETNAME>"
+msgstr "<SHEETNAME>"
+
+#: sheets/csv/csvexportdialog.cpp:37
+#, kde-format
+msgctxt "@title:dialog"
+msgid "Export to CVS"
+msgstr "Exportovat do CVS"
+
+#: sheets/csv/csvexportdialog.cpp:46
+#: sheets/latex/export/latexexportdialog.cc:152
+#, kde-format
+msgctxt "@action:button"
+msgid "Export"
+msgstr "Exportovat"
+
+#: sheets/csv/csvimport.cc:74
+#, kde-format
+msgid "CSV filter cannot open input file - please report."
+msgstr "CSV filtr nemůže otevřít vstupní soubor - prosím nahlaste chybu."
+
+#. i18n: ectx: attribute (title), widget (QWidget, encodingPage)
+#: sheets/csv/exportdialogui.ui:48
+#, kde-format
+msgid "End of Line"
+msgstr "Konec řádky"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: sheets/csv/exportdialogui.ui:56
+#, kde-format
+msgid "End of Line:"
+msgstr "Konec řádku:"
+
+#. i18n: ectx: property (text), widget (QRadioButton, radioEndOfLineLF)
+#: sheets/csv/exportdialogui.ui:63
+#, kde-format
+msgid "&UNIX style (recommended; line feed only)"
+msgstr "&UNIX (doporučeno; pouze LF)"
+
+#. i18n: ectx: property (text), widget (QRadioButton, radioEndOfLineCRLF)
+#: sheets/csv/exportdialogui.ui:73
+#, kde-format
+msgid "&Windows style (carriage return and line feed)"
+msgstr "&Windows (CR a LF)"
+
+#. i18n: ectx: property (text), widget (QRadioButton, radioEndOfLineCR)
+#: sheets/csv/exportdialogui.ui:83
+#, kde-format
+msgid "&MacOS style (carriage return only)"
+msgstr "&MacOS (pouze CR)"
+
+#. i18n: ectx: attribute (title), widget (QWidget, tab)
+#: sheets/csv/exportdialogui.ui:96
+#, kde-format
+msgid "Sheets"
+msgstr "Listy"
+
+#. i18n: ectx: property (text), widget (QLabel, TextLabel4)
+#: sheets/csv/exportdialogui.ui:109
+#, kde-format
+msgid "Select sheets to export:"
+msgstr "Zvolte listy k exportu:"
+
+#. i18n: ectx: property (title), widget (QGroupBox, m_delimiterLineBox)
+#: sheets/csv/exportdialogui.ui:125
+#, kde-format
+msgid "Delimiter Line"
+msgstr "Oddělovací čára"
+
+#. i18n: ectx: property (text), widget (QLineEdit, m_sheetDelimiter)
+#: sheets/csv/exportdialogui.ui:131
+#, kde-format
+msgid "********<SHEETNAME>********"
+msgstr "********<SHEETNAME>********"
+
+#. i18n: ectx: property (text), widget (QLabel, TextLabel6)
+#: sheets/csv/exportdialogui.ui:144
+#, kde-format
+msgid "<SHEETNAME> gets replaced by the name of the next sheet."
+msgstr "<SHEETNAME> bude nahrazeno názvem následujícího listu."
+
+#. i18n: ectx: property (text), widget (QCheckBox, m_delimiterAboveAll)
+#: sheets/csv/exportdialogui.ui:163
+#, kde-format
+msgid "Print delimiter line above every sheet"
+msgstr "Vypsat oddělovací čáru nad každým listem"
+
+#. i18n: ectx: attribute (title), widget (QWidget, tab2)
+#: sheets/csv/exportdialogui.ui:174
+#, kde-format
+msgid "Cells"
+msgstr "Buňky"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: sheets/csv/exportdialogui.ui:182
+#, kde-format
+msgid "Delimiter:"
+msgstr "Oddělovač:"
+
+#. i18n: ectx: property (text), widget (QRadioButton, m_radioComma)
+#: sheets/csv/exportdialogui.ui:189
+#, kde-format
+msgid "Comma"
+msgstr "Čárka"
+
+#. i18n: ectx: property (text), widget (QRadioButton, m_radioSemicolon)
+#: sheets/csv/exportdialogui.ui:199
+#, kde-format
+msgid "Semicolon"
+msgstr "Středník"
+
+#. i18n: ectx: property (text), widget (QRadioButton, m_radioTab)
+#: sheets/csv/exportdialogui.ui:206
+#, kde-format
+msgid "Tabulator"
+msgstr "Tabulátor"
+
+#. i18n: ectx: property (text), widget (QRadioButton, m_radioSpace)
+#: sheets/csv/exportdialogui.ui:213
+#, kde-format
+msgid "Space"
+msgstr "Mezera"
+
+#. i18n: ectx: property (text), widget (QRadioButton, m_radioOther)
+#: sheets/csv/exportdialogui.ui:222
+#, kde-format
+msgid "Other:"
+msgstr "Jiné:"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: sheets/csv/exportdialogui.ui:250
+#, kde-format
+msgid "Quotes:"
+msgstr "Uvozovky:"
+
+#. i18n: ectx: property (text), item, widget (QComboBox, m_comboQuote)
+#: sheets/csv/exportdialogui.ui:270
+#, kde-format
+msgid "\""
+msgstr "\""
+
+#. i18n: ectx: property (text), item, widget (QComboBox, m_comboQuote)
+#: sheets/csv/exportdialogui.ui:275
+#, kde-format
+msgid "'"
+msgstr "'"
+
+#. i18n: ectx: property (text), widget (QCheckBox, m_selectionOnly)
+#: sheets/csv/exportdialogui.ui:301
+#, kde-format
+msgid "Export selection only"
+msgstr "Exportovat pouze výběr"
+
+#: sheets/dbase/dbaseimport.cc:44
+#, kde-format
+msgid "File format is not supported."
+msgstr "Formát souboru není podporován."
+
+#: sheets/dbase/dbaseimport.cc:49
+#, kde-format
+msgid "Could not read from file."
+msgstr "Nelze číst ze souboru."
+
+#: sheets/html/exportdialog.cc:20
+#, kde-format
+msgid "Export Sheet to HTML"
+msgstr "Exportovat tabulku do HTML"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox3)
+#: sheets/html/exportwidget.ui:17
+#, kde-format
+msgid "Sheet Selection"
+msgstr "Výběr listu"
+
+#. i18n: ectx: property (whatsThis), widget (QPushButton, mSelectAllButton)
+#. i18n: ectx: property (whatsThis), widget (QPushButton, mDeselectAllButton)
+#: sheets/html/exportwidget.ui:32 sheets/html/exportwidget.ui:42
+#, kde-format
+msgid "Click here to select all sheets in the list."
+msgstr "Kliknutím sem vyberete všechny listy ze seznamu."
+
+#. i18n: ectx: property (text), widget (QPushButton, mSelectAllButton)
+#: sheets/html/exportwidget.ui:35
+#, kde-format
+msgid "Select &All"
+msgstr "Vybr&at vše"
+
+#. i18n: ectx: property (text), widget (QPushButton, mDeselectAllButton)
+#: sheets/html/exportwidget.ui:45
+#, kde-format
+msgid "Desele&ct All"
+msgstr "Zrušit vý&běr"
+
+#. i18n: ectx: property (whatsThis), widget (QCheckBox, mSeparateFiles)
+#: sheets/html/exportwidget.ui:70
+#, kde-format
+msgid ""
+"This option will make the HTML export filter generate a new page for each "
+"sheet. If you disable this option, all sheets are written on one page."
+msgstr ""
+"S touto volbou vytvoří exportní filtr zvláštní stránku pro každý list. Pokud "
+"tuto volbu nezvolíte, vyexportují se všechny listy na jednu stránku."
+
+#. i18n: ectx: property (text), widget (QCheckBox, mSeparateFiles)
+#: sheets/html/exportwidget.ui:73
+#, kde-format
+msgid "Use &separate files for each table"
+msgstr "Pro každou tabulku použít &vlastní soubor"
+
+#. i18n: ectx: property (title), widget (QGroupBox, buttonGroup4)
+#: sheets/html/exportwidget.ui:83
+#, kde-format
+msgid "Style"
+msgstr "Styl"
+
+#. i18n: ectx: property (whatsThis), widget (QRadioButton, mDefaultButton)
+#: sheets/html/exportwidget.ui:89
+#, kde-format
+msgid ""
+"Select this option to use the default fonts and colors for the HTML page."
+msgstr "Touto volbou nastavíte pro HTML stránku výchozí písma a barvy."
+
+#. i18n: ectx: property (text), widget (QRadioButton, mDefaultButton)
+#: sheets/html/exportwidget.ui:92
+#, kde-format
+msgid "Use &default style"
+msgstr "Použít vý&chozí styl"
+
+#. i18n: ectx: property (whatsThis), widget (QRadioButton, mCustomButton)
+#: sheets/html/exportwidget.ui:102
+#, kde-format
+msgid ""
+"Select this option to specify a separate stylesheet for the HTML page. You "
+"can select or type on in the field below."
+msgstr ""
+"Zde můžete nastavit styl svých stránek. Můžete jej buď vybrat nebo napsat do "
+"pole níže."
+
+#. i18n: ectx: property (text), widget (QRadioButton, mCustomButton)
+#: sheets/html/exportwidget.ui:105
+#, kde-format
+msgid "Use &external stylesheet:"
+msgstr "Použít &externí styl:"
+
+#. i18n: ectx: property (whatsThis), widget (KUrlRequester, mCustomURL)
+#: sheets/html/exportwidget.ui:115
+#, kde-format
+msgid ""
+"In this field you can enter an URL for your stylesheet. It is possible to "
+"point to a stylesheet on disk, or to somewhere on the Internet."
+msgstr ""
+"Do tohoto pole napište URL svého stylu. Možné je jak zadat soubor umístění "
+"na disku, tak kdekoliv na Internetu."
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox2)
+#: sheets/html/exportwidget.ui:125
+#, kde-format
+msgid "Layout"
+msgstr "Rozvržení"
+
+#. i18n: ectx: property (whatsThis), widget (QCheckBox, mUseBorders)
+#: sheets/html/exportwidget.ui:131
+#, kde-format
+msgid "Use this option to enable or disable borders around the cells."
+msgstr "Tato volba povolí nebo zakáže rámečky kolem buněk."
+
+#. i18n: ectx: property (text), widget (QCheckBox, mUseBorders)
+#: sheets/html/exportwidget.ui:134
+#, kde-format
+msgid "Use &borders"
+msgstr "Použít &rámečky"
+
+#. i18n: ectx: property (whatsThis), widget (QLabel, textLabel1_2)
+#. i18n: ectx: property (whatsThis), widget (QSpinBox, mPixelsBetweenCells)
+#: sheets/html/exportwidget.ui:146 sheets/html/exportwidget.ui:168
+#, kde-format
+msgid ""
+"Use this option to define how many pixels there should be between the cells. "
+"This effect is better visible if you check <b>Use borders</b> too."
+msgstr ""
+"Touto volbou můžete zadat velikost mezery v pixelech mezi buňkami. Tento "
+"efekt je zvláště patrný, pokud současně zvolíte <b>Použít rámečky</b>."
+
+#. i18n: ectx: property (text), widget (QLabel, textLabel1_2)
+#: sheets/html/exportwidget.ui:149
+#, kde-format
+msgid "Pi&xels between cells:"
+msgstr "Počet pi&xelů mezi buňkami:"
+
+#: sheets/html/htmlexport.cc:191 sheets/html/htmlexport.cc:366
+#, kde-format
+msgid "Top"
+msgstr "Nahoře"
+
+#: sheets/latex/export/latexexportdialog.cc:155
+#, kde-format
+msgid "Latex Export Filter Configuration"
+msgstr "Nastavení exportního filtru do LaTeXu"
+
+#. i18n: ectx: attribute (title), widget (QWidget, Widget2)
+#: sheets/latex/export/latexexportwidget.ui:36
+#, kde-format
+msgid "Document"
+msgstr "Dokument"
+
+#. i18n: ectx: property (text), widget (QLabel, groupBox)
+#: sheets/latex/export/latexexportwidget.ui:44
+#, kde-format
+msgid "Document style:"
+msgstr "Styl dokumentu:"
+
+#. i18n: ectx: property (text), widget (QRadioButton, latexStyleButton)
+#: sheets/latex/export/latexexportwidget.ui:51
+#, kde-format
+msgid "Latex style"
+msgstr "Styl LaTeXu"
+
+#. i18n: ectx: property (text), widget (QRadioButton, wordsStyleButton)
+#: sheets/latex/export/latexexportwidget.ui:58
+#, kde-format
+msgid "Words style"
+msgstr "Styl Words"
+
+#. i18n: ectx: property (text), widget (QLabel, groupBox)
+#: sheets/latex/export/latexexportwidget.ui:68
+#, kde-format
+msgid "Document type:"
+msgstr "Typ dokumentu:"
+
+#. i18n: ectx: property (toolTip), widget (QRadioButton, fullDocButton)
+#: sheets/latex/export/latexexportwidget.ui:75
+#, kde-format
+msgid "The document will be able to be compiled alone"
+msgstr "Dokument bude možné zkompilovat samostatně"
+
+#. i18n: ectx: property (whatsThis), widget (QRadioButton, fullDocButton)
+#: sheets/latex/export/latexexportwidget.ui:78
+#, kde-format
+msgid ""
+"The document will be generated as a full latex document since all the "
+"include will be generated before the \\begin{document} and \\end{document} "
+"commands."
+msgstr ""
+"Dokument bude generován jako kompletní latexový dokument s obsahem "
+"jednotlivých částí mezi příkazy \\begin{document} a \\end{document}."
+
+#. i18n: ectx: property (text), widget (QRadioButton, fullDocButton)
+#: sheets/latex/export/latexexportwidget.ui:81
+#, kde-format
+msgid "Independent document"
+msgstr "Nezávislý dokument"
+
+#. i18n: ectx: property (toolTip), widget (QRadioButton, embededButton)
+#: sheets/latex/export/latexexportwidget.ui:91
+#, kde-format
+msgid "Do not generate either the latex header or the document environment"
+msgstr "Negenerovat ani latexovou hlavičku ani prostředí dokumentu"
+
+#. i18n: ectx: property (whatsThis), widget (QRadioButton, embededButton)
+#: sheets/latex/export/latexexportwidget.ui:94
+#, kde-format
+msgid ""
+"The document will be generated as a latex document which will have to be "
+"included in a main latex document. It will allow you to generate several "
+"little files for each chapter of your document."
+msgstr ""
+"Dokument bude generován jako latexový dokument, který bude součástí hlavního "
+"latexového dokumentu. Umožní to vytvořit několik malých souborů pro každou "
+"kapitolu vašeho dokumentu."
+
+#. i18n: ectx: property (text), widget (QRadioButton, embededButton)
+#: sheets/latex/export/latexexportwidget.ui:97
+#, kde-format
+msgid "Document to include"
+msgstr "Dokument k připojení"
+
+#. i18n: ectx: property (text), widget (QLabel, TextLabel1_2)
+#: sheets/latex/export/latexexportwidget.ui:104
+#, kde-format
+msgid "Document class:"
+msgstr "Třída dokumentu:"
+
+#. i18n: ectx: property (text), widget (QLabel, TextLabel2)
+#: sheets/latex/export/latexexportwidget.ui:124
+#, kde-format
+msgid "Quality:"
+msgstr "Kvalita:"
+
+#. i18n: ectx: property (text), item, widget (KComboBox, qualityComboBox)
+#: sheets/latex/export/latexexportwidget.ui:141
+#, kde-format
+msgid "Final"
+msgstr "Konečné"
+
+#. i18n: ectx: property (text), item, widget (KComboBox, qualityComboBox)
+#: sheets/latex/export/latexexportwidget.ui:146
+#, kde-format
+msgid "Draft"
+msgstr "Datum"
+
+#. i18n: ectx: property (text), widget (QLabel, defaultFontSizeTextZone)
+#: sheets/latex/export/latexexportwidget.ui:154
+#, kde-format
+msgid "Default font size:"
+msgstr "Výchozí velikost písma:"
+
+#. i18n: ectx: attribute (title), widget (QWidget, Widget3)
+#: sheets/latex/export/latexexportwidget.ui:186
+#, kde-format
+msgid "Pictures"
+msgstr "Obrázky"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: sheets/latex/export/latexexportwidget.ui:192
+#, kde-format
+msgid "Convert the pictures:"
+msgstr "Konvertovat obrázky:"
+
+#. i18n: ectx: property (text), widget (QLabel, TextLabel1)
+#: sheets/latex/export/latexexportwidget.ui:209
+#, kde-format
+msgid "Pictures directory:"
+msgstr "Adresář s obrázky:"
+
+#. i18n: ectx: attribute (title), widget (QWidget, tab)
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_4)
+#: sheets/latex/export/latexexportwidget.ui:223
+#: sheets/latex/export/latexexportwidget.ui:269
+#, kde-format
+msgid "Language"
+msgstr "Jazyk"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: sheets/latex/export/latexexportwidget.ui:244
+#, kde-format
+msgid "Encoding:"
+msgstr "Kódování:"
+
+#. i18n: ectx: property (text), widget (QPushButton, addLanguageBtn)
+#: sheets/latex/export/latexexportwidget.ui:289
+#, kde-format
+msgid "Add"
+msgstr "Přidat"
+
+#. i18n: ectx: property (text), widget (QPushButton, rmLanguageBtn)
+#: sheets/latex/export/latexexportwidget.ui:296
+#, kde-format
+msgid "Remove"
+msgstr "Odstranit"
+
+#. i18n: ectx: attribute (title), widget (QWidget, tab_2)
+#: sheets/latex/export/latexexportwidget.ui:321
+#, kde-format
+msgid "Contents"
+msgstr "Obsah"
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: sheets/latex/export/latexexportwidget.ui:329
+#, kde-format
+msgid "Export information about author:"
+msgstr "Exportovat informace o autorovi:"
+
+#. i18n: ectx: property (text), widget (QLabel, label_3)
+#: sheets/latex/export/latexexportwidget.ui:349
+#, kde-format
+msgid "Add a table of content:"
+msgstr "Přidat obsah:"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_5)
+#: sheets/latex/export/latexexportwidget.ui:368
+#, kde-format
+msgid "Notes"
+msgstr "Poznámky"
+
+#. i18n: ectx: property (text), widget (QRadioButton, RadioButton7)
+#: sheets/latex/export/latexexportwidget.ui:374
+#, kde-format
+msgid "Don't export"
+msgstr "Neexportovat"
+
+#. i18n: ectx: property (text), widget (QRadioButton, RadioButton5)
+#: sheets/latex/export/latexexportwidget.ui:381
+#, kde-format
+msgid "Export notes in margin notes"
+msgstr "Exportní poznámky v okrajových poznámkách"
+
+#. i18n: ectx: property (text), widget (QRadioButton, RadioButton6)
+#: sheets/latex/export/latexexportwidget.ui:388
+#, kde-format
+msgid "Export notes in comments"
+msgstr "Exportní poznámky v komentářích"
+
+#: sheets/opencalc/opencalcexport.cc:889
+#, kde-format
+msgid "Page "
+msgstr "Strana "
+
+#: sheets/opencalc/opencalcimport.cc:1198
+#, kde-format
+msgid "The file seems to be corrupt. Skipping a table."
+msgstr "Soubor se zdá být poškozený. Přeskakuji tabulku."
+
+#: sheets/opencalc/opencalcimport.cc:1210
+#, kde-format
+msgid "Skipping a table."
+msgstr "Přeskakuji tabulku."
+
+#: sheets/opencalc/opencalcimport.cc:1909
+#, kde-format
+msgid ""
+"This document was created with OpenOffice.org version '%1'. This filter was "
+"written for version 1.0. Reading this file could cause strange behavior, "
+"crashes or incorrect display of the data. Do you want to continue converting "
+"the document?"
+msgstr ""
+"Tento dokument byl vytvořen aplikací OpenOffice.org verze '%1'. Tento filtr "
+"byl napsán pro verzi 1.0. Načtení souboru může způsobit chybné chování "
+"aplikace nebo špatně zpracovaná data. Přejete si pokračovat v konverzi "
+"dokumentu?"
+
+#: sheets/opencalc/opencalcimport.cc:1910
+#, kde-format
+msgid "Unsupported document version"
+msgstr "Nepodporovaná verze dokumentu"
+
+#: sheets/qpro/qproimport.cc:114
+#, kde-format
+msgid "QPRO filter cannot open input file - please report."
+msgstr "QPRO filtr nemůže otevřít vstupní soubor. Prosím nahlaste tuto chybu."
+
+#: sheets/qpro/qproimport.cc:219
+#, kde-format
+msgid ""
+"Unable to open password protected files.\n"
+"The password algorithm has not been published"
+msgstr ""
+"Nelze otevírat soubory chráněné heslem.\n"
+"Tento algoritmus nebyl zveřejněn"
+
+#: sheets/xlsx/XlsxImport.cpp:577 stage/pptx/PptxImport.cpp:1314
+#: words/docx/import/DocxImport.cpp:146
+#, kde-format
+msgid "Unable to find part for type %1"
+msgstr "Nelze najít díl pro typ %1"
+
+#: sheets/xlsx/XlsxXmlSharedStringsReader.cpp:171
+#, kde-format
+msgid "Declared number of shared strings too small (%1)"
+msgstr "Zadaný počet sdílených řetězců je příliš malý (%1)"
+
+#: sheets/xlsx/XlsxXmlStylesReader.cpp:564
+#, kde-format
+msgid "Declared number of font styles too small (%1)"
+msgstr "Zadaný počet stylů písma je příliš malý (%1)"
+
+#: sheets/xlsx/XlsxXmlStylesReader.cpp:920
+#, kde-format
+msgid "Declared number of cell formats too small (%1)"
+msgstr "Zadaný počet formátů buněk je příliš malý (%1)"
+
+#: sheets/xlsx/XlsxXmlStylesReader.cpp:1047
+#: sheets/xlsx/XlsxXmlStylesReader.cpp:1368
+#, kde-format
+msgid "Declared number of fill styles too small (%1)"
+msgstr "Zadaný počet stylů výplně je příliš malý (%1)"
+
+#: sheets/xlsx/XlsxXmlWorksheetReader.cpp:341
+#, kde-format
+msgid ""
+"The data could not be loaded completely because the maximum size of sheet "
+"was exceeded."
+msgstr ""
+"Data nemohla být kompletně načtena protože byla překročena maximální "
+"velikost sešitu."
+
+#: sheets/xlsx/XlsxXmlWorksheetReader.cpp:1403
+#, kde-format
+msgid "Expected integer or floating point number"
+msgstr "Očekáváno celé nebo reálné číslo."
+
+#: stage/pptx/PptxXmlDocumentReader.cpp:289
+#, kde-format
+msgid "Slide layout \"%1\" not found"
+msgstr "Rozvržení snímku \"%1\" nenalezeno."
+
+#: stage/pptx/PptxXmlSlideReader.cpp:569
+#, kde-format
+msgid "Slide %1"
+msgstr "Snímek %1"
+
+#: words/ascii/ImportDialog.cc:30
+#, kde-format
+msgid "Words's Plain Text Import Filter"
+msgstr "Dialog importu prostého textu Words"
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, ImportDialogUI)
+#: words/ascii/ImportDialogUI.ui:16
+#, kde-format
+msgid "Plain Text Import Dialog"
+msgstr "Dialog importu prostého textu"
+
+#. i18n: ectx: property (title), widget (QGroupBox, buttonGroupParagraph)
+#: words/ascii/ImportDialogUI.ui:22
+#, kde-format
+msgid "End of Paragraph"
+msgstr "Konec odstavce"
+
+#. i18n: ectx: property (text), widget (QRadioButton, radioParagraphAsIs)
+#: words/ascii/ImportDialogUI.ui:28
+#, kde-format
+msgid "&As is: At the end of line"
+msgstr "J&ak je: na konci řádky"
+
+#. i18n: ectx: property (text), widget (QRadioButton, radioParagraphSentence)
+#: words/ascii/ImportDialogUI.ui:38
+#, kde-format
+msgid "&Sentence: If the end of line is the end of a sentence"
+msgstr "Věta: pokud je konec řádky koncem od&stavce"
+
+#. i18n: ectx: property (text), widget (QRadioButton, radioParagraphEmptyLine)
+#: words/ascii/ImportDialogUI.ui:45
+#, kde-format
+msgid "&Empty Line: If the line is empty"
+msgstr "&Prázdný řádek: Pokud je řádek prázdný"
+
+#: words/epub/OdtHtmlConverter.cpp:259 words/mobi/OdtMobiHtmlConverter.cpp:284
+#, kde-format
+msgid "End notes"
+msgstr "Poznámky na konci"
+
+#: words/msword-odf/conversion.cpp:787
+#, kde-format
+msgid "Even Pages Header"
+msgstr "Záhlaví sudých stránek"
+
+#: words/msword-odf/conversion.cpp:789
+#, kde-format
+msgid "Odd Pages Header"
+msgstr "Záhlaví lichých stránek"
+
+#: words/msword-odf/conversion.cpp:791
+#, kde-format
+msgid "Even Pages Footer"
+msgstr "Zápatí sudých stránek"
+
+#: words/msword-odf/conversion.cpp:793
+#, kde-format
+msgid "Odd Pages Footer"
+msgstr "Zápatí lichých stránek"
+
+#: words/msword-odf/conversion.cpp:795
+#, kde-format
+msgid "First Page Header"
+msgstr "Záhlaví první stránky"
+
+#: words/msword-odf/conversion.cpp:797
+#, kde-format
+msgid "First Page Footer"
+msgstr "Zápatí první stránky"
+
+#: words/msword-odf/texthandler.cpp:623
+#, kde-format
+msgid "Table %1"
+msgstr "Tabulka %1"
+
+#: words/rtf/import/rtfimport.cpp:56
+#, kde-format
+msgid "The file cannot be loaded, as it seems not to be an RTF document."
+msgstr "Soubor nelze načíst, protože se pravděpodobně nejedná o dokument RTF."
+
+#: words/rtf/import/rtfimport.cpp:57 words/rtf/import/rtfimport.cpp:70
+#: words/rtf/import/rtfimport.cpp:78
+#, kde-format
+msgid "Words's RTF Import Filter"
+msgstr "Importní filtr aplikace Words do RTF"
+
+#: words/rtf/import/rtfimport.cpp:70 words/rtf/import/rtfimport.cpp:78
+#, kde-format
+msgid "The file cannot be loaded."
+msgstr "Soubor nelze načíst."

@@ -1,0 +1,190 @@
+# translation of AutocorrectPlugin.po to Maithili
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Sangeeta Kumari <sangeeta09@gmail.com>, 2009.
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2009-04-22 00:13+0530\n"
+"Last-Translator: Sangeeta Kumari <sangeeta09@gmail.com>\n"
+"Language-Team: Maithili <maithili.sf.net>\n"
+"Language: mai\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: KBabel 1.11.4\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+"\n"
+"\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr ""
+
+#: Autocorrect.cpp:30
+#, fuzzy, kde-format
+#| msgid "Autocorrect"
+msgid "Enable Autocorrection"
+msgstr "स्वतः सुधार"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "स्वतः सुधार"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "स्वतः सुधार"
+
+#~ msgid "Default"
+#~ msgstr "मूलभूत"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "स्वतः सुधार"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "भाषाक लेल स्थानापन्न आओर अपवाद:"
+
+#~ msgid "&Find"
+#~ msgstr "ढूँढ़ू (&F) "
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#, fuzzy
+#~| msgid "Replace"
+#~ msgid "Re&place"
+#~ msgstr "बदलू"
+
+#~ msgid "&Add"
+#~ msgstr "जोड़ू (&A)"
+
+#~ msgid "Remove"
+#~ msgstr "हटाबू"
+
+#~ msgid "Find"
+#~ msgstr "खोजू"
+
+#~ msgid "Replace"
+#~ msgstr "बदलू"
+
+#~ msgid "E&xceptions"
+#~ msgstr "एक्सेप्शन्स (&x)"
+
+#~ msgid "R&emove"
+#~ msgstr "हटाबू (e)"
+
+#~ msgid "A&dd"
+#~ msgstr "जोड़ू (&d)"
+
+#~ msgid "&Modify"
+#~ msgstr "बदलू (&M)"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "स्वतः सुधार"
+
+#, fuzzy
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "मूलभूत"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "स्वतः सुधार"
+
+#, fuzzy
+#~| msgid "Replacements and exceptions for language:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "भाषाक लेल स्थानापन्न आओर अपवाद:"
+
+#, fuzzy
+#~| msgid "&Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "ढूँढ़ू (&F) "
+
+#, fuzzy
+#~| msgid "..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#, fuzzy
+#~| msgid "Replace"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "बदलू"
+
+#, fuzzy
+#~| msgid "Remove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "हटाबू"
+
+#, fuzzy
+#~| msgid "Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "खोजू"
+
+#, fuzzy
+#~| msgid "Replace"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "बदलू"
+
+#, fuzzy
+#~| msgid "E&xceptions"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "एक्सेप्शन्स (&x)"
+
+#, fuzzy
+#~| msgid "R&emove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "हटाबू (e)"
+
+#, fuzzy
+#~| msgid "A&dd"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "जोड़ू (&d)"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "स्वतः सुधार"
+
+#, fuzzy
+#~| msgid "&Modify"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "बदलू (&M)"
+
+#, fuzzy
+#~| msgid "&Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "जोड़ू (&A)"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "स्वतः सुधार"

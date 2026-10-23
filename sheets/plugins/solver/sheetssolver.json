@@ -1,0 +1,39 @@
+{
+    "KPlugin": {
+        "Name": "Sheets Solver Plugin",
+        "Name[ar]": "ملحق محلل الأوراق",
+        "Name[ca@valencia]": "Connector solucionador de Sheets",
+        "Name[ca]": "Connector solucionador del Sheets",
+        "Name[cs]": "Modul pro řešení tabulek",
+        "Name[de]": "Sheets-Lösungsmodul",
+        "Name[el]": "Πρόσθετο πρόγραμμα επίλυσης φύλλων",
+        "Name[en_GB]": "Sheets Solver Plugin",
+        "Name[eo]": "Folio-Solva Kromprogramo",
+        "Name[es]": "Complemento de resolución de hojas",
+        "Name[eu]": "Sheets-en ebazteko plugina",
+        "Name[fi]": "Sheetsin ratkaisinliitännäinen",
+        "Name[fr]": "Module externe pour le résolveur de Sheets",
+        "Name[ga]": "Breiseán Réiteoir Bileoga",
+        "Name[gl]": "Complemento de resolución para Sheets",
+        "Name[he]": "תוסף פותר גיליונות",
+        "Name[it]": "Estensione Solutore di Sheets",
+        "Name[ka]": "Sheets-ის ამომხსნელის დამატება",
+        "Name[lv]": "„Sheets“ atrisinātāja spraudnis",
+        "Name[nl]": "Plug-in voor Sheet oplosser",
+        "Name[pl]": "Wtyczka solwera dla Arkuszy",
+        "Name[pt_BR]": "Plugin Resolvedor de Planilhas",
+        "Name[ru]": "Модуль решателя Sheets",
+        "Name[sa]": "शीट्स् सॉल्वर प्लगिन्",
+        "Name[sk]": "Zásuvný modul riešiteľa tabuliek",
+        "Name[sl]": "Vtičnik reševalnika preglednic",
+        "Name[sv]": "Lösnings-insticksprogram för Sheets",
+        "Name[tr]": "Tablolar Çözücü Eklentisi",
+        "Name[uk]": "Додаток розв’язання задач для Sheets",
+        "Name[zh_CN]": "Sheets 的求解插件",
+        "Name[zh_TW]": "Sheets Solver 外掛程式",
+        "ServiceTypes": [
+            "Sheets/ViewPlugin"
+        ]
+    },
+    "X-Sheets-Version": "28"
+}

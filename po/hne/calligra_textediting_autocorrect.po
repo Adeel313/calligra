@@ -1,0 +1,430 @@
+# translation of AutocorrectPlugin.po to Hindi
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Ravishankar Shrivastava <raviratlami@yahoo.com>, 2008.
+# Ravishankar Shrivastava <raviratlami@aol.in>, 2009.
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2009-03-02 21:11+0530\n"
+"Last-Translator: Ravishankar Shrivastava <raviratlami@aol.in>\n"
+"Language-Team: Hindi <kde-i18n-doc@lists.kde.org>\n"
+"Language: hne\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 0.3\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "अपने अपन सुधार कान्फिगर करव... (&A)"
+
+#: Autocorrect.cpp:30
+#, fuzzy, kde-format
+#| msgid "Autocorrection"
+msgid "Enable Autocorrection"
+msgstr "अपने अपन सुधार"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "अपने अपन सुधार"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "सरल अपने अपन सुधार (&m)"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "वाक्य के पहिली अक्छर ल अपने अपन अपरकेस मं बदलव\n"
+#~ "(जइसन कि. \"my house. in this town\" ल \"my house. In this town\" मं बदले "
+#~ "जाए)"
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "दो अपर केस अक्छर ल एक अपर केस अक्छर अउ एक लोअर केस अक्छर मं बदलव\n"
+#~ "(जइसन कि- PErfect to Perfect) (&t)"
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "यूआरएल्स ल ओटोफार्मेट करव (&U)"
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "डबल स्पेसेस ल सप्रेस करव (&S)"
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "पैराग्राफ के चालू अउ आखरी के खाली जगह ल मेटाव (&e)"
+
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "बोल्ड अउ रेखांकित फारमेटिंग ल अपने अपनइ करव (&b)"
+
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "जब मिलत होही तहां बहुत मानक फ्रेक्सन नोटेसनों ल बदले जाही"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "1/2... ल ½... से बदलव (&p)"
+
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "नंबरित पैराग्राफों बर अपने अपन नंबर उपयोग करव (&a)"
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "1st... ल 1^st... के साथ बदलव"
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "दिनों के नाम ल केपिटलाइज करव"
+
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "गोली सहित पैराग्राफों बर लिस्ट-फारमेटिंग उपयोग करव (&i)"
+
+#~ msgid "Default"
+#~ msgstr "डिफाल्ट"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "मनमाफिक उदाहरन (&Q)"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "डबल कोट्स ल टाइपोग्राफिकल कोट्स के साथ बदलव (&d)"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "सिंगल कोट्स ल टाइपोग्राफिकल कोट्स के साथ बदलव (&s)"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "विस्तृत अपने अपन सुधार (&v)"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "भाखा बर रिप्लेसमेंट्स अउ एक्सेप्सन्स:"
+
+#~ msgid "All Languages"
+#~ msgstr "सब्बो भाखा"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "सब्द बदलना सक्छम करव (&E)"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "पाठ ल फारमेट के साथ बदलव (&t)"
+
+#~ msgid "&Find"
+#~ msgstr "खोजव (&F)"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "बदलव (&p)"
+
+#~ msgid "&Add"
+#~ msgstr "जोड़व (&A)"
+
+#~ msgid "Remove"
+#~ msgstr "हटाव"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "फारमेट बदलव... (&I)"
+
+#~ msgid "C&lear Format"
+#~ msgstr "फारमेट साफ करव (&I)"
+
+#~ msgid "Find"
+#~ msgstr "खोजव"
+
+#~ msgid "Replace"
+#~ msgstr "बदलव"
+
+#~ msgid "E&xceptions"
+#~ msgstr "एक्सेप्सन्स (&x)"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "वाक्य के आखरी हे अइसन नइ समझव:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "अपने अपन सामिल करव"
+
+#~ msgid "R&emove"
+#~ msgstr "मेटाव (&e)"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "इहां दो अपरकेस अक्छर ल स्वीकारव:"
+
+#~ msgid "A&dd"
+#~ msgstr "जोड़व (&d)"
+
+#~ msgid "&Modify"
+#~ msgstr "सुधारव (&M)"
+
+#~ msgid "Select Character"
+#~ msgstr "अक्छर चुनव"
+
+#, fuzzy
+#~| msgid "Si&mple Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "सरल अपने अपन सुधार (&m)"
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &first letter of a sentence automatically to uppercase\n"
+#~| "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "वाक्य के पहिली अक्छर ल अपने अपन अपरकेस मं बदलव\n"
+#~ "(जइसन कि. \"my house. in this town\" ल \"my house. In this town\" मं बदले "
+#~ "जाए)"
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &two uppercase characters to one uppercase and one lowercase "
+#~| "character\n"
+#~| " (e.g. PErfect to Perfect)"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "दो अपर केस अक्छर ल एक अपर केस अक्छर अउ एक लोअर केस अक्छर मं बदलव\n"
+#~ "(जइसन कि- PErfect to Perfect) (&t)"
+
+#, fuzzy
+#~| msgid "Autoformat &URLs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "यूआरएल्स ल ओटोफार्मेट करव (&U)"
+
+#, fuzzy
+#~| msgid "&Suppress double spaces"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "डबल स्पेसेस ल सप्रेस करव (&S)"
+
+#, fuzzy
+#~| msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "पैराग्राफ के चालू अउ आखरी के खाली जगह ल मेटाव (&e)"
+
+#, fuzzy
+#~| msgid "Automatically do &bold and underline formatting"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "बोल्ड अउ रेखांकित फारमेटिंग ल अपने अपनइ करव (&b)"
+
+#, fuzzy
+#~| msgid "Most standard fraction notations will be converted when available"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "जब मिलत होही तहां बहुत मानक फ्रेक्सन नोटेसनों ल बदले जाही"
+
+#, fuzzy
+#~| msgid "Re&place 1/2... with ½..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "1/2... ल ½... से बदलव (&p)"
+
+#, fuzzy
+#~| msgid "Use &autonumbering for numbered paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "नंबरित पैराग्राफों बर अपने अपन नंबर उपयोग करव (&a)"
+
+#, fuzzy
+#~| msgid "Rep&lace 1st... with 1^st..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "1st... ल 1^st... के साथ बदलव"
+
+#, fuzzy
+#~| msgid "Capitalize name of days"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "दिनों के नाम ल केपिटलाइज करव"
+
+#, fuzzy
+#~| msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "गोली सहित पैराग्राफों बर लिस्ट-फारमेटिंग उपयोग करव (&i)"
+
+#, fuzzy
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "डिफाल्ट"
+
+#, fuzzy
+#~| msgid "Custom &Quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "मनमाफिक उदाहरन (&Q)"
+
+#, fuzzy
+#~| msgid "Replace &double quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "डबल कोट्स ल टाइपोग्राफिकल कोट्स के साथ बदलव (&d)"
+
+#, fuzzy
+#~| msgid "Replace &single quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "सिंगल कोट्स ल टाइपोग्राफिकल कोट्स के साथ बदलव (&s)"
+
+#, fuzzy
+#~| msgid "Ad&vanced Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "विस्तृत अपने अपन सुधार (&v)"
+
+#, fuzzy
+#~| msgid "Replacements and exceptions for language:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "भाखा बर रिप्लेसमेंट्स अउ एक्सेप्सन्स:"
+
+#, fuzzy
+#~| msgid "All Languages"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "सब्बो भाखा"
+
+#, fuzzy
+#~| msgid "&Enable word replacement"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "सब्द बदलना सक्छम करव (&E)"
+
+#, fuzzy
+#~| msgid "Replace &text with format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "पाठ ल फारमेट के साथ बदलव (&t)"
+
+#, fuzzy
+#~| msgid "&Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "खोजव (&F)"
+
+#, fuzzy
+#~| msgid "..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#, fuzzy
+#~| msgid "Re&place"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "बदलव (&p)"
+
+#, fuzzy
+#~| msgid "Remove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "हटाव"
+
+#, fuzzy
+#~| msgid "C&hange Format..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "फारमेट बदलव... (&I)"
+
+#, fuzzy
+#~| msgid "C&lear Format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "फारमेट साफ करव (&I)"
+
+#, fuzzy
+#~| msgid "Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "खोजव"
+
+#, fuzzy
+#~| msgid "Replace"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "बदलव"
+
+#, fuzzy
+#~| msgid "E&xceptions"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "एक्सेप्सन्स (&x)"
+
+#, fuzzy
+#~| msgid "Do not treat as the end of a sentence:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "वाक्य के आखरी हे अइसन नइ समझव:"
+
+#, fuzzy
+#~| msgid "Autoinclude"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "अपने अपन सामिल करव"
+
+#, fuzzy
+#~| msgid "R&emove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "मेटाव (&e)"
+
+#, fuzzy
+#~| msgid "Accept two uppercase letters in:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "इहां दो अपरकेस अक्छर ल स्वीकारव:"
+
+#, fuzzy
+#~| msgid "A&dd"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "जोड़व (&d)"
+
+#, fuzzy
+#~| msgid "Configure &Autocorrection..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "अपने अपन सुधार कान्फिगर करव... (&A)"
+
+#, fuzzy
+#~| msgid "Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "अपने अपन सुधार"
+
+#, fuzzy
+#~| msgid "&Modify"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "सुधारव (&M)"
+
+#, fuzzy
+#~| msgid "&Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "जोड़व (&A)"
+
+#, fuzzy
+#~| msgid "Select Character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "अक्छर चुनव"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "अपने अपन सुधार"

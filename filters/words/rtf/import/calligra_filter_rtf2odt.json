@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "Words RTF Import Filter",
+        "Name[ar]": "مرشح استيراد RTF لـ Words",
+        "Name[ca@valencia]": "Filtre d'exportació RTF de Words",
+        "Name[ca]": "Filtre d'exportació RTF del Words",
+        "Name[cs]": "Dialog exportního filtru RTF pro Words",
+        "Name[de]": "Words RTF-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής Words RTF",
+        "Name[en_GB]": "Words RTF Import Filter",
+        "Name[eo]": "Words RTF Importfiltrilo",
+        "Name[es]": "Filtro de importación RTF de Words",
+        "Name[eu]": "Words-en RTF inportatzeko iragazkia",
+        "Name[fi]": "Wordsin RTF-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « RTF » de Words",
+        "Name[ga]": "Scagaire Iompórtála RTF Focail",
+        "Name[gl]": "Filtro para Words de importación de RTF",
+        "Name[it]": "Filtro di importazione RTF per Words",
+        "Name[ka]": "Words -ის RTF -დან შემოტანის ფილტრი",
+        "Name[lv]": "„Words“ RTF importa filtrs",
+        "Name[nl]": "RTF-importfilter voor Words",
+        "Name[pl]": "Filtr importu RTF do Słów",
+        "Name[pt_BR]": "Filtro de importação RTF para o Words",
+        "Name[ru]": "Фильтр импорта RTF Words",
+        "Name[sa]": "शब्द आरटीएफ आयात फ़िल्टर",
+        "Name[sk]": "Filter importu RTF pre Words",
+        "Name[sl]": "Filter uvoza Words RTF",
+        "Name[sv]": "Words RTF-importfilter",
+        "Name[tr]": "Sözcükler RTF İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр експорту RTF для Words",
+        "Name[zh_CN]": "Words RTF 导入过滤器",
+        "Name[zh_TW]": "Words RTF 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/vnd.oasis.opendocument.text",
+    "X-KDE-Import": "application/rtf",
+    "X-KDE-Weight": 1
+}

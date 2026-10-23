@@ -1,0 +1,461 @@
+# Uyghur translation for PathShapes.
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Sahran <sahran.ug@gmail.com>, 2011.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PathShapes\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2026-09-23 06:56+0900\n"
+"Last-Translator: Abduqadir Abliz <sahranbay@gmail.com>\n"
+"Language-Team: Uyghur <kde-i18n-doc@kde.org>\n"
+"Language: ug\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 3.9\n"
+
+#: ellipse/EllipseShapeConfigCommand.cpp:23
+msgctxt "(qtundo-format)"
+msgid "Change ellipse"
+msgstr ""
+
+#: ellipse/EllipseShapeConfigWidget.cpp:16
+#, kde-format
+msgid "Arc"
+msgstr "ياي"
+
+#: ellipse/EllipseShapeConfigWidget.cpp:17
+#, kde-format
+msgid "Pie"
+msgstr "دۈگىلەك دىئاگرامما"
+
+#: ellipse/EllipseShapeConfigWidget.cpp:18
+#, kde-format
+msgid "Chord"
+msgstr "ئاككورد"
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, EllipseShapeConfigWidget)
+#: ellipse/EllipseShapeConfigWidget.ui:13
+#, kde-format
+msgid "Ellipse Shape"
+msgstr "ئېللىپس شەكلى"
+
+#. i18n: ectx: property (text), widget (QLabel, label_3)
+#: ellipse/EllipseShapeConfigWidget.ui:19 spiral/SpiralShapeConfigWidget.ui:19
+#, kde-format
+msgid "Type:"
+msgstr "تۈرى:"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: ellipse/EllipseShapeConfigWidget.ui:29
+#, kde-format
+msgid "Start angle:"
+msgstr ""
+
+#. i18n: ectx: property (suffix), widget (QDoubleSpinBox, startAngle)
+#. i18n: ectx: property (suffix), widget (QDoubleSpinBox, endAngle)
+#: ellipse/EllipseShapeConfigWidget.ui:39
+#: ellipse/EllipseShapeConfigWidget.ui:56
+#, kde-format
+msgid "°"
+msgstr ""
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: ellipse/EllipseShapeConfigWidget.ui:46
+#, kde-format
+msgid "End angle:"
+msgstr ""
+
+#. i18n: ectx: property (text), widget (QPushButton, closeEllipse)
+#: ellipse/EllipseShapeConfigWidget.ui:63
+#, kde-format
+msgid "Close ellipse"
+msgstr ""
+
+#: ellipse/EllipseShapeFactory.cpp:20
+#, kde-format
+msgid "Ellipse"
+msgstr "ئېللىپىس"
+
+#: ellipse/EllipseShapeFactory.cpp:22
+#, kde-format
+msgid "An ellipse"
+msgstr ""
+
+#: enhancedpath/CalloutShapeFactory.cpp:31
+#: enhancedpath/CalloutShapeFactory.cpp:33
+#, kde-format
+msgid "A callout shape"
+msgstr ""
+
+#: enhancedpath/CalloutShapeFactory.cpp:148
+#, kde-format
+msgid "Rectangular Callout"
+msgstr ""
+
+#: enhancedpath/CalloutShapeFactory.cpp:150
+#, kde-format
+msgid "A rectangular callout"
+msgstr ""
+
+#: enhancedpath/CalloutShapeFactory.cpp:229
+#, kde-format
+msgid "Rounded Callout"
+msgstr ""
+
+#: enhancedpath/CalloutShapeFactory.cpp:231
+#, kde-format
+msgid "A rounded rectangular callout"
+msgstr ""
+
+#: enhancedpath/CalloutToolFactory.cpp:23
+#, kde-format
+msgid "Callout editing"
+msgstr ""
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:26
+#, kde-format
+msgid "An enhanced path shape"
+msgstr ""
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:28
+#, kde-format
+msgid "An enhanced path"
+msgstr ""
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:142
+#, kde-format
+msgid "Cross"
+msgstr "كېسىشىش"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:144
+#, kde-format
+msgid "A cross"
+msgstr ""
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:177
+#: enhancedpath/EnhancedPathShapeFactory.cpp:210
+#: enhancedpath/EnhancedPathShapeFactory.cpp:243
+#: enhancedpath/EnhancedPathShapeFactory.cpp:276
+#, kde-format
+msgid "Arrow"
+msgstr "يا ئوق"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:179
+#: enhancedpath/EnhancedPathShapeFactory.cpp:212
+#: enhancedpath/EnhancedPathShapeFactory.cpp:245
+#: enhancedpath/EnhancedPathShapeFactory.cpp:278
+#, kde-format
+msgid "An arrow"
+msgstr ""
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:321
+#: enhancedpath/EnhancedPathShapeFactory.cpp:323
+#, kde-format
+msgid "Smiley"
+msgstr ""
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:401
+#, kde-format
+msgid "Circular Arrow"
+msgstr "يۇمىلاق ئىسترېلكا"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:403
+#, kde-format
+msgid "A circular-arrow"
+msgstr ""
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:446
+#, kde-format
+msgid "Gearhead"
+msgstr ""
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:448
+#, kde-format
+msgid "A gearhead"
+msgstr ""
+
+#: rectangle/RectangleShapeConfigCommand.cpp:19
+msgctxt "(qtundo-format)"
+msgid "Change rectangle"
+msgstr ""
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, RectangleShapeConfigWidget)
+#: rectangle/RectangleShapeConfigWidget.ui:5
+#, kde-format
+msgid "Rectangle Shape"
+msgstr ""
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: rectangle/RectangleShapeConfigWidget.ui:21
+#, kde-format
+msgid "Corner radius x:"
+msgstr ""
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: rectangle/RectangleShapeConfigWidget.ui:34
+#, kde-format
+msgid "Corner radius y:"
+msgstr ""
+
+#: rectangle/RectangleShapeFactory.cpp:20
+#, kde-format
+msgid "Rectangle"
+msgstr "تىك تۆت بۇلۇڭ"
+
+#: rectangle/RectangleShapeFactory.cpp:22
+#, kde-format
+msgid "A rectangle"
+msgstr "تىك تۆت تەرەپلىك"
+
+#: spiral/SpiralShapeConfigCommand.cpp:19
+msgctxt "(qtundo-format)"
+msgid "Change spiral"
+msgstr ""
+
+#: spiral/SpiralShapeConfigWidget.cpp:16
+#, kde-format
+msgid "Curve"
+msgstr "ئەگرى سىزىق"
+
+#: spiral/SpiralShapeConfigWidget.cpp:17
+#, kde-format
+msgid "Line"
+msgstr "قۇر"
+
+#: spiral/SpiralShapeConfigWidget.cpp:23
+#, kde-format
+msgid "Clockwise"
+msgstr ""
+
+#: spiral/SpiralShapeConfigWidget.cpp:24
+#, kde-format
+msgid "Anticlockwise"
+msgstr ""
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, SpiralShapeConfigWidget)
+#: spiral/SpiralShapeConfigWidget.ui:13
+#, kde-format
+msgid "Spiral Shape"
+msgstr ""
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: spiral/SpiralShapeConfigWidget.ui:29
+#, kde-format
+msgid "Fade:"
+msgstr ""
+
+#. i18n: ectx: property (text), widget (QLabel, label_4)
+#: spiral/SpiralShapeConfigWidget.ui:55
+#, kde-format
+msgid "Direction:"
+msgstr "يونۇلۇش:"
+
+#: spiral/SpiralShapeFactory.cpp:17
+#, kde-format
+msgid "Spiral"
+msgstr "بۇرمىسىمان"
+
+#: spiral/SpiralShapeFactory.cpp:19
+#, kde-format
+msgid "A spiral shape"
+msgstr ""
+
+#: star/StarShapeConfigCommand.cpp:21
+msgctxt "(qtundo-format)"
+msgid "Change star"
+msgstr ""
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, StarShapeConfigWidget)
+#: star/StarShapeConfigWidget.ui:13
+#, kde-format
+msgid "Star shape"
+msgstr ""
+
+#. i18n: ectx: property (text), widget (QLabel, label_4)
+#: star/StarShapeConfigWidget.ui:19
+#, kde-format
+msgid "Polygon:"
+msgstr ""
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: star/StarShapeConfigWidget.ui:36
+#, kde-format
+msgid "Corners:"
+msgstr ""
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: star/StarShapeConfigWidget.ui:46
+#, kde-format
+msgid "Inner radius:"
+msgstr ""
+
+#. i18n: ectx: property (text), widget (QLabel, label_3)
+#: star/StarShapeConfigWidget.ui:60
+#, kde-format
+msgid "Outer radius:"
+msgstr ""
+
+#: star/StarShapeFactory.cpp:24
+#, kde-format
+msgid "A star shape"
+msgstr "يۇلتۇزسىمان"
+
+#: star/StarShapeFactory.cpp:26 star/StarShapeFactory.cpp:39
+#, kde-format
+msgid "A star"
+msgstr "يۇلتۇز"
+
+#: star/StarShapeFactory.cpp:37
+#, kde-format
+msgid "Star"
+msgstr "يۇلتۇز"
+
+#: star/StarShapeFactory.cpp:51
+#, kde-format
+msgid "Flower"
+msgstr "گۈل"
+
+#: star/StarShapeFactory.cpp:53
+#, kde-format
+msgid "A flower"
+msgstr ""
+
+#: star/StarShapeFactory.cpp:68
+#, kde-format
+msgid "Pentagon"
+msgstr "بەش تەرەپلىك"
+
+#: star/StarShapeFactory.cpp:70
+#, kde-format
+msgid "A pentagon"
+msgstr ""
+
+#: star/StarShapeFactory.cpp:84
+#, kde-format
+msgid "Hexagon"
+msgstr "ئالتە تەرەپلىك"
+
+#: star/StarShapeFactory.cpp:86
+#, kde-format
+msgid "A hexagon"
+msgstr ""
+
+#~| msgid "Ellipse Shape"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ellipse Shape"
+#~ msgstr "ئېللىپس شەكلى"
+
+#~| msgid "Type:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Type:"
+#~ msgstr "تىپى:"
+
+#~| msgid "°"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "°"
+#~ msgstr "°"
+
+#~| msgid "Direction:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Direction:"
+#~ msgstr "يونۇلۇش:"
+
+#~| msgid "Arc"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Arc"
+#~ msgstr "ياي"
+
+#~| msgid "Pie"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Pie"
+#~ msgstr "دۈگىلەك دىئاگرامما"
+
+#~| msgid "Chord"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Chord"
+#~ msgstr "ئاككورد"
+
+#~| msgid "Ellipse"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ellipse"
+#~ msgstr "ئېللىپس"
+
+#~| msgid "Cross"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Cross"
+#~ msgstr "كېسىشىش"
+
+#~| msgid "Arrow"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Arrow"
+#~ msgstr "يا ئوق"
+
+#~| msgid "Callout"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Callout"
+#~ msgstr "مىساللىق چۈشەندۈرۈش"
+
+#~| msgid "Circular Arrow"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Circular Arrow"
+#~ msgstr "يۇمىلاق ئىسترېلكا"
+
+#~| msgid "Rectangle"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rectangle"
+#~ msgstr "تىك تۆت بۇلۇڭ"
+
+#~| msgid "A rectangle"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A rectangle"
+#~ msgstr "تىك تۆت تەرەپلىك"
+
+#~| msgid "Curve"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Curve"
+#~ msgstr "ئەگرى سىزىق"
+
+#~| msgid "Line"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Line"
+#~ msgstr "قۇر"
+
+#~| msgid "Spiral"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Spiral"
+#~ msgstr "بۇرمىسىمان"
+
+#~| msgid "A star shape"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A star shape"
+#~ msgstr "يۇلتۇزسىمان"
+
+#~| msgid "A star"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A star"
+#~ msgstr "يۇلتۇز"
+
+#~| msgid "Star"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Star"
+#~ msgstr "يۇلتۇز"
+
+#~| msgid "Flower"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Flower"
+#~ msgstr "گۈل"
+
+#~| msgid "Pentagon"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Pentagon"
+#~ msgstr "بەش تەرەپلىك"
+
+#~| msgid "Hexagon"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Hexagon"
+#~ msgstr "ئالتە تەرەپلىك"

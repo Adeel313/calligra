@@ -1,0 +1,485 @@
+# Translation of calligra_textediting_autocorrect.po to Ukrainian
+# Copyright (C) 2008-2010 This_file_is_part_of_KDE
+# This file is distributed under the license LGPL version 2.1 or
+# version 3 or later versions approved by the membership of KDE e.V.
+#
+# Yuri Chornoivan <yurchor@ukr.net>, 2008, 2009, 2010, 2022.
+msgid ""
+msgstr ""
+"Project-Id-Version: calligra_textediting_autocorrect\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2022-11-10 14:10+0200\n"
+"Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
+"Language-Team: Ukrainian <kde-i18n-uk@kde.org>\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 20.12.0\n"
+"Plural-Forms: nplurals=4; plural=n==1 ? 3 : n%10==1 && n%100!=11 ? 0 : n"
+"%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "Налаштування &автовиправлення..."
+
+#: Autocorrect.cpp:30
+#, kde-format
+msgid "Enable Autocorrection"
+msgstr "Увімкнути автовиправлення"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "Автовиправлення"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Пр&осте автовиправлення"
+
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Визначати початок нового речення і завжди виставляти верхній регістр для "
+#~ "наступної літери"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Автоматично виправляти п&ершу літеру речення на прописну літеру\n"
+#~ "(наприклад, «мій дім. у цьому місті» на «мій дім. У цьому місті»)"
+
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Всі слова перевірятимуться на звичайну помилку, що полягає у задовгому "
+#~ "утримуванні клавіші Shift. Якщо деякі слова мають дві великі літери на "
+#~ "початку, їх слід додати до списку на вкладці «Винятки»."
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Перетворювати &дві початкові великі літери на одну велику і одну маленьку "
+#~ "літери\n"
+#~ " (наприклад, ЧУдовий на Чудовий)"
+
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Визначати, коли набирається URL (Uniform Resource Locator — адреса у "
+#~ "мережі інтернет), і встановлювати для неї форматування, що відповідає "
+#~ "способу її відображення у переглядачі мережі інтернет."
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "Автоформат для &URL"
+
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Переконатися, що надруковано підряд не більше двох пробілів, оскільки це "
+#~ "є типовою помилкою під час набору, яку важко знайти у форматованому "
+#~ "тексті."
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Змінювати &подвійні пробіли"
+
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Зберігати коректне форматування і відступи речень, автоматично вилучаючи "
+#~ "пробіли набрані на початку на в кінці абзацу."
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "В&илучати пробіли на початку і в кінці абзаців"
+
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Коли ви друкуєте _підкреслений_ або *жирний*, текст між знаками "
+#~ "підкреслення і зірочками буде перетворено на текст з лінією підкреслення "
+#~ "або текст у напівжирній гарнітурі."
+
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Автоматично вмикати &жирний та підкреслений формати"
+
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "Більшість звичайних дробів буде перетворено за можливості"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "За&мінювати 1/2... на ½..."
+
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Коли ви набиратимете «1)» або щось подібне на початку абзацу, абзац буде "
+#~ "автоматично переведено у режим нумерованого списку з відповідним стилем. "
+#~ "Це дає перевагу того, що наступні абзаци також буде відповідно "
+#~ "пронумеровано, а проміжки коректно виставлено."
+
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "Використовувати &автонумерацію у пронумерованих абзацах"
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "Зам&інювати 1st... на 1^st..."
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "Назви днів великими літерами"
+
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Коли ви набиратимете «*» або «-» на початку абзацу, абзац буде "
+#~ "автоматично переведено у формат відповідного ненумерованого списку. "
+#~ "Використання такого форматування дозволить правильно обирати позначки для "
+#~ "наступних елементів списку."
+
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Використовувати формат списк&у для абзаців з позначками"
+
+#~ msgid "Default"
+#~ msgstr "Типові"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "Спеціальні &лапки"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Замінювати &подвійні лапки типографськими"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Замінювати &одинарні лапки типографськими"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Д&одаткове автовиправлення"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Замінники та винятки для мови:"
+
+#~ msgid "All Languages"
+#~ msgstr "Всі мови"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "&Увімкнути заміну слів"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "Замінити &текст з форматуванням"
+
+#~ msgid "&Find"
+#~ msgstr "&Знайти"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "За&мінити"
+
+#~ msgid "&Add"
+#~ msgstr "&Додати"
+
+#~ msgid "Remove"
+#~ msgstr "Вилучити"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "Зм&інити формат..."
+
+#~ msgid "C&lear Format"
+#~ msgstr "О&чистити формат"
+
+#~ msgid "Find"
+#~ msgstr "Знайти"
+
+#~ msgid "Replace"
+#~ msgstr "Замінити"
+
+#~ msgid "E&xceptions"
+#~ msgstr "Ви&нятки"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Не вважати кінцем речення:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "Автовключення"
+
+#~ msgid "R&emove"
+#~ msgstr "Ви&лучити"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Допускати дві великі літеру у словах:"
+
+#~ msgid "A&dd"
+#~ msgstr "&Додати"
+
+#~ msgid "&Modify"
+#~ msgstr "&Змінити"
+
+#~ msgid "Select Character"
+#~ msgstr "Обрати символ"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Пр&осте автовиправлення"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Визначати початок нового речення і завжди виставляти верхній регістр для "
+#~ "наступної літери"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Автоматично виправляти п&ершу літеру речення на прописну літеру\n"
+#~ "(наприклад, «мій дім. у цьому місті» на «мій дім. У цьому місті»)"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Всі слова перевірятимуться на звичайну помилку, що полягає у задовгому "
+#~ "утримуванні клавіші Shift. Якщо деякі слова мають дві великі літери на "
+#~ "початку, їх слід додати до списку на вкладці «Винятки»."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Перетворювати &дві початкові великі літери на одну велику і одну маленьку "
+#~ "літери\n"
+#~ " (наприклад, ЧУдовий на Чудовий)"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Визначати, коли набирається URL (Uniform Resource Locator — адреса у "
+#~ "мережі інтернет), і встановлювати для неї форматування, що відповідає "
+#~ "способу її відображення у переглядачі мережі інтернет."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "Автоформат для &URL"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Переконатися, що надруковано підряд не більше двох пробілів, оскільки це "
+#~ "є типовою помилкою під час набору, яку важко знайти у форматованому "
+#~ "тексті."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Змінювати &подвійні пробіли"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Зберігати коректне форматування і відступи речень, автоматично вилучаючи "
+#~ "пробіли набрані на початку на в кінці абзацу."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "В&илучати пробіли на початку і в кінці абзаців"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Коли ви друкуєте _підкреслений_ або *жирний*, текст між знаками "
+#~ "підкреслення і зірочками буде перетворено на текст з лінією підкреслення "
+#~ "або текст у напівжирній гарнітурі."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Автоматично вмикати &жирний та підкреслений формати"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "Більшість звичайних дробів буде перетворено за можливості"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "За&мінювати 1/2... на ½..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Коли ви набиратимете «1)» або щось подібне на початку абзацу, абзац буде "
+#~ "автоматично переведено у режим нумерованого списку з відповідним стилем. "
+#~ "Це дає перевагу того, що наступні абзаци також буде відповідно "
+#~ "пронумеровано, а проміжки коректно виставлено."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "Використовувати &автонумерацію у пронумерованих абзацах"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "Зам&інювати 1st... на 1^st..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "Назви днів великими літерами"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Коли ви набиратимете «*» або «-» на початку абзацу, абзац буде "
+#~ "автоматично переведено у формат відповідного ненумерованого списку. "
+#~ "Використання такого форматування дозволить правильно обирати позначки для "
+#~ "наступних елементів списку."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Використовувати формат списк&у для абзаців з позначками"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "Типові"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "Спеціальні &лапки"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Замінювати &подвійні лапки типографськими"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Замінювати &одинарні лапки типографськими"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Д&одаткове автовиправлення"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Замінники та винятки для мови:"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "Всі мови"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "&Увімкнути заміну слів"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "Замінити &текст з форматуванням"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "&Знайти"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "За&мінити"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "Вилучити"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "Зм&інити формат..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "О&чистити формат"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "Знайти"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "Замінити"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "Ви&нятки"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Не вважати кінцем речення:"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "Автовключення"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "Ви&лучити"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Допускати дві великі літеру у словах:"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "&Додати"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "Налаштування &автовиправлення..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "Автовиправлення"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "&Змінити"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "&Додати"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "Обрати символ"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "Автовиправлення"

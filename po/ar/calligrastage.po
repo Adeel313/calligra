@@ -1,0 +1,3123 @@
+# translation of kpresenter.po to
+# Copyright (C) 2002,2003, 2007 Free Software Foundation, Inc.
+# Sayed Jaffer Al-Mosawi <mosawi@arabeyes.org>, 2002.
+# IBRAHIM ALIBRAHIM <iki2@eudoramail.com>, 2003.
+# Youssef Chahibi <chahibi@gmail.com>, 2007, 2008.
+# SPDX-FileCopyrightText: 2024, 2025, 2026 Zayed Al-Saidi <zayed.alsaidi@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: kpresenter\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-09-10 00:46+0000\n"
+"PO-Revision-Date: 2026-03-24 10:18+0400\n"
+"Last-Translator: Zayed Al-Saidi <zayed.alsaidi@gmail.com>\n"
+"Language-Team: ar\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+"X-Generator: Lokalize 23.08.5\n"
+
+#. i18n: ectx: Menu (edit)
+#: part/calligrastage.rc:10
+#, kde-format
+msgid "&Edit"
+msgstr "&حرّر"
+
+#. i18n: ectx: Menu (view)
+#: part/calligrastage.rc:29
+#, kde-format
+msgid "&View"
+msgstr "ا&عرض"
+
+#. i18n: ectx: Menu (insert)
+#: part/calligrastage.rc:49
+#, kde-format
+msgid "&Insert"
+msgstr "أ&درج"
+
+#. i18n: ectx: Menu (format)
+#: part/calligrastage.rc:54
+#, kde-format
+msgid "F&ormat"
+msgstr "ت&نسيق"
+
+#. i18n: ectx: Menu (page)
+#: part/calligrastage.rc:63
+#, kde-format
+msgid "&Slide"
+msgstr "أزْلِ&ق"
+
+#. i18n: ectx: Menu (slideshow)
+#: part/calligrastage.rc:74
+#, kde-format
+msgid "Sli&de Show"
+msgstr "عرض ال&شرائح"
+
+#. i18n: ectx: Menu (settings)
+#: part/calligrastage.rc:81
+#, kde-format
+msgid "&Settings"
+msgstr "إ&عدادات"
+
+#: part/commands/KPrAddCustomSlideShowCommand.cpp:19
+msgctxt "(qtundo-format)"
+msgid "Add custom slide show"
+msgstr "أضف عرض شرائح مخصصًا"
+
+#: part/commands/KPrAnimationCreateCommand.cpp:32
+msgctxt "(qtundo-format)"
+msgid "Create shape animation"
+msgstr "أنشئ حركة شكل"
+
+#: part/commands/KPrAnimationEditNodeTypeCommand.cpp:34
+msgctxt "(qtundo-format)"
+msgid "Edit animation trigger event"
+msgstr "عدّل حدث مشغل الحركة"
+
+#: part/commands/KPrAnimationRemoveCommand.cpp:30
+msgctxt "(qtundo-format)"
+msgid "Remove shape animation"
+msgstr "أزل حركة الشكل"
+
+#: part/commands/KPrDelCustomSlideShowCommand.cpp:20
+msgctxt "(qtundo-format)"
+msgid "Delete custom slide show"
+msgstr "احذف عرض الشرائح المخصص"
+
+#: part/commands/KPrDeleteSlidesCommand.cpp:25
+msgctxt "(qtundo-format) Delete one slide"
+msgid "Delete slide"
+msgstr "احذف الشريحة"
+
+#: part/commands/KPrDeleteSlidesCommand.cpp:44
+msgctxt "(qtundo-format)"
+msgid "Delete slide"
+msgid_plural "Delete slides"
+msgstr[0] "احذف الشريحة"
+msgstr[1] "احذف الشريحة"
+msgstr[2] "احذف شريحتان"
+msgstr[3] "احذف ٣ شرائح"
+msgstr[4] "احذف ١١ شريحة"
+msgstr[5] "احذف شرائح"
+
+#: part/commands/KPrEditAnimationTimeLineCommand.cpp:35
+msgctxt "(qtundo-format)"
+msgid "Edit animation delay/duration"
+msgstr "عدّل تأخير/مدة الحركة"
+
+#: part/commands/KPrEditCustomSlideShowsCommand.cpp:21
+msgctxt "(qtundo-format)"
+msgid "Edit custom slide show"
+msgstr "عدّل عرض الشرائح المخصص"
+
+#: part/commands/KPrPageEffectSetCommand.cpp:38
+msgctxt "(qtundo-format)"
+msgid "Create Slide Effect"
+msgstr "أنشئ تأثير شريحة"
+
+#: part/commands/KPrPageEffectSetCommand.cpp:40
+msgctxt "(qtundo-format)"
+msgid "Modify Slide Effect"
+msgstr "عدّل تأثير الشريحة"
+
+#: part/commands/KPrPageEffectSetCommand.cpp:43
+msgctxt "(qtundo-format)"
+msgid "Delete Slide Effect"
+msgstr "احذف تأثير الشريحة"
+
+#: part/commands/KPrPageTransitionSetCommand.cpp:32
+msgctxt "(qtundo-format)"
+msgid "Modify Slide Transition"
+msgstr "عدّل انتقال الشريحة"
+
+#: part/commands/KPrRenameCustomSlideShowCommand.cpp:24
+msgctxt "(qtundo-format)"
+msgid "Rename custom slide show"
+msgstr "أعد تسمية عرض الشرائح المخصص"
+
+#: part/commands/KPrReorderAnimationCommand.cpp:34
+msgctxt "(qtundo-format)"
+msgid "Reorder animations"
+msgstr "أعد تسلسل الحركات"
+
+#: part/KPrAboutData.h:19
+#, kde-format
+msgctxt "application name"
+msgid "Calligra Stage"
+msgstr "كي بريزينتر"
+
+#: part/KPrAboutData.h:21
+#, kde-format
+msgid "Presentation Tool"
+msgstr "أداة العروض التقديمية"
+
+#: part/KPrAboutData.h:23
+#, kde-format
+msgid "Copyright 1998-%1, The Stage Team"
+msgstr "حقوق النشر 1998-%1، فريق Stage"
+
+#: part/KPrAboutData.h:29
+#, kde-format
+msgid "Carl Schwan"
+msgstr "كارل شوان"
+
+#: part/KPrAboutData.h:30
+#, kde-format
+msgid "Maintainer/Port to Qt6"
+msgstr "المُصان/نقل إلى Qt6"
+
+#: part/KPrAboutData.h:34 part/KPrAboutData.h:35
+#, kde-format
+msgid "Former maintainer"
+msgstr "المشرف السابق"
+
+#: part/KPrAboutData.h:34
+#, kde-format
+msgid "Thorsten Zachmann"
+msgstr "Thorsten Zachmann"
+
+#: part/KPrAboutData.h:35
+#, kde-format
+msgid "Laurent Montel"
+msgstr "Laurent Montel"
+
+#: part/KPrAboutData.h:36
+#, kde-format
+msgid "Original author"
+msgstr "المؤلف الأصلي"
+
+#: part/KPrAboutData.h:36
+#, kde-format
+msgid "Reginald Stadlbauer"
+msgstr "Reginald Stadlbauer"
+
+#: part/KPrAboutData.h:37
+#, kde-format
+msgid "Werner Trobin"
+msgstr "Werner Trobin"
+
+#: part/KPrAboutData.h:38
+#, kde-format
+msgid "David Faure"
+msgstr "David Faure"
+
+#: part/KPrAboutData.h:39
+#, kde-format
+msgid "Toshitaka Fujioka"
+msgstr "Toshitaka Fujioka"
+
+#: part/KPrAboutData.h:40
+#, kde-format
+msgid "Lukáš Tinkl"
+msgstr "Lukáš Tinkl"
+
+#: part/KPrAboutData.h:41
+#, kde-format
+msgid "Ariya Hidayat"
+msgstr "Ariya Hidayat"
+
+#: part/KPrAboutData.h:42
+#, kde-format
+msgid "Percy Leonhardt"
+msgstr "Percy Leonhardt"
+
+#: part/KPrAboutData.h:43
+#, kde-format
+msgid "Thomas Zander"
+msgstr "Thomas Zander"
+
+#: part/KPrAboutData.h:44
+#, kde-format
+msgid "Peter Simonsson"
+msgstr "بيتر سيمونسون"
+
+#: part/KPrAboutData.h:45
+#, kde-format
+msgid "Boudewijn Rempt "
+msgstr "بودوين رمبت "
+
+#: part/KPrAboutData.h:46
+#, kde-format
+msgid "Carlos Licea "
+msgstr "كارلوس ليسيا "
+
+#: part/KPrAboutData.h:47
+#, kde-format
+msgid "C. Boemann "
+msgstr "C. Boemann "
+
+#: part/KPrAboutData.h:48
+#, kde-format
+msgid "Fredy Yanardi "
+msgstr "Fredy Yanardi "
+
+#: part/KPrAboutData.h:49
+#, kde-format
+msgid "Jan Hambrecht "
+msgstr "Jan Hambrecht "
+
+#: part/KPrAboutData.h:50
+#, kde-format
+msgid "Marijn Kruisselbrink "
+msgstr "Marijn Kruisselbrink "
+
+#: part/KPrAboutData.h:51
+#, kde-format
+msgid "Martin Pfeiffer "
+msgstr "مارتن فايفر "
+
+#: part/KPrAboutData.h:52
+#, kde-format
+msgid "Sven Langkamp "
+msgstr "Sven Langkamp "
+
+#: part/KPrAboutData.h:53
+#, kde-format
+msgid "Timothée Lacroix "
+msgstr "Timothée Lacroix "
+
+#: part/KPrAboutData.h:55
+#, kde-format
+msgctxt "EMAIL OF TRANSLATORS"
+msgid "Your emails"
+msgstr "mosawi@arabeyes.org"
+
+#. i18n translator strings
+#: part/KPrAboutData.h:55
+#, kde-format
+msgctxt "NAME OF TRANSLATORS"
+msgid "Your names"
+msgstr "السيد جعفر الموسوي"
+
+#: part/KPrCustomSlideShowsModel.cpp:52
+#: part/KPrSlidesSorterDocumentModel.cpp:83
+#, kde-format
+msgid "Unknown"
+msgstr "مجهول"
+
+#: part/KPrCustomSlideShowsModel.cpp:57
+#: part/KPrSlidesSorterDocumentModel.cpp:88 part/ui/KPrHtmlExportDialog.cpp:114
+#, kde-format
+msgid "Slide %1"
+msgstr "الشريحة %1"
+
+#: part/KPrEndOfSlideShowPage.cpp:69
+#, kde-format
+msgid "End of presentation. Click to exit."
+msgstr "نهاية العرض. انقر للخروج."
+
+#: part/KPrPageLayoutWidget.cpp:45 part/tools/KPrPlaceholderToolFactory.cpp:15
+#, kde-format
+msgid "Layout"
+msgstr "التخطيط"
+
+#: part/KPrPart.cpp:69
+#, kde-format
+msgid "Can not find needed text component, Calligra Stage will quit now."
+msgstr "لا أستطيع إيجاد مكون النص المطلوب، كاليغرا Stage سيخرج الآن."
+
+#: part/KPrPart.cpp:74
+#, kde-format
+msgid "Can not find needed picture component, Calligra Stage will quit now."
+msgstr "لا أستطيع إيجاد مكون الصورة المطلوب، كاليغرا Stage سيخرج الآن."
+
+#: part/KPrPart.cpp:87
+#, kde-format
+msgid "Installation Error"
+msgstr "خطأ تثبيت"
+
+#: part/KPrPicturesImport.cpp:59
+msgctxt "(qtundo-format)"
+msgid "Insert Pictures"
+msgstr "أدخل صورًا"
+
+#: part/KPrPlaceholderShapeFactory.cpp:32
+#, kde-format
+msgid "Placeholder shape"
+msgstr "شكل عنصر نائب"
+
+#: part/KPrPlaceholderStrategy.cpp:34
+msgid "Double click to add a title"
+msgstr "انقر نقرًا مزدوجًا لإضافة عنوان"
+
+#: part/KPrPlaceholderStrategy.cpp:35
+msgid "Double click to add an outline"
+msgstr "انقر نقرًا مزدوجًا لإضافة مخطط تفصيلي"
+
+#: part/KPrPlaceholderStrategy.cpp:36 part/KPrPlaceholderStrategy.cpp:37
+msgid "Double click to add a text"
+msgstr "انقر نقرًا مزدوجًا لإضافة نص"
+
+#: part/KPrPlaceholderStrategy.cpp:38
+msgid "Double click to add notes"
+msgstr "انقر نقرًا مزدوجًا لإضافة ملاحظات"
+
+#: part/KPrPlaceholderStrategy.cpp:48
+msgid "Double click to add a picture"
+msgstr "انقر نقرًا مزدوجًا لإضافة صورة"
+
+#: part/KPrPlaceholderStrategy.cpp:52
+msgid "Double click to add a chart"
+msgstr "انقر نقرًا مزدوجًا لإضافة مخطط"
+
+#: part/KPrPlaceholderStrategy.cpp:56
+msgid "Double click to add an object"
+msgstr "انقر نقرًا مزدوجًا لإضافة كائن"
+
+#: part/KPrPresentationDrawWidget.cpp:86
+#, kde-format
+msgid "Pen Color"
+msgstr "لون القلم"
+
+#: part/KPrPresentationDrawWidget.cpp:87
+#, kde-format
+msgid "Pen Size"
+msgstr "حجم القلم"
+
+#: part/KPrPresentationDrawWidget.cpp:89
+#, kde-format
+msgid "Black"
+msgstr "أسود"
+
+#: part/KPrPresentationDrawWidget.cpp:90
+#, kde-format
+msgid "White"
+msgstr "أبيض"
+
+#: part/KPrPresentationDrawWidget.cpp:91
+#, kde-format
+msgid "Green"
+msgstr "أخضر"
+
+#: part/KPrPresentationDrawWidget.cpp:92
+#, kde-format
+msgid "Red"
+msgstr "أحمر"
+
+#: part/KPrPresentationDrawWidget.cpp:93
+#, kde-format
+msgid "Blue"
+msgstr "أزرق"
+
+#: part/KPrPresentationDrawWidget.cpp:94
+#, kde-format
+msgid "Yellow"
+msgstr "أصفر"
+
+#: part/KPrPresenterViewInterface.cpp:49 part/KPrView.cpp:94
+#, kde-format
+msgid "Next Slide"
+msgstr "الشريحة التالية"
+
+#: part/KPrPresenterViewInterface.cpp:59
+#, kde-format
+msgid "Speaker Notes"
+msgstr "ملاحظات المتحدث"
+
+#: part/KPrPresenterViewInterface.cpp:87
+#, kde-format
+msgid "Current Slide %1 of %2"
+msgstr "الشريحة الحالية %1 من %2"
+
+#: part/KPrPresenterViewInterface.cpp:87
+#, kde-format
+msgid "End of Slide Show"
+msgstr "نهاية عرض الشرائح"
+
+#: part/KPrShapeAnimations.cpp:210
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:215
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:510
+#, kde-format
+msgid "start on mouse click"
+msgstr "ابدأ بنقرة الفأرة"
+
+#: part/KPrShapeAnimations.cpp:212
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:218
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:513
+#, kde-format
+msgid "start after previous animation"
+msgstr "ابدأ بعد الحركة السابقة"
+
+#: part/KPrShapeAnimations.cpp:214
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:221
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:516
+#, kde-format
+msgid "start with previous animation"
+msgstr "ابدأ مع الحركة السابقة"
+
+#: part/KPrShapeAnimations.cpp:225
+#, kde-format
+msgid "Start after %1 seconds. Duration of %2 seconds."
+msgstr "ابدأ بعد %1 ثانية. مدتها %2 ثانية."
+
+#: part/KPrShapeAnimations.cpp:244
+#: part/tools/animationtool/KPrAnimationToolFactory.cpp:21
+#, kde-format
+msgid "Animation"
+msgstr "التحريك"
+
+#: part/KPrShapeAnimations.cpp:248
+#, kde-format
+msgid "Shape"
+msgstr "شكل"
+
+#: part/KPrSlidesSorterDocumentModel.cpp:279
+#, kde-format
+msgid "&Move Here"
+msgstr "ان&قل هنا"
+
+#: part/KPrSlidesSorterDocumentModel.cpp:283
+#, kde-format
+msgid "&Copy Here"
+msgstr "ان&سخ هنا"
+
+#: part/KPrSlidesSorterDocumentModel.cpp:287
+#, kde-format
+msgid "C&ancel"
+msgstr "أ&لغِ"
+
+#: part/KPrView.cpp:74
+#, kde-format
+msgid "Normal"
+msgstr "عادي"
+
+#: part/KPrView.cpp:79
+#, kde-format
+msgid "Show Master Slides"
+msgstr "أظهر الشرائح الرئيسة"
+
+#: part/KPrView.cpp:80
+#, kde-format
+msgid "Import Slideshow..."
+msgstr "استورد عرض شرائح..."
+
+#: part/KPrView.cpp:81
+#, kde-format
+msgid "Insert Slide"
+msgstr "أدرِج شريحة"
+
+#: part/KPrView.cpp:82 part/KPrView.cpp:83
+#, kde-format
+msgid "Insert a new slide after the current one"
+msgstr "أدخل شريحة جديدة بعد الشريحة الحالية"
+
+#: part/KPrView.cpp:84
+#, kde-format
+msgid "Copy Slide"
+msgstr "انسخ الشريحة"
+
+#: part/KPrView.cpp:85 part/KPrView.cpp:86
+#, kde-format
+msgid "Copy the current slide"
+msgstr "انسخ الشريحة الحالية"
+
+#: part/KPrView.cpp:87 part/KPrViewModeSlidesSorter.cpp:174
+#, kde-format
+msgid "Delete Slide"
+msgstr "احذف الشريحة"
+
+#: part/KPrView.cpp:88 part/KPrView.cpp:89
+#, kde-format
+msgid "Delete the current slide"
+msgstr "احذف الشريحة الحالية"
+
+#: part/KPrView.cpp:90
+#, kde-format
+msgid "Master Slide..."
+msgstr "الشريحة الرئيسة..."
+
+#: part/KPrView.cpp:91
+#, kde-format
+msgid "Previous Slide"
+msgstr "الشريحة السابقة"
+
+#: part/KPrView.cpp:92 part/KPrView.cpp:93
+#, kde-format
+msgid "Go to previous slide"
+msgstr "انتقل إلى الشريحة السابقة"
+
+#: part/KPrView.cpp:95 part/KPrView.cpp:96
+#, kde-format
+msgid "Go to next slide"
+msgstr "انتقل إلى الشريحة التالية"
+
+#: part/KPrView.cpp:97
+#, kde-format
+msgid "First Slide"
+msgstr "الشريحة الأولى"
+
+#: part/KPrView.cpp:98 part/KPrView.cpp:99
+#, kde-format
+msgid "Go to first slide"
+msgstr "انتقل إلى الشريحة الأولى"
+
+#: part/KPrView.cpp:100
+#, kde-format
+msgid "Last Slide"
+msgstr "الشريحة الأخيرة"
+
+#: part/KPrView.cpp:101 part/KPrView.cpp:102
+#, kde-format
+msgid "Go to last slide"
+msgstr "انتقل إلى الشريحة الأخيرة"
+
+#: part/KPrView.cpp:103
+#, kde-format
+msgid "Configure Stage..."
+msgstr "اضبط Stage..."
+
+#: part/KPrView.cpp:238
+#, kde-format
+msgid "Export as HTML..."
+msgstr "صدّر ك‍HTML..."
+
+#: part/KPrView.cpp:264
+#, kde-format
+msgid "Insert Pictures as Slides..."
+msgstr "أدخل صورًا كشرائح..."
+
+#: part/KPrView.cpp:273
+#, kde-format
+msgid "Create Appear Animation"
+msgstr "أنشئ حركة ظهور"
+
+#: part/KPrView.cpp:277
+#, kde-format
+msgid "Edit Custom Slide Shows..."
+msgstr "عدّل عروض الشرائح المخصصة..."
+
+#: part/KPrView.cpp:281
+#, kde-format
+msgid "Start Presentation"
+msgstr "ابدأ العرض"
+
+#: part/KPrView.cpp:284
+#, kde-format
+msgid "From Current Slide"
+msgstr "من الشريحة الحالية"
+
+#: part/KPrView.cpp:288
+#, kde-format
+msgid "From First Slide"
+msgstr "من الشريحة الأولى"
+
+#: part/KPrView.cpp:293
+#, kde-format
+msgid "Stop presentation"
+msgstr "أوقف العرض التقديمي"
+
+#: part/KPrView.cpp:299
+#, kde-format
+msgid "Show Status Bar"
+msgstr "اعرض شريط الحالة"
+
+#: part/KPrView.cpp:300
+#, kde-format
+msgid "Hide Status Bar"
+msgstr "أخفِ شريط الحالة"
+
+#: part/KPrView.cpp:301
+#, kde-format
+msgid "Shows or hides the status bar"
+msgstr "أظهر أو أخفِ شريط الحالة"
+
+#: part/KPrView.cpp:310
+#, kde-format
+msgid "Configure Slide Show..."
+msgstr "اضبط عرض الشرائح..."
+
+#: part/KPrView.cpp:314
+#, kde-format
+msgid "Configure Presenter View..."
+msgstr "اضبط عرض المقدّم..."
+
+#: part/KPrView.cpp:318
+#, kde-format
+msgid "Draw on the presentation..."
+msgstr "ارسم على العرض التقديمي..."
+
+#: part/KPrView.cpp:325
+#, kde-format
+msgid "Highlight the presentation..."
+msgstr "أبرز العرض التقديمي..."
+
+#: part/KPrView.cpp:332
+#, kde-format
+msgid "Blackscreen on the presentation..."
+msgstr "شاشة سوداء على العرض التقديمي..."
+
+#: part/KPrViewModeNotes.cpp:36
+#, kde-format
+msgid "Notes"
+msgstr "ملاحظات"
+
+#: part/KPrViewModeSlidesSorter.cpp:64
+#, kde-format
+msgid "Slides Sorter"
+msgstr "فارز الشرائح"
+
+#: part/KPrViewModeSlidesSorter.cpp:74
+#, kde-format
+msgid "Slide Show: "
+msgstr "عرض الشرائح: "
+
+#: part/KPrViewModeSlidesSorter.cpp:83
+#, kde-format
+msgid "Add a new custom slide show"
+msgstr "أضف عرض شرائح مخصصًا جديدًا"
+
+#: part/KPrViewModeSlidesSorter.cpp:88
+#, kde-format
+msgid "Delete current custom slide show"
+msgstr "احذف عرض الشرائح المخصص الحالي"
+
+#: part/KPrViewModeSlidesSorter.cpp:92
+#, kde-format
+msgid "Add slides to current custom slide show"
+msgstr "أضف شرائح إلى عرض الشرائح المخصص الحالي"
+
+#: part/KPrViewModeSlidesSorter.cpp:97
+#, kde-format
+msgid "Remove slides from current custom slide show"
+msgstr "أزل شرائح من عرض الشرائح المخصص الحالي"
+
+#: part/KPrViewModeSlidesSorter.cpp:173
+#, kde-format
+msgid "Duplicate Slide"
+msgstr "كرر الشريحة"
+
+#: part/KPrViewModeSlidesSorter.cpp:175
+#, kde-format
+msgid "Start Slideshow"
+msgstr "ابدأ عرض الشرائح"
+
+#: part/KPrViewModeSlidesSorter.cpp:532
+#, kde-format
+msgid "Add a new slide"
+msgstr "أضف شريحة جديدة"
+
+#: part/KPrViewModeSlidesSorter.cpp:533 part/KPrViewModeSlidesSorter.cpp:551
+#, kde-format
+msgid "Delete selected slides"
+msgstr "احذف الشرائح المحددة"
+
+#: part/KPrViewModeSlidesSorter.cpp:537
+#, kde-format
+msgid "Rename"
+msgstr "غيّر الاسم"
+
+#: part/KPrViewModeSlidesSorter.cpp:541
+#, kde-format
+msgid "Cut"
+msgstr "قصّ"
+
+#: part/KPrViewModeSlidesSorter.cpp:542
+#, kde-format
+msgid "Copy"
+msgstr "انسخ"
+
+#: part/KPrViewModeSlidesSorter.cpp:543
+#, kde-format
+msgid "Paste"
+msgstr "ألصق"
+
+#: part/KPrViewModeSlidesSorter.cpp:638 part/KPrViewModeSlidesSorter.cpp:642
+#, kde-format
+msgid "Slide Show %1"
+msgstr "عرض الشرائح %1"
+
+#: part/KPrViewModeSlidesSorter.cpp:655
+#: part/ui/KPrConfigureSlideShowDialog.cpp:26
+#, kde-format
+msgid "All slides"
+msgstr "كل الشرائح"
+
+#: part/KPrViewModeSlidesSorter.cpp:682 part/ui/KPrHtmlExportDialog.cpp:153
+#: part/ui/KPrHtmlExportDialog.cpp:207
+#, kde-format
+msgid "Error"
+msgstr "خطأ"
+
+#: part/KPrViewModeSlidesSorter.cpp:682
+#, kde-format
+msgid "There cannot be two slideshows with the same name."
+msgstr "لا أستطيع إنشاء عرضي شرائح بنفس الاسم."
+
+#: part/pagelayout/KPrPlaceholders.cpp:46
+#: part/pagelayout/KPrPlaceholders.cpp:47
+msgctxt "(qtundo-format)"
+msgid "Set Layout"
+msgstr "اضبط التخطيط"
+
+#: part/tools/animationtool/KPrAnimationSelectorWidget.cpp:54
+#, kde-format
+msgid "Automatic animation preview"
+msgstr "معاينة الحركة الآلية"
+
+#: part/tools/animationtool/KPrAnimationSelectorWidget.cpp:301
+#: part/tools/animationtool/KPrAnimationSelectorWidget.cpp:309
+#, kde-format
+msgid "Preview animation"
+msgstr "عاين الحركة"
+
+#: part/tools/animationtool/KPrAnimationTool.cpp:215
+#, kde-format
+msgid "Slide Transitions"
+msgstr "انتقالات الشرائح"
+
+#: part/tools/animationtool/KPrAnimationTool.cpp:217
+#, kde-format
+msgid "Shape Click Actions"
+msgstr "إجراءات نقر الشكل"
+
+#: part/tools/animationtool/KPrAnimationTool.cpp:219
+#, kde-format
+msgid "Shape Animations"
+msgstr "حركات الشكل"
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:50
+#, kde-format
+msgid "Manage animation delay and duration: "
+msgstr "أدر تأخير الحركة ومدتها: "
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:51
+#, kde-format
+msgid "Start: "
+msgstr "البداية: "
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:55
+#, kde-format
+msgid "on mouse click"
+msgstr "بنقرة الفأرة"
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:56
+#, kde-format
+msgid "after previous animation"
+msgstr "بعد الحركة السابقة"
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:57
+#, kde-format
+msgid "with previous animation"
+msgstr "مع الحركة السابقة"
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:59
+#, kde-format
+msgid "Delay: "
+msgstr "التأخير: "
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:64
+#, kde-format
+msgid "Duration: "
+msgstr "المدّة: "
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:71
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:124
+#, kde-format
+msgid "Preview Shape Animation"
+msgstr "عاين حركة الشكل"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:50
+#, kde-format
+msgid "No Effect"
+msgstr "لا تأثير"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:70
+#, kde-format
+msgid " sec"
+msgstr " ثانية"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:80
+#, kde-format
+msgid "Manual"
+msgstr "يدوي"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:81
+#, kde-format
+msgid "Automatic"
+msgstr "آلي"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:89
+#, kde-format
+msgid "Slide Transition:"
+msgstr "انتقال الشريحة:"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:98
+#, kde-format
+msgid "Apply To All Slides"
+msgstr "طبّق على جميع الشرائح"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:253
+msgctxt "(qtundo-format)"
+msgid "Apply Slide Effect to all Slides"
+msgstr "طبّق تأثير الشريحة على جميع الشرائح"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:158
+#, kde-format
+msgid "Entrance"
+msgstr "دخول"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:164
+#, kde-format
+msgid "Exit"
+msgstr "إنهاء"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:169
+#, kde-format
+msgid "Emphasis"
+msgstr "تشديد"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:174
+#, kde-format
+msgid "Custom"
+msgstr "مخصّص"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:179
+#, kde-format
+msgid "Motion path"
+msgstr "مسار الحركة"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:184
+#, kde-format
+msgid "Ole Action"
+msgstr "إجراء Ole"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:189
+#, kde-format
+msgid "Media Call"
+msgstr "استدعاء الوسائط"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:77
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:81
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:505
+#, kde-format
+msgid "Edit animation"
+msgstr "عدّل الحركة"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:95
+#, kde-format
+msgid "Add new animation"
+msgstr "أضف حركة جديدة"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:107
+#, kde-format
+msgid "Remove animation"
+msgstr "أزل الحركة"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:111
+#, kde-format
+msgid "Order: "
+msgstr "الترتيب: "
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:114
+#, kde-format
+msgid "Move animation up"
+msgstr "حرّك الحركة للأعلى"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:119
+#, kde-format
+msgid "Move animation down"
+msgstr "حرّك الحركة للأسفل"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:503
+#, kde-format
+msgid "Add a new animation"
+msgstr "أضف حركة جديدة"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:504
+#, kde-format
+msgid "Delete current animation"
+msgstr "احذف الحركة الحالية"
+
+#: part/tools/animationtool/KPrTimeLineHeader.cpp:71
+#, kde-format
+msgid "seconds"
+msgstr "ثانية"
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, WdgToolCrop)
+#: part/tools/animationtool/wdg_tool_crop.ui:16
+#, kde-format
+msgid "Crop"
+msgstr "اقتصّ"
+
+#. i18n: ectx: property (text), widget (QLabel, textLabel1)
+#: part/tools/animationtool/wdg_tool_crop.ui:36
+#, kde-format
+msgid "X:"
+msgstr "س:"
+
+#. i18n: ectx: property (text), widget (QCheckBox, boolWidth)
+#: part/tools/animationtool/wdg_tool_crop.ui:60
+#, kde-format
+msgid "W&idth:"
+msgstr "ال&عرض:"
+
+#. i18n: ectx: property (toolTip), widget (QCheckBox, boolWidth)
+#: part/tools/animationtool/wdg_tool_crop.ui:63
+#, kde-format
+msgid "Will keep the width of the crop constant"
+msgstr "سأبقي عرض الاقتصاص ثابتًا"
+
+#. i18n: ectx: property (text), widget (QCheckBox, boolHeight)
+#: part/tools/animationtool/wdg_tool_crop.ui:84
+#, kde-format
+msgid "&Height:"
+msgstr "الار&تفاع:"
+
+#. i18n: ectx: property (toolTip), widget (QCheckBox, boolHeight)
+#: part/tools/animationtool/wdg_tool_crop.ui:87
+#, kde-format
+msgid "Will keep the height of the crop constant"
+msgstr "سأبقي ارتفاع الاقتصاص ثابتًا"
+
+#. i18n: ectx: property (text), widget (QLabel, textLabel3)
+#: part/tools/animationtool/wdg_tool_crop.ui:94
+#, kde-format
+msgid "Y:"
+msgstr "ص:"
+
+#. i18n: ectx: property (text), widget (QCheckBox, boolRatio)
+#: part/tools/animationtool/wdg_tool_crop.ui:111
+#, kde-format
+msgid "R&atio:"
+msgstr "ال&نسبة:"
+
+#. i18n: ectx: property (toolTip), widget (QCheckBox, boolRatio)
+#: part/tools/animationtool/wdg_tool_crop.ui:114
+#, kde-format
+msgid "Will keep the ratio constant"
+msgstr "سأبقي النسبة ثابتة"
+
+#. i18n: ectx: property (text), item, widget (QComboBox, cmbType)
+#: part/tools/animationtool/wdg_tool_crop.ui:132
+#, kde-format
+msgid "Layer"
+msgstr "طبقة"
+
+#. i18n: ectx: property (text), item, widget (QComboBox, cmbType)
+#: part/tools/animationtool/wdg_tool_crop.ui:137
+#, kde-format
+msgid "Image"
+msgstr "صورة"
+
+#. i18n: ectx: property (text), widget (QPushButton, bnCrop)
+#: part/tools/animationtool/wdg_tool_crop.ui:145
+#, kde-format
+msgid "&Crop"
+msgstr "ا&قتصّ"
+
+#: part/tools/KPrPlaceholderTool.cpp:90
+msgctxt "(qtundo-format)"
+msgid "Edit Shape"
+msgstr "عدّل الشكل"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_2)
+#: part/ui/KPrConfigurePresenterView.ui:16
+#, kde-format
+msgid "Multiple monitors"
+msgstr "شاشات متعددة"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: part/ui/KPrConfigurePresenterView.ui:24
+#, kde-format
+msgid "Presentation monitor:"
+msgstr "شاشة العرض التقديمي:"
+
+#. i18n: ectx: property (text), widget (QCheckBox, presenterViewCheckBox)
+#: part/ui/KPrConfigurePresenterView.ui:39
+#, kde-format
+msgid "Enable presenter view"
+msgstr "مكّن عرض المقدّم"
+
+#: part/ui/KPrConfigurePresenterViewDialog.cpp:27
+#, kde-format
+msgid "Monitor %1 (primary)"
+msgstr "الشاشة %1 (مبدئية)"
+
+#: part/ui/KPrConfigurePresenterViewDialog.cpp:29
+#, kde-format
+msgid "Monitor %1"
+msgstr "الشّاشة %1"
+
+#: part/ui/KPrConfigurePresenterViewDialog.cpp:38
+#, kde-format
+msgid "Configure Presenter View"
+msgstr "اضبط عرض المقدّم"
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, KPrConfigureSlideShow)
+#: part/ui/KPrConfigureSlideShow.ui:13
+#: part/ui/KPrConfigureSlideShowDialog.cpp:32
+#, kde-format
+msgid "Configure Slide Show"
+msgstr "اضبط عرض الشرائح"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox)
+#: part/ui/KPrConfigureSlideShow.ui:19
+#, kde-format
+msgid "Slides"
+msgstr "الشرائح"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: part/ui/KPrConfigureSlideShow.ui:27
+#, kde-format
+msgid "Presentation Slides:"
+msgstr "شرائح العرض التقديمي:"
+
+#. i18n: ectx: property (text), widget (QPushButton, editSlidesButton)
+#: part/ui/KPrConfigureSlideShow.ui:54
+#, kde-format
+msgid "Edit Custom Slide Shows ..."
+msgstr "عدّل عروض الشرائح المخصصة ..."
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, KPrHtmlExport)
+#: part/ui/KPrHtmlExport.ui:20
+#, kde-format
+msgid "HTML Export"
+msgstr "تصدير HTML"
+
+#. i18n: ectx: property (text), widget (QLabel, textLabel_slideslist)
+#: part/ui/KPrHtmlExport.ui:29
+#, kde-format
+msgid "Tick the slide should be exported :"
+msgstr "علّم الشريحة التي يجب تصديرها:"
+
+#. i18n: ectx: property (text), widget (QPushButton, pushButton_selectAll)
+#: part/ui/KPrHtmlExport.ui:55
+#, kde-format
+msgid "Select all"
+msgstr "حدّد الكلّ"
+
+#. i18n: ectx: property (text), widget (QLabel, textLabel_css)
+#: part/ui/KPrHtmlExport.ui:65
+#, kde-format
+msgid "Select template (.css) :"
+msgstr "اختر القالب (css.) :"
+
+#. i18n: ectx: property (text), widget (QPushButton, pushButton_deselectAll)
+#: part/ui/KPrHtmlExport.ui:78
+#, kde-format
+msgid "Deselect all"
+msgstr "إلغاء تحديد الكل"
+
+#. i18n: ectx: property (text), widget (QLabel, textlable_top)
+#: part/ui/KPrHtmlExport.ui:101
+#, kde-format
+msgid "Title"
+msgstr "العنوان"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_preview)
+#: part/ui/KPrHtmlExport.ui:117
+#, kde-format
+msgid "Output preview"
+msgstr "معاينة المخرجات"
+
+#. i18n: ectx: property (text), widget (QToolButton, toolButton_previous)
+#. i18n: ectx: property (text), widget (QToolButton, toolButton_next)
+#: part/ui/KPrHtmlExport.ui:148 part/ui/KPrHtmlExport.ui:164
+#, kde-format
+msgid "..."
+msgstr "..."
+
+#. i18n: ectx: property (text), widget (QPushButton, pushbuttonBrowseTemplate)
+#: part/ui/KPrHtmlExport.ui:227
+#, kde-format
+msgid "Browse"
+msgstr "تصفح"
+
+#. i18n: ectx: property (text), widget (QLabel, label_author)
+#: part/ui/KPrHtmlExport.ui:243
+#, kde-format
+msgid "Author"
+msgstr "المؤلف"
+
+#. i18n: ectx: property (text), widget (QPushButton, pushButton_Favorite)
+#: part/ui/KPrHtmlExport.ui:258
+#, kde-format
+msgid "Delete Favorite"
+msgstr "احذف المفضّل"
+
+#. i18n: ectx: property (text), widget (QCheckBox, checkBox_browser)
+#: part/ui/KPrHtmlExport.ui:286
+#, kde-format
+msgid "Open in browser"
+msgstr "افتح في المتصفّح"
+
+#: part/ui/KPrHtmlExportDialog.cpp:34
+#, kde-format
+msgid "Html Export"
+msgstr "تصدير Html"
+
+#: part/ui/KPrHtmlExportDialog.cpp:35
+#, kde-format
+msgid "Export"
+msgstr "صدّر"
+
+#: part/ui/KPrHtmlExportDialog.cpp:153
+#, kde-format
+msgid "There is already a favorite file with this name"
+msgstr "يوجد ملف مفضّل بهذا الاسم بالفعل"
+
+#: part/ui/KPrHtmlExportDialog.cpp:198
+#, kde-format
+msgid "Incorrect file, .zip only or corrupted zip"
+msgstr "الملف غير صحيح، .zip فقط أو .zip معطوب"
+
+#: part/ui/KPrHtmlExportDialog.cpp:203
+#, kde-format
+msgid "Zip file need to contain style.css"
+msgstr "ملف Zip يحتاج أن يحتوي على style.css"
+
+#: part/ui/KPrHtmlExportDialog.cpp:306
+#, kde-format
+msgid "Delete Template"
+msgstr "احذف القالب"
+
+#: part/ui/KPrHtmlExportDialog.cpp:309
+#, kde-format
+msgid "You may not remove the templates provided with the application"
+msgstr "قد لا أستطيع إزالة القوالب المرفقة مع التطبيق"
+
+#: part/ui/KPrHtmlExportDialog.cpp:315
+#, kde-format
+msgid "Add Template"
+msgstr "أضف قالبًا"
+
+#: part/ui/KPrHtmlExportDialog.cpp:325
+#, kde-format
+msgid "Confirm remove"
+msgstr "أكّد الإزالة"
+
+#: part/ui/KPrHtmlExportDialog.cpp:326
+#, kde-format
+msgid "Are you sure you want to remove \"%1\"?"
+msgstr "أمتأكّد من إزالة \"%1“؟"
+
+#: plugins/eventactions/sound/KPrSoundEventActionWidget.cpp:78
+msgctxt "(qtundo-format)"
+msgid "Change sound action"
+msgstr "غيّر إجراء الصوت"
+
+#: plugins/eventactions/sound/KPrSoundEventActionWidget.cpp:101
+#, kde-format
+msgid "No sound"
+msgstr "لا صوت"
+
+#: plugins/eventactions/sound/KPrSoundEventActionWidget.cpp:102
+#, kde-format
+msgid "Import..."
+msgstr "استورد..."
+
+#: plugins/pageeffects/barwipe/KPrBarWipeEffectFactory.cpp:21
+#, kde-format
+msgid "Bar"
+msgstr "شريط"
+
+#: plugins/pageeffects/barwipe/KPrBarWipeEffectFactory.cpp:31
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:33
+#: plugins/pageeffects/edgewipe/barnveewipe/BarnVeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/veewipe/VeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/zigzagwipe/ZigZagWipeEffectFactory.cpp:25
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:40
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:40
+#: plugins/pageeffects/spacerotation/KPrSpaceRotationEffectFactory.cpp:29
+msgid "From Bottom"
+msgstr "من الأسفل"
+
+#: plugins/pageeffects/barwipe/KPrBarWipeEffectFactory.cpp:31
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:32
+#: plugins/pageeffects/edgewipe/barnveewipe/BarnVeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/veewipe/VeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/zigzagwipe/ZigZagWipeEffectFactory.cpp:25
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:37
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:37
+#: plugins/pageeffects/spacerotation/KPrSpaceRotationEffectFactory.cpp:29
+msgid "From Left"
+msgstr "من اليسار"
+
+#: plugins/pageeffects/barwipe/KPrBarWipeEffectFactory.cpp:31
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:34
+#: plugins/pageeffects/edgewipe/barnveewipe/BarnVeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/veewipe/VeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/zigzagwipe/ZigZagWipeEffectFactory.cpp:25
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:38
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:38
+#: plugins/pageeffects/spacerotation/KPrSpaceRotationEffectFactory.cpp:29
+msgid "From Right"
+msgstr "من اليمين"
+
+#: plugins/pageeffects/barwipe/KPrBarWipeEffectFactory.cpp:31
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:31
+#: plugins/pageeffects/edgewipe/barnveewipe/BarnVeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/veewipe/VeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/zigzagwipe/ZigZagWipeEffectFactory.cpp:25
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:39
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:39
+#: plugins/pageeffects/spacerotation/KPrSpaceRotationEffectFactory.cpp:29
+msgid "From Top"
+msgstr "من الأعلى"
+
+#: plugins/pageeffects/barwipe/KPrBarWipeEffectFactory.cpp:38
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:45
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:41
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:52
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:55
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:40
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:45
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:61
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:45
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:44
+#: plugins/pageeffects/edgewipe/barnveewipe/BarnVeeWipeEffectFactory.cpp:33
+#: plugins/pageeffects/edgewipe/barnzigzagwipe/BarnZigZagWipeEffectFactory.cpp:32
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:44
+#: plugins/pageeffects/edgewipe/diagonalwipe/DiagonalWipeEffectFactory.cpp:33
+#: plugins/pageeffects/edgewipe/fourboxwipe/FourBoxWipeEffectFactory.cpp:34
+#: plugins/pageeffects/edgewipe/miscdiagonalwipe/MiscDiagonalWipeEffectFactory.cpp:35
+#: plugins/pageeffects/edgewipe/veewipe/VeeWipeEffectFactory.cpp:33
+#: plugins/pageeffects/edgewipe/zigzagwipe/ZigZagWipeEffectFactory.cpp:32
+#: plugins/pageeffects/fade/KPrFadeEffectFactory.cpp:33
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:86
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:52
+#: plugins/pageeffects/iriswipe/eyeWipe/KPrEyeWipeEffectFactory.cpp:55
+#: plugins/pageeffects/iriswipe/hexagonWipe/KPrHexagonWipeEffectFactory.cpp:66
+#: plugins/pageeffects/iriswipe/irisWipe/KPrIrisWipeEffectFactory.cpp:50
+#: plugins/pageeffects/iriswipe/miscShapeWipe/KPrMiscShapeWipeEffectFactory.cpp:50
+#: plugins/pageeffects/iriswipe/pentagonWipe/KPrPentagonWipeEffectFactory.cpp:57
+#: plugins/pageeffects/iriswipe/roundRectWipe/KPrRoundRectWipeEffectFactory.cpp:43
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:95
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:82
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:52
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:70
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:51
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:60
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:47
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:51
+#: plugins/pageeffects/spacerotation/KPrSpaceRotationEffectFactory.cpp:36
+#: plugins/pageeffects/swapeffect/KPrSwapEffectFactory.cpp:30
+#, kde-format
+msgid "Unknown subtype"
+msgstr "نوع فرعي غير معروف"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Clock"
+msgstr "الساعة"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:31
+msgid "From Twelve Clockwise"
+msgstr "من الثانية عشرة باتجاه عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:32
+msgid "From Three Clockwise"
+msgstr "من الثالثة باتجاه عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:33
+msgid "From Six Clockwise"
+msgstr "من السادسة باتجاه عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:34
+msgid "From Nine Clockwise"
+msgstr "من التاسعة باتجاه عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:35
+msgid "From Twelve Counterclockwise"
+msgstr "من الثانية عشرة بعكس عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:36
+msgid "From Three Counterclockwise"
+msgstr "من الثالثة بعكس عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:37
+msgid "From Six Counterclockwise"
+msgstr "من السادسة بعكس عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:38
+msgid "From Nine Counterclockwise"
+msgstr "من التاسعة بعكس عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Double Fan"
+msgstr "مروحة مزدوجة"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:29
+msgid "Fan Out Vertical"
+msgstr "مروحة للخارج عموديًا"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:30
+msgid "Fan Out Horizontal"
+msgstr "مروحة للخارج أفقيًا"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:31
+msgid "Fan In Vertical"
+msgstr "مروحة للداخل عموديًا"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:32
+msgid "Fan In Horizontal"
+msgstr "مروحة للداخل أفقيًا"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:33
+msgid "Fan In Vertical Reverse"
+msgstr "مروحة للداخل عموديًا عكسيًا"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:34
+msgid "Fan In Horizontal Reverse"
+msgstr "مروحة للداخل أفقيًا عكسيًا"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Double Sweep"
+msgstr "مسح مزدوج"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:34
+msgid "Parallel Vertical"
+msgstr "عمودي متوازي"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:35
+msgid "Parallel Diagonal"
+msgstr "قطري متوازي"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:36
+msgid "Opposite Vertical"
+msgstr "عمودي معاكس"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:37
+msgid "Opposite Horizontal"
+msgstr "أفقي معاكس"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:38
+msgid "Parallel Diagonal Top Left"
+msgstr "قطري متوازي علوي يسار"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:39
+msgid "Parallel Diagonal Bottom Left"
+msgstr "قطري متوازي سفلي يسار"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:40
+msgid "Parallel Vertical Reverse"
+msgstr "عمودي متوازي عكسي"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:41
+msgid "Parallel Diagonal Reverse"
+msgstr "قطري متوازي عكسي"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:42
+msgid "Opposite Vertical Reverse"
+msgstr "عمودي معاكس عكسي"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:43
+msgid "Opposite Horizontal Reverse"
+msgstr "أفقي معاكس عكسي"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:44
+msgid "Parallel Diagonal Top Left Reverse"
+msgstr "قطري متوازي علوي يسار عكسي"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:45
+msgid "Parallel Diagonal Bottom Left Reverse"
+msgstr "قطري متوازي سفلي يسار عكسي"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:18
+#, kde-format
+msgid "Fan"
+msgstr "المروحة"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:37
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:35
+msgid "Center Right"
+msgstr "يمين الوسط"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:38
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:34
+msgid "Center Top"
+msgstr "مركز علوي"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:39
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:37
+msgid "Center Left"
+msgstr "يسار الوسط"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:40
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:36
+msgid "Center Bottom"
+msgstr "مركز سفلي"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:41
+msgid "Fan Out Top"
+msgstr "مروحة للخارج علوية"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:42
+msgid "Fan Out Right"
+msgstr "مروحة للخارج يمينية"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:43
+msgid "Fan Out Bottom"
+msgstr "مروحة للخارج سفلية"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:44
+msgid "Fan Out Left"
+msgstr "مروحة للخارج يسارية"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:45
+msgid "Fan In Top"
+msgstr "مروحة للداخل علوية"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:46
+msgid "Fan In Right"
+msgstr "مروحة للداخل يمينية"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:47
+msgid "Fan In Bottom"
+msgstr "مروحة للداخل سفلية"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:48
+msgid "Fan In Left"
+msgstr "مروحة للداخل يسارية"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Pin Wheel"
+msgstr "دولاب دوّار"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:28
+msgid "Two Blades Vertical Clockwise"
+msgstr "شفرتان عموديتان باتجاه عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:29
+msgid "Two Blades Horizontal Clockwise"
+msgstr "شفرتان أفقيتان باتجاه عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:30
+msgid "Four Blades Horizontal Clockwise"
+msgstr "أربع شفرات أفقية باتجاه عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:31
+msgid "Two Blades Vertical Counterclockwise"
+msgstr "شفرتان عموديتان بعكس عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:32
+msgid "Two Blades Horizontal Counterclockwise"
+msgstr "شفرتان أفقيتان بعكس عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:33
+msgid "Four Blades Horizontal Counterclockwise"
+msgstr "أربع شفرات أفقية بعكس عقارب الساعة"
+
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Saloon Door"
+msgstr "باب الصالون"
+
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:35
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:43
+msgid "To Top"
+msgstr "للأعلى"
+
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:36
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:41
+msgid "To Left"
+msgstr "لليسار"
+
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:37
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:44
+msgid "To Bottom"
+msgstr "للأسفل"
+
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:38
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:42
+msgid "To Right"
+msgstr "لليمين"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Single Sweep"
+msgstr "مسح واحد"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:39
+msgid "Clockwise Top"
+msgstr "باتجاه عقارب الساعة علوي"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:40
+msgid "Clockwise Right"
+msgstr "باتجاه عقارب الساعة يميني"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:41
+msgid "Clockwise Bottom"
+msgstr "باتجاه عقارب الساعة سفلي"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:42
+msgid "Clockwise Left"
+msgstr "باتجاه عقارب الساعة يساري"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:43
+msgid "Clockwise Top Left"
+msgstr "باتجاه عقارب الساعة علوي يسار"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:44
+msgid "Counterclockwise Bottom Left"
+msgstr "بعكس عقارب الساعة سفلي يسار"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:45
+msgid "Clockwise Bottom Right"
+msgstr "باتجاه عقارب الساعة سفلي يمين"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:46
+msgid "Counterclockwise Top Right"
+msgstr "بعكس عقارب الساعة علوي يمين"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:47
+msgid "Counterclockwise Top"
+msgstr "بعكس عقارب الساعة علوي"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:48
+msgid "Counterclockwise Right"
+msgstr "بعكس عقارب الساعة يميني"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:49
+msgid "Counterclockwise Bottom"
+msgstr "بعكس عقارب الساعة سفلي"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:50
+msgid "Counterclockwise Left"
+msgstr "بعكس عقارب الساعة يساري"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:51
+msgid "Counterclockwise Top Left"
+msgstr "بعكس عقارب الساعة علوي يسار"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:52
+msgid "Clockwise Bottom Left"
+msgstr "باتجاه عقارب الساعة سفلي يسار"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:53
+msgid "Counterclockwise Bottom Right"
+msgstr "بعكس عقارب الساعة سفلي يمين"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:54
+msgid "Clockwise Top Right"
+msgstr "باتجاه عقارب الساعة علوي يمين"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Windshield"
+msgstr "الزجاج الأمامي"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:31
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:74
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:70
+msgid "Right"
+msgstr "يمين"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:32
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:72
+#: plugins/pageeffects/iriswipe/pentagonWipe/KPrPentagonWipeEffectFactory.cpp:50
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:68
+msgid "Up"
+msgstr "أعلى"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:33
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:30
+#: plugins/pageeffects/edgewipe/barnzigzagwipe/BarnZigZagWipeEffectFactory.cpp:25
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:45
+#: plugins/pageeffects/iriswipe/eyeWipe/KPrEyeWipeEffectFactory.cpp:44
+#: plugins/pageeffects/iriswipe/hexagonWipe/KPrHexagonWipeEffectFactory.cpp:59
+#: plugins/pageeffects/iriswipe/roundRectWipe/KPrRoundRectWipeEffectFactory.cpp:36
+msgid "Vertical"
+msgstr "عمودي"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:34
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:32
+#: plugins/pageeffects/edgewipe/barnzigzagwipe/BarnZigZagWipeEffectFactory.cpp:25
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:45
+#: plugins/pageeffects/iriswipe/eyeWipe/KPrEyeWipeEffectFactory.cpp:46
+#: plugins/pageeffects/iriswipe/hexagonWipe/KPrHexagonWipeEffectFactory.cpp:59
+#: plugins/pageeffects/iriswipe/roundRectWipe/KPrRoundRectWipeEffectFactory.cpp:36
+#: plugins/pageeffects/swapeffect/KPrSwapEffectFactory.cpp:23
+msgid "Horizontal"
+msgstr "أفقي"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:35
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:75
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:71
+msgid "Right Reverse"
+msgstr "يميني عكسي"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:36
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:73
+#: plugins/pageeffects/iriswipe/pentagonWipe/KPrPentagonWipeEffectFactory.cpp:50
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:69
+msgid "Up Reverse"
+msgstr "أعلى عكسي"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:37
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:31
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:45
+#: plugins/pageeffects/iriswipe/eyeWipe/KPrEyeWipeEffectFactory.cpp:45
+#: plugins/pageeffects/iriswipe/hexagonWipe/KPrHexagonWipeEffectFactory.cpp:59
+#: plugins/pageeffects/iriswipe/roundRectWipe/KPrRoundRectWipeEffectFactory.cpp:36
+msgid "Vertical Reverse"
+msgstr "عمودي عكسي"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:38
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:33
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:45
+#: plugins/pageeffects/iriswipe/eyeWipe/KPrEyeWipeEffectFactory.cpp:47
+#: plugins/pageeffects/iriswipe/hexagonWipe/KPrHexagonWipeEffectFactory.cpp:59
+#: plugins/pageeffects/iriswipe/roundRectWipe/KPrRoundRectWipeEffectFactory.cpp:36
+msgid "Horizontal Reverse"
+msgstr "أفقي عكسي"
+
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Barn Door"
+msgstr "باب الحظيرة"
+
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:34
+msgid "Diagonal Bottom Left"
+msgstr "قطري سفلي يسار"
+
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:35
+msgid "Diagonal Bottom Left Reverse"
+msgstr "قطري سفلي يسار عكسي"
+
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:36
+msgid "Diagonal Top Left"
+msgstr "قطري اعلى اليسار"
+
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:37
+msgid "Diagonal Top Left Reverse"
+msgstr "قطري علوي يسار عكسي"
+
+#: plugins/pageeffects/edgewipe/barnveewipe/BarnVeeWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Barn Vee"
+msgstr "الحظيرة V"
+
+#: plugins/pageeffects/edgewipe/barnzigzagwipe/BarnZigZagWipeEffectFactory.cpp:15
+#, kde-format
+msgid "Barn Zig Zag"
+msgstr "الحظيرة متعرج"
+
+#: plugins/pageeffects/edgewipe/barnzigzagwipe/BarnZigZagWipeEffectFactory.cpp:25
+msgid "Horizontal Reversed"
+msgstr "أفقي عكسي"
+
+#: plugins/pageeffects/edgewipe/barnzigzagwipe/BarnZigZagWipeEffectFactory.cpp:25
+msgid "Vertical Reversed"
+msgstr "عمودي عكسي"
+
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Box"
+msgstr "الصندوق"
+
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:30
+#: plugins/pageeffects/edgewipe/diagonalwipe/DiagonalWipeEffectFactory.cpp:26
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:41
+msgid "From Top Left"
+msgstr "من أعلى اليسار"
+
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:31
+#: plugins/pageeffects/edgewipe/diagonalwipe/DiagonalWipeEffectFactory.cpp:26
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:42
+msgid "From Top Right"
+msgstr "من أعلى اليمين"
+
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:32
+#: plugins/pageeffects/edgewipe/diagonalwipe/DiagonalWipeEffectFactory.cpp:26
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:43
+msgid "From Bottom Left"
+msgstr "من أسفل اليسار"
+
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:33
+#: plugins/pageeffects/edgewipe/diagonalwipe/DiagonalWipeEffectFactory.cpp:26
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:44
+msgid "From Bottom Right"
+msgstr "من أسفل اليمين"
+
+#: plugins/pageeffects/edgewipe/diagonalwipe/DiagonalWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Diagonal"
+msgstr "قطري"
+
+#: plugins/pageeffects/edgewipe/fourboxwipe/FourBoxWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Four Box"
+msgstr "أربعة صناديق"
+
+#: plugins/pageeffects/edgewipe/fourboxwipe/FourBoxWipeEffectFactory.cpp:27
+msgid "Corners In"
+msgstr "زوايا للداخل"
+
+#: plugins/pageeffects/edgewipe/fourboxwipe/FourBoxWipeEffectFactory.cpp:27
+msgid "Corners In Reverse"
+msgstr "زوايا للداخل عكسي"
+
+#: plugins/pageeffects/edgewipe/fourboxwipe/FourBoxWipeEffectFactory.cpp:27
+msgid "Corners Out"
+msgstr "زوايا للخارج"
+
+#: plugins/pageeffects/edgewipe/fourboxwipe/FourBoxWipeEffectFactory.cpp:27
+msgid "Corners Out Reverse"
+msgstr "زوايا للخارج عكسي"
+
+#: plugins/pageeffects/edgewipe/miscdiagonalwipe/MiscDiagonalWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Misc Diagonal"
+msgstr "قطري متنوع"
+
+#: plugins/pageeffects/edgewipe/miscdiagonalwipe/MiscDiagonalWipeEffectFactory.cpp:26
+msgid "Double Barn Door"
+msgstr "باب حظيرة مزدوج"
+
+#: plugins/pageeffects/edgewipe/miscdiagonalwipe/MiscDiagonalWipeEffectFactory.cpp:27
+msgid "Double Diamond"
+msgstr "ماسة مزدوجة"
+
+#: plugins/pageeffects/edgewipe/veewipe/VeeWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Vee"
+msgstr "V"
+
+#: plugins/pageeffects/edgewipe/zigzagwipe/ZigZagWipeEffectFactory.cpp:15
+#, kde-format
+msgid "Zig Zag"
+msgstr "متعرّج"
+
+#: plugins/pageeffects/fade/KPrFadeEffectFactory.cpp:18
+#, kde-format
+msgid "Fade"
+msgstr "تبهيت"
+
+#: plugins/pageeffects/fade/KPrFadeEffectFactory.cpp:26
+msgid "Crossfade"
+msgstr "التداخل"
+
+#: plugins/pageeffects/fade/KPrFadeEffectFactory.cpp:26
+msgid "Fade over Color"
+msgstr "تلاشٍ فوق لون"
+
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:18
+#, kde-format
+msgid "ArrowHead"
+msgstr "فوقة"
+
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:76
+#: plugins/pageeffects/iriswipe/pentagonWipe/KPrPentagonWipeEffectFactory.cpp:50
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:72
+msgid "Down"
+msgstr "أسفل"
+
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:77
+#: plugins/pageeffects/iriswipe/pentagonWipe/KPrPentagonWipeEffectFactory.cpp:50
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:73
+msgid "Down Reverse"
+msgstr "أسفل عكسي"
+
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:78
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:74
+msgid "Left"
+msgstr "يسار"
+
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:79
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:75
+msgid "Left Reverse"
+msgstr "يساري عكسي"
+
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:14
+#, kde-format
+msgid "Ellipse"
+msgstr "بيضاوي"
+
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:45
+msgid "Circle"
+msgstr "دائرة"
+
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:45
+msgid "Circle Reverse"
+msgstr "دائرة عكسية"
+
+#: plugins/pageeffects/iriswipe/eyeWipe/KPrEyeWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Eye"
+msgstr "عين"
+
+#: plugins/pageeffects/iriswipe/hexagonWipe/KPrHexagonWipeEffectFactory.cpp:23
+#, kde-format
+msgid "Hexagon"
+msgstr "سداسي"
+
+#: plugins/pageeffects/iriswipe/irisWipe/KPrIrisWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Iris"
+msgstr "حدقة"
+
+#: plugins/pageeffects/iriswipe/irisWipe/KPrIrisWipeEffectFactory.cpp:43
+msgid "Diamond"
+msgstr "معين الزوايا"
+
+#: plugins/pageeffects/iriswipe/irisWipe/KPrIrisWipeEffectFactory.cpp:43
+msgid "Diamond Reverse"
+msgstr "ماسة عكسية"
+
+#: plugins/pageeffects/iriswipe/irisWipe/KPrIrisWipeEffectFactory.cpp:43
+msgid "Rectangular"
+msgstr "مستطيل"
+
+#: plugins/pageeffects/iriswipe/irisWipe/KPrIrisWipeEffectFactory.cpp:43
+msgid "Rectangular Reverse"
+msgstr "مستطيل عكسي"
+
+#: plugins/pageeffects/iriswipe/miscShapeWipe/KPrMiscShapeWipeEffectFactory.cpp:14
+#, kde-format
+msgid "Misc"
+msgstr "متنوع"
+
+#: plugins/pageeffects/iriswipe/miscShapeWipe/KPrMiscShapeWipeEffectFactory.cpp:43
+msgid "Heart"
+msgstr "قلب"
+
+#: plugins/pageeffects/iriswipe/miscShapeWipe/KPrMiscShapeWipeEffectFactory.cpp:43
+msgid "Heart Reverse"
+msgstr "قلب عكسي"
+
+#: plugins/pageeffects/iriswipe/miscShapeWipe/KPrMiscShapeWipeEffectFactory.cpp:43
+msgid "Keyhole"
+msgstr "ثقب المفتاح"
+
+#: plugins/pageeffects/iriswipe/miscShapeWipe/KPrMiscShapeWipeEffectFactory.cpp:43
+msgid "Keyhole Reverse"
+msgstr "ثقب المفتاح عكسي"
+
+#: plugins/pageeffects/iriswipe/pentagonWipe/KPrPentagonWipeEffectFactory.cpp:18
+#, kde-format
+msgid "Pentagon"
+msgstr "خماسي"
+
+#: plugins/pageeffects/iriswipe/roundRectWipe/KPrRoundRectWipeEffectFactory.cpp:14
+#, kde-format
+msgid "RoundRect"
+msgstr "مستطيل مدور"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:23
+#, kde-format
+msgid "Star"
+msgstr "النجم"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:83
+msgid "Four Point Star"
+msgstr "نجمة بأربع نقاط"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:84
+msgid "Four Point Star Reverse"
+msgstr "نجمة بأربع نقاط عكسية"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:85
+msgid "Five Point Star"
+msgstr "نجمة بخمس نقاط"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:86
+msgid "Five Point Star Reverse"
+msgstr "نجمة بخمس نقاط عكسية"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:87
+msgid "Six Point Star"
+msgstr "نجمة بست نقاط"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:88
+msgid "Six Point Star Reverse"
+msgstr "نجمة بست نقاط عكسية"
+
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:18
+#, kde-format
+msgid "Triangle"
+msgstr "مثلّث"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Box Snakes"
+msgstr "ثعابين الصندوق"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:34
+msgid "Two Box Top In"
+msgstr "صندوقان علويان للداخل"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:35
+msgid "Two Box Bottom In"
+msgstr "صندوقان سفليان للداخل"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:36
+msgid "Two Box Left In"
+msgstr "صندوقان يساريان للداخل"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:37
+msgid "Two Box Right In"
+msgstr "صندوقان يمينان للداخل"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:38
+msgid "Four Box Vertical In"
+msgstr "أربعة صناديق عمودية للداخل"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:39
+msgid "Four Box Horizontal In"
+msgstr "أربعة صناديق أفقية للداخل"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:40
+msgid "Two Box Top Out"
+msgstr "صندوقان علويان للخارج"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:41
+msgid "Two Box Bottom Out"
+msgstr "صندوقان سفليان للخارج"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:42
+msgid "Two Box Left Out"
+msgstr "صندوقان يساريان للخارج"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:43
+msgid "Two Box Right Out"
+msgstr "صندوقان يمينان للخارج"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:44
+msgid "Four Box Vertical Out"
+msgstr "أربعة صناديق عمودية للخارج"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:45
+msgid "Four Box Horizontal Out"
+msgstr "أربعة صناديق أفقية للخارج"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:18
+#, kde-format
+msgid "Parallel Snakes"
+msgstr "ثعابين متوازية"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:44
+msgid "Vertical Top Same In"
+msgstr "عمودي علوي نفسه للداخل"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:45
+msgid "Vertical Top Same Out"
+msgstr "عمودي علوي نفسه للخارج"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:46
+msgid "Vertical Bottom Same In"
+msgstr "عمودي سفلي نفسه للداخل"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:47
+msgid "Vertical Bottom Same Out"
+msgstr "عمودي سفلي نفسه للخارج"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:48
+msgid "Vertical Top Left Opposite In"
+msgstr "عمودي علوي يسار معاكس للداخل"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:49
+msgid "Vertical Top Left Opposite Out"
+msgstr "عمودي علوي يسار معاكس للخارج"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:50
+msgid "Vertical Bottom Left Opposite In"
+msgstr "عمودي سفلي يسار معاكس للداخل"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:51
+msgid "Vertical Bottom Left Opposite Out"
+msgstr "عمودي سفلي يسار معاكس للخارج"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:52
+msgid "Horizontal Left Same In"
+msgstr "أفقي يسار نفسه للداخل"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:53
+msgid "Horizontal Left Same Out"
+msgstr "أفقي يسار نفسه للخارج"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:54
+msgid "Horizontal Right Same In"
+msgstr "أفقي يمين نفسه للداخل"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:55
+msgid "Horizontal Right Same Out"
+msgstr "أفقي يمين نفسه للخارج"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:56
+msgid "Horizontal Top Left Opposite In"
+msgstr "أفقي علوي يسار معاكس للداخل"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:57
+msgid "Horizontal Top Left Opposite Out"
+msgstr "أفقي علوي يسار معاكس للخارج"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:58
+msgid "Horizontal Top Right Opposite In"
+msgstr "أفقي علوي يمين معاكس للداخل"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:59
+msgid "Horizontal Top Right Opposite Out"
+msgstr "أفقي علوي يمين معاكس للخارج"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:60
+msgid "Diagonal Bottom Left Opposite In"
+msgstr "قطري سفلي يسار معاكس للداخل"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:61
+msgid "Diagonal Bottom Left Opposite Out"
+msgstr "قطري سفلي يسار معاكس للخارج"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:62
+msgid "Diagonal Top Left Opposite In"
+msgstr "قطري علوي يسار معاكس للداخل"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:63
+msgid "Diagonal Top Left Opposite Out"
+msgstr "قطري علوي يسار معاكس للخارج"
+
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:23
+#, kde-format
+msgid "Snake"
+msgstr "ثعبان"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Spiral"
+msgstr "لولبيّ"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:38
+msgid "Clockwise Top Left In"
+msgstr "باتجاه عقارب الساعة علوي يسار للداخل"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:39
+msgid "Clockwise Top Left Out"
+msgstr "باتجاه عقارب الساعة علوي يسار للخارج"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:40
+msgid "Clockwise Top Right In"
+msgstr "باتجاه عقارب الساعة علوي يمين للداخل"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:41
+msgid "Clockwise Top Right Out"
+msgstr "باتجاه عقارب الساعة علوي يمين للخارج"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:42
+msgid "Clockwise Bottom Left In"
+msgstr "باتجاه عقارب الساعة سفلي يسار للداخل"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:43
+msgid "Clockwise Bottom Left Out"
+msgstr "باتجاه عقارب الساعة سفلي يسار للخارج"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:44
+msgid "Clockwise Bottom Right In"
+msgstr "باتجاه عقارب الساعة سفلي يمين للداخل"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:45
+msgid "Clockwise Bottom Right Out"
+msgstr "باتجاه عقارب الساعة سفلي يمين للخارج"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:46
+msgid "Counterclockwise Top Left In"
+msgstr "بعكس عقارب الساعة علوي يسار للداخل"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:47
+msgid "Counterclockwise Top Left Out"
+msgstr "بعكس عقارب الساعة علوي يسار للخارج"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:48
+msgid "Counterclockwise Top Right In"
+msgstr "بعكس عقارب الساعة علوي يمين للداخل"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:49
+msgid "Counterclockwise Top Right Out"
+msgstr "بعكس عقارب الساعة علوي يمين للخارج"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:50
+msgid "Counterclockwise Bottom Left In"
+msgstr "بعكس عقارب الساعة سفلي يسار للداخل"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:51
+msgid "Counterclockwise Bottom Left Out"
+msgstr "بعكس عقارب الساعة سفلي يسار للخارج"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:52
+msgid "Counterclockwise Bottom Right In"
+msgstr "بعكس عقارب الساعة سفلي يمين للداخل"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:53
+msgid "Counterclockwise Bottom Right Out"
+msgstr "بعكس عقارب الساعة سفلي يمين للخارج"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:19
+#, kde-format
+msgid "Waterfall"
+msgstr "شلال"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:33
+msgid "Top Left Vertical"
+msgstr "علوي يسار عمودي"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:34
+msgid "Top Left Horizontal"
+msgstr "علوي يسار أفقي"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:35
+msgid "Top Right Vertical"
+msgstr "علوي يمين عمودي"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:36
+msgid "Top Right Horizontal"
+msgstr "علوي يمين أفقي"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:37
+msgid "Bottom Left Vertical"
+msgstr "سفلي يسار عمودي"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:38
+msgid "Bottom Left Horizontal"
+msgstr "سفلي يسار أفقي"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:39
+msgid "Bottom Right Vertical"
+msgstr "سفلي يمين عمودي"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:40
+msgid "Bottom Right Horizontal"
+msgstr "سفلي يمين أفقي"
+
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:23
+#, kde-format
+msgid "Slide"
+msgstr "أزْلِق"
+
+#: plugins/pageeffects/spacerotation/KPrSpaceRotationEffectFactory.cpp:19
+#, kde-format
+msgid "Space Rotation"
+msgstr "دوران فضاء"
+
+#: plugins/pageeffects/swapeffect/KPrSwapEffectFactory.cpp:16
+#, kde-format
+msgid "Swap effect"
+msgstr "تأثير مبادلة"
+
+#: plugins/variable/PresentationVariableFactory.cpp:25
+#, kde-format
+msgid "Header"
+msgstr "ترويسة"
+
+#: plugins/variable/PresentationVariableFactory.cpp:33
+#, kde-format
+msgid "Footer"
+msgstr "تذييل"
+
+#, fuzzy
+#~| msgid "&Edit"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Edit"
+#~ msgstr "&حرّر"
+
+#, fuzzy
+#~| msgid "&View"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&View"
+#~ msgstr "ا&عرض"
+
+#, fuzzy
+#~| msgid "&Insert"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Insert"
+#~ msgstr "أ&درج"
+
+#, fuzzy
+#~| msgid "F&ormat"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "F&ormat"
+#~ msgstr "ت&نسيق"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Slide"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~| msgid "Sli&de Show"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Sli&de Show"
+#~ msgstr "عرض ال&شرائح"
+
+#, fuzzy
+#~| msgid "&Settings"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Settings"
+#~ msgstr "إ&عدادات"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Slides"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Presentation Slides:"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Edit Custom Slide Shows ..."
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Title"
+#~ msgstr "ملف"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Presentation monitor:"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format) application name"
+#~ msgid "Calligra Stage"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~| msgid "Presentation"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Presentation Tool"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Copyright 1998-%1, The Stage Team"
+#~ msgstr "(c) 1998-2007, فريق KPresenter"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Former maintainer"
+#~ msgstr "المشرف الحالي"
+
+#, fuzzy
+#~| msgid "Thorsten Zachmann"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Thorsten Zachmann"
+#~ msgstr "Thorsten Zachmann"
+
+#, fuzzy
+#~| msgid "Laurent Montel"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Laurent Montel"
+#~ msgstr "Laurent Montel"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Original author"
+#~ msgstr "المؤلف الأصلي"
+
+#, fuzzy
+#~| msgid "Reginald Stadlbauer"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Reginald Stadlbauer"
+#~ msgstr "Reginald Stadlbauer"
+
+#, fuzzy
+#~| msgid "Werner Trobin"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Werner Trobin"
+#~ msgstr "Werner Trobin"
+
+#, fuzzy
+#~| msgid "David Faure"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "David Faure"
+#~ msgstr "David Faure"
+
+#, fuzzy
+#~| msgid "Toshitaka Fujioka"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Toshitaka Fujioka"
+#~ msgstr "Toshitaka Fujioka"
+
+#, fuzzy
+#~| msgid "Lukáš Tinkl"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Lukáš Tinkl"
+#~ msgstr "Lukáš Tinkl"
+
+#, fuzzy
+#~| msgid "Ariya Hidayat"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ariya Hidayat"
+#~ msgstr "Ariya Hidayat"
+
+#, fuzzy
+#~| msgid "Percy Leonhardt"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Percy Leonhardt"
+#~ msgstr "Percy Leonhardt"
+
+#, fuzzy
+#~| msgid "Thomas Zander"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Thomas Zander"
+#~ msgstr "Thomas Zander"
+
+#, fuzzy
+#~| msgctxt "NAME OF TRANSLATORS"
+#~| msgid "Your names"
+#~ msgctxt "(qtundo-format) NAME OF TRANSLATORS"
+#~ msgid "Your names"
+#~ msgstr "السيد جعفر الموسوي"
+
+#, fuzzy
+#~| msgctxt "EMAIL OF TRANSLATORS"
+#~| msgid "Your emails"
+#~ msgctxt "(qtundo-format) EMAIL OF TRANSLATORS"
+#~ msgid "Your emails"
+#~ msgstr "mosawi@arabeyes.org"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Slide %1"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Layout"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "End of Slide Show"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "start after previous animation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "start with previous animation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Animation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~| msgid "Shape"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Shape"
+#~ msgstr "شكل"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Copy Here"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&ancel"
+#~ msgstr "أل&غِ"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Normal"
+#~ msgstr "نسّق"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Import Slideshow..."
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert Slide"
+#~ msgstr "أدرج"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Copy Slide"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Previous Slide"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Go to previous slide"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "First Slide"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Go to first slide"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Last Slide"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Go to last slide"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure Stage..."
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert Pictures as Slides..."
+#~ msgstr "أدرج"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Create Appear Animation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~| msgid "Start Presentation"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Start Presentation"
+#~ msgstr "ابدأ العرض"
+
+#, fuzzy
+#~| msgid "Start Presentation"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Stop presentation"
+#~ msgstr "ابدأ العرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure Slide Show..."
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure Presenter View..."
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Draw on the presentation..."
+#~ msgstr "ابدأ العرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Slides Sorter"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Slide Show: "
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Duplicate Slide"
+#~ msgstr "احذف تأثير الصفحة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Start Slideshow"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Slide Show %1"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Preview animation"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Slide Transitions"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Shape Click Actions"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Shape Animations"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "after previous animation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "with previous animation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Preview Shape Animation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~| msgid "No Effect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "No Effect"
+#~ msgstr "لا تأثير"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Edit animation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Add new animation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove animation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Move animation up"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Add a new animation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Delete current animation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure Slide Show"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Delete Template"
+#~ msgstr "احذف تأثير الصفحة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Double Fan"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Fan In Vertical"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Double Sweep"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Parallel Vertical"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Opposite Vertical"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Parallel Diagonal Top Left"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Parallel Diagonal Bottom Left"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Opposite Vertical Reverse"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Parallel Diagonal Top Left Reverse"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Parallel Diagonal Bottom Left Reverse"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Center Top"
+#~ msgstr "Werner Trobin"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Pin Wheel"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Saloon Door"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Single Sweep"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Clockwise Left"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Windshield"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Vertical"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Barn Door"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Diagonal Bottom Left"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Diagonal Top Left"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Barn Zig Zag"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Vertical Reversed"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Diagonal"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Misc Diagonal"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "ArrowHead"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Left Reverse"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Circle"
+#~ msgstr "ملف"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Circle Reverse"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rectangular Reverse"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Diamond Reverse"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Heart Reverse"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Keyhole Reverse"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Pentagon"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "RoundRect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Box Snakes"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Two Box Left In"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Two Box Right In"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Two Box Left Out"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Parallel Snakes"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Vertical Top Same In"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Vertical Top Same Out"
+#~ msgstr "المحاذاة العمودية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Diagonal Top Left Opposite In"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Snake"
+#~ msgstr "شكل"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Clockwise Top Left In"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Clockwise Top Left Out"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Clockwise Top Right In"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Clockwise Bottom Left In"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Clockwise Bottom Left Out"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Counterclockwise Top Left In"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Counterclockwise Top Left Out"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Counterclockwise Bottom Left In"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Counterclockwise Bottom Left Out"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Waterfall"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Slide"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Space Rotation"
+#~ msgstr "أنشئ شكلا متحركا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Swap effect"
+#~ msgstr "تأثيرات الصورة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Footer"
+#~ msgstr "نسّق"
+
+#, fuzzy
+#~ msgid "Calligra Presentation Tool"
+#~ msgstr "أداة عرض KOffice"
+
+#, fuzzy
+#~ msgctxt "application name"
+#~ msgid "Stage"
+#~ msgstr "شكل"
+
+#~ msgid "File to open"
+#~ msgstr "الملف المراد فتحه"
+
+#~ msgid "&File"
+#~ msgstr "م&لف"
+
+#~ msgid "Line"
+#~ msgstr "خط"
+
+#~ msgid "Arra&nge Objects"
+#~ msgstr "ن&ظّم الكائنات"
+
+#~ msgid "&Align Objects"
+#~ msgstr "ر&تّب الكائنات"
+
+#~ msgid "Te&xt"
+#~ msgstr "&نص"
+
+#~ msgid "&Align"
+#~ msgstr "&رتّب"
+
+#~ msgid "T&ype"
+#~ msgstr "الن&وع"
+
+#~ msgid "Spellcheck"
+#~ msgstr "التدقيق الإملائي"
+
+#~ msgid "Autocorrection"
+#~ msgstr "التصحيح التلقائي"
+
+#~ msgid "File"
+#~ msgstr "ملف"
+
+#~ msgid "Edit"
+#~ msgstr "حرّر"
+
+#~ msgid "Insert"
+#~ msgstr "أدرج"
+
+#~ msgid "Tools"
+#~ msgstr "الأدوات"
+
+#~ msgid "Format"
+#~ msgstr "نسّق"
+
+#~ msgid "Text"
+#~ msgstr "نص"
+
+#~ msgid "Slide Show"
+#~ msgstr "عرض"
+
+#~ msgid "Navigation"
+#~ msgstr "تصفّح"
+
+#~ msgid "Vertical Alignment"
+#~ msgstr "المحاذاة العمودية"
+
+#~ msgid "Flip Objects"
+#~ msgstr "أدِر الكائنات"
+
+#~ msgid "&Scale to Show the Picture 1:1 In"
+#~ msgstr "مدّد لمشاهدة الصورة 1:1"
+
+#~ msgid "Spell Check Result"
+#~ msgstr "نتيجة التدقيق الإملائي"
+
+#, fuzzy
+#~| msgid "Slide Show"
+#~ msgid "Slide Layouts"
+#~ msgstr "عرض"
+
+#, fuzzy
+#~| msgid "Slide Show"
+#~ msgid "Configure KPresenter..."
+#~ msgstr "عرض"
+
+#, fuzzy
+#~| msgid "Edit"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Edit"
+#~ msgstr "حرّر"
+
+#, fuzzy
+#~| msgid "Slide Show"
+#~ msgid "New Slide Show %1"
+#~ msgstr "عرض"
+
+#~ msgid "KPresenter"
+#~ msgstr "KPresenter"
+
+#~ msgid "&OK"
+#~ msgstr "م&وافق"
+
+#~ msgid ""
+#~ "Choose a predefined shape by clicking on it then clicking the OK button "
+#~ "(or just double-click on the shape). You can then insert the shape onto "
+#~ "your slide by drawing the area with the mouse pointer."
+#~ msgstr ""
+#~ "اختر شكلا مسجلا مسبقا بالنقر عليه ثم على \"موافق\" أو (انقر نقرا مزدوجا "
+#~ "على الشكل). عندها يمكن إدراج هذا الشكل في الشريحة وذلك برسمه باستخدام "
+#~ "مؤشر الفأرة."
+
+#, fuzzy
+#~| msgid "Create page effect"
+#~ msgid "Click to preview the page effect."
+#~ msgstr "أنشئ تأثيرا للصفحة"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Spiral Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Snake Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Pentagon Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Misc Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Ellipse Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Iris Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Eye Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Hexagon Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Triangle Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Star Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Fan Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Clock Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Bar Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#~ msgid "Slide Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Four Box Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Barn Vee Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Zig Zag Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Diagonal Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Vee Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Slide Wipe Effect"
+#~ msgid "Box Wipe Effect"
+#~ msgstr "تأثير المسح"
+
+#, fuzzy
+#~| msgid "Navigation"
+#~ msgid "Navigate to:"
+#~ msgstr "تصفّح"

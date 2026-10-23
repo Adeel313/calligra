@@ -1,0 +1,200 @@
+Packaging Information for Calligra Suite
+----------------------------------------
+
+We recommend building several binary packages from the Calligra source.
+
+Splitting Calligra into packages:
+ * gives users a better choice of which components they have
+   installed;
+ * allows users to install just the applications without unnecessary
+   dependencies;
+ * helps to reduce packaging conflicts for users with non-standard
+   package selections.
+
+
+Table Of Contents
+-----------------
+1. Recommended cmake flags
+2. Calligra plugins
+3. Calligra libraries
+4. IMPORTANT On using CPU vector capabilities in Calligra Libs
+5. Okular plugins
+5.1. Runtime dependency of the Okular ODP plugin
+5.2. Support for PPT, PPTX and more runtime dependency
+5.3. Support for DOC, DOCX, WPD and more runtime dependency
+6. Adding unmaintained applications/modules
+
+
+1. Recommended cmake flags
+==========================
+
+For alpha and beta packages, please build with debug output enabled, but for
+production packages the -DCMAKE_CXX_FLAGS="-DKDE_NO_DEBUG_OUTPUT" is recommended.
+A significant performance increase will be the result.
+
+All modules may not be ready for production release.
+It is recommended to specify -DRELEASE_BUILD=true to exclude these modules.
+
+(If you want these packages to be included anyway, specify -DRELEASE_BUILD=false.)
+
+NOTE: If RELEASE_BUILD is not set, CMAKE_BUILD_TYPE is considered.
+If it is set to Release, RelWithDebInfo or MinSizeRel, the modules are also excluded.
+
+2. Calligra plugins
+===================
+
+Calligra applications can use plugins, placed in plugins/ subdirectory.
+Some of them are very special and/or have extra dependencies so should
+be packaged separately.
+
+
+ Suggested Name            Details
+ ------------------------------------------------------------------------
+ calligra-semanticitems  Description: Calligra semantic item plugins
+                           Contents:
+                               calligra_semanticitem_contact.so
+                               calligra_semanticitem_contact.desktop
+                               calligra_semanticitem_event.so
+                               calligra_semanticitem_event.desktop
+                               calligra_semanticitem_location.so
+                               calligra_semanticitem_location.desktop
+                           Translation File:
+                               calligra_semanticitem_contact.mo
+                               calligra_semanticitem_contact.mo
+                               calligra_semanticitem_location.mo
+                           Dependencies:
+                               libkdepimlibs (kabc, kcalcore, akonadi)
+                               libmarblewidget-qt5 or marble
+                                                      (provides libmarblewidget)
+
+If Calligra is build with support for RDF enabled, it is STRONGLY RECOMMENDED to
+separate the semantic item plugins coming from "plugins/semanticitems" into
+their own package. That package should not be an automatic dependency on any
+other Calligra package, but only installed explicitly by the user. Reason are
+the external dependencies with these plugins, especially kdepimlibs.
+
+So if e.g. a user just installs the Braindump package, this should not pull in all
+the things that KDEPIM/Akonadi pulls in.
+
+
+3. Calligra libraries
+=====================
+
+Calligra share common functionality within libraries, placed in libs/
+subdirectory. Calligra libraries should be placed in a single package,
+separate from Calligra applications. Below is the list of the libraries.
+
+Name       Conditional compilation flag    Globally used in Calligra?   Public API
+                                                                       (headers installed)
+           (default: NO)                   (default: YES)              (default: YES)
+------------------------------------------------------------------------------------------
+
+flake
+kopageapp
+koplugin                                                               NO
+kotext
+komain
+koodf
+kordf                                      Words/Author
+pigment
+kowidgets
+
+
+4. IMPORTANT On using CPU vector capabilities in Calligra Libs
+========================================================================
+
+IN BRIEF: 1) Install Vc library [1] and don't forget to activate
+             PACKAGERS_BUILD=ON option when building a package.
+          2) Vc library should be present on the building system only,
+             it need not be installed on all the client systems.
+
+Pigment can make use of the vector capabilities of the
+user's CPU. To make it possible Vc library [1] should be present in
+the host system. This is a static library and fully included into the
+final Pigment binary, so it is not necessary to have it
+installed in the client system.
+
+The code generation is generally controlled by two factors: the
+presence of the Vc library and a special cmake option
+'PACKAGERS_BUILD'. Consider three cases:
+
+1) Vc library is not present. PACKAGERS_BUILD=<don't care>.
+
+The calligra is build with default compiller options. The resulting
+binary is non-optimized and portable among different CPU
+architectures.
+
+2) Vc library is present. PACKAGERS_BUILD=OFF (default).
+
+All the calligra binaries are optimized for the host CPU. This is the
+most efficient type of build of Calligra. But be careful, because such
+binaries are not portable among different CPU architectures! Using
+this build for packages distributed to many users will most probably
+result in SIGILL crashes on the client system. Use this option for
+private builds only.
+
+3) Vc library is present. PACKAGERS_BUILD=ON.
+
+This option disables CPU optimizations for the most of Calligra, but
+gnerates several versions of the code for its hottest parts. The
+specific implementation of the code is chosen on the fly when Calligra
+starts. This version is a bit slower than 2) but much faster than 1)
+and is *portable* among all the CPU architectures. Use this type of
+build for building distributable packages.
+
+[1] - http://code.compeng.uni-frankfurt.de/projects/vc
+
+
+5. Okular plugins
+=================
+
+5.1. Runtime dependency of the Okular ODP plugin
+------------------------------------------------
+OKULAR_GENERATOR_ODP, the ODP plugin for Okular, in extras/okularodpgenerator,
+has a runtime dependency on the Stage engine, PART_STAGE.
+
+5.2. Support for PPT, PPTX and more runtime dependency
+------------------------------------------------------
+The Okular ODP plugin also supports the formats PPT and PPTX, if the respective
+filters FILTER_PPT_TO_ODP and FILTER_PPTX_TO_ODP are built, by the products
+OKULAR_GENERATOR_PPT and OKULAR_GENERATOR_PPTX.
+
+In that case the files
+* libokularGenerator_{powerpoint,pptx}_calligra.desktop
+* okular{Powerpoint,Pptx}_calligra.desktop
+* okularApplication_{powerpoint,pptx}_calligra.desktop
+will be installed from the filters/stage/{powerpoint,pptx}.
+
+So with those desktop files and the Okular ODP plugin installed there is a
+runtime dependency on the Stage engine and the respective filters.
+
+5.3. Support for DOC, DOCX, WPD and more runtime dependency
+-----------------------------------------------------------
+The Okular ODT plugin also supports the formats DOC, DOCX, RTF and WPD, if the
+respective filters FILTER_DOC_TO_ODT, FILTER_DOCX_TO_ODT, FILTER_RTF_TO_ODT 
+and FILTER_WORDPERFECT_TO_ODT are built, by the products OKULAR_GENERATOR_DOC,
+OKULAR_GENERATOR_DOCX, OKULAR_GENERATOR_RTF and OKULAR_GENERATOR_WORDPERFECT.
+
+In that case the files
+* libokularGenerator_{doc,docx,rtf,wpd}_calligra.desktop
+* okular{Doc,Doxx,Rtf,Wpd}_calligra.desktop
+* okularApplication_{doc,docx,rtf,wpd}_calligra.desktop
+will be installed from the filters/word/{msword-odf,docx/import,rtf/import,wordperfect/import}.
+
+So with those desktop files and the Okular ODT plugin installed there is a
+runtime dependency on the respective filters.
+
+
+6. Adding unmaintained applications/modules
+===========================================
+
+A few applications and modules do not have maintainers. So there is no one
+to handle bugs experienced by users or discuss new features/improvements.
+
+Still those applications & modules are usable for certain needs. If you want
+to provide the users of your packages also with those unmaintained applications
+and modules, you will need to create a custom patch to the file CalligraProducts.cmake
+and remove the respective "UNMAINTAINED" tags from the product definitions.
+
+When doing so, please state the unmaintained state in the package description,
+so the users are aware about the lack of support at the current time.

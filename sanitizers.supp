@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: CC0-1.0
+# SPDX-FileCopyrightText: none
+# Suppression file for ASAN/LSAN
+
+leak:QCryptographicHashPrivate::EVP::EVP
+# Qt initializes an OpenSSL provider on first hash use and OpenSSL retains a
+# small process-wide allocation until termination.
+leak:QCryptographicHash::QCryptographicHash
+# The pigment registry is a process-wide Qt global and is intentionally kept
+# alive until process termination. Its plugin-created color spaces and profile
+# graph are therefore reported after the test has completed.
+leak:KoColorSpaceRegistry::instance
+# Color spaces are lazily instantiated by factories and retained by the
+# process-wide registry until shutdown.
+leak:KoColorSpaceFactory::grabColorSpace
+leak:TextShape::TextShape
+# KChart keeps style objects in process-wide caches.
+leak:KChart::

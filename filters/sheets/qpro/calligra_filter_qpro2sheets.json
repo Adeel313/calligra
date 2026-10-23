@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Quattro Pro Import Filter for KSpread",
+        "Name[ar]": "مرشح استيراد Quattro Pro لـ KSpread",
+        "Name[ca@valencia]": "Filtre d'importació Quattro Pro per a KSpread",
+        "Name[ca]": "Filtre d'importació Quattro Pro per al KSpread",
+        "Name[cs]": "Quattro Pro importní filtr pro KSpread",
+        "Name[de]": "KSpread Quattro Pro-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής Quattro Pro για KSpread",
+        "Name[en_GB]": "Quattro Pro Import Filter for KSpread",
+        "Name[eo]": "Quattro Pro Importfiltrilo por KSpread",
+        "Name[es]": "Filtro de importación Quattro Pro para KSpread",
+        "Name[eu]": "KSpread-en Quattro Pro inportatzeko iragazkia",
+        "Name[fi]": "KSpreadin Quattro Pro -tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « Quattro Pro » pour KSpread",
+        "Name[ga]": "Scagaire Iompórtála Quattro Pro do KSpread",
+        "Name[gl]": "Filtro para KSpread de importación de Quattro Pro",
+        "Name[he]": "מסנן ייבוא מ־Quattro Pro ל־KSpread",
+        "Name[it]": "Filtro di importazione Quattro Pro per KSpread",
+        "Name[ka]": "Quattro Pro -ის შემოტანის ფილტრი KSpread-სთვის",
+        "Name[lv]": "„KSpread“ „Quattro Pro“ importa filtrs",
+        "Name[nl]": "Quattro Pro-importfilter voor KSpread",
+        "Name[pl]": "Filtr importu Quattro Pro dla KSpread",
+        "Name[pt_BR]": "Filtro de importação Quattro Pro para o KSpread",
+        "Name[ru]": "Фильтр импорта Quattro Pro для KSpread",
+        "Name[sa]": "KSpread कृते Quattro Pro Import Filter इति",
+        "Name[sk]": "Filter importu Quattro Pro pre KSpread",
+        "Name[sl]": "Quattro Pro filter uvoza za KSpread",
+        "Name[sv]": "Quattro Pro-importfilter för KSpread",
+        "Name[tr]": "KSpread için Quattro Pro İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування даних Quattro Pro для KSpread",
+        "Name[zh_CN]": "KSpread Quattro Pro 导入过滤器",
+        "Name[zh_TW]": "KSpread 的 Quattro Pro 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/x-kspread",
+    "X-KDE-Import": "application/x-quattropro",
+    "X-KDE-Weight": 1
+}

@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "Video Shape",
+        "Name[ar]": "شكل فيديو",
+        "Name[ca@valencia]": "Forma de vídeo",
+        "Name[ca]": "Forma de vídeo",
+        "Name[cs]": "Tvar Video",
+        "Name[de]": "Video-Objekt",
+        "Name[el]": "Σχήμα βίντεο",
+        "Name[en_GB]": "Video Shape",
+        "Name[eo]": "Filmeta Formo",
+        "Name[es]": "Forma de vídeo",
+        "Name[eu]": "Bideo-forma",
+        "Name[fi]": "Videokuvio",
+        "Name[fr]": "Forme de vidéo",
+        "Name[ga]": "Cruth Físeáin",
+        "Name[gl]": "Obxecto de vídeo",
+        "Name[he]": "צורת וידאו",
+        "Name[it]": "Forma video",
+        "Name[ka]": "ვიდეოს ფორმა",
+        "Name[lv]": "Video objekts",
+        "Name[nl]": "Video-vorm",
+        "Name[pl]": "Kształt wideo",
+        "Name[pt_BR]": "Forma de Vídeo",
+        "Name[ru]": "Объект видео",
+        "Name[sa]": "विडियो आकार",
+        "Name[sk]": "Tvar videa",
+        "Name[sl]": "Oblika videa",
+        "Name[sv]": "Videoform",
+        "Name[tr]": "Video Şekli",
+        "Name[uk]": "Форма-відео",
+        "Name[zh_CN]": "视频形状",
+        "Name[zh_TW]": "影片元件",
+        "ServiceTypes": [
+            "Calligra/Shape"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

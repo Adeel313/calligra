@@ -1,0 +1,42 @@
+{
+    "KPlugin": {
+        "Icon": "",
+        "Name": "Karbon WMF Export Filter",
+        "Name[ar]": "مرشح تصدير WMF لكربون",
+        "Name[ca@valencia]": "Filtre d'exportació WMF de Karbon",
+        "Name[ca]": "Filtre d'exportació WMF del Karbon",
+        "Name[cs]": "Exportní filtr do formátu WMF pro Karbon",
+        "Name[de]": "Karbon WMF-Exportfilter",
+        "Name[el]": "Φίλτρο εξαγωγής Karbon WMF",
+        "Name[en_GB]": "Karbon WMF Export Filter",
+        "Name[eo]": "Karbon WMF Eksporta Filtrilo",
+        "Name[es]": "Filtro de exportación WMF de Karbon",
+        "Name[eu]": "Karbon-en WMF esportatzeko iragazkia",
+        "Name[fi]": "Karbonin WMF-vientisuodatin",
+        "Name[fr]": "Filtre d'exportation « WMF » de Karbon",
+        "Name[ga]": "Scagaire Easpórtála Karbon WMF",
+        "Name[gl]": "Filtro para Karbon de exportación de WMF",
+        "Name[he]": "מסנן ייצוא WMF מ־Karbon",
+        "Name[it]": "Filtro di esportazione WMF per Karbon",
+        "Name[ka]": "Karbon WMF -ის გატანის ფილტრი",
+        "Name[lv]": "„Karbon“ WMF eksporta filtrs",
+        "Name[nl]": "WMF-exportfilter voor Karbon",
+        "Name[pl]": "Filtr eksportu WMF z Karbon",
+        "Name[pt_BR]": "Filtro de exportação WMF para o Karbon",
+        "Name[ru]": "Фильтр экспорта WMF Karbon",
+        "Name[sa]": "कार्बन WMF निर्यात फ़िल्टर",
+        "Name[sk]": "Filter exportu WMF pre Karbon",
+        "Name[sl]": "Karbon filter izvoza WMF",
+        "Name[sv]": "Karbon WMF-exportfilter",
+        "Name[tr]": "Karbon WMF Dışa Aktarma Süzgeci",
+        "Name[uk]": "Фільтр експорту WMF у Karbon",
+        "Name[zh_CN]": "Karbon WMF 导出过滤器",
+        "Name[zh_TW]": "Karbon WMF 匯出過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "image/x-wmf",
+    "X-KDE-Import": "application/vnd.oasis.opendocument.graphics",
+    "X-KDE-Weight": 1
+}

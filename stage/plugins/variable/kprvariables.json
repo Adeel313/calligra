@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Icon": "",
+        "Name": "Presentation Variables",
+        "Name[ar]": "متغيرات العرض التقديمي",
+        "Name[ca@valencia]": "Variables de presentació",
+        "Name[ca]": "Variables de presentació",
+        "Name[cs]": "Proměnné prezentace",
+        "Name[de]": "Präsentationsvariablen",
+        "Name[el]": "Μεταβλητές παρουσίασης",
+        "Name[en_GB]": "Presentation Variables",
+        "Name[eo]": "Prezentovariabloj",
+        "Name[es]": "Variables de presentaciones",
+        "Name[eu]": "Aurkezpen-aldagaiak",
+        "Name[fi]": "Esitysmuuttujat",
+        "Name[fr]": "Variables de présentation",
+        "Name[ga]": "Athróga Cur i Láthair",
+        "Name[gl]": "Variábeis de presentación",
+        "Name[he]": "משתני הצגה",
+        "Name[it]": "Variabili di presentazione",
+        "Name[ka]": "პრეზენტაციის ცვლადები",
+        "Name[lv]": "Prezentācijas mainīgie",
+        "Name[nl]": "Presentatievariabelen",
+        "Name[pl]": "Zmienne prezentacji",
+        "Name[pt_BR]": "Variáveis da Apresentação",
+        "Name[ru]": "Переменные презентации",
+        "Name[sa]": "प्रस्तुति चर",
+        "Name[sk]": "Premenné prezentácie",
+        "Name[sl]": "Spremenljivke predstavitve",
+        "Name[sv]": "Presentationsvariabler",
+        "Name[tr]": "Sunum Değişkenleri",
+        "Name[uk]": "Змінні презентації",
+        "Name[zh_CN]": "幻灯片变量",
+        "Name[zh_TW]": "簡報變數",
+        "ServiceTypes": [
+            "Calligra/Text-InlineObject"
+        ]
+    },
+    "X-KoText-MinVersion": "28",
+    "X-KoText-PluginVersion": "28"
+}

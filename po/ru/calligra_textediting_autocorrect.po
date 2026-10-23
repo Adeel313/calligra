@@ -1,0 +1,610 @@
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Nick Shaforostoff <shaforostoff@kde.ru>, 2007.
+# Artem Sereda <overmind88@gmail.com>, 2009.
+# Yuri Efremov <yur.arh@gmail.com>, 2011.
+# SPDX-FileCopyrightText: 2026 Alexander Yavorskiy <kekcuha@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2026-06-19 21:50+0200\n"
+"Last-Translator: Alexander Yavorskiy <kekcuha@gmail.com>\n"
+"Language-Team: Russian <kde-russian@lists.kde.ru>\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 26.04.2\n"
+"Plural-Forms: nplurals=4; plural=n==1 ? 3 : n%10==1 && n%100!=11 ? 0 : n"
+"%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Environment: kde\n"
+"X-Accelerator-Marker: &\n"
+"X-Text-Markup: kde4\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "Настройка &автоисправления..."
+
+#: Autocorrect.cpp:30
+#, kde-format
+msgid "Enable Autocorrection"
+msgstr "Включить автоисправление"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "Автоисправление"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Общие"
+
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Проверяется при начале ввода нового предложения и всегда делает заглавной "
+#~ "первую букву предложения"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Переводить первую букву первого слова предложения в &верхний регистр\n"
+#~ "(«конец. это Проверка» - «конец. Это Проверка»)"
+
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Все слова проверяются на часто встречающуюся ошибку ввода нескольких "
+#~ "заглавных букв при нажатой клавише Shift. Если некоторые слова состоят из "
+#~ "нескольких заглавных букв (например, КГБ), то они должны указываться в "
+#~ "списке исключений."
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Исправлять ввод &двух букв подряд в верхнем регистре.\n"
+#~ "(например, «ПРивет» в «Привет»)"
+
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Определяет, что введённое слов является Интернет-адресом (URL), и "
+#~ "форматирует её так, как эту ссылку показал бы браузер."
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "Автоформатирование &Интернет-адресов"
+
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Исправляет достаточно частую проблему работы с текстом, импортируемым из "
+#~ "текстового файла с форматированием, когда для выравнивания текста по "
+#~ "ширине указывается несколько пробелов."
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Удалять &двойные пробелы"
+
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Устанавливает правильное форматирование и отступы в абзацах, удаляя "
+#~ "первоначальные и завершающие пробелы в абзацах."
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "&Удалять пробелы в начале и конце абзаца"
+
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Когда вы используете для выделения _подчёркнутого_ или *полужирного* "
+#~ "текста определённые символы, эти символы будут убраны, а текст "
+#~ "отформатирован надлежащим образом."
+
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Форматировать полу&жирным и подчёркиванием"
+
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "Часто употребляемые дроби будут преобразованы в символы дробей"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "За&менять 1/2... на ½..."
+
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Когда вы начинаете абзац с цифры - например, «1)», этот абзац будет "
+#~ "преобразован в нумерованный список. Вводимые вслед за ним абзацы уже "
+#~ "будут элементами нумерованного списка."
+
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "Преобразовывать в &нумерованные списки"
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "За&менять 1st... на 1^st..."
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "Начинать дни недели с заглавной буквы"
+
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Когда вы начинаете абзац с символов «*» или «-», этот абзац будет "
+#~ "преобразован в маркированный список с маркерами, соответствующим "
+#~ "символам . Вводимые вслед за ним абзацы уже будут элементами "
+#~ "маркированного списка."
+
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Преобразовывать в &маркированные списки"
+
+#~ msgid "Default"
+#~ msgstr "По умолчанию"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "Ка&вычки"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Заменять &двойные кавычки на типографские кавычки"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Заменять &одинарные кавычки на типографские кавычки"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Дополнительно"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Замены и исключения для языка:"
+
+#~ msgid "All Languages"
+#~ msgstr "Любой язык"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "&Включить автоисправление"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "Заменить &текст с форматом"
+
+#~ msgid "&Find"
+#~ msgstr "&Найти"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "&Заменить"
+
+#~ msgid "&Add"
+#~ msgstr "Доб&авить"
+
+#~ msgid "Remove"
+#~ msgstr "Удалить"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "Изменить формат..."
+
+#~ msgid "C&lear Format"
+#~ msgstr "&Очистить формат"
+
+#~ msgid "Find"
+#~ msgstr "Найти"
+
+#~ msgid "Replace"
+#~ msgstr "Заменить"
+
+#~ msgid "E&xceptions"
+#~ msgstr "&Исключения"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Не принимать за конец предложения:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "Автовключение"
+
+#~ msgid "R&emove"
+#~ msgstr "Удалить "
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Позволять написание двойных букв в верхнем регистре:"
+
+#~ msgid "A&dd"
+#~ msgstr "&Добавить"
+
+#~ msgid "&Modify"
+#~ msgstr "&Изменить"
+
+#~ msgid "Select Character"
+#~ msgstr "Выберите символ"
+
+#, fuzzy
+#~| msgid "Si&mple Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Общие"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a new sentence is started and always ensure that the first "
+#~| "character is an uppercase character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Проверяется при начале ввода нового предложения и всегда делает заглавной "
+#~ "первую букву предложения"
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &first letter of a sentence automatically to uppercase\n"
+#~| "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Переводить первую букву первого слова предложения в &верхний регистр\n"
+#~ "(«конец. это Проверка» - «конец. Это Проверка»)"
+
+#, fuzzy
+#~| msgid ""
+#~| "All words are checked for the common mistake of holding the shift key "
+#~| "down a bit too long. If some words must have two uppercase characters, "
+#~| "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Все слова проверяются на часто встречающуюся ошибку ввода нескольких "
+#~ "заглавных букв при нажатой клавише Shift. Если некоторые слова состоят из "
+#~ "нескольких заглавных букв (например, КГБ), то они должны указываться в "
+#~ "списке исключений."
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &two uppercase characters to one uppercase and one lowercase "
+#~| "character\n"
+#~| " (e.g. PErfect to Perfect)"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Исправлять ввод &двух букв подряд в верхнем регистре.\n"
+#~ "(например, «ПРивет» в «Привет»)"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~| "formatting that matches the way an Internet browser would show a URL."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Определяет, что введённое слов является Интернет-адресом (URL), и "
+#~ "форматирует её так, как эту ссылку показал бы браузер."
+
+#, fuzzy
+#~| msgid "Autoformat &URLs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "Автоформатирование &Интернет-адресов"
+
+#, fuzzy
+#~| msgid ""
+#~| "Make sure that more than one space cannot be typed, as this is a common "
+#~| "mistake which is quite hard to find in formatted text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Исправляет достаточно частую проблему работы с текстом, импортируемым из "
+#~ "текстового файла с форматированием, когда для выравнивания текста по "
+#~ "ширине указывается несколько пробелов."
+
+#, fuzzy
+#~| msgid "&Suppress double spaces"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Удалять &двойные пробелы"
+
+#, fuzzy
+#~| msgid ""
+#~| "Keep correct formatting and indenting of sentences by automatically "
+#~| "removing spaces typed at the beginning and end of a paragraph."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Устанавливает правильное форматирование и отступы в абзацах, удаляя "
+#~ "первоначальные и завершающие пробелы в абзацах."
+
+#, fuzzy
+#~| msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "&Удалять пробелы в начале и конце абзаца"
+
+#, fuzzy
+#~| msgid ""
+#~| "When you use _underline_ or *bold*, the text between the underscores or "
+#~| "asterisks will be converted to underlined or bold text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Когда вы используете для выделения _подчёркнутого_ или *полужирного* "
+#~ "текста определённые символы, эти символы будут убраны, а текст "
+#~ "отформатирован надлежащим образом."
+
+#, fuzzy
+#~| msgid "Automatically do &bold and underline formatting"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Форматировать полу&жирным и подчёркиванием"
+
+#, fuzzy
+#~| msgid "Most standard fraction notations will be converted when available"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "Часто употребляемые дроби будут преобразованы в символы дробей"
+
+#, fuzzy
+#~| msgid "Re&place 1/2... with ½..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "За&менять 1/2... на ½..."
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '1)' or similar in front of a paragraph, automatically "
+#~| "convert the paragraph to use that numbering style. This has the "
+#~| "advantage that further paragraphs will also be numbered and the spacing "
+#~| "is done correctly."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Когда вы начинаете абзац с цифры - например, «1)», этот абзац будет "
+#~ "преобразован в нумерованный список. Вводимые вслед за ним абзацы уже "
+#~ "будут элементами нумерованного списка."
+
+#, fuzzy
+#~| msgid "Use &autonumbering for numbered paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "Преобразовывать в &нумерованные списки"
+
+#, fuzzy
+#~| msgid "Rep&lace 1st... with 1^st..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "За&менять 1st... на 1^st..."
+
+#, fuzzy
+#~| msgid "Capitalize name of days"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "Начинать дни недели с заглавной буквы"
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '*' or '-' in front of a paragraph, automatically convert "
+#~| "the paragraph to use that list-style. Using a list-style formatting "
+#~| "means that a correct bullet is used to draw the list."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Когда вы начинаете абзац с символов «*» или «-», этот абзац будет "
+#~ "преобразован в маркированный список с маркерами, соответствующим "
+#~ "символам . Вводимые вслед за ним абзацы уже будут элементами "
+#~ "маркированного списка."
+
+#, fuzzy
+#~| msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Преобразовывать в &маркированные списки"
+
+#, fuzzy
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "По умолчанию"
+
+#, fuzzy
+#~| msgid "Custom &Quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "Ка&вычки"
+
+#, fuzzy
+#~| msgid "Replace &double quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Заменять &двойные кавычки на типографские кавычки"
+
+#, fuzzy
+#~| msgid "Replace &single quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Заменять &одинарные кавычки на типографские кавычки"
+
+#, fuzzy
+#~| msgid "Ad&vanced Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Дополнительно"
+
+#, fuzzy
+#~| msgid "Replacements and exceptions for language:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Замены и исключения для языка:"
+
+#, fuzzy
+#~| msgid "All Languages"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "Любой язык"
+
+#, fuzzy
+#~| msgid "&Enable word replacement"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "&Включить автоисправление"
+
+#, fuzzy
+#~| msgid "Replace &text with format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "Заменить &текст с форматом"
+
+#, fuzzy
+#~| msgid "&Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "&Найти"
+
+#, fuzzy
+#~| msgid "..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#, fuzzy
+#~| msgid "Re&place"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "&Заменить"
+
+#, fuzzy
+#~| msgid "Remove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "Удалить"
+
+#, fuzzy
+#~| msgid "C&hange Format..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "Изменить формат..."
+
+#, fuzzy
+#~| msgid "C&lear Format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "&Очистить формат"
+
+#, fuzzy
+#~| msgid "Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "Найти"
+
+#, fuzzy
+#~| msgid "Replace"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "Заменить"
+
+#, fuzzy
+#~| msgid "E&xceptions"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "&Исключения"
+
+#, fuzzy
+#~| msgid "Do not treat as the end of a sentence:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Не принимать за конец предложения:"
+
+#, fuzzy
+#~| msgid "Autoinclude"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "Автовключение"
+
+#, fuzzy
+#~| msgid "R&emove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "Удалить "
+
+#, fuzzy
+#~| msgid "Accept two uppercase letters in:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Позволять написание двойных букв в верхнем регистре:"
+
+#, fuzzy
+#~| msgid "A&dd"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "&Добавить"
+
+#, fuzzy
+#~| msgid "Configure &Autocorrection..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "Настройка &автоисправления..."
+
+#, fuzzy
+#~| msgid "Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "Автоисправление"
+
+#, fuzzy
+#~| msgid "&Modify"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "&Изменить"
+
+#, fuzzy
+#~| msgid "&Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "Доб&авить"
+
+#, fuzzy
+#~| msgid "Select Character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "Выберите символ"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "Автоисправление"

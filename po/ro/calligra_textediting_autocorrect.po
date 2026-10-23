@@ -1,0 +1,271 @@
+# Traducerea AutocorrectPlugin.po în Română
+# translation of AutocorrectPlugin to Romanian
+# Copyright (C) 2008 This_file_is_part_of_KDE
+# This file is distributed under the same license as the AutocorrectPlugin package.
+# Laurenţiu Buzdugan <lbuz@rolix.org>, 2008".
+# Sergiu Bivol <sergiu@cip.md>, 2008.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2008-03-14 17:37+0200\n"
+"Last-Translator: Sergiu Bivol <sergiu-bivol@mail.md>\n"
+"Language-Team: Română <kde-i18n-ro@kde.org>\n"
+"Language: ro\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
+"20)) ? 1 : 2;\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "Configurare corecție &automată..."
+
+#: Autocorrect.cpp:30
+#, fuzzy, kde-format
+#| msgid "Autocorrection"
+msgid "Enable Autocorrection"
+msgstr "Corecție automată"
+
+#: AutocorrectFactory.cpp:16
+#, fuzzy, kde-format
+#| msgid "Autocorrection"
+msgid "Autocorrect"
+msgstr "Corecție automată"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Corecție automată si&mplă"
+
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Detectează când se începe o propoziție nouă și se asigură că primul "
+#~ "caracter este majusculă"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Transformă automat &prima literă a propoziției în majusculă.\n"
+#~ "(ex.: „casa mea. în acest oraș” devine „casa mea. În acest oraș”)"
+
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Toate cuvintele sunt verificate de greșeala frecventă de a ține tasta "
+#~ "Shift prea mult. Dacă unele cuvinte trebuie să aibă două majuscule, "
+#~ "atunci aceste excepții trebuiesc introduse în fila „Excepții”."
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Transformă &două majuscule într-o majusculă și o literă mică.\n"
+#~ "(ex: „PErfect” în „Perfect”)"
+
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Detectează când este introdus un URL și îi conferă o formatare "
+#~ "asemănătoare celei dintr-un navigator de internet."
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "Formatare automată &URL"
+
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Asigurare că nu se poate tasta mai mult de un stațiu, întrucât aceasta "
+#~ "este o greșeală frecventă și foarte greu de depistat."
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "&Suprimare spații duble"
+
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Păstrează formatarea și alinierea corectă a propozițiilor, eliminând "
+#~ "automat spațiile tastate la începutul și sfârșitul unui paragraf."
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "&Eliminare spații de la începutul și sfârșitul paragrafelor"
+
+#, fuzzy
+#~| msgid "Si&mple Autocorrection"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Corecție automată si&mplă"
+
+#~ msgid "&Add"
+#~ msgstr "&Adăugare"
+
+#~ msgid "&Modify"
+#~ msgstr "&Modificare"
+
+#~ msgid "Select Character"
+#~ msgstr "Alegeți caracterul"
+
+#, fuzzy
+#~| msgid "Si&mple Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Corecție automată si&mplă"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a new sentence is started and always ensure that the first "
+#~| "character is an uppercase character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Detectează când se începe o propoziție nouă și se asigură că primul "
+#~ "caracter este majusculă"
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &first letter of a sentence automatically to uppercase\n"
+#~| "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Transformă automat &prima literă a propoziției în majusculă.\n"
+#~ "(ex.: „casa mea. în acest oraș” devine „casa mea. În acest oraș”)"
+
+#, fuzzy
+#~| msgid ""
+#~| "All words are checked for the common mistake of holding the shift key "
+#~| "down a bit too long. If some words must have two uppercase characters, "
+#~| "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Toate cuvintele sunt verificate de greșeala frecventă de a ține tasta "
+#~ "Shift prea mult. Dacă unele cuvinte trebuie să aibă două majuscule, "
+#~ "atunci aceste excepții trebuiesc introduse în fila „Excepții”."
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &two uppercase characters to one uppercase and one lowercase "
+#~| "character\n"
+#~| " (e.g. PErfect to Perfect)"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Transformă &două majuscule într-o majusculă și o literă mică.\n"
+#~ "(ex: „PErfect” în „Perfect”)"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~| "formatting that matches the way an Internet browser would show a URL."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Detectează când este introdus un URL și îi conferă o formatare "
+#~ "asemănătoare celei dintr-un navigator de internet."
+
+#, fuzzy
+#~| msgid "Autoformat &URLs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "Formatare automată &URL"
+
+#, fuzzy
+#~| msgid ""
+#~| "Make sure that more than one space cannot be typed, as this is a common "
+#~| "mistake which is quite hard to find in formatted text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Asigurare că nu se poate tasta mai mult de un stațiu, întrucât aceasta "
+#~ "este o greșeală frecventă și foarte greu de depistat."
+
+#, fuzzy
+#~| msgid "&Suppress double spaces"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "&Suprimare spații duble"
+
+#, fuzzy
+#~| msgid ""
+#~| "Keep correct formatting and indenting of sentences by automatically "
+#~| "removing spaces typed at the beginning and end of a paragraph."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Păstrează formatarea și alinierea corectă a propozițiilor, eliminând "
+#~ "automat spațiile tastate la începutul și sfârșitul unui paragraf."
+
+#, fuzzy
+#~| msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "&Eliminare spații de la începutul și sfârșitul paragrafelor"
+
+#, fuzzy
+#~| msgid "Si&mple Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Corecție automată si&mplă"
+
+#, fuzzy
+#~| msgid "Configure &Autocorrection..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "Configurare corecție &automată..."
+
+#, fuzzy
+#~| msgid "Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "Corecție automată"
+
+#, fuzzy
+#~| msgid "&Modify"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "&Modificare"
+
+#, fuzzy
+#~| msgid "&Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "&Adăugare"
+
+#, fuzzy
+#~| msgid "Select Character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "Alegeți caracterul"
+
+#, fuzzy
+#~| msgid "Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "Corecție automată"

@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Karbon WPG Import Filter",
+        "Name[ar]": "مرشح استيراد WPG لكربون",
+        "Name[ca@valencia]": "Filtre d'importació WPG de Karbon",
+        "Name[ca]": "Filtre d'importació WPG del Karbon",
+        "Name[cs]": "Importní filtr formátu WPG pro Karbon",
+        "Name[de]": "Karbon WPG-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής Karbon WPG",
+        "Name[en_GB]": "Karbon WPG Import Filter",
+        "Name[eo]": "Karbon WPG Importfiltrilo",
+        "Name[es]": "Filtro de importación WPG de Karbon",
+        "Name[eu]": "Karbon-en WPG inportatzeko iragazkia",
+        "Name[fi]": "Karbonin WPG-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « WPG » de Karbon",
+        "Name[ga]": "Scagaire Iompórtála Karbon WPG",
+        "Name[gl]": "Filtro para Karbon de importación de WPG",
+        "Name[he]": "מסנן ייבוא WPG ל־Karbon",
+        "Name[it]": "Filtro di importazione WPG per Karbon",
+        "Name[ka]": "Karbon WPG -ის შემოტანის ფილტრი",
+        "Name[lv]": "„Karbon“ WPG importa filtrs",
+        "Name[nl]": "WPG-importfilter voor Karbon",
+        "Name[pl]": "Filtr importu WPG do Karbon",
+        "Name[pt_BR]": "Filtro de importação WPG para o Karbon",
+        "Name[ru]": "Фильтр импорта WPG Karbon",
+        "Name[sa]": "कार्बन WPG आयात फ़िल्टर",
+        "Name[sk]": "Filter importu WPG pre Karbon",
+        "Name[sl]": "Karbon filter uvoza WPG",
+        "Name[sv]": "Karbon WPG-importfilter",
+        "Name[tr]": "Karbon WPG İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування WPG до Karbon",
+        "Name[zh_CN]": "Karbon WPG 导入过滤器",
+        "Name[zh_TW]": "Karbon WPG 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "image/svg+xml",
+    "X-KDE-Import": "application/x-wpg",
+    "X-KDE-Weight": 1
+}

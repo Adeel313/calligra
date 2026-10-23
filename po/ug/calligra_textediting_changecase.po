@@ -1,0 +1,89 @@
+# Uyghur translation for ChangecasePlugin.
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Sahran <sahran.ug@gmail.com>, 2011.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ChangecasePlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2026-09-23 06:56+0900\n"
+"Last-Translator: Abduqadir Abliz <sahranbay@gmail.com>\n"
+"Language-Team: Uyghur <kde-i18n-doc@kde.org>\n"
+"Language: ug\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 3.9\n"
+
+#: Changecase.cpp:49 Changecase.cpp:77
+#, kde-format
+msgid "Change case"
+msgstr "چوڭ كىچىك ھەرپ ئۆزگەرت"
+
+#: Changecase.cpp:54
+#, kde-format
+msgid "Sentence case"
+msgstr "جۈملە بېشىدىكى چوڭ كىچىك ھەرپ"
+
+#: Changecase.cpp:55
+#, kde-format
+msgid "lowercase"
+msgstr "كىچىك ھەرپ"
+
+#: Changecase.cpp:56
+#, kde-format
+msgid "UPPER CASE"
+msgstr "چوڭ ھەرپ"
+
+#: Changecase.cpp:57
+#, kde-format
+msgid "Initial Caps"
+msgstr "باش ھەرپى چوڭ"
+
+#: Changecase.cpp:58
+#, kde-format
+msgid "tOGGLE cASE"
+msgstr "چوڭ-كىچىك ھەرپنى ئالماشتۇر"
+
+#: ChangecaseFactory.cpp:16
+#, kde-format
+msgid "Change Case..."
+msgstr "چوڭ كىچىك ھەرپ ئۆزگەرت…"
+
+#~| msgid "Change case"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Change case"
+#~ msgstr "چوڭ كىچىك يېزىلىش ئۆزگەرتىش"
+
+#~| msgid "Sentence case"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Sentence case"
+#~ msgstr "جۈملىنىڭ چوڭ-كىچك يېزىلىشى"
+
+#~| msgid "lowercase"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "lowercase"
+#~ msgstr "كىچىك يېزىلىشى"
+
+#~| msgid "UPPER CASE"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "UPPER CASE"
+#~ msgstr "چوڭ يېزىلىش"
+
+#~| msgid "Initial Caps"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Initial Caps"
+#~ msgstr "باش ھەرپنى چوڭ يېزىش"
+
+#~| msgid "tOGGLE cASE"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "tOGGLE cASE"
+#~ msgstr "چوڭ-كىچك يېزىلىشى ئالماشتۇرۇش"
+
+#~| msgid "Change Case..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Change Case..."
+#~ msgstr "چوڭ كىچىك يېزىلىش ئۆزگەرتىش…"

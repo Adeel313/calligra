@@ -1,0 +1,123 @@
+# Translation of calligrasheets_calendar.pot into esperanto.
+# Copyright (C) 2009 Free Software Foundation, Inc.
+# This file is distributed under the same license as the calligra package.
+# Axel Rousseau <axel@esperanto-jeunes.org>, 2009.
+# Oliver Kellogg <olivermkellogg@gmail.com>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: calligrasheets_calendar\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2023-02-26 22:22+0100\n"
+"Last-Translator: Oliver Kellogg <olivermkellogg@gmail.com>\n"
+"Language-Team: esperanto <kde-i18n-eo@kde.org>\n"
+"Language: eo\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: translate-po (https://github.com/zcribe/translate-po)\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: CalendarTool.cpp:62
+#, kde-format
+msgid ""
+"End date is before start date! Please make sure that end date comes after "
+"start date."
+msgstr ""
+"Findato estas antaŭ komenca dato! Bonvolu certigi, ke tiu findato venas post "
+"komenca dato."
+
+#: CalendarTool.cpp:62 CalendarTool.cpp:69
+#, kde-format
+msgid "Error"
+msgstr "Eraro"
+
+#: CalendarTool.cpp:68
+#, kde-format
+msgid ""
+"Calendars should not be longer than 10 years. If you really need such long "
+"periods you need to split them up."
+msgstr ""
+"Kalendaroj ne devus esti pli longaj ol 10 jaroj. Se vi vere bezonas tiajn "
+"longajn periodojn, vi devas dividi ilin."
+
+#: CalendarTool.cpp:76
+#, kde-format
+msgid ""
+"Start and end dates are equal! Only one day will be inserted, do you want to "
+"continue?"
+msgstr ""
+"Komencaj kaj findatoj estas egalaj! Nur unu tago estos enmetita, ĉu vi volas "
+"daŭrigi?"
+
+#: CalendarTool.cpp:77 CalendarTool.cpp:87 CalendarTool.cpp:111
+#, kde-format
+msgid "Warning"
+msgstr "Averto"
+
+#: CalendarTool.cpp:86
+#, kde-format
+msgid ""
+"Creating a calendar for a longer period than a year can take up a lot of "
+"space, do you want to continue?"
+msgstr ""
+"Krei kalendaron por pli longa ol unu jaro povas okupi multe da spaco, ĉu vi "
+"volas daŭrigi?"
+
+#: CalendarTool.cpp:109
+#, kde-format
+msgid ""
+"The area where the calendar is inserted is NOT empty, are you sure you want "
+"to continue, overwriting existing data? If you choose No the area that would "
+"be required for the desired calendar will be selected so you can see what "
+"data would be overwritten."
+msgstr ""
+"La areo kie la kalendaro estas enmetita NE estas malplena, ĉu vi certas, ke "
+"vi volas daŭrigi, anstataŭigante ekzistantajn datumojn? Se vi elektas Ne la "
+"areo kiu estus postulata por la dezirata kalendaro estos elektita por ke vi "
+"povu vidi kiajn datumojn estus anstataŭitaj."
+
+#: CalendarTool.cpp:120
+msgctxt "(qtundo-format)"
+msgid "Insert Calendar"
+msgstr "Enmeti Kalendaron"
+
+#: CalendarTool.cpp:126
+#, kde-format
+msgid "Calendar from %1 to %2"
+msgstr "Kalendaro ekde %1 ĝis %2"
+
+#: CalendarTool.cpp:166
+#, kde-format
+msgid "week"
+msgstr "semajno"
+
+#: CalendarToolFactory.cpp:22
+#, kde-format
+msgid "Calendar"
+msgstr "Kalendaro"
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, CalendarToolWidget)
+#: CalendarToolWidget.ui:14
+#, kde-format
+msgid "Calendar Tool"
+msgstr "Kalendara Ilo"
+
+#. i18n: ectx: property (text), widget (QPushButton, m_insertButton)
+#: CalendarToolWidget.ui:20
+#, kde-format
+msgid "Insert"
+msgstr "Enmeti"
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: CalendarToolWidget.ui:27
+#, kde-format
+msgid "End date:"
+msgstr "Fina dato:"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: CalendarToolWidget.ui:47
+#, kde-format
+msgid "Start date:"
+msgstr "Komenca dato:"

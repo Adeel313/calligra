@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "Words Wiki Export Filter",
+        "Name[ar]": "مرشح تصدير Wiki لـ Words",
+        "Name[ca@valencia]": "Filtre d'exportació Wiki de Words",
+        "Name[ca]": "Filtre d'exportació Wiki del Words",
+        "Name[cs]": "Exportní filtr Words Wiki",
+        "Name[de]": "Words Wiki-Exportfilter",
+        "Name[el]": "Φίλτρο εξαγωγής Words Wiki",
+        "Name[en_GB]": "Words Wiki Export Filter",
+        "Name[eo]": "Filtrilo de Eksporto de Words Vikio",
+        "Name[es]": "Filtro de exportación Wiki de Words",
+        "Name[eu]": "Words-en Wiki esportatzeko iragazkia",
+        "Name[fi]": "Wordsin Wiki-vientisuodatin",
+        "Name[fr]": "Filtre d'exportation pour « Words Wiki »",
+        "Name[ga]": "Scagaire Easpórtála Vicí Focail",
+        "Name[gl]": "Filtro para Words de exportación de wiki",
+        "Name[it]": "Filtro di esportazione Wiki per Words",
+        "Name[ka]": "Words -ის Wiki -ში გატანის ფილტრი",
+        "Name[lv]": "„Words“ „Wiki“ eksporta filtrs",
+        "Name[nl]": "Wiki-exportfilter voor Words",
+        "Name[pl]": "Filtr eksportu Wiki ze Słów",
+        "Name[pt_BR]": "Filtro de exportação Wiki para Words",
+        "Name[ru]": "Фильтр экспорта Wiki Words",
+        "Name[sa]": "शब्दाः विकि निर्यात फ़िल्टर",
+        "Name[sk]": "Filter exportu Wiki pre Words",
+        "Name[sl]": "Filter izvoza Words Wiki",
+        "Name[sv]": "Words Wiki-exportfilter",
+        "Name[tr]": "Sözcükler Viki Dışa Aktarma Süzgeci",
+        "Name[uk]": "Фільтр експорту вікі для Words",
+        "Name[zh_CN]": "Words 的 Wiki 导出过滤器",
+        "Name[zh_TW]": "Words Wiki 匯出過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "text/wiki",
+    "X-KDE-Import": "application/vnd.oasis.opendocument.text",
+    "X-KDE-Weight": 1
+}

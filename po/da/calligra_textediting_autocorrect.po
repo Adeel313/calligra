@@ -1,0 +1,602 @@
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Martin Schlander <mschlander@opensuse.org>, 2008, 2009.
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2009-04-01 16:52+0200\n"
+"Last-Translator: Martin Schlander <mschlander@opensuse.org>\n"
+"Language-Team: Danish <dansk@dansk-gruppen.dk>\n"
+"Language: da\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 0.3\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "Indstil &autokorrektur..."
+
+#: Autocorrect.cpp:30
+#, fuzzy, kde-format
+#| msgid "Autocorrection"
+msgid "Enable Autocorrection"
+msgstr "Autokorrektur"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "Autokorrigér"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Si&mpel autokorrektur"
+
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Registrér når en ny sætning påbegyndes og sørg altid for at første tegn "
+#~ "er med stort"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Konvertér automatisk &første bogstav i en sætning til stort\n"
+#~ "(f.eks. \"mit hus. i denne by\" til \"mit hus. I denne by\")"
+
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Alle ord kontrolleres for den udbredte fejl at holde Skift-tasten nede "
+#~ "lidt for længe. Hvis nogle ord skal have to store bogstaver, så bør disse "
+#~ "undtagelser tilføjes under fanebladet \"Undtagelser\"."
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Konvertér &to store bogstaver til et stort og et lille bogstave\n"
+#~ "(f.eks. PErfekt til Perfekt)"
+
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Registrér når en URL (Uniform Resource Locator) skrives og lav "
+#~ "formatering der svarer til måden hvorpå en internetbrowser viser en URL."
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "Autoformatér &URL'er"
+
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Sørg for at mere end et mellemrum ikke kan indtastes, da dette er en "
+#~ "udbredt fejl, som er ganske vanskelig at finde i formateret tekst."
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Under&tryk dobbelte mellemrum"
+
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Behold korrekt formatering og indrykning af sætninger ved automatisk at "
+#~ "fjerne mellemrum som indtastes ved begyndelsen og afslutningen af et "
+#~ "afsnit."
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Fj&ern mellemrum ved begyndelsen og afslutningen af afsnit"
+
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Når du bruger _understregning_ eller *fed*, vil teksten mellem "
+#~ "understregerne eller stjernerne blive konverteret til understreget eller "
+#~ "fed tekst."
+
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Udfør automatisk &fed- og understreg-formatering"
+
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr ""
+#~ "De fleste almindelige brøker vil blive konverteret når det er muligt"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "Erst&at 1/2... med ½..."
+
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Konvertér automatisk til nummeropstilling når der skrives \"1)\" eller "
+#~ "lignende foran et afsnit. Dette har den fordel at yderligere afsnit også "
+#~ "vil blive nummererede og indrykning udført korrekt."
+
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "Brug &autonummerering på nummererede afsnit"
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "Ers&tat 1st... med 1^st..."
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "Brug stort forbogstav i navne på dage"
+
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Konvertér automatisk afsnittet til at bruge passende punktopstilling når "
+#~ "der skrives \"*\" eller \"-\" foran et afsnit. Brug af punktliste-"
+#~ "formatering betyder at et korrekt punkt bruges til at tegne listen."
+
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Brug punktl&iste-formatering til afsnit med punkter"
+
+#~ msgid "Default"
+#~ msgstr "Standard"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "Brugerdefinerede &citationstegn"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Erstat &dobbelte citationstegn med typografiske citationstegn"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Erstat e&nkelte citationstegn med typografiske citationstegn"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "A&vanceret autokorrektur"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Erstatninger og undtagelser for sprog:"
+
+#~ msgid "All Languages"
+#~ msgstr "Alle sprog"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "&Aktivér orderstatning"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "Erstat &tekst i formatet"
+
+#~ msgid "&Find"
+#~ msgstr "&Find"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "E&rstat"
+
+#~ msgid "&Add"
+#~ msgstr "&Tilføj"
+
+#~ msgid "Remove"
+#~ msgstr "Fjern"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "S&kift format..."
+
+#~ msgid "C&lear Format"
+#~ msgstr "R&yd format"
+
+#~ msgid "Find"
+#~ msgstr "Find"
+
+#~ msgid "Replace"
+#~ msgstr "Erstat"
+
+#~ msgid "E&xceptions"
+#~ msgstr "&Undtagelser"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Behandl ikke som afslutning af en sætning:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "Autoinkludér"
+
+#~ msgid "R&emove"
+#~ msgstr "Fj&ern"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Acceptér to store bogstaver i:"
+
+#~ msgid "A&dd"
+#~ msgstr "Til&føj"
+
+#~ msgid "&Modify"
+#~ msgstr "Æ&ndr"
+
+#~ msgid "Select Character"
+#~ msgstr "Vælg tegn"
+
+#, fuzzy
+#~| msgid "Si&mple Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Si&mpel autokorrektur"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a new sentence is started and always ensure that the first "
+#~| "character is an uppercase character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Registrér når en ny sætning påbegyndes og sørg altid for at første tegn "
+#~ "er med stort"
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &first letter of a sentence automatically to uppercase\n"
+#~| "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Konvertér automatisk &første bogstav i en sætning til stort\n"
+#~ "(f.eks. \"mit hus. i denne by\" til \"mit hus. I denne by\")"
+
+#, fuzzy
+#~| msgid ""
+#~| "All words are checked for the common mistake of holding the shift key "
+#~| "down a bit too long. If some words must have two uppercase characters, "
+#~| "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Alle ord kontrolleres for den udbredte fejl at holde Skift-tasten nede "
+#~ "lidt for længe. Hvis nogle ord skal have to store bogstaver, så bør disse "
+#~ "undtagelser tilføjes under fanebladet \"Undtagelser\"."
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &two uppercase characters to one uppercase and one lowercase "
+#~| "character\n"
+#~| " (e.g. PErfect to Perfect)"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Konvertér &to store bogstaver til et stort og et lille bogstave\n"
+#~ "(f.eks. PErfekt til Perfekt)"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~| "formatting that matches the way an Internet browser would show a URL."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Registrér når en URL (Uniform Resource Locator) skrives og lav "
+#~ "formatering der svarer til måden hvorpå en internetbrowser viser en URL."
+
+#, fuzzy
+#~| msgid "Autoformat &URLs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "Autoformatér &URL'er"
+
+#, fuzzy
+#~| msgid ""
+#~| "Make sure that more than one space cannot be typed, as this is a common "
+#~| "mistake which is quite hard to find in formatted text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Sørg for at mere end et mellemrum ikke kan indtastes, da dette er en "
+#~ "udbredt fejl, som er ganske vanskelig at finde i formateret tekst."
+
+#, fuzzy
+#~| msgid "&Suppress double spaces"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Under&tryk dobbelte mellemrum"
+
+#, fuzzy
+#~| msgid ""
+#~| "Keep correct formatting and indenting of sentences by automatically "
+#~| "removing spaces typed at the beginning and end of a paragraph."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Behold korrekt formatering og indrykning af sætninger ved automatisk at "
+#~ "fjerne mellemrum som indtastes ved begyndelsen og afslutningen af et "
+#~ "afsnit."
+
+#, fuzzy
+#~| msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Fj&ern mellemrum ved begyndelsen og afslutningen af afsnit"
+
+#, fuzzy
+#~| msgid ""
+#~| "When you use _underline_ or *bold*, the text between the underscores or "
+#~| "asterisks will be converted to underlined or bold text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Når du bruger _understregning_ eller *fed*, vil teksten mellem "
+#~ "understregerne eller stjernerne blive konverteret til understreget eller "
+#~ "fed tekst."
+
+#, fuzzy
+#~| msgid "Automatically do &bold and underline formatting"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Udfør automatisk &fed- og understreg-formatering"
+
+#, fuzzy
+#~| msgid "Most standard fraction notations will be converted when available"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr ""
+#~ "De fleste almindelige brøker vil blive konverteret når det er muligt"
+
+#, fuzzy
+#~| msgid "Re&place 1/2... with ½..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "Erst&at 1/2... med ½..."
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '1)' or similar in front of a paragraph, automatically "
+#~| "convert the paragraph to use that numbering style. This has the "
+#~| "advantage that further paragraphs will also be numbered and the spacing "
+#~| "is done correctly."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Konvertér automatisk til nummeropstilling når der skrives \"1)\" eller "
+#~ "lignende foran et afsnit. Dette har den fordel at yderligere afsnit også "
+#~ "vil blive nummererede og indrykning udført korrekt."
+
+#, fuzzy
+#~| msgid "Use &autonumbering for numbered paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "Brug &autonummerering på nummererede afsnit"
+
+#, fuzzy
+#~| msgid "Rep&lace 1st... with 1^st..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "Ers&tat 1st... med 1^st..."
+
+#, fuzzy
+#~| msgid "Capitalize name of days"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "Brug stort forbogstav i navne på dage"
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '*' or '-' in front of a paragraph, automatically convert "
+#~| "the paragraph to use that list-style. Using a list-style formatting "
+#~| "means that a correct bullet is used to draw the list."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Konvertér automatisk afsnittet til at bruge passende punktopstilling når "
+#~ "der skrives \"*\" eller \"-\" foran et afsnit. Brug af punktliste-"
+#~ "formatering betyder at et korrekt punkt bruges til at tegne listen."
+
+#, fuzzy
+#~| msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Brug punktl&iste-formatering til afsnit med punkter"
+
+#, fuzzy
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "Standard"
+
+#, fuzzy
+#~| msgid "Custom &Quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "Brugerdefinerede &citationstegn"
+
+#, fuzzy
+#~| msgid "Replace &double quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Erstat &dobbelte citationstegn med typografiske citationstegn"
+
+#, fuzzy
+#~| msgid "Replace &single quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Erstat e&nkelte citationstegn med typografiske citationstegn"
+
+#, fuzzy
+#~| msgid "Ad&vanced Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "A&vanceret autokorrektur"
+
+#, fuzzy
+#~| msgid "Replacements and exceptions for language:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Erstatninger og undtagelser for sprog:"
+
+#, fuzzy
+#~| msgid "All Languages"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "Alle sprog"
+
+#, fuzzy
+#~| msgid "&Enable word replacement"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "&Aktivér orderstatning"
+
+#, fuzzy
+#~| msgid "Replace &text with format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "Erstat &tekst i formatet"
+
+#, fuzzy
+#~| msgid "&Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "&Find"
+
+#, fuzzy
+#~| msgid "..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#, fuzzy
+#~| msgid "Re&place"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "E&rstat"
+
+#, fuzzy
+#~| msgid "Remove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "Fjern"
+
+#, fuzzy
+#~| msgid "C&hange Format..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "S&kift format..."
+
+#, fuzzy
+#~| msgid "C&lear Format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "R&yd format"
+
+#, fuzzy
+#~| msgid "Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "Find"
+
+#, fuzzy
+#~| msgid "Replace"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "Erstat"
+
+#, fuzzy
+#~| msgid "E&xceptions"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "&Undtagelser"
+
+#, fuzzy
+#~| msgid "Do not treat as the end of a sentence:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Behandl ikke som afslutning af en sætning:"
+
+#, fuzzy
+#~| msgid "Autoinclude"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "Autoinkludér"
+
+#, fuzzy
+#~| msgid "R&emove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "Fj&ern"
+
+#, fuzzy
+#~| msgid "Accept two uppercase letters in:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Acceptér to store bogstaver i:"
+
+#, fuzzy
+#~| msgid "A&dd"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "Til&føj"
+
+#, fuzzy
+#~| msgid "Configure &Autocorrection..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "Indstil &autokorrektur..."
+
+#, fuzzy
+#~| msgid "Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "Autokorrektur"
+
+#, fuzzy
+#~| msgid "&Modify"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "Æ&ndr"
+
+#, fuzzy
+#~| msgid "&Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "&Tilføj"
+
+#, fuzzy
+#~| msgid "Select Character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "Vælg tegn"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "Autokorrigér"

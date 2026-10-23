@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Karbon WMF Import Filter",
+        "Name[ar]": "مرشح استيراد WMF لكربون",
+        "Name[ca@valencia]": "Filtre d'importació WMF de Karbon",
+        "Name[ca]": "Filtre d'importació WMF del Karbon",
+        "Name[cs]": "Importní filtr WMF pro Karbon14",
+        "Name[de]": "Karbon WMF-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής Karbon WMF",
+        "Name[en_GB]": "Karbon WMF Import Filter",
+        "Name[eo]": "Karbon WMF Importfiltrilo",
+        "Name[es]": "Filtro de importación WMF de Karbon",
+        "Name[eu]": "Karbon-en WMF inportatzeko iragazkia",
+        "Name[fi]": "Karbonin WMF-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « WMF » de Karbon",
+        "Name[ga]": "Scagaire Iompórtála Karbon WMF",
+        "Name[gl]": "Filtro para Karbon de importación de WMF",
+        "Name[he]": "מסנן ייבוא WMF ל־Karbon",
+        "Name[it]": "Filtro di importazione WMF per Karbon",
+        "Name[ka]": "Karbon WMF -ის შემოტანის ფილტრი",
+        "Name[lv]": "„Karbon“ WMF importa filtrs",
+        "Name[nl]": "WMF-importfilter voor Karbon",
+        "Name[pl]": "Filtr importu WMF do Karbon",
+        "Name[pt_BR]": "Filtro de importação WMF para o Karbon",
+        "Name[ru]": "Фильтр импорта WMF Karbon",
+        "Name[sa]": "कार्बन WMF आयात फ़िल्टर",
+        "Name[sk]": "Filter importu WMF pre Karbon",
+        "Name[sl]": "Karbon filter uvoza WMF",
+        "Name[sv]": "Karbon WMF-importfilter",
+        "Name[tr]": "Karbon WMF İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування WMF до Karbon",
+        "Name[zh_CN]": "Karbon WMF 导入过滤器",
+        "Name[zh_TW]": "Karbon WMF 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "image/svg+xml",
+    "X-KDE-Import": "image/x-wmf",
+    "X-KDE-Weight": 1
+}

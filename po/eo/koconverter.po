@@ -1,0 +1,130 @@
+# Translation of koconverter into esperanto.
+# Copyright (C) 2009 Free Software Foundation, Inc.
+# This file is distributed under the same license as the calligra package.
+# Axel Rousseau <axel@esperanto-jeunes.org>, 2009.
+# Oliver Kellogg <olivermkellogg@gmail.com>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: calligra\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2023-02-26 22:22+0100\n"
+"Last-Translator: Oliver Kellogg <olivermkellogg@gmail.com>\n"
+"Language-Team: esperanto <kde-i18n-eo@kde.org>\n"
+"Language: eo\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: translate-po (https://github.com/zcribe/translate-po)\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#, kde-format
+msgctxt "NAME OF TRANSLATORS"
+msgid "Your names"
+msgstr "Axel Rousseau,Oliver Kellogg"
+
+#, kde-format
+msgctxt "EMAIL OF TRANSLATORS"
+msgid "Your emails"
+msgstr "axel@esperanto-jeunes.org,olivermkellogg@gmail.com"
+
+#: calligraconverter.cpp:179
+#, kde-format
+msgid "CalligraConverter"
+msgstr "CalligraConverter"
+
+#: calligraconverter.cpp:181
+#, kde-format
+msgid "Calligra Document Converter"
+msgstr "Calligra Dokumenta Konvertilo"
+
+#: calligraconverter.cpp:183
+#, kde-format
+msgid "Copyright 2001-%1 Calligra developers"
+msgstr "Kopirajto 2001-%1 Calligra programistoj"
+
+#: calligraconverter.cpp:184
+#, kde-format
+msgid "David Faure"
+msgstr "David FAURE"
+
+#: calligraconverter.cpp:185
+#, kde-format
+msgid "Nicolas Goutte"
+msgstr "Nicolas Goutte"
+
+#: calligraconverter.cpp:186
+#, kde-format
+msgid "Dan Leinir Turthra Jensen"
+msgstr "Dan Leinir Turthra Jensen"
+
+#: calligraconverter.cpp:193
+#, kde-format
+msgid "Input file"
+msgstr "Enigdosiero"
+
+#: calligraconverter.cpp:194
+#, kde-format
+msgid "Output file"
+msgstr "Eligdosiero"
+
+#: calligraconverter.cpp:195
+#, kde-format
+msgid "Make a backup of the destination file"
+msgstr "Fari sekurkopion de la celdosiero"
+
+#: calligraconverter.cpp:196
+#, kde-format
+msgid "Batch mode: do not show dialogs"
+msgstr "Stapla reĝimo: ne montri dialogojn"
+
+#: calligraconverter.cpp:197
+#, kde-format
+msgid "Interactive mode: show dialogs (default)"
+msgstr "Interaga reĝimo: montri dialogojn (defaŭlto)"
+
+#: calligraconverter.cpp:198
+#, kde-format
+msgid "Mimetype of the output file"
+msgstr "Mimetipo de la eligdosiero"
+
+#: calligraconverter.cpp:202
+#, kde-format
+msgid "The print orientation. This could be either Portrait or Landscape."
+msgstr "La presa orientiĝo. Ĉi tio povus esti aŭ Portreto aŭ Pejzaĝo."
+
+#: calligraconverter.cpp:205
+#, kde-format
+msgid "The paper size. A4, Legal, Letter, ..."
+msgstr "La papera grandeco. A4, Legal, Letter, ..."
+
+#: calligraconverter.cpp:207
+#, kde-format
+msgid "The size of the paper margin. By default this is 0.2."
+msgstr "La grandeco de la papera rando. Defaŭlte ĉi tio estas 0.2."
+
+#: calligraconverter.cpp:215
+#, kde-format
+msgid "Two arguments required"
+msgstr "Du argumentoj necesas"
+
+#: calligraconverter.cpp:243
+#, kde-format
+msgid "Mimetype for input file %1 not found!"
+msgstr "Mimetipo por eniga dosiero %1 ne trovita!"
+
+#: calligraconverter.cpp:252
+#, kde-format
+msgid "Mimetype not found %1"
+msgstr "Mimetipo ne trovita %1"
+
+#: calligraconverter.cpp:258
+#, kde-format
+msgid "Mimetype not found, try using the -mimetype option"
+msgstr "Mimetype ne trovita, provu uzi la -mimetype opcion"
+
+#: calligraconverter.cpp:282
+#, kde-format
+msgid "*** The conversion failed! ***"
+msgstr "*** La konvertiĝo malsukcesis! ***"

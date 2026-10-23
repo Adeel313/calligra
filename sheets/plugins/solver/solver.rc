@@ -1,0 +1,8 @@
+<!DOCTYPE gui SYSTEM "kpartgui.dtd">
+<gui name="KSpreadSolverPlugin" library="sheetssolver" version="1" translationDomain="sheetssolver">
+<MenuBar>
+ <Menu name="tools"><text>&amp;Tools</text>
+  <Action name="sheetssolver" />
+ </Menu>
+</MenuBar>
+</gui>

@@ -1,0 +1,42 @@
+{
+    "KPlugin": {
+        "Name": "Text Shape",
+        "Name[ar]": "شكل النص",
+        "Name[ca@valencia]": "Forma de text",
+        "Name[ca]": "Forma de text",
+        "Name[cs]": "Tvar textu",
+        "Name[de]": "Text-Objekt",
+        "Name[el]": "Σχήμα κειμένου",
+        "Name[en_GB]": "Text Shape",
+        "Name[eo]": "Teksta Formo",
+        "Name[es]": "Forma de texto",
+        "Name[eu]": "Testu-forma",
+        "Name[fi]": "Tekstikuvio",
+        "Name[fr]": "Forme de texte",
+        "Name[ga]": "Cruth Téacs",
+        "Name[gl]": "Obxecto de texto",
+        "Name[he]": "צורת טקסט",
+        "Name[ia]": "Forma de Texto",
+        "Name[it]": "Forma di testo",
+        "Name[ka]": "ფორმა-ტექსტი",
+        "Name[lv]": "Teksta objekts",
+        "Name[nl]": "Tekstvorm",
+        "Name[pl]": "Kształt tekstu",
+        "Name[pt_BR]": "Forma de Texto",
+        "Name[ru]": "Объект текста",
+        "Name[sa]": "पाठः आकारः",
+        "Name[sk]": "Tvar textu",
+        "Name[sl]": "Oblika besedila",
+        "Name[sv]": "Textform",
+        "Name[tr]": "Metin Şekli",
+        "Name[ug]": "تېكىست شەكلى",
+        "Name[uk]": "Форма-текст",
+        "Name[zh_CN]": "文本形状",
+        "Name[zh_TW]": "文字元件",
+        "ServiceTypes": [
+            "Calligra/Flake"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

@@ -1,0 +1,257 @@
+# Uyghur translation for TableShape.
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Sahran <sahran.ug@gmail.com>, 2011.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: TableShape\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2026-09-23 06:56+0900\n"
+"Last-Translator: Abduqadir Abliz <sahranbay@gmail.com>\n"
+"Language-Team: Uyghur <kde-i18n-doc@kde.org>\n"
+"Language: ug\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 3.9\n"
+
+#, kde-format
+msgctxt "NAME OF TRANSLATORS"
+msgid "Your names"
+msgstr "ئابدۇقادىر ئابلىز، غەيرەت كەنجى"
+
+#, kde-format
+msgctxt "EMAIL OF TRANSLATORS"
+msgid "Your emails"
+msgstr "sahranbay@gmail.com, gheyret@gmail.com"
+
+#: SheetsEditor.cpp:57 SheetsEditor.cpp:124
+#, kde-format
+msgid "Rename"
+msgstr "ئات ئۆزگەرت"
+
+#: SheetsEditor.cpp:61
+#, kde-format
+msgid "Add"
+msgstr "قوش"
+
+#: SheetsEditor.cpp:65
+#, kde-format
+msgid "Remove"
+msgstr "چىقىرىۋەت"
+
+#: SheetsEditor.cpp:124
+#, kde-format
+msgid "Enter Name:"
+msgstr "ئاتىنى كىرگۈزۈڭ:"
+
+#: TableShape.cpp:300
+#, kde-format
+msgid ""
+"This document contains an external link to a remote document\n"
+"%1"
+msgstr ""
+"بۇ پۈتۈك تەركىبىدە يىراقتىكى پۈتۈكنىڭ ئۇلانمىسى بار \n"
+"%1"
+
+#: TableShape.cpp:301
+#, kde-format
+msgid "Confirmation Required"
+msgstr "جەزملەش زۆرۈر"
+
+#: TableShape.cpp:302
+#, kde-format
+msgid "Download"
+msgstr "چۈشۈرۈش"
+
+#: TableShape.cpp:303
+#, kde-format
+msgid "Skip"
+msgstr "ئاتلا"
+
+#: TableShapeFactory.cpp:35
+#, kde-format
+msgid "Spreadsheet"
+msgstr "ئېلېكترونلۇق جەدۋەل"
+
+#: TableShapeFactory.cpp:37
+#, kde-format
+msgid "Spreadsheet Shape"
+msgstr "ئېلېكترونلۇق جەدۋەل شەكلى"
+
+#: TableTool.cpp:211
+#, kde-format
+msgid "Import OpenDocument Spreadsheet File"
+msgstr "OpenDocument ئېلېكترونلۇق جەدۋەل شەكىلىنى ئەكىرىش"
+
+#: TableTool.cpp:212
+#, kde-format
+msgid "Import"
+msgstr "ئەكىر"
+
+#: TableTool.cpp:216
+#, kde-format
+msgid "Export OpenDocument Spreadsheet File"
+msgstr "OpenDocument ئېلېكترونلۇق جەدۋەل شەكىلىنى ئېكسپورت قىلىش"
+
+#: TableTool.cpp:217
+#, kde-format
+msgid "Export"
+msgstr "چىقار"
+
+#: TableTool.cpp:696
+#, kde-format
+msgid "Sheets"
+msgstr "ۋاراقلار"
+
+#: TableTool.cpp:738
+#, kde-format
+msgid "Sheet:"
+msgstr "ۋاراق:"
+
+#: TableTool.cpp:740
+#, kde-format
+msgid "Selected Sheet"
+msgstr "تاللانغان ۋاراق"
+
+#: TableTool.cpp:754
+#, kde-format
+msgid "View Options"
+msgstr ""
+
+#: TableToolFactory.cpp:21
+#, kde-format
+msgid "Table editing"
+msgstr ""
+
+#: ToolHeaders.cpp:279 ToolHeaders.cpp:863
+#, kde-format
+msgid "Area is too large."
+msgstr "دائىرە بەك چوڭ."
+
+#: ToolHeaders.cpp:418
+#, kde-format
+msgid "Hide Row"
+msgstr ""
+
+#: ToolHeaders.cpp:420
+#, kde-format
+msgid "Height: %1 %2"
+msgstr ""
+
+#: ToolHeaders.cpp:1031
+#, kde-format
+msgid "Hide Column"
+msgstr "رەت يوشۇر"
+
+#: ToolHeaders.cpp:1033
+#, kde-format
+msgid "Width: %1 %2"
+msgstr ""
+
+#~ msgid "Number of columns"
+#~ msgstr "ئىستون سانى"
+
+#~ msgid "Rows:"
+#~ msgstr "قۇر:"
+
+#~ msgid "Number of rows"
+#~ msgstr "قۇر سانى:"
+
+#~| msgid "Rename"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rename"
+#~ msgstr "ئات ئۆزگەرت"
+
+#~| msgid "Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Add"
+#~ msgstr "قوش"
+
+#~| msgid "Remove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "چىقىرىۋەت"
+
+#~| msgid "Enter Name:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Enter Name:"
+#~ msgstr "ئاتىنى كىرگۈزۈڭ:"
+
+#~| msgid "Spreadsheet"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Spreadsheet"
+#~ msgstr "ئېلېكترونلۇق جەدۋەل"
+
+#~| msgid "Spreadsheet Shape"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Spreadsheet Shape"
+#~ msgstr "ئېلېكترونلۇق جەدۋەل شەكلى"
+
+#~| msgid "Import OpenDocument Spreadsheet File"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Import OpenDocument Spreadsheet File"
+#~ msgstr "OpenDocument ئېلېكترونلۇق جەدۋەل شەكىلىنى ئىمپورت قىلىش"
+
+#~| msgid "Import"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Import"
+#~ msgstr "ئىمپورت قىل"
+
+#~| msgid "Export OpenDocument Spreadsheet File"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Export OpenDocument Spreadsheet File"
+#~ msgstr "OpenDocument ئېلېكترونلۇق جەدۋەل شەكىلىنى ئېكسپورت قىلىش"
+
+#~| msgid "Export"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Export"
+#~ msgstr "ئېكسپورت قىل"
+
+#~| msgid "Sheets"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Sheets"
+#~ msgstr "ۋاراقلار"
+
+#~| msgid "Sheet:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Sheet:"
+#~ msgstr "ۋاراق:"
+
+#~| msgid "Selected Sheet"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Selected Sheet"
+#~ msgstr "تاللانغان ۋاراق"
+
+#~| msgid "Columns:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Columns:"
+#~ msgstr "ئىستون:"
+
+#~| msgid "Number of columns"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Number of columns"
+#~ msgstr "ئىستون سانى"
+
+#~| msgid "Rows:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rows:"
+#~ msgstr "قۇر:"
+
+#~| msgid "Number of rows"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Number of rows"
+#~ msgstr "قۇر سانى:"
+
+#~| msgid "Table Options"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Table Options"
+#~ msgstr "جەدۋەل تاللانمىلىرى"
+
+#~| msgid "Table editing tool"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Table editing"
+#~ msgstr "جەدۋەل تەھرىرلەش قورالى"

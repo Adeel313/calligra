@@ -1,0 +1,479 @@
+# translation of AutocorrectPlugin.po to Swedish
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Stefan Asserhäll <stefan.asserhall@gmail.com>, 2007, 2008, 2023.
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2023-07-30 11:50+0200\n"
+"Last-Translator: Stefan Asserhäll <stefan.asserhall@gmail.com>\n"
+"Language-Team: Swedish <kde-i18n-doc@kde.org>\n"
+"Language: sv\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 20.08.1\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "Anpassa &automatisk korrigering..."
+
+#: Autocorrect.cpp:30
+#, kde-format
+msgid "Enable Autocorrection"
+msgstr "Aktivera automatisk korrigering"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "Korrigera automatiskt"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "&Enkel automatisk korrigering"
+
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Detektera när en ny mening börjar och försäkra att det första tecknet "
+#~ "alltid är en stor bokstav"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Ändra automatiskt den &första bokstaven i en mening till en stor bokstav\n"
+#~ "(t ex: \"mitt hus. i den här staden\" ändras till \"mitt hus. I den här "
+#~ "staden\")"
+
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Alla ord kontrolleras angående det vanliga felet att skifttangenten hålls "
+#~ "nere lite för länge. Om några ord ska ha två stora bokstäver måste dessa "
+#~ "undantag läggas till under fliken Undantag."
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Ändra &två stora bokstäver till en stor bokstav och en liten bokstav.\n"
+#~ "(t ex PErfekt ändras till Perfekt)"
+
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Identifiera när en webbadress (URL) skrivs in och formatera den så att "
+#~ "den ser ut på samma sätt som en webbläsare skulle visa en webbadress."
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "Formatera &webbadresser automatiskt"
+
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Försäkra att inte mer än ett mellanslag kan skrivas in, eftersom detta är "
+#~ "ett vanligt fel som är mycket svårt att hitta i formaterad text."
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Ignorera dubbla mellan&slag"
+
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Behåll korrekt formatering och indentering av meningar genom att "
+#~ "automatiskt ta bort mellanslag som skrivs in i början och slutet av ett "
+#~ "stycke."
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Ta bo&rt inledande och avslutande mellanslag för stycken"
+
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "När du använder _understrykning_ eller *fetstil* ändras orden mellan "
+#~ "understrecken eller asteriskerna till en formatering med understreck "
+#~ "eller fetstil"
+
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Formatera automatisk &fetstil och understrykning"
+
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "De flesta vanliga bråkangivelser konverteras om de är tillgängliga"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "Ersätt &1/2... med ½..."
+
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "När \"1)\" eller något liknande skrivs in först i ett stycke konverteras "
+#~ "stycket automatiskt för att använda den numreringsstilen. Det här har "
+#~ "fördelen att nästa stycke också numreras, och att mellanrum hanteras "
+#~ "riktigt."
+
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "&Använd automatisk numrering för numrerade stycken"
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "Ersä&tt 1a... med 1^a..."
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "Skriv dagarnas namn med stora bokstäver"
+
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "När \"*\" eller \"-\" skrivs in först i ett stycke konverteras stycket "
+#~ "automatiskt för att använda den liststilen. Genom att använda formatering "
+#~ "med en liststil så används den riktiga punkten för att visa listan."
+
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Använd l&istformatering för punktade stycken"
+
+#~ msgid "Default"
+#~ msgstr "Förval"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "Egna &citationstecken"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Ersätt &dubbla citattecken med typografiska citattecken"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Er&sätt enkla citattecken med typografiska citattecken"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "A&vancerad automatisk korrigering"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Ersättning och undantag för språk:"
+
+#~ msgid "All Languages"
+#~ msgstr "Alla språk"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "Aktiv&era ordersättning"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "Ersätt &text med format"
+
+#~ msgid "&Find"
+#~ msgstr "&Sök"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "&Ersätt"
+
+#~ msgid "&Add"
+#~ msgstr "&Lägg till"
+
+#~ msgid "Remove"
+#~ msgstr "Ta bort"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "Ändra &format..."
+
+#~ msgid "C&lear Format"
+#~ msgstr "&Rensa format"
+
+#~ msgid "Find"
+#~ msgstr "Sök"
+
+#~ msgid "Replace"
+#~ msgstr "Ersätt"
+
+#~ msgid "E&xceptions"
+#~ msgstr "&Undantag"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Behandla inte som meningsslut:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "Infoga automatiskt"
+
+#~ msgid "R&emove"
+#~ msgstr "&Ta bort"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Tillåt två stora bokstäver i:"
+
+#~ msgid "A&dd"
+#~ msgstr "&Lägg till"
+
+#~ msgid "&Modify"
+#~ msgstr "Ä&ndra"
+
+#~ msgid "Select Character"
+#~ msgstr "Välj tecken"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "&Enkel automatisk korrigering"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Detektera när en ny mening börjar och försäkra att det första tecknet "
+#~ "alltid är en stor bokstav"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Ändra automatiskt den &första bokstaven i en mening till en stor bokstav\n"
+#~ "(t ex: \"mitt hus. i den här staden\" ändras till \"mitt hus. I den här "
+#~ "staden\")"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Alla ord kontrolleras angående det vanliga felet att skifttangenten hålls "
+#~ "nere lite för länge. Om några ord ska ha två stora bokstäver måste dessa "
+#~ "undantag läggas till under fliken Undantag."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Ändra &två stora bokstäver till en stor bokstav och en liten bokstav.\n"
+#~ "(t ex PErfekt ändras till Perfekt)"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Identifiera när en webbadress (URL) skrivs in och formatera den så att "
+#~ "den ser ut på samma sätt som en webbläsare skulle visa en webbadress."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "Formatera &webbadresser automatiskt"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Försäkra att inte mer än ett mellanslag kan skrivas in, eftersom detta är "
+#~ "ett vanligt fel som är mycket svårt att hitta i formaterad text."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Ignorera dubbla mellan&slag"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Behåll korrekt formatering och indentering av meningar genom att "
+#~ "automatiskt ta bort mellanslag som skrivs in i början och slutet av ett "
+#~ "stycke."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Ta bo&rt inledande och avslutande mellanslag för stycken"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "När du använder _understrykning_ eller *fetstil* ändras orden mellan "
+#~ "understrecken eller asteriskerna till en formatering med understreck "
+#~ "eller fetstil"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Formatera automatisk &fetstil och understrykning"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "De flesta vanliga bråkangivelser konverteras om de är tillgängliga"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "Ersätt &1/2... med ½..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "När \"1)\" eller något liknande skrivs in först i ett stycke konverteras "
+#~ "stycket automatiskt för att använda den numreringsstilen. Det här har "
+#~ "fördelen att nästa stycke också numreras, och att mellanrum hanteras "
+#~ "riktigt."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "&Använd automatisk numrering för numrerade stycken"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "Ersä&tt 1a... med 1^a..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "Skriv dagarnas namn med stora bokstäver"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "När \"*\" eller \"-\" skrivs in först i ett stycke konverteras stycket "
+#~ "automatiskt för att använda den liststilen. Genom att använda formatering "
+#~ "med en liststil så används den riktiga punkten för att visa listan."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Använd l&istformatering för punktade stycken"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "Förval"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "Egna &citationstecken"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Ersätt &dubbla citattecken med typografiska citattecken"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Er&sätt enkla citattecken med typografiska citattecken"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "A&vancerad automatisk korrigering"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Ersättning och undantag för språk:"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "Alla språk"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "Aktiv&era ordersättning"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "Ersätt &text med format"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "&Sök"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "&Ersätt"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "Ta bort"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "Ändra &format..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "&Rensa format"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "Sök"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "Ersätt"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "&Undantag"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Behandla inte som meningsslut:"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "Infoga automatiskt"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "&Ta bort"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Tillåt två stora bokstäver i:"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "&Lägg till"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "Anpassa &automatisk korrigering..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "Korrigera automatiskt"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "Ä&ndra"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "&Lägg till"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "Välj tecken"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "Korrigera automatiskt"

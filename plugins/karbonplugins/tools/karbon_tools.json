@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Karbon Tools",
+        "Name[ar]": "أدوات كربون",
+        "Name[ca@valencia]": "Eines de Karbon",
+        "Name[ca]": "Eines del Karbon",
+        "Name[cs]": "Nástroje Karbonu",
+        "Name[de]": "Karbon-Werkzeuge",
+        "Name[el]": "Εργαλεία Karbon",
+        "Name[en_GB]": "Karbon Tools",
+        "Name[eo]": "Karbonaj Iloj",
+        "Name[es]": "Herramientas de Karbon",
+        "Name[eu]": "Karbon-en tresnak",
+        "Name[fi]": "Karbon-työkalut",
+        "Name[fr]": "Outil pour Karbon",
+        "Name[ga]": "Uirlisí Karbon",
+        "Name[gl]": "Ferramentas de Karbon",
+        "Name[he]": "כלי Karbon",
+        "Name[it]": "Strumenti di Karbon",
+        "Name[ka]": "Karbon -ის ხელსაწყოები",
+        "Name[lv]": "„Karbon“ rīki",
+        "Name[nl]": "Hulpmiddelen voor Karbon",
+        "Name[pl]": "Narzędzia Karbon",
+        "Name[pt_BR]": "Ferramentas do Karbon",
+        "Name[ru]": "Инструменты Karbon",
+        "Name[sa]": "कार्बन उपकरण",
+        "Name[sk]": "Nástroje Karbon",
+        "Name[sl]": "Orodja Karbon",
+        "Name[sv]": "Karbon-verktyg",
+        "Name[tr]": "Karbon Araçları",
+        "Name[ug]": "Karbon قورالى",
+        "Name[uk]": "Засоби Karbon",
+        "Name[zh_CN]": "Karbon 工具",
+        "Name[zh_TW]": "Karbon 工具",
+        "ServiceTypes": [
+            "Calligra/Tool"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

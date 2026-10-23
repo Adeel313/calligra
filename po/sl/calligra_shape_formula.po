@@ -1,0 +1,551 @@
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Andrej Vernekar <andrej.vernekar@moj.net>, 2008, 2012.
+# SPDX-FileCopyrightText: 2019, 2024 Matjaž Jeran <matjaz.jeran@amis.net>
+msgid ""
+msgstr ""
+"Project-Id-Version: FormulaShape\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-09-10 00:46+0000\n"
+"PO-Revision-Date: 2024-08-23 06:23+0200\n"
+"Last-Translator: Matjaž Jeran <matjaz.jeran@amis.net>\n"
+"Language-Team: Slovenian <lugos-slo@lugos.si>\n"
+"Language: sl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%100==1 ? 1 : n%100==2 ? 2 : n%100==3 || n"
+"%100==4 ? 3 : 0);\n"
+"Translator: Andrej Vernekar <andrej.vernekar@gmail.com>\n"
+"X-Generator: Poedit 3.4.4\n"
+
+#, kde-format
+msgctxt "NAME OF TRANSLATORS"
+msgid "Your names"
+msgstr "Andrej Vernekar,Matjaž Jeran"
+
+#, kde-format
+msgctxt "EMAIL OF TRANSLATORS"
+msgid "Your emails"
+msgstr "andrej.vernekar@moj.net,matjaz.jeran@amis.net"
+
+#: FormulaCommand.cpp:59
+msgctxt "(qtundo-format)"
+msgid "Add text to formula"
+msgstr "Dodaj besedilo k formuli"
+
+#: FormulaCommand.cpp:218
+msgctxt "(qtundo-format)"
+msgid "Change rows"
+msgstr "Spremeni vrstice"
+
+#: FormulaEditor.cpp:79
+msgctxt "(qtundo-format)"
+msgid "Add text"
+msgstr "Dodaj besedilo"
+
+#: FormulaEditor.cpp:112
+msgctxt "(qtundo-format)"
+msgid "Insert row"
+msgstr "Vstavi vrstico"
+
+#: FormulaEditor.cpp:117
+msgctxt "(qtundo-format)"
+msgid "Remove row"
+msgstr "Odstrani vrstico"
+
+#: FormulaEditor.cpp:125
+msgctxt "(qtundo-format)"
+msgid "Insert column"
+msgstr "Vstavi stolpec"
+
+#: FormulaEditor.cpp:130
+msgctxt "(qtundo-format)"
+msgid "Remove column"
+msgstr "Odstrani stolpec"
+
+#: FormulaEditor.cpp:164
+msgctxt "(qtundo-format)"
+msgid "Insert formula elements."
+msgstr "Vstavi elemente formule."
+
+#: FormulaEditor.cpp:200
+msgctxt "(qtundo-format)"
+msgid "Remove formula elements"
+msgstr "Odstrani elemente formule"
+
+#: FormulaToolEditWidget.cpp:28
+#, kde-format
+msgctxt "@title:group"
+msgid "Edit"
+msgstr "Uredi"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: FormulaToolEditWidget.ui:17
+#, kde-format
+msgid "Font:"
+msgstr "Pisava:"
+
+#: FormulaToolWidget.cpp:28
+#, kde-format
+msgctxt "@title:group"
+msgid "Insert"
+msgstr "Vstavi"
+
+#: FormulaToolWidget.cpp:70
+#, kde-format
+msgid "Arrows"
+msgstr "Puščice"
+
+#: FormulaToolWidget.cpp:72
+#, kde-format
+msgid "Greek"
+msgstr "Grško"
+
+#: FormulaToolWidget.cpp:74
+#, kde-format
+msgid "Relations"
+msgstr "Relacije"
+
+#: FormulaToolWidget.cpp:78
+#, kde-format
+msgid "Operators"
+msgstr "Operatorji"
+
+#: FormulaToolWidget.cpp:81
+#, kde-format
+msgid "Miscellaneous"
+msgstr "Razno"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: FormulaToolWidget.ui:17
+#, kde-format
+msgid "Elements:"
+msgstr "Predmeti:"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: FormulaToolWidget.ui:106
+#, kde-format
+msgid "Symbols:"
+msgstr "Simboli:"
+
+#. i18n: ectx: property (text), widget (QLabel)
+#: FormulaToolWidget.ui:195
+#, kde-format
+msgid "Actions:"
+msgstr "Dejanja:"
+
+#. i18n: ectx: property (text), widget (QPushButton, buttonLoad)
+#: FormulaToolWidget.ui:245
+#, kde-format
+msgctxt "This button opens a file dialog to load a MathML file"
+msgid "Load..."
+msgstr "Naloži..."
+
+#. i18n: ectx: property (text), widget (QPushButton, buttonSave)
+#: FormulaToolWidget.ui:252
+#, kde-format
+msgid "Save..."
+msgstr "Shrani..."
+
+#: KoFormulaShape.cpp:195
+#, kde-format
+msgid ""
+"This document contains an external link to a remote document\n"
+"%1"
+msgstr ""
+"Ta dokument vsebuje zunanjo povezavo do oddaljenega dokumenta\n"
+"%1"
+
+#: KoFormulaShape.cpp:196
+#, kde-format
+msgid "Confirmation Required"
+msgstr "Zahtevana je potrditev"
+
+#: KoFormulaShape.cpp:197
+#, kde-format
+msgid "Download"
+msgstr "Naloži"
+
+#: KoFormulaShape.cpp:198
+#, kde-format
+msgid "Skip"
+msgstr "Preskoči"
+
+#: KoFormulaShapeFactory.cpp:20
+#, kde-format
+msgid "Formula"
+msgstr "Formula"
+
+#: KoFormulaShapeFactory.cpp:22
+#, kde-format
+msgid "A formula"
+msgstr "Formula"
+
+#: KoFormulaTool.cpp:404
+#, kde-format
+msgid "Insert fenced element"
+msgstr "Vstavi omejen element"
+
+#: KoFormulaTool.cpp:405
+#, kde-format
+msgid "Insert enclosed element"
+msgstr "Vstavi obkrožen element"
+
+#: KoFormulaTool.cpp:407
+#, kde-format
+msgid "Insert root"
+msgstr "Vstavi koren"
+
+#: KoFormulaTool.cpp:408
+#, kde-format
+msgid "Insert square root"
+msgstr "Vstavi kvadratni koren"
+
+#: KoFormulaTool.cpp:410
+#, kde-format
+msgid "Insert fraction"
+msgstr "Vstavi ulomek"
+
+#: KoFormulaTool.cpp:411
+#, kde-format
+msgid "Insert bevelled fraction"
+msgstr "Vstavi del ulomka"
+
+#: KoFormulaTool.cpp:416
+#, kde-format
+msgid "Insert 3x3 table"
+msgstr "Vstavi tabelo 3x3"
+
+#: KoFormulaTool.cpp:422
+#, kde-format
+msgid "Insert 2 dimensional vector"
+msgstr "Vstavi dvo-dimenzionalni vektor"
+
+#: KoFormulaTool.cpp:427
+#, kde-format
+msgid "Insert subscript"
+msgstr "Vstavi podpisano"
+
+#: KoFormulaTool.cpp:428
+#, kde-format
+msgid "Insert superscript"
+msgstr "Vstavi nadpisano"
+
+#: KoFormulaTool.cpp:429
+#, kde-format
+msgid "Insert sub- and superscript"
+msgstr "Vstavi pod- in nadpisano"
+
+#: KoFormulaTool.cpp:433
+#, kde-format
+msgid "Insert overscript"
+msgstr "Vstavi pisano zgoraj"
+
+#: KoFormulaTool.cpp:434
+#, kde-format
+msgid "Insert underscript"
+msgstr "Vstavi pisano spodaj"
+
+#: KoFormulaTool.cpp:435
+#, kde-format
+msgid "Insert under- and overscript"
+msgstr "Vstavi pod- in nadpisano"
+
+#: KoFormulaTool.cpp:446
+#, kde-format
+msgid "Insert row"
+msgstr "Vstavi vrstico"
+
+#: KoFormulaTool.cpp:453
+#, kde-format
+msgid "Insert column"
+msgstr "Vstavi stolpec"
+
+#: KoFormulaTool.cpp:460
+#, kde-format
+msgid "Remove row"
+msgstr "Odstrani vrstico"
+
+#: KoFormulaTool.cpp:467
+#, kde-format
+msgid "Remove column"
+msgstr "Odstrani stolpec"
+
+#: KoFormulaToolFactory.cpp:17
+#, kde-format
+msgid "Formula editing"
+msgstr "Uredi formulo"
+
+#: KoM2MMLForumulaTool.cpp:98
+#, kde-format
+msgid "Mode: "
+msgstr "Način: "
+
+#: KoM2MMLForumulaTool.cpp:101
+#, kde-format
+msgid "LaTeX"
+msgstr "LaTeX"
+
+#: KoM2MMLForumulaTool.cpp:103
+#, kde-format
+msgid "Matlab"
+msgstr "Matlab"
+
+#: KoM2MMLForumulaTool.cpp:175
+#, kde-format
+msgid "Parse error."
+msgstr "Napaka pri razpoznavanju."
+
+#: KoM2MMLForumulaTool.cpp:204
+#, kde-format
+msgid "Edit formula with LaTeX/Matlab syntax"
+msgstr "Uredi formulo v sintaksi LaTeX/Matlab"
+
+#: KoM2MMLForumulaTool.cpp:206
+#, kde-format
+msgid "Edit formula with LaTeX syntax"
+msgstr "Uredi formulo v sintaksi LaTeX"
+
+#~ msgid "General options"
+#~ msgstr "Splošne možnosti"
+
+#~ msgid "Colors:"
+#~ msgstr "Barve:"
+
+#~ msgid "Specific options"
+#~ msgstr "Specifične možnosti"
+
+#~ msgid "Rows:"
+#~ msgstr "Vrstice:"
+
+#~ msgid "Columns:"
+#~ msgstr "Stolpci:"
+
+#~ msgid "View MathML"
+#~ msgstr "Pokaži MathML"
+
+#, fuzzy
+#~| msgid "Insert"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert"
+#~ msgstr "Vstavi"
+
+#, fuzzy
+#~| msgid "Elements"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Elements"
+#~ msgstr "Predmeti"
+
+#, fuzzy
+#~| msgid "Symbols"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Symbols"
+#~ msgstr "Simboli"
+
+#, fuzzy
+#~| msgid "Actions"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Actions"
+#~ msgstr "Dejanja"
+
+#, fuzzy
+#~| msgctxt "This button opens a file dialog to load a MathML file"
+#~| msgid "Load..."
+#~ msgctxt ""
+#~ "(qtundo-format) This button opens a file dialog to load a MathML file"
+#~ msgid "Load..."
+#~ msgstr "Naloži ..."
+
+#, fuzzy
+#~| msgid "Save..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Save..."
+#~ msgstr "Shrani ..."
+
+#, fuzzy
+#~| msgid "Edit"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Edit"
+#~ msgstr "Uredi"
+
+#, fuzzy
+#~| msgid "General options"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "General options"
+#~ msgstr "Splošne možnosti"
+
+#, fuzzy
+#~| msgid "Font:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Font:"
+#~ msgstr "Pisava:"
+
+#, fuzzy
+#~| msgid "Colors:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Colors:"
+#~ msgstr "Barve:"
+
+#, fuzzy
+#~| msgid "Specific options"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Specific options"
+#~ msgstr "Specifične možnosti"
+
+#, fuzzy
+#~| msgid "Rows:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rows:"
+#~ msgstr "Vrstice:"
+
+#, fuzzy
+#~| msgid "Columns:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Columns:"
+#~ msgstr "Stolpci:"
+
+#, fuzzy
+#~| msgid "View MathML"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "View MathML"
+#~ msgstr "Pokaži MathML"
+
+#, fuzzy
+#~| msgid "Arrows"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Arrows"
+#~ msgstr "Puščice"
+
+#, fuzzy
+#~| msgid "Greek"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Greek"
+#~ msgstr "Grško"
+
+#, fuzzy
+#~| msgid "Relations"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Relations"
+#~ msgstr "Razmerja"
+
+#, fuzzy
+#~| msgid "Operators"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Operators"
+#~ msgstr "Operaterji"
+
+#, fuzzy
+#~| msgid "Miscellaneous"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Miscellaneous"
+#~ msgstr "Razno"
+
+#, fuzzy
+#~| msgid ""
+#~| "This document contains an external link to a remote document\n"
+#~| "%1"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "This document contains an external link to a remote document\n"
+#~ "%1"
+#~ msgstr ""
+#~ "Ta dokument vsebuje zunanjo povezavo do oddaljenega dokumenta\n"
+#~ "%1"
+
+#, fuzzy
+#~| msgid "Confirmation Required"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Confirmation Required"
+#~ msgstr "Zahteva se potrditev"
+
+#, fuzzy
+#~| msgid "Download"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Download"
+#~ msgstr "Naloži"
+
+#, fuzzy
+#~| msgid "Skip"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Skip"
+#~ msgstr "Preskoči"
+
+#, fuzzy
+#~| msgid "Formula"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Formula"
+#~ msgstr "Formula"
+
+#, fuzzy
+#~| msgid "A formula"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A formula"
+#~ msgstr "Formula"
+
+#, fuzzy
+#~| msgid "Insert"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert fenced element"
+#~ msgstr "Vstavi"
+
+#, fuzzy
+#~| msgid "Insert"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert enclosed element"
+#~ msgstr "Vstavi"
+
+#, fuzzy
+#~| msgid "Insert root"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert root"
+#~ msgstr "Vstavi koren"
+
+#, fuzzy
+#~| msgid "Insert square root"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert square root"
+#~ msgstr "Vstavi kvadratni koren"
+
+#, fuzzy
+#~| msgid "Insert fraction"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert fraction"
+#~ msgstr "Vstavi ulomek"
+
+#, fuzzy
+#~| msgid "Insert 3x3 table"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert 3x3 table"
+#~ msgstr "Vstavi tabelo 3x3"
+
+#, fuzzy
+#~| msgid "Insert 2 dimensional vector"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert 2 dimensional vector"
+#~ msgstr "Vstavi dvodimenzionalni vektor"
+
+#, fuzzy
+#~| msgid "Insert subscript"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert subscript"
+#~ msgstr "Vstavi podpisano"
+
+#, fuzzy
+#~| msgid "Insert superscript"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert superscript"
+#~ msgstr "Vstavi nadpisano"
+
+#, fuzzy
+#~| msgid "Insert sub- and superscript"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Insert sub- and superscript"
+#~ msgstr "Vstavi pod- in nadpisano"
+
+#, fuzzy
+#~| msgid "Formula editing tool"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Formula editing"
+#~ msgstr "Orodje za urejanje formul"

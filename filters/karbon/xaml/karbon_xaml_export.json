@@ -1,0 +1,42 @@
+{
+    "KPlugin": {
+        "Icon": "",
+        "Name": "Karbon WVG Export Filter",
+        "Name[ar]": "مرشح تصدير WVG لكربون",
+        "Name[ca@valencia]": "Filtre d'exportació WVG de Karbon",
+        "Name[ca]": "Filtre d'exportació WVG del Karbon",
+        "Name[cs]": "Exportní filtr do formátu WVG pro Karbon",
+        "Name[de]": "Karbon WVG-Exportfilter",
+        "Name[el]": "Φίλτρο εξαγωγής Karbon WVG",
+        "Name[en_GB]": "Karbon WVG Export Filter",
+        "Name[eo]": "Karbon WVG Eksporta Filtrilo",
+        "Name[es]": "Filtro de exportación WVG de Karbon",
+        "Name[eu]": "Karbon-en WVG esportatzeko iragazkia",
+        "Name[fi]": "Karbonin WVG-vientisuodatin",
+        "Name[fr]": "Filtre d'exportation « WVG » de Karbon",
+        "Name[ga]": "Scagaire Easpórtála Karbon WVG",
+        "Name[gl]": "Filtro para Karbon de exportación de WVG",
+        "Name[he]": "מסנן ייצוא WVG מ־Karbon",
+        "Name[it]": "Filtro di esportazione WVG per Karbon",
+        "Name[ka]": "Karbon WVG გატანის ფილტრი",
+        "Name[lv]": "„Karbon“ WVG eksporta filtrs",
+        "Name[nl]": " WVG-exportfilter voor Karbon",
+        "Name[pl]": "Filtr eksportu WVG z Karbon",
+        "Name[pt_BR]": "Filtro de exportação WVG para o Karbon",
+        "Name[ru]": "Фильтр экспорта WVG Karbon",
+        "Name[sa]": "कार्बन WVG निर्यात फ़िल्टर",
+        "Name[sk]": "Filter exportu WVG pre Karbon",
+        "Name[sl]": "Karbon filter izvoza WVG",
+        "Name[sv]": "Karbon WVG-exportfilter",
+        "Name[tr]": "Karbon WMG Dışa Aktarma Süzgeci",
+        "Name[uk]": "Фільтр експорту WVG для Karbon",
+        "Name[zh_CN]": "Karbon WVG 导出过滤器",
+        "Name[zh_TW]": "Karbon WVG 匯出過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "image/wvg+xml",
+    "X-KDE-Import": "application/x-karbon",
+    "X-KDE-Weight": 1
+}

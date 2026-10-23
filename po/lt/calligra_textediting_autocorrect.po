@@ -1,0 +1,376 @@
+# translation of AutocorrectPlugin to Lithuanian
+# This file is distributed under the same license as the AutocorrectPlugin package.
+# Donatas Glodenis <dgvirtual@akl.lt>, 2007.
+# Remigijus Jarmalavičius <remigijus@jarmalavicius.lt>, 2011, 2012.
+# Liudas Ališauskas <liudas@akmc.lt>, 2013.
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2013-04-12 18:29+0300\n"
+"Last-Translator: Liudas Ališauskas <liudas@akmc.lt>\n"
+"Language-Team: Lithuanian <kde-i18n-lt@kde.org>\n"
+"Language: lt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n==1 ? 0 : n%10>=2 && (n%100<10 || n"
+"%100>=20) ? 1 : n%10==0 || (n%100>10 && n%100<20) ? 2 : 3);\n"
+"X-Generator: Lokalize 1.5\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "Konfigūruoti auto taisymą..."
+
+#: Autocorrect.cpp:30
+#, fuzzy, kde-format
+#| msgid "Autocorrection"
+msgid "Enable Autocorrection"
+msgstr "Auto taisymas"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "Auto taisymas"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Paprastas auto taisymas"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Keisti &pirmą raidę sakinyje automatiškai į didžiąją\n"
+#~ "(pvz. „mano namai. yra čia“ į „Mano namai. Yra čia“)"
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Keisti &dvi didžiąsias raides į vieną didžiąją ir vieną mažąją raides\n"
+#~ " (pvz. NUostabu į Nuostabu)"
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Šalinti dvigubus tarpus"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "Pa&keisti 1/2... su ½..."
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "Keisti 1st... su 1^st..."
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "Dienų vardus rašyti didž. raidėmis"
+
+#~ msgid "Default"
+#~ msgstr "Numatytas"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "Savitos &kabutės"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Keisti &dvigubas kabutes tipografinėmis kabutėmis"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Keisti &pavienes kabutes tipografinėmis kabutėmis"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Išplėstinis auto taisymas"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Keitiniai ir išimtys. Kalba"
+
+#~ msgid "All Languages"
+#~ msgstr "Visos kalbos"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "Įjungti žodžio pakeitimą"
+
+#, fuzzy
+#~| msgid "Rep&lace 1st... with 1^st..."
+#~ msgid "Replace &text with format"
+#~ msgstr "Keisti 1st... su 1^st..."
+
+#~ msgid "&Find"
+#~ msgstr "&Ieškoti"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "Pakeisti"
+
+#~ msgid "&Add"
+#~ msgstr "&Pridėti"
+
+#~ msgid "Remove"
+#~ msgstr "Pašalinti"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "Pakeisti formatavimą..."
+
+#~ msgid "C&lear Format"
+#~ msgstr "Išvalyti formatavimą"
+
+#~ msgid "Find"
+#~ msgstr "Ieškoti"
+
+#~ msgid "Replace"
+#~ msgstr "Pakeisti"
+
+#~ msgid "E&xceptions"
+#~ msgstr "Išimtys"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Nelaikyti sakinio pabaiga:"
+
+#, fuzzy
+#~ msgid "Autoinclude"
+#~ msgstr "Automatinis įtraukimas"
+
+#~ msgid "R&emove"
+#~ msgstr "&Pašalinti"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Leisti dvi didžiąsias raidės:"
+
+#~ msgid "A&dd"
+#~ msgstr "Pri&dėti"
+
+#~ msgid "&Modify"
+#~ msgstr "&Modifikuoti"
+
+#~ msgid "Select Character"
+#~ msgstr "Parinkti rašmenį"
+
+#, fuzzy
+#~| msgid "Si&mple Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Paprastas auto taisymas"
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &first letter of a sentence automatically to uppercase\n"
+#~| "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Keisti &pirmą raidę sakinyje automatiškai į didžiąją\n"
+#~ "(pvz. „mano namai. yra čia“ į „Mano namai. Yra čia“)"
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &two uppercase characters to one uppercase and one lowercase "
+#~| "character\n"
+#~| " (e.g. PErfect to Perfect)"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Keisti &dvi didžiąsias raides į vieną didžiąją ir vieną mažąją raides\n"
+#~ " (pvz. NUostabu į Nuostabu)"
+
+#, fuzzy
+#~| msgid "&Suppress double spaces"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Šalinti dvigubus tarpus"
+
+#, fuzzy
+#~| msgid "Re&place 1/2... with ½..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "Pa&keisti 1/2... su ½..."
+
+#, fuzzy
+#~| msgid "Rep&lace 1st... with 1^st..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "Keisti 1st... su 1^st..."
+
+#, fuzzy
+#~| msgid "Capitalize name of days"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "Dienų vardus rašyti didž. raidėmis"
+
+#, fuzzy
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "Numatytas"
+
+#, fuzzy
+#~| msgid "Custom &Quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "Savitos &kabutės"
+
+#, fuzzy
+#~| msgid "Replace &double quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Keisti &dvigubas kabutes tipografinėmis kabutėmis"
+
+#, fuzzy
+#~| msgid "Replace &single quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Keisti &pavienes kabutes tipografinėmis kabutėmis"
+
+#, fuzzy
+#~| msgid "Ad&vanced Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Išplėstinis auto taisymas"
+
+#, fuzzy
+#~| msgid "Replacements and exceptions for language:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Keitiniai ir išimtys. Kalba"
+
+#, fuzzy
+#~| msgid "All Languages"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "Visos kalbos"
+
+#, fuzzy
+#~| msgid "&Enable word replacement"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "Įjungti žodžio pakeitimą"
+
+#, fuzzy
+#~| msgid "Rep&lace 1st... with 1^st..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "Keisti 1st... su 1^st..."
+
+#, fuzzy
+#~| msgid "&Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "&Ieškoti"
+
+#, fuzzy
+#~| msgid "..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#, fuzzy
+#~| msgid "Re&place"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "Pakeisti"
+
+#, fuzzy
+#~| msgid "Remove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "Pašalinti"
+
+#, fuzzy
+#~| msgid "C&hange Format..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "Pakeisti formatavimą..."
+
+#, fuzzy
+#~| msgid "C&lear Format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "Išvalyti formatavimą"
+
+#, fuzzy
+#~| msgid "Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "Ieškoti"
+
+#, fuzzy
+#~| msgid "Replace"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "Pakeisti"
+
+#, fuzzy
+#~| msgid "E&xceptions"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "Išimtys"
+
+#, fuzzy
+#~| msgid "Do not treat as the end of a sentence:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Nelaikyti sakinio pabaiga:"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "Automatinis įtraukimas"
+
+#, fuzzy
+#~| msgid "R&emove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "&Pašalinti"
+
+#, fuzzy
+#~| msgid "Accept two uppercase letters in:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Leisti dvi didžiąsias raidės:"
+
+#, fuzzy
+#~| msgid "A&dd"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "Pri&dėti"
+
+#, fuzzy
+#~| msgid "Configure &Autocorrection..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "Konfigūruoti auto taisymą..."
+
+#, fuzzy
+#~| msgid "Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "Auto taisymas"
+
+#, fuzzy
+#~| msgid "&Modify"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "&Modifikuoti"
+
+#, fuzzy
+#~| msgid "&Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "&Pridėti"
+
+#, fuzzy
+#~| msgid "Select Character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "Parinkti rašmenį"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "Auto taisymas"

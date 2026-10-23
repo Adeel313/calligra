@@ -1,0 +1,169 @@
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Vít Pelčák <vit@pelcak.org>, 2010, 2011, 2014, 2016.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ArtisticTextShape\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2014-07-23 16:35+0200\n"
+"Last-Translator: Vít Pelčák <vit@pelcak.org>\n"
+"Language-Team: Czech <kde-i18n-doc@kde.org>\n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"X-Generator: Lokalize 2.0\n"
+
+#: AddTextRangeCommand.cpp:19 AddTextRangeCommand.cpp:29
+msgctxt "(qtundo-format)"
+msgid "Add text range"
+msgstr "Přidat rozsah textu"
+
+#: ArtisticTextShapeFactory.cpp:17
+#, kde-format
+msgid "ArtisticTextShape"
+msgstr "ArtisticTextShape"
+
+#: ArtisticTextShapeFactory.cpp:19
+#, kde-format
+msgid "A shape which shows a single text line"
+msgstr "Tvar, který zobrazuje jeden řádek textu"
+
+#: ArtisticTextShapeFactory.cpp:29
+#, kde-format
+msgid "Artistic Text"
+msgstr "Umělecký text"
+
+#: ArtisticTextTool.cpp:72
+#, kde-format
+msgid "Detach Path"
+msgstr "Vytrhnout cestu"
+
+#: ArtisticTextTool.cpp:77
+#, kde-format
+msgid "Convert to Path"
+msgstr "Převést na cestu"
+
+#: ArtisticTextTool.cpp:82
+#, kde-format
+msgid "Bold text"
+msgstr "Tučný text"
+
+#: ArtisticTextTool.cpp:87
+#, kde-format
+msgid "Italic text"
+msgstr "Skloněný text"
+
+#: ArtisticTextTool.cpp:92
+#, kde-format
+msgid "Superscript"
+msgstr "Horní index"
+
+#: ArtisticTextTool.cpp:97
+#, kde-format
+msgid "Subscript"
+msgstr "Dolní index"
+
+#: ArtisticTextTool.cpp:102
+#, kde-format
+msgid "Anchor at Start"
+msgstr "Ukotvení na začátku"
+
+#: ArtisticTextTool.cpp:107
+#, kde-format
+msgid "Anchor at Middle"
+msgstr "Ukotvení na středu"
+
+#: ArtisticTextTool.cpp:112
+#, kde-format
+msgid "Anchor at End"
+msgstr "Ukotvení na konci"
+
+#: ArtisticTextTool.cpp:303
+#, kde-format
+msgid "Click to change cursor position."
+msgstr "Kliknutím změňte polohu kurzoru."
+
+#: ArtisticTextTool.cpp:305
+#, kde-format
+msgid "Click to select text shape."
+msgstr "Kliknutím vyberte tvar textu."
+
+#: ArtisticTextTool.cpp:308
+#, kde-format
+msgid "Double click to put text on path."
+msgstr "Dvojité kliknutí pro položení textu na cestu."
+
+#: ArtisticTextTool.cpp:311
+#, kde-format
+msgid "Drag handle to change start offset."
+msgstr "Pro změnu posunu textu táhněte držadlem."
+
+#: ArtisticTextTool.cpp:315
+#, kde-format
+msgid "Press escape to finish editing."
+msgstr "Stiskněte Escape pro ukončení úprav."
+
+#: ArtisticTextTool.cpp:494
+#, kde-format
+msgid "Press return to finish editing."
+msgstr "Stiskněte Enter pro ukončení úprav."
+
+#: ArtisticTextTool.cpp:588
+msgctxt "(qtundo-format)"
+msgid "Convert to Path"
+msgstr "Převést na cestu"
+
+#: ArtisticTextTool.cpp:601
+#, kde-format
+msgid "Text Properties"
+msgstr "Vlastnosti textu"
+
+#: ArtisticTextTool.cpp:610
+#, kde-format
+msgid "Text On Path"
+msgstr "Text na cestě"
+
+#: ArtisticTextToolFactory.cpp:17
+#, kde-format
+msgid "Artistic text editing"
+msgstr "Úprava uměleckých textů"
+
+#: AttachTextToPathCommand.cpp:17
+msgctxt "(qtundo-format)"
+msgid "Attach Path"
+msgstr "Přiložit cestu"
+
+#: ChangeTextAnchorCommand.cpp:15
+msgctxt "(qtundo-format)"
+msgid "Change text anchor"
+msgstr "Změnit ukotvení textu"
+
+#: ChangeTextFontCommand.cpp:20
+msgctxt "(qtundo-format)"
+msgid "Change font"
+msgstr "Změnit písmo"
+
+#: ChangeTextOffsetCommand.cpp:18
+msgctxt "(qtundo-format)"
+msgid "Change Text Offset"
+msgstr "Změnit posun textu"
+
+#: DetachTextFromPathCommand.cpp:16
+msgctxt "(qtundo-format)"
+msgid "Detach Path"
+msgstr "Vytrhnout cestu"
+
+#: RemoveTextRangeCommand.cpp:19
+msgctxt "(qtundo-format)"
+msgid "Remove text range"
+msgstr "Odstranit rozsah textu"
+
+#: ReplaceTextRangeCommand.cpp:23 ReplaceTextRangeCommand.cpp:40
+#: ReplaceTextRangeCommand.cpp:57
+msgctxt "(qtundo-format)"
+msgid "Replace text range"
+msgstr "Nahradit rozsah textu"

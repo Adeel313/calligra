@@ -1,0 +1,590 @@
+# translation of AutocorrectPlugin.po to
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Youssef Chahibi <chahibi@gmail.com>, 2007, 2008.
+# SPDX-FileCopyrightText: 2024, 2025 Zayed Al-Saidi <zayed.alsaidi@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2025-08-03 23:00+0400\n"
+"Last-Translator: Zayed Al-Saidi <zayed.alsaidi@gmail.com>\n"
+"Language-Team: ar\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+"X-Generator: Lokalize 23.08.5\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "اضبط التصحيح التل&قائي"
+
+#: Autocorrect.cpp:30
+#, kde-format
+msgid "Enable Autocorrection"
+msgstr "مكّن التّصحيح الآليّ"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "صحّح آليًّا"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "تصحيح تلقائي &بسيط"
+
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr "تفحص عندما تبدأ جملة جديدة و تأكد دائما أن الحرف الأول حرف علوي."
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "حول الحرف الأ&ول من أول كلمة في الجملة بشكل تلقائي لحرف علوي\n"
+#~ "(مثال: \"my house. in this town\" إلى \"my house. In this town\")"
+
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "كل الكلمات تٌدقّق من أجل الخطأ المشترك بالضغط المستمر لفترة شيئا ما طويلة "
+#~ "على المفتاح shift.إذا كان لدى بعض الكلمات حرفان علويان فإن هذه "
+#~ "الإستثناءات يجب أن تضاف إلى لسان 'الاستثناءات'."
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "حول حرفا&ن علويان أحدهما إلى حرف علوي و الآخر إلى حرف سفلي\n"
+#~ " (مثلا PErfect إلى Perfect)"
+
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "تفحص كتابة عنوان وب واستعمل تنسيقا يلائم الطريقة التي يعرض بها  متصفح "
+#~ "الإنترنت عنوانا ما."
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "تنسيق آلي ل&عناوين الوب"
+
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "يمنعك من كتابة أكثر من فراغ واحد على التوالي، حيث أن هذا خطاء شائع يصعب "
+#~ "كشفه في النصوص المنسقة."
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "أ&زل الفراغات المزدوجة"
+
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "حافظ على التنسيق والإزاحة الصحيحين، و ذلك عن طريق حذف المسافات الفارغة من "
+#~ "بداية و نهاية كل فقرة تلقائياً."
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "أ&زل الفراغات في بداية ونهاية الفقرة."
+
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "عند استخدامك ل _مسطر_ أو *عريض* فإن النص الذي بين الشرطتين السفليتين أو "
+#~ "بين النجمتين سيحَوّله إلى نص مسطر أو عريض."
+
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "قم بتنسيق \"عريض\" و \"خط سفلي\" تلقائياً"
+
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "ستحوّل معظم الكسور عند توفرها"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "استبدل بـ 1/2... ½..."
+
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "عند كتابة ( '1)' أو ما يشابه عند بداية فقرة، أعد تنسيق هذه الفقرة لكي "
+#~ "تستخدم هذا الترقيم  تلقائيا. حتى تكون الفقرات القادمة مرقمة أيضا ولتتم "
+#~ "الإزاحة بشكل صحيح."
+
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "استخدم التر&قيم التلقائي للفقرات المرقمة"
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "استبدل بـ 1st... 1^st..."
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "أظهر أسماء الأيام بأحرف كبيرة"
+
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "عند طباعة '*' أو '-' في بداية فقرة، استعمل نفس هذا النمط فيها تلقائيا . "
+#~ "يعني استخدام نمط القائمة وضع علامة ترقيم مناسبة لكتابة اللائحة."
+
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "استخدم تن&سيق اللائحة للفقرات المؤشرة."
+
+#~ msgid "Default"
+#~ msgstr "افتراضي"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "&علامات اقتباس مخصّصة"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "استبدل علامة الاقتباس المزدوجة ('') بعلامة اقتباس مطبعية"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "استبدل علامة الاقتباس المفردة (') بعلامة اقتباس مطبعية"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "تصحيح تلقائي متق&دم"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "الاستبدالات والاستثناءات للغة:"
+
+#~ msgid "All Languages"
+#~ msgstr "كل اللغات"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "استعمل است&بدال الكلمات"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "استبدل ال&نص بالتنسيق"
+
+#~ msgid "&Find"
+#~ msgstr "ا&بحث"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "است&بدل"
+
+#~ msgid "&Add"
+#~ msgstr "أ&ضف"
+
+#~ msgid "Remove"
+#~ msgstr "احذف"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "غ&يّر التنسيق..."
+
+#~ msgid "C&lear Format"
+#~ msgstr "ام&سح التنسيق"
+
+#~ msgid "Find"
+#~ msgstr "اعثر"
+
+#~ msgid "Replace"
+#~ msgstr "استبدل"
+
+#~ msgid "E&xceptions"
+#~ msgstr "الاست&ثناءات"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "لا تعاملها كنهاية جملة:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "التضمين التلقائي"
+
+#~ msgid "R&emove"
+#~ msgstr "ا&حذف"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "اقبل حرفين علويين في:"
+
+#~ msgid "A&dd"
+#~ msgstr "أ&ضف"
+
+#~ msgid "&Modify"
+#~ msgstr "&عدّل"
+
+#~ msgid "Select Character"
+#~ msgstr "انتق محرفا"
+
+#, fuzzy
+#~| msgid "Si&mple Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "تصحيح تلقائي &بسيط"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a new sentence is started and always ensure that the first "
+#~| "character is an uppercase character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr "تفحص عندما تبدأ جملة جديدة و تأكد دائما أن الحرف الأول حرف علوي."
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &first letter of a sentence automatically to uppercase\n"
+#~| "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "حول الحرف الأ&ول من أول كلمة في الجملة بشكل تلقائي لحرف علوي\n"
+#~ "(مثال: \"my house. in this town\" إلى \"my house. In this town\")"
+
+#, fuzzy
+#~| msgid ""
+#~| "All words are checked for the common mistake of holding the shift key "
+#~| "down a bit too long. If some words must have two uppercase characters, "
+#~| "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "كل الكلمات تٌدقّق من أجل الخطأ المشترك بالضغط المستمر لفترة شيئا ما طويلة "
+#~ "على المفتاح shift.إذا كان لدى بعض الكلمات حرفان علويان فإن هذه "
+#~ "الإستثناءات يجب أن تضاف إلى لسان 'الاستثناءات'."
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &two uppercase characters to one uppercase and one lowercase "
+#~| "character\n"
+#~| " (e.g. PErfect to Perfect)"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "حول حرفا&ن علويان أحدهما إلى حرف علوي و الآخر إلى حرف سفلي\n"
+#~ " (مثلا PErfect إلى Perfect)"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~| "formatting that matches the way an Internet browser would show a URL."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "تفحص كتابة عنوان وب واستعمل تنسيقا يلائم الطريقة التي يعرض بها  متصفح "
+#~ "الإنترنت عنوانا ما."
+
+#, fuzzy
+#~| msgid "Autoformat &URLs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "تنسيق آلي ل&عناوين الوب"
+
+#, fuzzy
+#~| msgid ""
+#~| "Make sure that more than one space cannot be typed, as this is a common "
+#~| "mistake which is quite hard to find in formatted text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "يمنعك من كتابة أكثر من فراغ واحد على التوالي، حيث أن هذا خطاء شائع يصعب "
+#~ "كشفه في النصوص المنسقة."
+
+#, fuzzy
+#~| msgid "&Suppress double spaces"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "أ&زل الفراغات المزدوجة"
+
+#, fuzzy
+#~| msgid ""
+#~| "Keep correct formatting and indenting of sentences by automatically "
+#~| "removing spaces typed at the beginning and end of a paragraph."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "حافظ على التنسيق والإزاحة الصحيحين، و ذلك عن طريق حذف المسافات الفارغة من "
+#~ "بداية و نهاية كل فقرة تلقائياً."
+
+#, fuzzy
+#~| msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "أ&زل الفراغات في بداية ونهاية الفقرة."
+
+#, fuzzy
+#~| msgid ""
+#~| "When you use _underline_ or *bold*, the text between the underscores or "
+#~| "asterisks will be converted to underlined or bold text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "عند استخدامك ل _مسطر_ أو *عريض* فإن النص الذي بين الشرطتين السفليتين أو "
+#~ "بين النجمتين سيحَوّله إلى نص مسطر أو عريض."
+
+#, fuzzy
+#~| msgid "Automatically do &bold and underline formatting"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "قم بتنسيق \"عريض\" و \"خط سفلي\" تلقائياً"
+
+#, fuzzy
+#~| msgid "Most standard fraction notations will be converted when available"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr "ستحوّل معظم الكسور عند توفرها"
+
+#, fuzzy
+#~| msgid "Re&place 1/2... with ½..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "استبدل بـ 1/2... ½..."
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '1)' or similar in front of a paragraph, automatically "
+#~| "convert the paragraph to use that numbering style. This has the "
+#~| "advantage that further paragraphs will also be numbered and the spacing "
+#~| "is done correctly."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "عند كتابة ( '1)' أو ما يشابه عند بداية فقرة، أعد تنسيق هذه الفقرة لكي "
+#~ "تستخدم هذا الترقيم  تلقائيا. حتى تكون الفقرات القادمة مرقمة أيضا ولتتم "
+#~ "الإزاحة بشكل صحيح."
+
+#, fuzzy
+#~| msgid "Use &autonumbering for numbered paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "استخدم التر&قيم التلقائي للفقرات المرقمة"
+
+#, fuzzy
+#~| msgid "Rep&lace 1st... with 1^st..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "استبدل بـ 1st... 1^st..."
+
+#, fuzzy
+#~| msgid "Capitalize name of days"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "أظهر أسماء الأيام بأحرف كبيرة"
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '*' or '-' in front of a paragraph, automatically convert "
+#~| "the paragraph to use that list-style. Using a list-style formatting "
+#~| "means that a correct bullet is used to draw the list."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "عند طباعة '*' أو '-' في بداية فقرة، استعمل نفس هذا النمط فيها تلقائيا . "
+#~ "يعني استخدام نمط القائمة وضع علامة ترقيم مناسبة لكتابة اللائحة."
+
+#, fuzzy
+#~| msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "استخدم تن&سيق اللائحة للفقرات المؤشرة."
+
+#, fuzzy
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "افتراضي"
+
+#, fuzzy
+#~| msgid "Custom &Quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "&علامات اقتباس مخصّصة"
+
+#, fuzzy
+#~| msgid "Replace &double quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "استبدل علامة الاقتباس المزدوجة ('') بعلامة اقتباس مطبعية"
+
+#, fuzzy
+#~| msgid "Replace &single quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "استبدل علامة الاقتباس المفردة (') بعلامة اقتباس مطبعية"
+
+#, fuzzy
+#~| msgid "Ad&vanced Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "تصحيح تلقائي متق&دم"
+
+#, fuzzy
+#~| msgid "Replacements and exceptions for language:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "الاستبدالات والاستثناءات للغة:"
+
+#, fuzzy
+#~| msgid "All Languages"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "كل اللغات"
+
+#, fuzzy
+#~| msgid "&Enable word replacement"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "استعمل است&بدال الكلمات"
+
+#, fuzzy
+#~| msgid "Replace &text with format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "استبدل ال&نص بالتنسيق"
+
+#, fuzzy
+#~| msgid "&Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "ا&بحث"
+
+#, fuzzy
+#~| msgid "..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#, fuzzy
+#~| msgid "Re&place"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "است&بدل"
+
+#, fuzzy
+#~| msgid "Remove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "احذف"
+
+#, fuzzy
+#~| msgid "C&hange Format..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "غ&يّر التنسيق..."
+
+#, fuzzy
+#~| msgid "C&lear Format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "ام&سح التنسيق"
+
+#, fuzzy
+#~| msgid "Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "اعثر"
+
+#, fuzzy
+#~| msgid "Replace"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "استبدل"
+
+#, fuzzy
+#~| msgid "E&xceptions"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "الاست&ثناءات"
+
+#, fuzzy
+#~| msgid "Do not treat as the end of a sentence:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "لا تعاملها كنهاية جملة:"
+
+#, fuzzy
+#~| msgid "Autoinclude"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "التضمين التلقائي"
+
+#, fuzzy
+#~| msgid "R&emove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "ا&حذف"
+
+#, fuzzy
+#~| msgid "Accept two uppercase letters in:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "اقبل حرفين علويين في:"
+
+#, fuzzy
+#~| msgid "A&dd"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "أ&ضف"
+
+#, fuzzy
+#~| msgid "Configure &Autocorrection..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "اضبط التصحيح التل&قائي"
+
+#, fuzzy
+#~| msgid "Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "التصحيح التلقائي"
+
+#, fuzzy
+#~| msgid "&Modify"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "&عدّل"
+
+#, fuzzy
+#~| msgid "&Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "أ&ضف"
+
+#, fuzzy
+#~| msgid "Select Character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "انتق محرفا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "التصحيح التلقائي"

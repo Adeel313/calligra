@@ -1,0 +1,170 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR This file is copyright:
+# This file is distributed under the same license as the calligra package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: calligra\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2024-05-01 06:39+0200\n"
+"Last-Translator: Temuri Doghonadze <temuri.doghonadze@gmail.com>\n"
+"Language-Team: Georgian <kde-i18n-doc@kde.org>\n"
+"Language: ka\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.3.2\n"
+
+#: AddTextRangeCommand.cpp:19 AddTextRangeCommand.cpp:29
+msgctxt "(qtundo-format)"
+msgid "Add text range"
+msgstr "ტექსტის დიაპაზონის დამატება"
+
+#: ArtisticTextShapeFactory.cpp:17
+#, kde-format
+msgid "ArtisticTextShape"
+msgstr "ArtisticTextShape"
+
+#: ArtisticTextShapeFactory.cpp:19
+#, kde-format
+msgid "A shape which shows a single text line"
+msgstr "ფორმა, რომელიც ერთ ტექსტის ხაზს აჩვენებს"
+
+#: ArtisticTextShapeFactory.cpp:29
+#, kde-format
+msgid "Artistic Text"
+msgstr "მხატვრული ტექსტი"
+
+#: ArtisticTextTool.cpp:72
+#, kde-format
+msgid "Detach Path"
+msgstr "ბილიკის მოხსნა"
+
+#: ArtisticTextTool.cpp:77
+#, kde-format
+msgid "Convert to Path"
+msgstr "ბილიკად გარდაქმნა"
+
+#: ArtisticTextTool.cpp:82
+#, kde-format
+msgid "Bold text"
+msgstr "მსხვილი ტექსტი"
+
+#: ArtisticTextTool.cpp:87
+#, kde-format
+msgid "Italic text"
+msgstr "კურსივი"
+
+#: ArtisticTextTool.cpp:92
+#, kde-format
+msgid "Superscript"
+msgstr "ზედა ხაზზე"
+
+#: ArtisticTextTool.cpp:97
+#, kde-format
+msgid "Subscript"
+msgstr "ქვედა ხაზზე"
+
+#: ArtisticTextTool.cpp:102
+#, kde-format
+msgid "Anchor at Start"
+msgstr "მიმაგრება დასაწყისში"
+
+#: ArtisticTextTool.cpp:107
+#, kde-format
+msgid "Anchor at Middle"
+msgstr "მიმაგრება შუაში"
+
+#: ArtisticTextTool.cpp:112
+#, kde-format
+msgid "Anchor at End"
+msgstr "მიმაგრება ბოლოში"
+
+#: ArtisticTextTool.cpp:303
+#, kde-format
+msgid "Click to change cursor position."
+msgstr "წკაპი კურსორის მდებარეობის შესაცვლელად."
+
+#: ArtisticTextTool.cpp:305
+#, kde-format
+msgid "Click to select text shape."
+msgstr "წკაპი ტექსტური ფორმის მოსანიშნად."
+
+#: ArtisticTextTool.cpp:308
+#, kde-format
+msgid "Double click to put text on path."
+msgstr "ორმაგი წკაპი კონტურზე ტექსტის დასადებად."
+
+#: ArtisticTextTool.cpp:311
+#, kde-format
+msgid "Drag handle to change start offset."
+msgstr "გადაათრიეთ ხელი დაწყების წანაცვლების შესაცვლელად."
+
+#: ArtisticTextTool.cpp:315
+#, kde-format
+msgid "Press escape to finish editing."
+msgstr "ჩასწორების დასასრულებლად Escape ღილაკს დააწექით."
+
+#: ArtisticTextTool.cpp:494
+#, kde-format
+msgid "Press return to finish editing."
+msgstr "ჩასწორების დასასრულებლად Enter ღილაკს დააწექით."
+
+#: ArtisticTextTool.cpp:588
+msgctxt "(qtundo-format)"
+msgid "Convert to Path"
+msgstr "ბილიკად გარდაქმნა"
+
+#: ArtisticTextTool.cpp:601
+#, kde-format
+msgid "Text Properties"
+msgstr "ტექსტის თვისებები"
+
+#: ArtisticTextTool.cpp:610
+#, kde-format
+msgid "Text On Path"
+msgstr "ტექსტი ბილიკზე"
+
+#: ArtisticTextToolFactory.cpp:17
+#, kde-format
+msgid "Artistic text editing"
+msgstr "მხატვრული ტექსტის ჩასწორება"
+
+#: AttachTextToPathCommand.cpp:17
+msgctxt "(qtundo-format)"
+msgid "Attach Path"
+msgstr "ბილიკის მიმაგრება"
+
+#: ChangeTextAnchorCommand.cpp:15
+msgctxt "(qtundo-format)"
+msgid "Change text anchor"
+msgstr "ტექსტის მიმაგრების შეცვლა"
+
+#: ChangeTextFontCommand.cpp:20
+msgctxt "(qtundo-format)"
+msgid "Change font"
+msgstr "ფონტის შეცვლა"
+
+#: ChangeTextOffsetCommand.cpp:18
+msgctxt "(qtundo-format)"
+msgid "Change Text Offset"
+msgstr "ტექსტის წანაცვლების შეცვლა"
+
+#: DetachTextFromPathCommand.cpp:16
+msgctxt "(qtundo-format)"
+msgid "Detach Path"
+msgstr "ბილიკის მოხსნა"
+
+#: RemoveTextRangeCommand.cpp:19
+msgctxt "(qtundo-format)"
+msgid "Remove text range"
+msgstr "ტექსტის დაიაპაზონის წაშლა"
+
+#: ReplaceTextRangeCommand.cpp:23 ReplaceTextRangeCommand.cpp:40
+#: ReplaceTextRangeCommand.cpp:57
+msgctxt "(qtundo-format)"
+msgid "Replace text range"
+msgstr "ტექსტის დიაპაზონის ჩანაცვლება"

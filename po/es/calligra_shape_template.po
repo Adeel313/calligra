@@ -1,0 +1,47 @@
+# Spanish translations for calligra_shape_template.po package.
+# Copyright (C) 2014-2025 This file is copyright:
+# This file is distributed under the same license as the calligra package.
+#
+# SPDX-FileCopyrightText: 2014 Raul Gonzalez <raulgf83@gmail.com>
+# SPDX-FileCopyrightText: 2016 Eloy Cuadra <ecuadra@eloihr.net>
+# SPDX-FileCopyrightText: 2016, 2025 Sofía Priego <spriego@darksylvania.net>
+msgid ""
+msgstr ""
+"Project-Id-Version: calligra_shape_template\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2025-07-06 22:13+0100\n"
+"Last-Translator: Sofía Priego <spriego@darksylvania.net>\n"
+"Language-Team: Spanish <kde-l10n-es@kde.org>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Lokalize 2.0\n"
+
+#: ChangeSomethingCommand.cpp:32
+msgctxt "(qtundo-format)"
+msgid "Change something"
+msgstr "Cambiar algo"
+
+#: TemplateShapeFactory.cpp:31
+#, kde-format
+msgid "Template shape"
+msgstr "Forma plantilla"
+
+#: TemplateShapeFactory.cpp:33
+#, kde-format
+msgid "Simple shape that is used as a template for developing other shapes."
+msgstr ""
+"Forma sencilla que se utiliza como plantilla para desarrollar otras formas."
+
+#: TemplateTool.cpp:76
+#, kde-format
+msgid "Open"
+msgstr "Abrir"
+
+#: TemplateToolFactory.cpp:24
+#, kde-format
+msgid "Template shape editing"
+msgstr "Edición de la forma plantilla"

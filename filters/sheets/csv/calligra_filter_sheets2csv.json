@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "CSV Export Filter for Calligra Sheets",
+        "Name[ar]": "مرشح تصدير CSV لـ Calligra Sheets",
+        "Name[ca@valencia]": "Filtre d'exportació CSV per a Calligra Sheets",
+        "Name[ca]": "Filtre d'exportació CSV per al Calligra Sheets",
+        "Name[cs]": "Exportní filtr CSV pro Calligra Sheets",
+        "Name[de]": "CSV-Exportfilter für Calligra Sheets",
+        "Name[el]": "Φίλτρο εξαγωγής CSV για φύλλα Calligra",
+        "Name[en_GB]": "CSV Export Filter for Calligra Sheets",
+        "Name[eo]": "CSV Eksporta Filtrilo por Calligra Sheets",
+        "Name[es]": "Filtro de exportación CSV para Calligra Sheets",
+        "Name[eu]": "Calligra Sheets-en CSV esportatzeko iragazkia",
+        "Name[fi]": "Calligra Sheetsin CSV-vientisuodatin",
+        "Name[fr]": "Filtre d'exportation « CSV » pour Calligra Sheets",
+        "Name[ga]": "Scagaire Easpórtála CSV do Bhileoga Calligra",
+        "Name[gl]": "Filtro para Calligra Sheets de exportación de CSV",
+        "Name[he]": "מסנן ייצוא CSV ל־Calligra Sheets",
+        "Name[it]": "Filtro di esportazione CSV per Calligra Sheets",
+        "Name[ka]": "CSV-ის გატანის ფილტრი Calligra Sheets-სთვის",
+        "Name[lv]": "„Calligra Sheets“ CSV eksporta filtrs",
+        "Name[nl]": "CSV-exportfilter voor Calligra Sheets",
+        "Name[pl]": "Filtr eksportu CSV dla Arkuszy Calligra",
+        "Name[pt_BR]": "Filtro de exportação CSV para o Calligra Sheets",
+        "Name[ru]": "Фильтр экспорта CSV для Calligra Sheets",
+        "Name[sa]": "Calligra Sheets कृते CSV निर्यात फ़िल्टर",
+        "Name[sk]": "Filter exportu CSV pre Calligra Sheets",
+        "Name[sl]": "Filter izvoza za Calligra Sheets",
+        "Name[sv]": "CSV-exportfilter för Calligra Sheets",
+        "Name[tr]": "Calligra Tablolar için Dışa Aktarma Süzgeci",
+        "Name[uk]": "Фільтр експорту CSV для Calligra Sheets",
+        "Name[zh_CN]": "用于 Calligra Sheets 的 CSV 导出过滤器",
+        "Name[zh_TW]": "Calligra Sheets 的 CSV 匯出過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "text/csv,text/plain",
+    "X-KDE-Import": "application/vnd.oasis.opendocument.spreadsheet",
+    "X-KDE-Weight": 50
+}

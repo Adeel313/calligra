@@ -1,0 +1,555 @@
+# translation of VariablesPlugin.po to
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Youssef Chahibi <chahibi@gmail.com>, 2007.
+# SPDX-FileCopyrightText: 2024, 2025 Zayed Al-Saidi <zayed.alsaidi@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: VariablesPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-09-10 00:46+0000\n"
+"PO-Revision-Date: 2025-10-05 12:58+0400\n"
+"Last-Translator: Zayed Al-Saidi <zayed.alsaidi@gmail.com>\n"
+"Language-Team: ar\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+"X-Generator: Lokalize 23.08.5\n"
+
+#: ChapterVariable.cpp:195 UserVariableOptionsWidget.cpp:56
+#, kde-format
+msgid "Format:"
+msgstr "النّسق:"
+
+#: ChapterVariable.cpp:200
+#, kde-format
+msgid "Number"
+msgstr "رقم"
+
+#: ChapterVariable.cpp:200
+#, kde-format
+msgid "Name"
+msgstr "اسم"
+
+#: ChapterVariable.cpp:200
+#, kde-format
+msgid "Number and name"
+msgstr "رقم واسم"
+
+#: ChapterVariable.cpp:200
+#, kde-format
+msgid "Number without separator"
+msgstr "رقم بدون فاصل"
+
+#: ChapterVariable.cpp:201
+#, kde-format
+msgid "Number and name without separator"
+msgstr "رقم واسم بدون فاصل"
+
+#: ChapterVariable.cpp:205
+#, kde-format
+msgid "Level:"
+msgstr "المستوى:"
+
+#: ChapterVariableFactory.cpp:21
+#, kde-format
+msgid "Chapter"
+msgstr "الفصل"
+
+#: DateVariableFactory.cpp:22
+#, kde-format
+msgctxt "date that can not be changed later"
+msgid "Date (Fixed)"
+msgstr "التاريخ (ثابت)"
+
+#: FixedDateFormat.cpp:34
+#, kde-format
+msgid "Locale date format"
+msgstr "نسق التاريخ المحلّي"
+
+#: FixedDateFormat.cpp:35
+#, kde-format
+msgid "Short locale date format"
+msgstr "نسق التاريخ المحلّي المختصر"
+
+#: FixedDateFormat.cpp:36
+#, kde-format
+msgid "Locale date & time format"
+msgstr "نسق التاريخ والوقت المحلّي"
+
+#: FixedDateFormat.cpp:37
+#, kde-format
+msgid "Short locale date & time format"
+msgstr "نسق التاريخ والوقت المحلّي المختصر"
+
+#: FixedDateFormat.cpp:116
+#, kde-format
+msgid "Day"
+msgstr "اليوم"
+
+#: FixedDateFormat.cpp:117
+#, kde-format
+msgid "Month"
+msgstr "الشهر"
+
+#: FixedDateFormat.cpp:118
+#, kde-format
+msgid "Year"
+msgstr "السنة"
+
+#: FixedDateFormat.cpp:119
+#, kde-format
+msgid "Hour"
+msgstr "أقل من ساعة"
+
+#: FixedDateFormat.cpp:120
+#, kde-format
+msgid "Minute"
+msgstr "أقل من دقيقة"
+
+#: FixedDateFormat.cpp:121
+#, kde-format
+msgid "Second"
+msgstr "ثانية"
+
+#: FixedDateFormat.cpp:129
+#, kde-format
+msgid "Flexible Digits (1-31)"
+msgstr "أرقام مرنة (1-31)"
+
+#: FixedDateFormat.cpp:130
+#, kde-format
+msgid "2 Digits (01-31)"
+msgstr "رقمان (01-31)"
+
+#: FixedDateFormat.cpp:131 FixedDateFormat.cpp:135
+#, kde-format
+msgid "Abbreviated Name"
+msgstr "اسم مختصر"
+
+#: FixedDateFormat.cpp:132 FixedDateFormat.cpp:136
+#, kde-format
+msgid "Long Name"
+msgstr "اسم طويل"
+
+#: FixedDateFormat.cpp:133
+#, kde-format
+msgid "Flexible Digits (1-12)"
+msgstr "أرقام مرنة (1-12)"
+
+#: FixedDateFormat.cpp:134
+#, kde-format
+msgid "2 Digits (01-12)"
+msgstr "رقمان (01-12)"
+
+#: FixedDateFormat.cpp:137
+#, kde-format
+msgid "Possessive Abbreviated Name"
+msgstr "اسم مختصر للملكية"
+
+#: FixedDateFormat.cpp:138
+#, kde-format
+msgid "Possessive Long Name"
+msgstr "اسم طويل للملكية"
+
+#: FixedDateFormat.cpp:139
+#, kde-format
+msgid "2 Digits (01-99)"
+msgstr "رقمان (01-99)"
+
+#: FixedDateFormat.cpp:140
+#, kde-format
+msgid "4 Digits"
+msgstr "4 خانات"
+
+#: FixedDateFormat.cpp:141
+#, kde-format
+msgid "Flexible Digits (1-23)"
+msgstr "أرقام مرنة (1-23)"
+
+#: FixedDateFormat.cpp:142
+#, kde-format
+msgid "2 Digits (01-23)"
+msgstr "رقمان (01-23)"
+
+#: FixedDateFormat.cpp:143 FixedDateFormat.cpp:145
+#, kde-format
+msgid "Flexible Digits (1-59)"
+msgstr "أرقام مرنة (1-59)"
+
+#: FixedDateFormat.cpp:144 FixedDateFormat.cpp:146
+#, kde-format
+msgid "2 Digits (01-59)"
+msgstr "رقمان (01-59)"
+
+#: FixedDateFormat.cpp:147
+#, kde-format
+msgid "am/pm"
+msgstr "ص/م"
+
+#: FixedDateFormat.cpp:148
+#, kde-format
+msgid "AM/PM"
+msgstr "صباحا/مساءا"
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: FixedDateFormat.ui:21
+#, kde-format
+msgid "Date Correction:"
+msgstr "تصحيح التاريخ:"
+
+#. i18n: ectx: property (suffix), widget (QSpinBox, correction)
+#: FixedDateFormat.ui:28
+#, kde-format
+msgid " days"
+msgstr " أيّام"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: FixedDateFormat.ui:53
+#, kde-format
+msgid "Select the way the date should be displayed:"
+msgstr "اختر طريقة عرض التاريخ:"
+
+#. i18n: ectx: property (text), widget (QCheckBox, custom)
+#: FixedDateFormat.ui:60
+#, kde-format
+msgid "Custom format"
+msgstr "نسق مخصّص"
+
+#. i18n: ectx: property (text), widget (QToolButton, formatButton)
+#: FixedDateFormat.ui:101
+#, kde-format
+msgid "..."
+msgstr "..."
+
+#: InfoVariableFactory.cpp:24
+#, kde-format
+msgid "Author Name"
+msgstr "اسم المؤلف"
+
+#: InfoVariableFactory.cpp:32
+#, kde-format
+msgid "Title"
+msgstr "العنوان"
+
+#: InfoVariableFactory.cpp:40
+#, kde-format
+msgid "Subject"
+msgstr "الموضوع"
+
+#: InfoVariableFactory.cpp:48
+#, kde-format
+msgid "File Name"
+msgstr "اسم الملفّ"
+
+#: InfoVariableFactory.cpp:56
+#, kde-format
+msgid "Keywords"
+msgstr "كلمات مفتاحية"
+
+#: InfoVariableFactory.cpp:64
+#, kde-format
+msgid "Comments"
+msgstr "تعليقات"
+
+#: PageVariableFactory.cpp:23
+#, kde-format
+msgid "Page Count"
+msgstr "عدد الصفحات"
+
+#: PageVariableFactory.cpp:31
+#, kde-format
+msgid "Page Number"
+msgstr "رقم الصفحة"
+
+#: UserVariableFactory.cpp:22
+#, kde-format
+msgid "Custom"
+msgstr "مخصّص"
+
+#: UserVariableOptionsWidget.cpp:34
+#, kde-format
+msgid "Name:"
+msgstr "الاسم:"
+
+#: UserVariableOptionsWidget.cpp:45
+#, kde-format
+msgid "New"
+msgstr "جديد"
+
+#: UserVariableOptionsWidget.cpp:49
+#, kde-format
+msgid "Delete"
+msgstr "احذف"
+
+#: UserVariableOptionsWidget.cpp:62
+#, kde-format
+msgid "String"
+msgstr "سلسلة نصية"
+
+#: UserVariableOptionsWidget.cpp:63
+#, kde-format
+msgid "Boolean"
+msgstr "منطقي"
+
+#: UserVariableOptionsWidget.cpp:64
+#, kde-format
+msgid "Float"
+msgstr "العدد الحقيقي"
+
+#: UserVariableOptionsWidget.cpp:65
+#, kde-format
+msgid "Percentage"
+msgstr "النسبة"
+
+#: UserVariableOptionsWidget.cpp:66
+#, kde-format
+msgid "Currency"
+msgstr "العملة"
+
+#: UserVariableOptionsWidget.cpp:67
+#, kde-format
+msgid "Date"
+msgstr "التاريخ"
+
+#: UserVariableOptionsWidget.cpp:68
+#, kde-format
+msgid "Time"
+msgstr "الوقت"
+
+#: UserVariableOptionsWidget.cpp:69
+#, kde-format
+msgid "Formula"
+msgstr "صيغة"
+
+#: UserVariableOptionsWidget.cpp:70
+#, kde-format
+msgid "Void"
+msgstr "فارغ"
+
+#: UserVariableOptionsWidget.cpp:75
+#, kde-format
+msgid "Value:"
+msgstr "القيمة:"
+
+#: UserVariableOptionsWidget.cpp:150
+#, kde-format
+msgid "New Variable"
+msgstr "متغير جديد"
+
+#: UserVariableOptionsWidget.cpp:150
+#, kde-format
+msgid "Name for new variable:"
+msgstr "اسم للمتغير الجديد:"
+
+#: UserVariableOptionsWidget.cpp:166
+#, kde-format
+msgid "Delete variable <b>%1</b>?"
+msgstr "هل تريد حذف المتغير <b>%1</b>؟"
+
+#: UserVariableOptionsWidget.cpp:167
+#, kde-format
+msgid "Delete Variable"
+msgstr "احذف المتغير"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Date Correction:"
+#~ msgstr "التاريخ التصحيح:"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid " days"
+#~ msgstr " أيام"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select the way the date should be displayed:"
+#~ msgstr "انتقِ التاريخ:"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom format"
+#~ msgstr "تهيئة خاصة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Name"
+#~ msgstr "طويل الاسم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Number"
+#~ msgstr "رقم الصفحة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Locale date format"
+#~ msgstr "المحلية: التاريخ تنسيق"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Short locale date format"
+#~ msgstr "قصير إقليم التاريخ تنسيق"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Locale date & time format"
+#~ msgstr "المحلية: التاريخ وقت تنسيق"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Short locale date & time format"
+#~ msgstr "قصير إقليم التاريخ وقت تنسيق"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Day"
+#~ msgstr "اليوم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Month"
+#~ msgstr "الشهر"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Year"
+#~ msgstr "السنة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Hour"
+#~ msgstr "الساعة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Minute"
+#~ msgstr "الدّقيقة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Second"
+#~ msgstr "الثّانية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Flexible Digits (1-31)"
+#~ msgstr "مرن خانات رقمية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "2 Digits (01-31)"
+#~ msgstr "خانات رقمية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Abbreviated Name"
+#~ msgstr "مختصر :: مختزل الاسم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Long Name"
+#~ msgstr "طويل الاسم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Flexible Digits (1-12)"
+#~ msgstr "مرن خانات رقمية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "2 Digits (01-12)"
+#~ msgstr "خانات رقمية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Possessive Abbreviated Name"
+#~ msgstr "غيور مختصر :: مختزل الاسم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Possessive Long Name"
+#~ msgstr "غيور طويل الاسم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "2 Digits (01-99)"
+#~ msgstr "خانات رقمية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "4 Digits"
+#~ msgstr "خانات رقمية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Flexible Digits (1-23)"
+#~ msgstr "مرن خانات رقمية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "2 Digits (01-23)"
+#~ msgstr "خانات رقمية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Flexible Digits (1-59)"
+#~ msgstr "مرن خانات رقمية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "2 Digits (01-59)"
+#~ msgstr "خانات رقمية"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "am/pm"
+#~ msgstr "ص/م"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "AM/PM"
+#~ msgstr "صباحا/مساءا"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Author Name"
+#~ msgstr "طويل الاسم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "File Name"
+#~ msgstr "طويل الاسم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Page Count"
+#~ msgstr "عدد الصفحات"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Page Number"
+#~ msgstr "رقم الصفحة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom"
+#~ msgstr "تهيئة خاصة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Name:"
+#~ msgstr "طويل الاسم"
+
+#, fuzzy
+#~ msgid "Fixed"
+#~ msgstr "ثابت"

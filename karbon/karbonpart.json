@@ -1,0 +1,50 @@
+{
+    "KPlugin": {
+        "Icon": "calligrakarbon",
+        "MimeTypes": [
+            "application/x-karbon",
+            "image/x-eps",
+            "application/postscript",
+            "application/vnd.oasis.opendocument.graphics",
+            "application/vnd.oasis.opendocument.graphics-template",
+            "image/x-xfig"
+        ],
+        "Name": "Calligra Scalable Graphics Component",
+        "Name[ar]": "عنصر الرسوميات القابلة للتوسع لكاليغرا",
+        "Name[ca@valencia]": "Component de gràfics escalables de Calligra",
+        "Name[ca]": "Component de gràfics escalables del Calligra",
+        "Name[cs]": "SVG komponenta pro Calligra Office",
+        "Name[de]": "Calligra-Komponente für Vektorgrafiken",
+        "Name[el]": "Calligra κλιμακούμενο συστατικό γραφικών",
+        "Name[en_GB]": "Calligra Scalable Graphics Component",
+        "Name[eo]": "Calligra Skalebla Grafika Komponanto",
+        "Name[es]": "Componente de gráficos escalables de Calligra",
+        "Name[eu]": "Calligraren grafiko eskalagarrien osagaia",
+        "Name[fi]": "Calligran skaalattavan grafiikan osa",
+        "Name[fr]": "Composant de graphisme vectoriel de Calligra",
+        "Name[ga]": "Comhpháirt Grafaicí Inscálaithe Calligra",
+        "Name[gl]": "Compoñente para Calligra de imaxes vectoriais",
+        "Name[it]": "Componente per grafica vettoriale di Calligra",
+        "Name[ka]": "Calligra -ის მასშტაბირებადი გრაფიკის კომპონენტი",
+        "Name[lv]": "„Calligra“ mērogojamā grafikas komponente",
+        "Name[nl]": "Vectorafbeeldingencomponent voor Calligra",
+        "Name[pl]": "Składnik skalowalnej grafiki dla Calligry",
+        "Name[pt_BR]": "Componente de Gráficos Escaláveis do Calligra",
+        "Name[ru]": "Компонент Calligra для работы с векторной графикой",
+        "Name[sa]": "Calligra स्केलेबल ग्राफिक्स घटक",
+        "Name[sk]": "Komponent škálovateľnej grafiky Calligra",
+        "Name[sl]": "Razširljiva grafična komponenta Calligra",
+        "Name[sv]": "Calligra skalbar grafikkomponent",
+        "Name[tr]": "Calligra Ölçeklenebilir Grafik Bileşeni",
+        "Name[uk]": "Компонент векторної графіки Calligra",
+        "Name[zh_CN]": "Calligra 矢量图形处理组件",
+        "Name[zh_TW]": "Calligra 可縮放圖形元件",
+        "ServiceTypes": [
+            "Calligra/Part"
+        ]
+    },
+    "MimeType": "application/x-karbon;image/x-eps;application/postscript;application/vnd.oasis.opendocument.graphics;application/vnd.oasis.opendocument.graphics-template;image/x-xfig;",
+    "X-KDE-ExtraNativeMimeTypes": "application/vnd.oasis.opendocument.graphics,application/vnd.oasis.opendocument.graphics-template",
+    "X-KDE-NativeMimeType": "application/vnd.oasis.opendocument.graphics",
+    "X-KDE-NativeOasisMimeType": "application/vnd.oasis.opendocument.graphics"
+}

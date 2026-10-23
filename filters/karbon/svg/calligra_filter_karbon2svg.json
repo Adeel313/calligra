@@ -1,0 +1,42 @@
+{
+    "KPlugin": {
+        "Icon": "",
+        "Name": "Karbon SVG Export Filter",
+        "Name[ar]": "مرشح تصدير SVG لكربون",
+        "Name[ca@valencia]": "Filtre d'exportació SVG de Karbon",
+        "Name[ca]": "Filtre d'exportació SVG del Karbon",
+        "Name[cs]": "Exportní filtr do formátu SVG pro Karbon",
+        "Name[de]": "Karbon SVG-Exportfilter",
+        "Name[el]": "Φίλτρο εξαγωγής SVG Karbon",
+        "Name[en_GB]": "Karbon SVG Export Filter",
+        "Name[eo]": "Karbon SVG Eksporta Filtrilo",
+        "Name[es]": "Filtro de exportación SVG de Karbon",
+        "Name[eu]": "Karbon-en SVG esportatzeko iragazkia",
+        "Name[fi]": "Karbonin SVG-vientisuodatin",
+        "Name[fr]": "Filtre d'exportation « SVG » de Karbon",
+        "Name[ga]": "Scagaire Easpórtála Karbon SVG",
+        "Name[gl]": "Filtro para Karbon de exportación de SVG",
+        "Name[he]": "מסנן ייצוא SVG מ־Karbon",
+        "Name[it]": "Filtro di esportazione SVG per Karbon",
+        "Name[ka]": "Karbon SVG -ის გატანის ფილტრი",
+        "Name[lv]": "„Karbon“ SVG eksporta filtrs",
+        "Name[nl]": "SVG-exportfilter voor Karbon",
+        "Name[pl]": "Filtr eksportu SVG z Karbon",
+        "Name[pt_BR]": "Filtro de exportação SVG para o Karbon",
+        "Name[ru]": "Фильтр экспорта SVG Karbon",
+        "Name[sa]": "Karbon SVG निर्यात फ़िल्टर",
+        "Name[sk]": "Filter exportu SVG pre Karbon",
+        "Name[sl]": "Karbon filter izvoza SVG",
+        "Name[sv]": "Karbon SVG-exportfilter",
+        "Name[tr]": "Karbon SVG Dışa Aktarma Süzgeci",
+        "Name[uk]": "Фільтр експорту SVG для Karbon",
+        "Name[zh_CN]": "Karbon SVG 导出过滤器",
+        "Name[zh_TW]": "Karbon SVG 匯出過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "image/svg+xml",
+    "X-KDE-Import": "application/vnd.oasis.opendocument.graphics",
+    "X-KDE-Weight": 1
+}

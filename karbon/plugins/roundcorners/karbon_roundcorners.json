@@ -1,0 +1,38 @@
+{
+    "KPlugin": {
+        "Name": "Karbon Round Corners plugin",
+        "Name[ar]": "ملحق زوايا مستديرة لكربون",
+        "Name[ca@valencia]": "Connector de cantons arredonits de Karbon",
+        "Name[ca]": "Connector de cantonades arrodonides del Karbon",
+        "Name[cs]": "Modul Karbon pro zaoblení rohů",
+        "Name[de]": "Karbon Modul für runde Ecken",
+        "Name[el]": "Karbon πρόσθετο στρογγυλές γωνίες",
+        "Name[en_GB]": "Karbon Round Corners plugin",
+        "Name[eo]": "Kromaĵo de Karbon Round Corners",
+        "Name[es]": "Complemento redondear esquinas de Karbon",
+        "Name[eu]": "Karbon-en izkina borobilduen plugina",
+        "Name[fi]": "Karbonin kulmanpyöristysliitännäinen",
+        "Name[fr]": "Module externe de coins arrondis pour Karbon",
+        "Name[ga]": "Breiseán Cúinne Babhta Karbon",
+        "Name[gl]": "Complemento de esquinas redondas para Karbon",
+        "Name[it]": "Estensione Angoli arrotondati di Karbon",
+        "Name[ka]": "Karbon -ის კუთხეების მომრგვალების დამატება",
+        "Name[lv]": "„Karbon“ stūru noapaļošanas spraudnis",
+        "Name[nl]": "Plug-in voor Karbon ronde hoeken",
+        "Name[pl]": "Wtyczka zaokrąglania narożników dla Karbon",
+        "Name[pt_BR]": "Plugin de arrendondamento de canto para o Karbon",
+        "Name[ru]": "Модуль закругления углов Karbon",
+        "Name[sa]": "कार्बन गोल कोण प्लगइन",
+        "Name[sk]": "Zásuvný modul zaoblených rohov pre Karbon",
+        "Name[sl]": "Vtičnik Karbon Round Corners",
+        "Name[sv]": "Karbon-insticksprogram Runda hörn",
+        "Name[tr]": "Karbon Köşeleri Yuvarla Eklentisi",
+        "Name[uk]": "Додаток скруглення кутів для Karbon",
+        "Name[zh_CN]": "Karbon 圆角插件",
+        "Name[zh_TW]": "Karbon 《圓角》外掛程式",
+        "ServiceTypes": [
+            "Karbon/ViewPlugin"
+        ]
+    },
+    "X-Karbon-Version": "28"
+}

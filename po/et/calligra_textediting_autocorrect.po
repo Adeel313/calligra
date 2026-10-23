@@ -1,0 +1,601 @@
+# translation of AutocorrectPlugin.po to Estonian
+# Copyright (C) 2008 This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Marek Laane <bald@smail.ee>, 2008.
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2008-12-23 00:05+0300\n"
+"Last-Translator: Marek Laane <bald@smail.ee>\n"
+"Language-Team: Estonian <kde-et@linux.ee>\n"
+"Language: et\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: KBabel 1.11.4\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "&Automaatkorrektuuri seadistamine..."
+
+#: Autocorrect.cpp:30
+#, fuzzy, kde-format
+#| msgid "Autocorrection"
+msgid "Enable Autocorrection"
+msgstr "Automaatkorrektuur"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "Automaatkorrektuur"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Lihtne auto&maatkorrektuur"
+
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Tuvastatakse uue lause algus ning tagatakse, et lause algaks alati suure "
+#~ "tähega"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Lause &esimene täht muudetakse automaatselt suurtäheks\n"
+#~ "(nt. \"minu maja. selles linnas\" muudetakse \"minu maja. Selles linnas\")"
+
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Kõiki sõnu kontrollitakse tavalise vea suhtes, mis tekib, kui tõstuklahvi "
+#~ "hoitakse natuke kauem all, kui vaja. Kui mõni sõna peab sisaldama kahte "
+#~ "suurtähte, siis need erandid tuleks ära märkida erandite kaardil."
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "&Kaks suurtähte muudetakse üheks suurtäheks ja üheks väiketäheks.\n"
+#~ "(nt. MÕnus asemel Mõnus)"
+
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Tuvastatakse, kui on sisestatud URL (internetiaadress), ja omistatakse "
+#~ "talle vormindus, milles veebilehitseja URL-e näitab."
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "&URL-ide automaatne vormindamine"
+
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Välistatakse kahe kõrvutioleva tühiku sisestamine. See on sageli esinev "
+#~ "viga, mida on vormindatud tekstis visuaalselt raske avastada."
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "&Lisatühiku eemaldamine"
+
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Korrektse vorminduse ja taanduse säilitamine automaatse tühikute "
+#~ "eemaldamise teel lõigu algusest ja lõpust."
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Tühikute &eemaldamine lõigu algusest ja lõpust"
+
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Selliste võtete puhul, nagu _allajoonitud_ või *rasvane*, vormindatakse "
+#~ "tekst alakriipsude või tärnide vahel vastavalt kas allajoonituks või "
+#~ "rasvaseks."
+
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Automaatne &rasvase ja allajoonitud vorminduse kasutamine"
+
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr ""
+#~ "Enamik levinud murrulisi stringe teisendatakse sümboliks, kui võimalik"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "1/2... asen&datakse märgiga ½..."
+
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Kui lõigu ette on sisestatud '1)' või midagi sarnast, siis pannakse lõik "
+#~ "automaatselt kasutama vastavat nummerdamise stiili. Tänu sellele "
+#~ "nummerdatakse ka järgnevad lõigud ja lõiguvahed on korrektsed."
+
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "Nummerdatud lõikude puhul kasutatakse &automaatset nummerdamist"
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "1st... &asendatakse sõnaga 1^st..."
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "Nädalapäevad suurtäheliselt"
+
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Kui lõigu ette on sisestatud '*' või '-', pannakse lõik automaatselt "
+#~ "kasutama vastavat loendistiili. Loendi vorminduse kasutamine tähendab, et "
+#~ "loendi elementide tähistamiseks kasutatakse täppe."
+
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Täppidega algavate lõikude puhul kasutatakse loendi vorm&indust"
+
+#~ msgid "Default"
+#~ msgstr "Vaikeväärtus"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "&Kohandatud tsitaadimärgid"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "&Topeltjutmärgid asendatakse tüpograafilistega"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Üksi&kjutumärgid asendatakse tüpograafilistega"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Tä&psem automaatkorrektuur"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Asendamine ja erandid, kui keel on:"
+
+#~ msgid "All Languages"
+#~ msgstr "Kõik keeled"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "Sõnad&e asendamise lubamine"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "&Teksti asendamine vormindusega"
+
+#~ msgid "&Find"
+#~ msgstr "&Leitakse"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "Ase&ndus"
+
+#~ msgid "&Add"
+#~ msgstr "&Lisa"
+
+#~ msgid "Remove"
+#~ msgstr "Eemalda"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "&Muuda vormindust..."
+
+#~ msgid "C&lear Format"
+#~ msgstr "&Puhasta vormindus"
+
+#~ msgid "Find"
+#~ msgstr "Leitakse"
+
+#~ msgid "Replace"
+#~ msgstr "Asendus"
+
+#~ msgid "E&xceptions"
+#~ msgstr "E&randid"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Ei käsitleta lause lõpuna:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "Automaatne kaasamine"
+
+#~ msgid "R&emove"
+#~ msgstr "&Eemalda"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Kahe kõrvutise suurtähe lubamine sõnades:"
+
+#~ msgid "A&dd"
+#~ msgstr "L&isa"
+
+#~ msgid "&Modify"
+#~ msgstr "&Muuda"
+
+#~ msgid "Select Character"
+#~ msgstr "Sümboli valik"
+
+#, fuzzy
+#~| msgid "Si&mple Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Lihtne auto&maatkorrektuur"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a new sentence is started and always ensure that the first "
+#~| "character is an uppercase character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Tuvastatakse uue lause algus ning tagatakse, et lause algaks alati suure "
+#~ "tähega"
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &first letter of a sentence automatically to uppercase\n"
+#~| "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Lause &esimene täht muudetakse automaatselt suurtäheks\n"
+#~ "(nt. \"minu maja. selles linnas\" muudetakse \"minu maja. Selles linnas\")"
+
+#, fuzzy
+#~| msgid ""
+#~| "All words are checked for the common mistake of holding the shift key "
+#~| "down a bit too long. If some words must have two uppercase characters, "
+#~| "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Kõiki sõnu kontrollitakse tavalise vea suhtes, mis tekib, kui tõstuklahvi "
+#~ "hoitakse natuke kauem all, kui vaja. Kui mõni sõna peab sisaldama kahte "
+#~ "suurtähte, siis need erandid tuleks ära märkida erandite kaardil."
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &two uppercase characters to one uppercase and one lowercase "
+#~| "character\n"
+#~| " (e.g. PErfect to Perfect)"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "&Kaks suurtähte muudetakse üheks suurtäheks ja üheks väiketäheks.\n"
+#~ "(nt. MÕnus asemel Mõnus)"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~| "formatting that matches the way an Internet browser would show a URL."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Tuvastatakse, kui on sisestatud URL (internetiaadress), ja omistatakse "
+#~ "talle vormindus, milles veebilehitseja URL-e näitab."
+
+#, fuzzy
+#~| msgid "Autoformat &URLs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "&URL-ide automaatne vormindamine"
+
+#, fuzzy
+#~| msgid ""
+#~| "Make sure that more than one space cannot be typed, as this is a common "
+#~| "mistake which is quite hard to find in formatted text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Välistatakse kahe kõrvutioleva tühiku sisestamine. See on sageli esinev "
+#~ "viga, mida on vormindatud tekstis visuaalselt raske avastada."
+
+#, fuzzy
+#~| msgid "&Suppress double spaces"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "&Lisatühiku eemaldamine"
+
+#, fuzzy
+#~| msgid ""
+#~| "Keep correct formatting and indenting of sentences by automatically "
+#~| "removing spaces typed at the beginning and end of a paragraph."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Korrektse vorminduse ja taanduse säilitamine automaatse tühikute "
+#~ "eemaldamise teel lõigu algusest ja lõpust."
+
+#, fuzzy
+#~| msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Tühikute &eemaldamine lõigu algusest ja lõpust"
+
+#, fuzzy
+#~| msgid ""
+#~| "When you use _underline_ or *bold*, the text between the underscores or "
+#~| "asterisks will be converted to underlined or bold text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Selliste võtete puhul, nagu _allajoonitud_ või *rasvane*, vormindatakse "
+#~ "tekst alakriipsude või tärnide vahel vastavalt kas allajoonituks või "
+#~ "rasvaseks."
+
+#, fuzzy
+#~| msgid "Automatically do &bold and underline formatting"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Automaatne &rasvase ja allajoonitud vorminduse kasutamine"
+
+#, fuzzy
+#~| msgid "Most standard fraction notations will be converted when available"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr ""
+#~ "Enamik levinud murrulisi stringe teisendatakse sümboliks, kui võimalik"
+
+#, fuzzy
+#~| msgid "Re&place 1/2... with ½..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "1/2... asen&datakse märgiga ½..."
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '1)' or similar in front of a paragraph, automatically "
+#~| "convert the paragraph to use that numbering style. This has the "
+#~| "advantage that further paragraphs will also be numbered and the spacing "
+#~| "is done correctly."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Kui lõigu ette on sisestatud '1)' või midagi sarnast, siis pannakse lõik "
+#~ "automaatselt kasutama vastavat nummerdamise stiili. Tänu sellele "
+#~ "nummerdatakse ka järgnevad lõigud ja lõiguvahed on korrektsed."
+
+#, fuzzy
+#~| msgid "Use &autonumbering for numbered paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "Nummerdatud lõikude puhul kasutatakse &automaatset nummerdamist"
+
+#, fuzzy
+#~| msgid "Rep&lace 1st... with 1^st..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "1st... &asendatakse sõnaga 1^st..."
+
+#, fuzzy
+#~| msgid "Capitalize name of days"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "Nädalapäevad suurtäheliselt"
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '*' or '-' in front of a paragraph, automatically convert "
+#~| "the paragraph to use that list-style. Using a list-style formatting "
+#~| "means that a correct bullet is used to draw the list."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Kui lõigu ette on sisestatud '*' või '-', pannakse lõik automaatselt "
+#~ "kasutama vastavat loendistiili. Loendi vorminduse kasutamine tähendab, et "
+#~ "loendi elementide tähistamiseks kasutatakse täppe."
+
+#, fuzzy
+#~| msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Täppidega algavate lõikude puhul kasutatakse loendi vorm&indust"
+
+#, fuzzy
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "Vaikeväärtus"
+
+#, fuzzy
+#~| msgid "Custom &Quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "&Kohandatud tsitaadimärgid"
+
+#, fuzzy
+#~| msgid "Replace &double quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "&Topeltjutmärgid asendatakse tüpograafilistega"
+
+#, fuzzy
+#~| msgid "Replace &single quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Üksi&kjutumärgid asendatakse tüpograafilistega"
+
+#, fuzzy
+#~| msgid "Ad&vanced Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Tä&psem automaatkorrektuur"
+
+#, fuzzy
+#~| msgid "Replacements and exceptions for language:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Asendamine ja erandid, kui keel on:"
+
+#, fuzzy
+#~| msgid "All Languages"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "Kõik keeled"
+
+#, fuzzy
+#~| msgid "&Enable word replacement"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "Sõnad&e asendamise lubamine"
+
+#, fuzzy
+#~| msgid "Replace &text with format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "&Teksti asendamine vormindusega"
+
+#, fuzzy
+#~| msgid "&Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "&Leitakse"
+
+#, fuzzy
+#~| msgid "..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#, fuzzy
+#~| msgid "Re&place"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "Ase&ndus"
+
+#, fuzzy
+#~| msgid "Remove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "Eemalda"
+
+#, fuzzy
+#~| msgid "C&hange Format..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "&Muuda vormindust..."
+
+#, fuzzy
+#~| msgid "C&lear Format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "&Puhasta vormindus"
+
+#, fuzzy
+#~| msgid "Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "Leitakse"
+
+#, fuzzy
+#~| msgid "Replace"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "Asendus"
+
+#, fuzzy
+#~| msgid "E&xceptions"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "E&randid"
+
+#, fuzzy
+#~| msgid "Do not treat as the end of a sentence:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Ei käsitleta lause lõpuna:"
+
+#, fuzzy
+#~| msgid "Autoinclude"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "Automaatne kaasamine"
+
+#, fuzzy
+#~| msgid "R&emove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "&Eemalda"
+
+#, fuzzy
+#~| msgid "Accept two uppercase letters in:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Kahe kõrvutise suurtähe lubamine sõnades:"
+
+#, fuzzy
+#~| msgid "A&dd"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "L&isa"
+
+#, fuzzy
+#~| msgid "Configure &Autocorrection..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "&Automaatkorrektuuri seadistamine..."
+
+#, fuzzy
+#~| msgid "Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "Automaatkorrektuur"
+
+#, fuzzy
+#~| msgid "&Modify"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "&Muuda"
+
+#, fuzzy
+#~| msgid "&Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "&Lisa"
+
+#, fuzzy
+#~| msgid "Select Character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "Sümboli valik"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "Automaatkorrektuur"

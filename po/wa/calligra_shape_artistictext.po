@@ -1,0 +1,299 @@
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Jean Cayron <jean.cayron@base.be>, 2009, 2012.
+msgid ""
+msgstr ""
+"Project-Id-Version: ArtisticTextShape\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2012-08-26 14:22+0200\n"
+"Last-Translator: Jean Cayron <jean.cayron@base.be>\n"
+"Language-Team: Walloon <linux-wa@walon.org>\n"
+"Language: wa\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 1.4\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: AddTextRangeCommand.cpp:19 AddTextRangeCommand.cpp:29
+msgctxt "(qtundo-format)"
+msgid "Add text range"
+msgstr "Radjouter fortchete di tecse"
+
+#: ArtisticTextShapeFactory.cpp:17
+#, kde-format
+msgid "ArtisticTextShape"
+msgstr "Fôme di tecse årtistike"
+
+#: ArtisticTextShapeFactory.cpp:19
+#, kde-format
+msgid "A shape which shows a single text line"
+msgstr "Ene fôme ki mostere ene simpe roye di tecse"
+
+#: ArtisticTextShapeFactory.cpp:29
+#, kde-format
+msgid "Artistic Text"
+msgstr "Tecse årtistike"
+
+#: ArtisticTextTool.cpp:72
+#, kde-format
+msgid "Detach Path"
+msgstr "Distaetchî tchmin"
+
+#: ArtisticTextTool.cpp:77
+#, kde-format
+msgid "Convert to Path"
+msgstr "Covierser e tchmin"
+
+#: ArtisticTextTool.cpp:82
+#, kde-format
+msgid "Bold text"
+msgstr "Crås tecse"
+
+#: ArtisticTextTool.cpp:87
+#, kde-format
+msgid "Italic text"
+msgstr "Tecse di clintchî"
+
+#: ArtisticTextTool.cpp:92
+#, kde-format
+msgid "Superscript"
+msgstr "Espôzant"
+
+#: ArtisticTextTool.cpp:97
+#, kde-format
+msgid "Subscript"
+msgstr "Indice"
+
+#: ArtisticTextTool.cpp:102
+#, kde-format
+msgid "Anchor at Start"
+msgstr "Anke å cominçmint"
+
+#: ArtisticTextTool.cpp:107
+#, kde-format
+msgid "Anchor at Middle"
+msgstr "Anke å mitan"
+
+#: ArtisticTextTool.cpp:112
+#, kde-format
+msgid "Anchor at End"
+msgstr "Anke al difén"
+
+#: ArtisticTextTool.cpp:303
+#, kde-format
+msgid "Click to change cursor position."
+msgstr "Clitchîz po candjî li pôzucion do cursoe."
+
+#: ArtisticTextTool.cpp:305
+#, kde-format
+msgid "Click to select text shape."
+msgstr "Clitchîz po tchoezi l' fôme di tecse."
+
+#: ArtisticTextTool.cpp:308
+#, kde-format
+msgid "Double click to put text on path."
+msgstr "Dobe-clitchîz po mete li tecse sol tchimin"
+
+#: ArtisticTextTool.cpp:311
+#, kde-format
+msgid "Drag handle to change start offset."
+msgstr "Clitchîz eyet bodjîz po candjî l' displaeçmint di cmince."
+
+#: ArtisticTextTool.cpp:315
+#, kde-format
+msgid "Press escape to finish editing."
+msgstr "Tchôkî so Esc po fini l' candjaedje."
+
+#: ArtisticTextTool.cpp:494
+#, kde-format
+msgid "Press return to finish editing."
+msgstr "Tchôkî ritour po fini l' candjaedje."
+
+#: ArtisticTextTool.cpp:588
+msgctxt "(qtundo-format)"
+msgid "Convert to Path"
+msgstr "Covierser e tchmin"
+
+#: ArtisticTextTool.cpp:601
+#, kde-format
+msgid "Text Properties"
+msgstr "Prôpietés do tchmin"
+
+#: ArtisticTextTool.cpp:610
+#, kde-format
+msgid "Text On Path"
+msgstr "Tecse so tchmin"
+
+#: ArtisticTextToolFactory.cpp:17
+#, fuzzy, kde-format
+#| msgid "Artistic Text Editing Tool"
+msgid "Artistic text editing"
+msgstr "Usteye d' aspougnaedje årtistike di tecse"
+
+#: AttachTextToPathCommand.cpp:17
+msgctxt "(qtundo-format)"
+msgid "Attach Path"
+msgstr "Ataetchî tchmin"
+
+#: ChangeTextAnchorCommand.cpp:15
+msgctxt "(qtundo-format)"
+msgid "Change text anchor"
+msgstr "Candjî anke do tecse"
+
+#: ChangeTextFontCommand.cpp:20
+msgctxt "(qtundo-format)"
+msgid "Change font"
+msgstr "Candjî fonte"
+
+#: ChangeTextOffsetCommand.cpp:18
+msgctxt "(qtundo-format)"
+msgid "Change Text Offset"
+msgstr "Candjî displaeçmint do tecse"
+
+#: DetachTextFromPathCommand.cpp:16
+msgctxt "(qtundo-format)"
+msgid "Detach Path"
+msgstr "Distaetchî tchmin"
+
+#: RemoveTextRangeCommand.cpp:19
+msgctxt "(qtundo-format)"
+msgid "Remove text range"
+msgstr "Oister fortchete di tecse"
+
+#: ReplaceTextRangeCommand.cpp:23 ReplaceTextRangeCommand.cpp:40
+#: ReplaceTextRangeCommand.cpp:57
+msgctxt "(qtundo-format)"
+msgid "Replace text range"
+msgstr "Ricandjî fortchete di tecse"
+
+#, fuzzy
+#~| msgid "ArtisticTextShape"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "ArtisticTextShape"
+#~ msgstr "Fôme di tecse årtistike"
+
+#, fuzzy
+#~| msgid "A shape which shows a single text line"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A shape which shows a single text line"
+#~ msgstr "Ene fôme ki mostere ene simpe roye di tecse"
+
+#, fuzzy
+#~| msgid "Artistic Text"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Artistic Text"
+#~ msgstr "Tecse årtistike"
+
+#, fuzzy
+#~| msgid "Bold text"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Bold text"
+#~ msgstr "Crås tecse"
+
+#, fuzzy
+#~| msgid "Italic text"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Italic text"
+#~ msgstr "Tecse di clintchî"
+
+#, fuzzy
+#~| msgid "Superscript"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Superscript"
+#~ msgstr "Espôzant"
+
+#, fuzzy
+#~| msgid "Subscript"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Subscript"
+#~ msgstr "Indice"
+
+#, fuzzy
+#~| msgid "Anchor at Start"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Anchor at Start"
+#~ msgstr "Anke å cominçmint"
+
+#, fuzzy
+#~| msgid "Anchor at Middle"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Anchor at Middle"
+#~ msgstr "Anke å mitan"
+
+#, fuzzy
+#~| msgid "Anchor at End"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Anchor at End"
+#~ msgstr "Anke al difén"
+
+#, fuzzy
+#~| msgid "Click to change cursor position."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Click to change cursor position."
+#~ msgstr "Clitchîz po candjî li pôzucion do cursoe."
+
+#, fuzzy
+#~| msgid "Click to select text shape."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Click to select text shape."
+#~ msgstr "Clitchîz po tchoezi l' fôme di tecse."
+
+#, fuzzy
+#~| msgid "Double click to put text on path."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Double click to put text on path."
+#~ msgstr "Dobe-clitchîz po mete li tecse sol tchimin"
+
+#, fuzzy
+#~| msgid "Drag handle to change start offset."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Drag handle to change start offset."
+#~ msgstr "Clitchîz eyet bodjîz po candjî l' displaeçmint di cmince."
+
+#, fuzzy
+#~| msgid "Press escape to finish editing."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Press escape to finish editing."
+#~ msgstr "Tchôkî so Esc po fini l' candjaedje."
+
+#, fuzzy
+#~| msgid "Press return to finish editing."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Press return to finish editing."
+#~ msgstr "Tchôkî ritour po fini l' candjaedje."
+
+#, fuzzy
+#~| msgid "Text Properties"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Text Properties"
+#~ msgstr "Prôpietés do tchmin"
+
+#, fuzzy
+#~| msgid "Text On Path"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Text On Path"
+#~ msgstr "Tecse so tchmin"
+
+#, fuzzy
+#~| msgid "Artistic Text Editing Tool"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Artistic text editing"
+#~ msgstr "Usteye d' aspougnaedje årtistike di tecse"
+
+#~ msgid "Family:"
+#~ msgstr "Famile:"
+
+#~ msgid "Size:"
+#~ msgstr "Grandeu:"
+
+#~ msgid "Offset:"
+#~ msgstr "Displaeçmint:"
+
+#~ msgid "Artistic Text Tool"
+#~ msgstr "Usteye di scrijhaedje årtistike"
+
+#~ msgid "Change text"
+#~ msgstr "Candjî tecse"

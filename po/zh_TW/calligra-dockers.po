@@ -1,0 +1,72 @@
+# translation of koffice-dockers.po to Chinese Traditional
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Franklin Weng <franklin@goodhorse.idv.tw>, 2008, 2010, 2011, 2013.
+#
+# Franklin Weng <franklin at goodhorse dot idv dot tw>, 2007.
+# Frank Weng (a.k.a. Franklin) <franklin at goodhorse dot idv dot tw>, 2008, 2009.
+# SPDX-FileCopyrightText: 2024 Kisaragi Hiu <mail@kisaragi-hiu.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: koffice-dockers\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2024-05-21 01:22+0900\n"
+"Last-Translator: Kisaragi Hiu <mail@kisaragi-hiu.com>\n"
+"Language-Team: Traditional Chinese <zh-l10n@lists.slat.org>\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 24.04.70\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: snapguidedocker/SnapGuideDocker.cpp:39
+#, kde-format
+msgid "Snap Settings"
+msgstr "貼齊設定"
+
+#~ msgid "Shape Properties"
+#~ msgstr "物件屬性"
+
+#~ msgid "Found no shapes in the collection! %1"
+#~ msgstr "在收藏中找不到物件！%1"
+
+#~ msgid "Not a valid Calligra file: %1"
+#~ msgstr "不是有效的 Calligra 檔案：%1"
+
+#~ msgid "No body tag found in file: %1"
+#~ msgstr "檔案中找不到 body 標籤：%1"
+
+#~ msgid "No office:drawing tag found in file: %1"
+#~ msgstr "檔案中找不到 office:drawing 標籤：%1"
+
+#~ msgid "No shapes found in file: %1"
+#~ msgstr "檔案中找不到物件：%1"
+
+#~ msgid "Add Shape"
+#~ msgstr "加入物件"
+
+#~ msgid "More"
+#~ msgstr "更多"
+
+#~ msgid "Open Shape Collection"
+#~ msgstr "開啟物件收藏"
+
+#~ msgid "Remove Shape Collection"
+#~ msgstr "移除物件收藏"
+
+#~ msgid "Default"
+#~ msgstr "預設"
+
+#~ msgid "Geometrics"
+#~ msgstr "幾何"
+
+#~ msgid "Arrows"
+#~ msgstr "箭頭"
+
+#~ msgid "Funny"
+#~ msgstr "好玩"
+
+#~ msgid "Collection Error"
+#~ msgstr "收藏錯誤"

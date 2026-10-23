@@ -1,0 +1,39 @@
+{
+    "KPlugin": {
+        "Name": "LCMS Color Management Engine for Pigment",
+        "Name[ar]": "محرك إدارة الألوان LCMS لـ Pigment",
+        "Name[ca@valencia]": "Motor de gestió de color LCMS per al Pigment",
+        "Name[ca]": "Motor de gestió de color LCMS per al Pigment",
+        "Name[cs]": "Modul pro správu barev LCMS pro pigmenty",
+        "Name[de]": "LCMS-Farbverwaltung für Pigment",
+        "Name[el]": "Μηχανή διαχείρισης χρώματος LCMS για χρωστικές",
+        "Name[en_GB]": "LCMS Colour Management Engine for Pigment",
+        "Name[eo]": "LCMS Kolora Administra Motoro por Pigmento",
+        "Name[es]": "Motor de gestión de color LCMS para Pigment",
+        "Name[eu]": "Pigment-en kolorea kudeatzeko LCMS motorra",
+        "Name[fi]": "LVMS-värinhallintamoottori Pigmentiin",
+        "Name[fr]": "Moteur de gestion des couleurs « LCMS » pour Pigment",
+        "Name[ga]": "Inneall Bainistíochta Dathanna LCMS le haghaidh Lí",
+        "Name[gl]": "Motor para Pigment de xestión de cores LCMS",
+        "Name[it]": "Motore di gestione dei colori LCMS di Pigment",
+        "Name[ka]": "LCMS -ის ფერების მართვის ძრავა Pigment-სთვის",
+        "Name[lv]": "„Pigment“ LCMS krāsu pārvaldīšanas dzinis",
+        "Name[nl]": "LCMS Kleurbeheer-engine voor Pigment",
+        "Name[pl]": "Silnik zarządzania kolorami LCMS dla Pigment",
+        "Name[pt_BR]": "Mecanismo de Gerenciamento de Cor LCMS para Pigmento",
+        "Name[ru]": "Управление цветом LCMS для пигмента",
+        "Name[sa]": "पिगमेण्टस्य कृते LCMS रङ्गप्रबन्धनइञ्जिनम्",
+        "Name[sk]": "Engine správy farieb LCMS pre Pigment",
+        "Name[sl]": "Mehanizem upravljanja barv LCMS za pigment",
+        "Name[sv]": "LCMS-färghanteringsgränssnitt för pigment",
+        "Name[tr]": "Pigment için LCMS Renk Yönetimi İşletkesi",
+        "Name[uk]": "Рушій керування кольорами LCMS для Pigment",
+        "Name[zh_CN]": "用于印刷的 LCMS 色彩管理引擎",
+        "Name[zh_TW]": "Pigment 的 LCMS 色彩管理引擎",
+        "ServiceTypes": [
+            "Calligra/ColorSpace"
+        ]
+    },
+    "X-Pigment-MinVersion": "28",
+    "X-Pigment-PluginVersion": "28"
+}

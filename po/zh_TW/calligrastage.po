@@ -1,0 +1,2214 @@
+# translation of kpresenter.po to Chinese Traditional
+# translation of kpresenter.po to
+# traditional Chinese translation of kpresenter
+# Copyright (C) 2001-2002, 2006, 2007, 2008 Free Software Foundation, Inc.
+# Translator: Chih-Wei Huang <cwhuang@linux.org.tw>, 2000.
+# Eric Cheng <ericc@shinewave.com.tw>, 2001.
+# Chao-Hsiung Liao <pesder.liao@msa.hinet.net>, 2002.
+# Franklin Weng <franklin@goodhorse.idv.tw>, 2007, 2008, 2010, 2011, 2012.
+# Goodhorse <franklin@goodhorse.idv.tw>, 2008.
+#
+# Frank Weng (a.k.a. Franklin) <franklin at goodhorse dot idv dot tw>, 2006, 2008, 2009, 2010.
+# Franklin Weng <franklin at goodhorse dot idv dot tw>, 2007.
+# SPDX-FileCopyrightText: 2024, 2025 Kisaragi Hiu <mail@kisaragi-hiu.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: kpresenter\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2026-09-10 00:46+0000\n"
+"PO-Revision-Date: 2025-09-25 02:02+0900\n"
+"Last-Translator: Kisaragi Hiu <mail@kisaragi-hiu.com>\n"
+"Language-Team: Traditional Chinese <zh-l10n@lists.slat.org>\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 25.11.70\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#. i18n: ectx: Menu (edit)
+#: part/calligrastage.rc:10
+#, kde-format
+msgid "&Edit"
+msgstr "編輯(&E)"
+
+#. i18n: ectx: Menu (view)
+#: part/calligrastage.rc:29
+#, kde-format
+msgid "&View"
+msgstr "檢視(&V)"
+
+#. i18n: ectx: Menu (insert)
+#: part/calligrastage.rc:49
+#, kde-format
+msgid "&Insert"
+msgstr "插入(&I)"
+
+#. i18n: ectx: Menu (format)
+#: part/calligrastage.rc:54
+#, kde-format
+msgid "F&ormat"
+msgstr "格式(&O)"
+
+#. i18n: ectx: Menu (page)
+#: part/calligrastage.rc:63
+#, kde-format
+msgid "&Slide"
+msgstr "投影片(&S)"
+
+#. i18n: ectx: Menu (slideshow)
+#: part/calligrastage.rc:74
+#, kde-format
+msgid "Sli&de Show"
+msgstr "播放投影片(&D)"
+
+#. i18n: ectx: Menu (settings)
+#: part/calligrastage.rc:81
+#, kde-format
+msgid "&Settings"
+msgstr "設定(&S)"
+
+#: part/commands/KPrAddCustomSlideShowCommand.cpp:19
+msgctxt "(qtundo-format)"
+msgid "Add custom slide show"
+msgstr "新增自訂投影秀"
+
+#: part/commands/KPrAnimationCreateCommand.cpp:32
+msgctxt "(qtundo-format)"
+msgid "Create shape animation"
+msgstr "建立元件動畫"
+
+#: part/commands/KPrAnimationEditNodeTypeCommand.cpp:34
+msgctxt "(qtundo-format)"
+msgid "Edit animation trigger event"
+msgstr "編輯動畫觸發事件"
+
+#: part/commands/KPrAnimationRemoveCommand.cpp:30
+msgctxt "(qtundo-format)"
+msgid "Remove shape animation"
+msgstr "移除元件動畫"
+
+#: part/commands/KPrDelCustomSlideShowCommand.cpp:20
+msgctxt "(qtundo-format)"
+msgid "Delete custom slide show"
+msgstr "刪除自訂投影秀"
+
+#: part/commands/KPrDeleteSlidesCommand.cpp:25
+msgctxt "(qtundo-format) Delete one slide"
+msgid "Delete slide"
+msgstr "刪除投影片"
+
+#: part/commands/KPrDeleteSlidesCommand.cpp:44
+msgctxt "(qtundo-format)"
+msgid "Delete slide"
+msgid_plural "Delete slides"
+msgstr[0] "刪除投影片"
+
+#: part/commands/KPrEditAnimationTimeLineCommand.cpp:35
+msgctxt "(qtundo-format)"
+msgid "Edit animation delay/duration"
+msgstr "編輯動畫延遲/持續時間"
+
+#: part/commands/KPrEditCustomSlideShowsCommand.cpp:21
+msgctxt "(qtundo-format)"
+msgid "Edit custom slide show"
+msgstr "編輯自訂投影秀"
+
+#: part/commands/KPrPageEffectSetCommand.cpp:38
+msgctxt "(qtundo-format)"
+msgid "Create Slide Effect"
+msgstr "建立投影片效果"
+
+#: part/commands/KPrPageEffectSetCommand.cpp:40
+msgctxt "(qtundo-format)"
+msgid "Modify Slide Effect"
+msgstr "變更投影片效果"
+
+#: part/commands/KPrPageEffectSetCommand.cpp:43
+msgctxt "(qtundo-format)"
+msgid "Delete Slide Effect"
+msgstr "刪除投影片效果"
+
+#: part/commands/KPrPageTransitionSetCommand.cpp:32
+msgctxt "(qtundo-format)"
+msgid "Modify Slide Transition"
+msgstr "修改投影片轉變"
+
+#: part/commands/KPrRenameCustomSlideShowCommand.cpp:24
+msgctxt "(qtundo-format)"
+msgid "Rename custom slide show"
+msgstr "重新命名自訂投影秀"
+
+#: part/commands/KPrReorderAnimationCommand.cpp:34
+msgctxt "(qtundo-format)"
+msgid "Reorder animations"
+msgstr "重新排序動畫"
+
+#: part/KPrAboutData.h:19
+#, kde-format
+msgctxt "application name"
+msgid "Calligra Stage"
+msgstr "Calligra Stage"
+
+#: part/KPrAboutData.h:21
+#, kde-format
+msgid "Presentation Tool"
+msgstr "簡報工具"
+
+#: part/KPrAboutData.h:23
+#, kde-format
+msgid "Copyright 1998-%1, The Stage Team"
+msgstr "Copyright 1998-%1, Stage 開發團隊"
+
+#: part/KPrAboutData.h:29
+#, kde-format
+msgid "Carl Schwan"
+msgstr "Carl Schwan"
+
+#: part/KPrAboutData.h:30
+#, kde-format
+msgid "Maintainer/Port to Qt6"
+msgstr "維護者/移植到 Qt6"
+
+#: part/KPrAboutData.h:34 part/KPrAboutData.h:35
+#, kde-format
+msgid "Former maintainer"
+msgstr "前任維護者"
+
+#: part/KPrAboutData.h:34
+#, kde-format
+msgid "Thorsten Zachmann"
+msgstr "Thorsten Zachmann"
+
+#: part/KPrAboutData.h:35
+#, kde-format
+msgid "Laurent Montel"
+msgstr "Laurent Montel"
+
+#: part/KPrAboutData.h:36
+#, kde-format
+msgid "Original author"
+msgstr "原始作者"
+
+#: part/KPrAboutData.h:36
+#, kde-format
+msgid "Reginald Stadlbauer"
+msgstr "Reginald Stadlbauer"
+
+#: part/KPrAboutData.h:37
+#, kde-format
+msgid "Werner Trobin"
+msgstr "Werner Trobin"
+
+#: part/KPrAboutData.h:38
+#, kde-format
+msgid "David Faure"
+msgstr "David Faure"
+
+#: part/KPrAboutData.h:39
+#, kde-format
+msgid "Toshitaka Fujioka"
+msgstr "Toshitaka Fujioka"
+
+#: part/KPrAboutData.h:40
+#, kde-format
+msgid "Lukáš Tinkl"
+msgstr "Lukáš Tinkl"
+
+#: part/KPrAboutData.h:41
+#, kde-format
+msgid "Ariya Hidayat"
+msgstr "Ariya Hidayat"
+
+#: part/KPrAboutData.h:42
+#, kde-format
+msgid "Percy Leonhardt"
+msgstr "Percy Leonhardt"
+
+#: part/KPrAboutData.h:43
+#, kde-format
+msgid "Thomas Zander"
+msgstr "Thomas Zander"
+
+#: part/KPrAboutData.h:44
+#, kde-format
+msgid "Peter Simonsson"
+msgstr "Peter Simonsson"
+
+#: part/KPrAboutData.h:45
+#, kde-format
+msgid "Boudewijn Rempt "
+msgstr "Boudewijn Rempt "
+
+#: part/KPrAboutData.h:46
+#, kde-format
+msgid "Carlos Licea "
+msgstr "Carlos Licea "
+
+#: part/KPrAboutData.h:47
+#, kde-format
+msgid "C. Boemann "
+msgstr "C. Boemann "
+
+#: part/KPrAboutData.h:48
+#, kde-format
+msgid "Fredy Yanardi "
+msgstr "Fredy Yanardi "
+
+#: part/KPrAboutData.h:49
+#, kde-format
+msgid "Jan Hambrecht "
+msgstr "Jan Hambrecht "
+
+#: part/KPrAboutData.h:50
+#, kde-format
+msgid "Marijn Kruisselbrink "
+msgstr "Marijn Kruisselbrink "
+
+#: part/KPrAboutData.h:51
+#, kde-format
+msgid "Martin Pfeiffer "
+msgstr "Martin Pfeiffer "
+
+#: part/KPrAboutData.h:52
+#, kde-format
+msgid "Sven Langkamp "
+msgstr "Sven Langkamp "
+
+#: part/KPrAboutData.h:53
+#, kde-format
+msgid "Timothée Lacroix "
+msgstr "Timothée Lacroix "
+
+#: part/KPrAboutData.h:55
+#, kde-format
+msgctxt "EMAIL OF TRANSLATORS"
+msgid "Your emails"
+msgstr ""
+"ericc@shinewave.com.tw, cwhuang@linux.org.tw, pesder.liao@msa.hinet.net, "
+"franklin@goodhorse.idv.tw, mail@kisaragi-hiu.com"
+
+#. i18n translator strings
+#: part/KPrAboutData.h:55
+#, kde-format
+msgctxt "NAME OF TRANSLATORS"
+msgid "Your names"
+msgstr ""
+"Eric Cheng, Chih-Wei Huang, Chao-Hsiung Liao, Frank Weng (a.k.a. Franklin), "
+"Kisaragi Hiu"
+
+#: part/KPrCustomSlideShowsModel.cpp:52
+#: part/KPrSlidesSorterDocumentModel.cpp:83
+#, kde-format
+msgid "Unknown"
+msgstr "未知"
+
+#: part/KPrCustomSlideShowsModel.cpp:57
+#: part/KPrSlidesSorterDocumentModel.cpp:88 part/ui/KPrHtmlExportDialog.cpp:114
+#, kde-format
+msgid "Slide %1"
+msgstr "投影片 %1"
+
+#: part/KPrEndOfSlideShowPage.cpp:69
+#, kde-format
+msgid "End of presentation. Click to exit."
+msgstr "展示結束。點擊以離開。"
+
+#: part/KPrPageLayoutWidget.cpp:45 part/tools/KPrPlaceholderToolFactory.cpp:15
+#, kde-format
+msgid "Layout"
+msgstr "佈局"
+
+#: part/KPrPart.cpp:69
+#, kde-format
+msgid "Can not find needed text component, Calligra Stage will quit now."
+msgstr "找不到需要的文字元件。Calligra Stage 將離開。"
+
+#: part/KPrPart.cpp:74
+#, kde-format
+msgid "Can not find needed picture component, Calligra Stage will quit now."
+msgstr "找不到需要的圖片元件。Calligra Stage 將離開。"
+
+#: part/KPrPart.cpp:87
+#, kde-format
+msgid "Installation Error"
+msgstr "安裝錯誤"
+
+#: part/KPrPicturesImport.cpp:59
+msgctxt "(qtundo-format)"
+msgid "Insert Pictures"
+msgstr "插入圖片"
+
+#: part/KPrPlaceholderShapeFactory.cpp:32
+#, kde-format
+msgid "Placeholder shape"
+msgstr "佔位符元件"
+
+#: part/KPrPlaceholderStrategy.cpp:34
+msgid "Double click to add a title"
+msgstr "雙擊以新增標題"
+
+#: part/KPrPlaceholderStrategy.cpp:35
+msgid "Double click to add an outline"
+msgstr "雙擊以新增綱要"
+
+#: part/KPrPlaceholderStrategy.cpp:36 part/KPrPlaceholderStrategy.cpp:37
+msgid "Double click to add a text"
+msgstr "雙擊以新增文字"
+
+#: part/KPrPlaceholderStrategy.cpp:38
+msgid "Double click to add notes"
+msgstr "雙擊以新增備忘"
+
+#: part/KPrPlaceholderStrategy.cpp:48
+msgid "Double click to add a picture"
+msgstr "雙擊以新增圖片"
+
+#: part/KPrPlaceholderStrategy.cpp:52
+msgid "Double click to add a chart"
+msgstr "雙擊以新增圖表"
+
+#: part/KPrPlaceholderStrategy.cpp:56
+msgid "Double click to add an object"
+msgstr "雙擊以新增物件"
+
+#: part/KPrPresentationDrawWidget.cpp:86
+#, kde-format
+msgid "Pen Color"
+msgstr "筆觸顏色"
+
+#: part/KPrPresentationDrawWidget.cpp:87
+#, kde-format
+msgid "Pen Size"
+msgstr "筆觸大小"
+
+#: part/KPrPresentationDrawWidget.cpp:89
+#, kde-format
+msgid "Black"
+msgstr "黑色"
+
+#: part/KPrPresentationDrawWidget.cpp:90
+#, kde-format
+msgid "White"
+msgstr "白"
+
+#: part/KPrPresentationDrawWidget.cpp:91
+#, kde-format
+msgid "Green"
+msgstr "綠"
+
+#: part/KPrPresentationDrawWidget.cpp:92
+#, kde-format
+msgid "Red"
+msgstr "紅色"
+
+#: part/KPrPresentationDrawWidget.cpp:93
+#, kde-format
+msgid "Blue"
+msgstr "藍"
+
+#: part/KPrPresentationDrawWidget.cpp:94
+#, kde-format
+msgid "Yellow"
+msgstr "黃色"
+
+#: part/KPrPresenterViewInterface.cpp:49 part/KPrView.cpp:94
+#, kde-format
+msgid "Next Slide"
+msgstr "下一張投影片"
+
+#: part/KPrPresenterViewInterface.cpp:59
+#, kde-format
+msgid "Speaker Notes"
+msgstr "演說者備註"
+
+#: part/KPrPresenterViewInterface.cpp:87
+#, kde-format
+msgid "Current Slide %1 of %2"
+msgstr "目前的投影片 第 %1 張/共 %2 張"
+
+#: part/KPrPresenterViewInterface.cpp:87
+#, kde-format
+msgid "End of Slide Show"
+msgstr "播放投影結束"
+
+#: part/KPrShapeAnimations.cpp:210
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:215
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:510
+#, kde-format
+msgid "start on mouse click"
+msgstr "滑鼠點擊時開始"
+
+#: part/KPrShapeAnimations.cpp:212
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:218
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:513
+#, kde-format
+msgid "start after previous animation"
+msgstr "在前一個動畫之後開始"
+
+#: part/KPrShapeAnimations.cpp:214
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:221
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:516
+#, kde-format
+msgid "start with previous animation"
+msgstr "與前一個動畫一起開始"
+
+#: part/KPrShapeAnimations.cpp:225
+#, kde-format
+msgid "Start after %1 seconds. Duration of %2 seconds."
+msgstr "%1 秒後開始。時長 %2 秒。"
+
+#: part/KPrShapeAnimations.cpp:244
+#: part/tools/animationtool/KPrAnimationToolFactory.cpp:21
+#, kde-format
+msgid "Animation"
+msgstr "動畫"
+
+#: part/KPrShapeAnimations.cpp:248
+#, kde-format
+msgid "Shape"
+msgstr "形狀"
+
+#: part/KPrSlidesSorterDocumentModel.cpp:279
+#, kde-format
+msgid "&Move Here"
+msgstr "移到這裡(&M)"
+
+#: part/KPrSlidesSorterDocumentModel.cpp:283
+#, kde-format
+msgid "&Copy Here"
+msgstr "複製到這裡(&C)"
+
+#: part/KPrSlidesSorterDocumentModel.cpp:287
+#, kde-format
+msgid "C&ancel"
+msgstr "取消(&A)"
+
+#: part/KPrView.cpp:74
+#, kde-format
+msgid "Normal"
+msgstr "一般"
+
+#: part/KPrView.cpp:79
+#, kde-format
+msgid "Show Master Slides"
+msgstr "顯示主投影片"
+
+#: part/KPrView.cpp:80
+#, kde-format
+msgid "Import Slideshow..."
+msgstr "匯入投影秀..."
+
+#: part/KPrView.cpp:81
+#, kde-format
+msgid "Insert Slide"
+msgstr "插入投影片"
+
+#: part/KPrView.cpp:82 part/KPrView.cpp:83
+#, kde-format
+msgid "Insert a new slide after the current one"
+msgstr "在目前的投影片之後插入新投影片"
+
+#: part/KPrView.cpp:84
+#, kde-format
+msgid "Copy Slide"
+msgstr "複製投影片"
+
+#: part/KPrView.cpp:85 part/KPrView.cpp:86
+#, kde-format
+msgid "Copy the current slide"
+msgstr "複製目前的投影片"
+
+#: part/KPrView.cpp:87 part/KPrViewModeSlidesSorter.cpp:174
+#, kde-format
+msgid "Delete Slide"
+msgstr "刪除投影片"
+
+#: part/KPrView.cpp:88 part/KPrView.cpp:89
+#, kde-format
+msgid "Delete the current slide"
+msgstr "刪除目前的投影片"
+
+#: part/KPrView.cpp:90
+#, kde-format
+msgid "Master Slide..."
+msgstr "主投影片..."
+
+#: part/KPrView.cpp:91
+#, kde-format
+msgid "Previous Slide"
+msgstr "前一張投影片"
+
+#: part/KPrView.cpp:92 part/KPrView.cpp:93
+#, kde-format
+msgid "Go to previous slide"
+msgstr "前一張投影片"
+
+#: part/KPrView.cpp:95 part/KPrView.cpp:96
+#, kde-format
+msgid "Go to next slide"
+msgstr "下一張投影片"
+
+#: part/KPrView.cpp:97
+#, kde-format
+msgid "First Slide"
+msgstr "第一張投影片"
+
+#: part/KPrView.cpp:98 part/KPrView.cpp:99
+#, kde-format
+msgid "Go to first slide"
+msgstr "從第一張投影片"
+
+#: part/KPrView.cpp:100
+#, kde-format
+msgid "Last Slide"
+msgstr "最後一張投影片"
+
+#: part/KPrView.cpp:101 part/KPrView.cpp:102
+#, kde-format
+msgid "Go to last slide"
+msgstr "最後一張投影片"
+
+#: part/KPrView.cpp:103
+#, kde-format
+msgid "Configure Stage..."
+msgstr "設定 Stage..."
+
+#: part/KPrView.cpp:238
+#, kde-format
+msgid "Export as HTML..."
+msgstr "匯出為 HTML..."
+
+#: part/KPrView.cpp:264
+#, kde-format
+msgid "Insert Pictures as Slides..."
+msgstr "將圖片插入成為投影片..."
+
+#: part/KPrView.cpp:273
+#, kde-format
+msgid "Create Appear Animation"
+msgstr "建立外觀動畫"
+
+#: part/KPrView.cpp:277
+#, kde-format
+msgid "Edit Custom Slide Shows..."
+msgstr "編輯自訂投影片..."
+
+#: part/KPrView.cpp:281
+#, kde-format
+msgid "Start Presentation"
+msgstr "開始展示"
+
+#: part/KPrView.cpp:284
+#, kde-format
+msgid "From Current Slide"
+msgstr "從目前的投影片"
+
+#: part/KPrView.cpp:288
+#, kde-format
+msgid "From First Slide"
+msgstr "從第一張投影片"
+
+#: part/KPrView.cpp:293
+#, kde-format
+msgid "Stop presentation"
+msgstr "停止展示"
+
+#: part/KPrView.cpp:299
+#, kde-format
+msgid "Show Status Bar"
+msgstr "顯示狀態列"
+
+#: part/KPrView.cpp:300
+#, kde-format
+msgid "Hide Status Bar"
+msgstr "隱藏狀態列"
+
+#: part/KPrView.cpp:301
+#, kde-format
+msgid "Shows or hides the status bar"
+msgstr "顯示或隱藏狀態列"
+
+#: part/KPrView.cpp:310
+#, kde-format
+msgid "Configure Slide Show..."
+msgstr "設定投影秀..."
+
+#: part/KPrView.cpp:314
+#, kde-format
+msgid "Configure Presenter View..."
+msgstr "設定簡報檢視..."
+
+#: part/KPrView.cpp:318
+#, kde-format
+msgid "Draw on the presentation..."
+msgstr "展示時繪圖..."
+
+#: part/KPrView.cpp:325
+#, kde-format
+msgid "Highlight the presentation..."
+msgstr "突顯展示..."
+
+#: part/KPrView.cpp:332
+#, kde-format
+msgid "Blackscreen on the presentation..."
+msgstr "展示時黑螢幕"
+
+#: part/KPrViewModeNotes.cpp:36
+#, kde-format
+msgid "Notes"
+msgstr "備忘"
+
+#: part/KPrViewModeSlidesSorter.cpp:64
+#, kde-format
+msgid "Slides Sorter"
+msgstr "投影片排序器"
+
+#: part/KPrViewModeSlidesSorter.cpp:74
+#, kde-format
+msgid "Slide Show: "
+msgstr "播放投影片："
+
+#: part/KPrViewModeSlidesSorter.cpp:83
+#, kde-format
+msgid "Add a new custom slide show"
+msgstr "新增自訂投影秀"
+
+#: part/KPrViewModeSlidesSorter.cpp:88
+#, kde-format
+msgid "Delete current custom slide show"
+msgstr "刪除目前的投影秀"
+
+#: part/KPrViewModeSlidesSorter.cpp:92
+#, kde-format
+msgid "Add slides to current custom slide show"
+msgstr "新增投影片到目前自訂的投影秀"
+
+#: part/KPrViewModeSlidesSorter.cpp:97
+#, kde-format
+msgid "Remove slides from current custom slide show"
+msgstr "從目前自訂的投影秀移除投影片"
+
+#: part/KPrViewModeSlidesSorter.cpp:173
+#, kde-format
+msgid "Duplicate Slide"
+msgstr "建立投影片複本"
+
+#: part/KPrViewModeSlidesSorter.cpp:175
+#, kde-format
+msgid "Start Slideshow"
+msgstr "開始投影播放"
+
+#: part/KPrViewModeSlidesSorter.cpp:532
+#, kde-format
+msgid "Add a new slide"
+msgstr "新增投影片"
+
+#: part/KPrViewModeSlidesSorter.cpp:533 part/KPrViewModeSlidesSorter.cpp:551
+#, kde-format
+msgid "Delete selected slides"
+msgstr "刪除目前的投影片"
+
+#: part/KPrViewModeSlidesSorter.cpp:537
+#, kde-format
+msgid "Rename"
+msgstr "重新命名"
+
+#: part/KPrViewModeSlidesSorter.cpp:541
+#, kde-format
+msgid "Cut"
+msgstr "剪下"
+
+#: part/KPrViewModeSlidesSorter.cpp:542
+#, kde-format
+msgid "Copy"
+msgstr "複製"
+
+#: part/KPrViewModeSlidesSorter.cpp:543
+#, kde-format
+msgid "Paste"
+msgstr "貼上"
+
+#: part/KPrViewModeSlidesSorter.cpp:638 part/KPrViewModeSlidesSorter.cpp:642
+#, kde-format
+msgid "Slide Show %1"
+msgstr "投影秀 %1"
+
+#: part/KPrViewModeSlidesSorter.cpp:655
+#: part/ui/KPrConfigureSlideShowDialog.cpp:26
+#, kde-format
+msgid "All slides"
+msgstr "所有的投影片"
+
+#: part/KPrViewModeSlidesSorter.cpp:682 part/ui/KPrHtmlExportDialog.cpp:153
+#: part/ui/KPrHtmlExportDialog.cpp:207
+#, kde-format
+msgid "Error"
+msgstr "錯誤"
+
+#: part/KPrViewModeSlidesSorter.cpp:682
+#, kde-format
+msgid "There cannot be two slideshows with the same name."
+msgstr "不能有兩份投影片使用同一個名字"
+
+#: part/pagelayout/KPrPlaceholders.cpp:46
+#: part/pagelayout/KPrPlaceholders.cpp:47
+msgctxt "(qtundo-format)"
+msgid "Set Layout"
+msgstr "設定佈局"
+
+#: part/tools/animationtool/KPrAnimationSelectorWidget.cpp:54
+#, kde-format
+msgid "Automatic animation preview"
+msgstr "自動動畫預覽"
+
+#: part/tools/animationtool/KPrAnimationSelectorWidget.cpp:301
+#: part/tools/animationtool/KPrAnimationSelectorWidget.cpp:309
+#, kde-format
+msgid "Preview animation"
+msgstr "預覽動畫"
+
+#: part/tools/animationtool/KPrAnimationTool.cpp:215
+#, kde-format
+msgid "Slide Transitions"
+msgstr "投影片轉變"
+
+#: part/tools/animationtool/KPrAnimationTool.cpp:217
+#, kde-format
+msgid "Shape Click Actions"
+msgstr "元件點擊動作"
+
+#: part/tools/animationtool/KPrAnimationTool.cpp:219
+#, kde-format
+msgid "Shape Animations"
+msgstr "元件動畫"
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:50
+#, kde-format
+msgid "Manage animation delay and duration: "
+msgstr "管理動畫延遲與持續時間："
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:51
+#, kde-format
+msgid "Start: "
+msgstr "開始："
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:55
+#, kde-format
+msgid "on mouse click"
+msgstr "滑鼠點擊時"
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:56
+#, kde-format
+msgid "after previous animation"
+msgstr "前一個動畫之後"
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:57
+#, kde-format
+msgid "with previous animation"
+msgstr "與前一個動畫一起"
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:59
+#, kde-format
+msgid "Delay: "
+msgstr "延遲："
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:64
+#, kde-format
+msgid "Duration: "
+msgstr "期間："
+
+#: part/tools/animationtool/KPrEditAnimationsWidget.cpp:71
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:124
+#, kde-format
+msgid "Preview Shape Animation"
+msgstr "預覽元件動畫"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:50
+#, kde-format
+msgid "No Effect"
+msgstr "沒有效果"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:70
+#, kde-format
+msgid " sec"
+msgstr " 秒"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:80
+#, kde-format
+msgid "Manual"
+msgstr "手動"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:81
+#, kde-format
+msgid "Automatic"
+msgstr "自動"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:89
+#, kde-format
+msgid "Slide Transition:"
+msgstr "投影片轉變："
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:98
+#, kde-format
+msgid "Apply To All Slides"
+msgstr "套用到所有投影片"
+
+#: part/tools/animationtool/KPrPageEffectDocker.cpp:253
+msgctxt "(qtundo-format)"
+msgid "Apply Slide Effect to all Slides"
+msgstr "套用投影片效果到所有投影片"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:158
+#, kde-format
+msgid "Entrance"
+msgstr "進入"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:164
+#, kde-format
+msgid "Exit"
+msgstr "離開"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:169
+#, kde-format
+msgid "Emphasis"
+msgstr "強調"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:174
+#, kde-format
+msgid "Custom"
+msgstr "自訂"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:179
+#, kde-format
+msgid "Motion path"
+msgstr "動作路徑"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:184
+#, kde-format
+msgid "Ole Action"
+msgstr "OLE 動作"
+
+#: part/tools/animationtool/KPrPredefinedAnimationsLoader.cpp:189
+#, kde-format
+msgid "Media Call"
+msgstr "媒體呼叫"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:77
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:81
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:505
+#, kde-format
+msgid "Edit animation"
+msgstr "編輯動畫"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:95
+#, kde-format
+msgid "Add new animation"
+msgstr "新增動畫"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:107
+#, kde-format
+msgid "Remove animation"
+msgstr "移除動畫"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:111
+#, kde-format
+msgid "Order: "
+msgstr "順序："
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:114
+#, kde-format
+msgid "Move animation up"
+msgstr "將動畫上移"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:119
+#, kde-format
+msgid "Move animation down"
+msgstr "將動畫下移"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:503
+#, kde-format
+msgid "Add a new animation"
+msgstr "新增動畫"
+
+#: part/tools/animationtool/KPrShapeAnimationDocker.cpp:504
+#, kde-format
+msgid "Delete current animation"
+msgstr "刪除目前的動畫"
+
+#: part/tools/animationtool/KPrTimeLineHeader.cpp:71
+#, kde-format
+msgid "seconds"
+msgstr "秒"
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, WdgToolCrop)
+#: part/tools/animationtool/wdg_tool_crop.ui:16
+#, kde-format
+msgid "Crop"
+msgstr "裁剪"
+
+#. i18n: ectx: property (text), widget (QLabel, textLabel1)
+#: part/tools/animationtool/wdg_tool_crop.ui:36
+#, kde-format
+msgid "X:"
+msgstr "X："
+
+#. i18n: ectx: property (text), widget (QCheckBox, boolWidth)
+#: part/tools/animationtool/wdg_tool_crop.ui:60
+#, kde-format
+msgid "W&idth:"
+msgstr "寬度(&I)："
+
+#. i18n: ectx: property (toolTip), widget (QCheckBox, boolWidth)
+#: part/tools/animationtool/wdg_tool_crop.ui:63
+#, kde-format
+msgid "Will keep the width of the crop constant"
+msgstr "會保持裁剪下來的寬度"
+
+#. i18n: ectx: property (text), widget (QCheckBox, boolHeight)
+#: part/tools/animationtool/wdg_tool_crop.ui:84
+#, kde-format
+msgid "&Height:"
+msgstr "高度(&H)："
+
+#. i18n: ectx: property (toolTip), widget (QCheckBox, boolHeight)
+#: part/tools/animationtool/wdg_tool_crop.ui:87
+#, kde-format
+msgid "Will keep the height of the crop constant"
+msgstr "會保持裁剪下來的高度"
+
+#. i18n: ectx: property (text), widget (QLabel, textLabel3)
+#: part/tools/animationtool/wdg_tool_crop.ui:94
+#, kde-format
+msgid "Y:"
+msgstr "Y："
+
+#. i18n: ectx: property (text), widget (QCheckBox, boolRatio)
+#: part/tools/animationtool/wdg_tool_crop.ui:111
+#, kde-format
+msgid "R&atio:"
+msgstr "比例(&A)："
+
+#. i18n: ectx: property (toolTip), widget (QCheckBox, boolRatio)
+#: part/tools/animationtool/wdg_tool_crop.ui:114
+#, kde-format
+msgid "Will keep the ratio constant"
+msgstr "會保持比例"
+
+#. i18n: ectx: property (text), item, widget (QComboBox, cmbType)
+#: part/tools/animationtool/wdg_tool_crop.ui:132
+#, kde-format
+msgid "Layer"
+msgstr "層次"
+
+#. i18n: ectx: property (text), item, widget (QComboBox, cmbType)
+#: part/tools/animationtool/wdg_tool_crop.ui:137
+#, kde-format
+msgid "Image"
+msgstr "影像"
+
+#. i18n: ectx: property (text), widget (QPushButton, bnCrop)
+#: part/tools/animationtool/wdg_tool_crop.ui:145
+#, kde-format
+msgid "&Crop"
+msgstr "裁剪(&C)"
+
+#: part/tools/KPrPlaceholderTool.cpp:90
+msgctxt "(qtundo-format)"
+msgid "Edit Shape"
+msgstr "編輯元件"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_2)
+#: part/ui/KPrConfigurePresenterView.ui:16
+#, kde-format
+msgid "Multiple monitors"
+msgstr "多重螢幕"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: part/ui/KPrConfigurePresenterView.ui:24
+#, kde-format
+msgid "Presentation monitor:"
+msgstr "簡報螢幕："
+
+#. i18n: ectx: property (text), widget (QCheckBox, presenterViewCheckBox)
+#: part/ui/KPrConfigurePresenterView.ui:39
+#, kde-format
+msgid "Enable presenter view"
+msgstr "開啟簡報檢視"
+
+#: part/ui/KPrConfigurePresenterViewDialog.cpp:27
+#, kde-format
+msgid "Monitor %1 (primary)"
+msgstr "螢幕 %1（主要）"
+
+#: part/ui/KPrConfigurePresenterViewDialog.cpp:29
+#, kde-format
+msgid "Monitor %1"
+msgstr "螢幕 %1"
+
+#: part/ui/KPrConfigurePresenterViewDialog.cpp:38
+#, kde-format
+msgid "Configure Presenter View"
+msgstr "設定簡報檢視"
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, KPrConfigureSlideShow)
+#: part/ui/KPrConfigureSlideShow.ui:13
+#: part/ui/KPrConfigureSlideShowDialog.cpp:32
+#, kde-format
+msgid "Configure Slide Show"
+msgstr "設定投影秀"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox)
+#: part/ui/KPrConfigureSlideShow.ui:19
+#, kde-format
+msgid "Slides"
+msgstr "投影片"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: part/ui/KPrConfigureSlideShow.ui:27
+#, kde-format
+msgid "Presentation Slides:"
+msgstr "簡報投影片："
+
+#. i18n: ectx: property (text), widget (QPushButton, editSlidesButton)
+#: part/ui/KPrConfigureSlideShow.ui:54
+#, kde-format
+msgid "Edit Custom Slide Shows ..."
+msgstr "編輯自訂投影片..."
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, KPrHtmlExport)
+#: part/ui/KPrHtmlExport.ui:20
+#, kde-format
+msgid "HTML Export"
+msgstr "HTML 匯出"
+
+#. i18n: ectx: property (text), widget (QLabel, textLabel_slideslist)
+#: part/ui/KPrHtmlExport.ui:29
+#, kde-format
+msgid "Tick the slide should be exported :"
+msgstr "勾選要匯出的投影片："
+
+#. i18n: ectx: property (text), widget (QPushButton, pushButton_selectAll)
+#: part/ui/KPrHtmlExport.ui:55
+#, kde-format
+msgid "Select all"
+msgstr "全部選取"
+
+#. i18n: ectx: property (text), widget (QLabel, textLabel_css)
+#: part/ui/KPrHtmlExport.ui:65
+#, kde-format
+msgid "Select template (.css) :"
+msgstr "選擇樣本（.css）："
+
+#. i18n: ectx: property (text), widget (QPushButton, pushButton_deselectAll)
+#: part/ui/KPrHtmlExport.ui:78
+#, kde-format
+msgid "Deselect all"
+msgstr "全部取消選擇"
+
+#. i18n: ectx: property (text), widget (QLabel, textlable_top)
+#: part/ui/KPrHtmlExport.ui:101
+#, kde-format
+msgid "Title"
+msgstr "標題"
+
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_preview)
+#: part/ui/KPrHtmlExport.ui:117
+#, kde-format
+msgid "Output preview"
+msgstr "輸出預覽"
+
+#. i18n: ectx: property (text), widget (QToolButton, toolButton_previous)
+#. i18n: ectx: property (text), widget (QToolButton, toolButton_next)
+#: part/ui/KPrHtmlExport.ui:148 part/ui/KPrHtmlExport.ui:164
+#, kde-format
+msgid "..."
+msgstr "..."
+
+#. i18n: ectx: property (text), widget (QPushButton, pushbuttonBrowseTemplate)
+#: part/ui/KPrHtmlExport.ui:227
+#, kde-format
+msgid "Browse"
+msgstr "瀏覽"
+
+#. i18n: ectx: property (text), widget (QLabel, label_author)
+#: part/ui/KPrHtmlExport.ui:243
+#, kde-format
+msgid "Author"
+msgstr "作者"
+
+#. i18n: ectx: property (text), widget (QPushButton, pushButton_Favorite)
+#: part/ui/KPrHtmlExport.ui:258
+#, kde-format
+msgid "Delete Favorite"
+msgstr "刪除我的最愛"
+
+#. i18n: ectx: property (text), widget (QCheckBox, checkBox_browser)
+#: part/ui/KPrHtmlExport.ui:286
+#, kde-format
+msgid "Open in browser"
+msgstr "在瀏覽器開啟"
+
+#: part/ui/KPrHtmlExportDialog.cpp:34
+#, kde-format
+msgid "Html Export"
+msgstr "HTML 匯出"
+
+#: part/ui/KPrHtmlExportDialog.cpp:35
+#, kde-format
+msgid "Export"
+msgstr "匯出"
+
+#: part/ui/KPrHtmlExportDialog.cpp:153
+#, kde-format
+msgid "There is already a favorite file with this name"
+msgstr "已經有相同名稱的最愛的檔案"
+
+#: part/ui/KPrHtmlExportDialog.cpp:198
+#, kde-format
+msgid "Incorrect file, .zip only or corrupted zip"
+msgstr "不正確的檔案，只有 .zip，或是已損毀的 zip 檔"
+
+#: part/ui/KPrHtmlExportDialog.cpp:203
+#, kde-format
+msgid "Zip file need to contain style.css"
+msgstr "Zip 檔中需要包含 style.css"
+
+#: part/ui/KPrHtmlExportDialog.cpp:306
+#, kde-format
+msgid "Delete Template"
+msgstr "刪除樣本"
+
+#: part/ui/KPrHtmlExportDialog.cpp:309
+#, kde-format
+msgid "You may not remove the templates provided with the application"
+msgstr "您不能移除應用程式提供的樣本"
+
+#: part/ui/KPrHtmlExportDialog.cpp:315
+#, kde-format
+msgid "Add Template"
+msgstr "新增樣本"
+
+#: part/ui/KPrHtmlExportDialog.cpp:325
+#, kde-format
+msgid "Confirm remove"
+msgstr "確認移除"
+
+#: part/ui/KPrHtmlExportDialog.cpp:326
+#, kde-format
+msgid "Are you sure you want to remove \"%1\"?"
+msgstr "您確定要移除 %1 嗎？"
+
+#: plugins/eventactions/sound/KPrSoundEventActionWidget.cpp:78
+msgctxt "(qtundo-format)"
+msgid "Change sound action"
+msgstr "變更音效動作"
+
+#: plugins/eventactions/sound/KPrSoundEventActionWidget.cpp:101
+#, kde-format
+msgid "No sound"
+msgstr "沒有音效"
+
+#: plugins/eventactions/sound/KPrSoundEventActionWidget.cpp:102
+#, kde-format
+msgid "Import..."
+msgstr "匯入..."
+
+#: plugins/pageeffects/barwipe/KPrBarWipeEffectFactory.cpp:21
+#, kde-format
+msgid "Bar"
+msgstr "長條"
+
+#: plugins/pageeffects/barwipe/KPrBarWipeEffectFactory.cpp:31
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:33
+#: plugins/pageeffects/edgewipe/barnveewipe/BarnVeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/veewipe/VeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/zigzagwipe/ZigZagWipeEffectFactory.cpp:25
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:40
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:40
+#: plugins/pageeffects/spacerotation/KPrSpaceRotationEffectFactory.cpp:29
+msgid "From Bottom"
+msgstr "從下方"
+
+#: plugins/pageeffects/barwipe/KPrBarWipeEffectFactory.cpp:31
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:32
+#: plugins/pageeffects/edgewipe/barnveewipe/BarnVeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/veewipe/VeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/zigzagwipe/ZigZagWipeEffectFactory.cpp:25
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:37
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:37
+#: plugins/pageeffects/spacerotation/KPrSpaceRotationEffectFactory.cpp:29
+msgid "From Left"
+msgstr "從左方"
+
+#: plugins/pageeffects/barwipe/KPrBarWipeEffectFactory.cpp:31
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:34
+#: plugins/pageeffects/edgewipe/barnveewipe/BarnVeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/veewipe/VeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/zigzagwipe/ZigZagWipeEffectFactory.cpp:25
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:38
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:38
+#: plugins/pageeffects/spacerotation/KPrSpaceRotationEffectFactory.cpp:29
+msgid "From Right"
+msgstr "從右方"
+
+#: plugins/pageeffects/barwipe/KPrBarWipeEffectFactory.cpp:31
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:31
+#: plugins/pageeffects/edgewipe/barnveewipe/BarnVeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/veewipe/VeeWipeEffectFactory.cpp:26
+#: plugins/pageeffects/edgewipe/zigzagwipe/ZigZagWipeEffectFactory.cpp:25
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:39
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:39
+#: plugins/pageeffects/spacerotation/KPrSpaceRotationEffectFactory.cpp:29
+msgid "From Top"
+msgstr "從上方"
+
+#: plugins/pageeffects/barwipe/KPrBarWipeEffectFactory.cpp:38
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:45
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:41
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:52
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:55
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:40
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:45
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:61
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:45
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:44
+#: plugins/pageeffects/edgewipe/barnveewipe/BarnVeeWipeEffectFactory.cpp:33
+#: plugins/pageeffects/edgewipe/barnzigzagwipe/BarnZigZagWipeEffectFactory.cpp:32
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:44
+#: plugins/pageeffects/edgewipe/diagonalwipe/DiagonalWipeEffectFactory.cpp:33
+#: plugins/pageeffects/edgewipe/fourboxwipe/FourBoxWipeEffectFactory.cpp:34
+#: plugins/pageeffects/edgewipe/miscdiagonalwipe/MiscDiagonalWipeEffectFactory.cpp:35
+#: plugins/pageeffects/edgewipe/veewipe/VeeWipeEffectFactory.cpp:33
+#: plugins/pageeffects/edgewipe/zigzagwipe/ZigZagWipeEffectFactory.cpp:32
+#: plugins/pageeffects/fade/KPrFadeEffectFactory.cpp:33
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:86
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:52
+#: plugins/pageeffects/iriswipe/eyeWipe/KPrEyeWipeEffectFactory.cpp:55
+#: plugins/pageeffects/iriswipe/hexagonWipe/KPrHexagonWipeEffectFactory.cpp:66
+#: plugins/pageeffects/iriswipe/irisWipe/KPrIrisWipeEffectFactory.cpp:50
+#: plugins/pageeffects/iriswipe/miscShapeWipe/KPrMiscShapeWipeEffectFactory.cpp:50
+#: plugins/pageeffects/iriswipe/pentagonWipe/KPrPentagonWipeEffectFactory.cpp:57
+#: plugins/pageeffects/iriswipe/roundRectWipe/KPrRoundRectWipeEffectFactory.cpp:43
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:95
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:82
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:52
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:70
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:51
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:60
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:47
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:51
+#: plugins/pageeffects/spacerotation/KPrSpaceRotationEffectFactory.cpp:36
+#: plugins/pageeffects/swapeffect/KPrSwapEffectFactory.cpp:30
+#, kde-format
+msgid "Unknown subtype"
+msgstr "未知的子型態"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Clock"
+msgstr "時鐘"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:31
+msgid "From Twelve Clockwise"
+msgstr "從十二點鐘方向順時針"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:32
+msgid "From Three Clockwise"
+msgstr "從三點鐘方向順時針"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:33
+msgid "From Six Clockwise"
+msgstr "從六點鐘方向順時針"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:34
+msgid "From Nine Clockwise"
+msgstr "從九點鐘方向順時針"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:35
+msgid "From Twelve Counterclockwise"
+msgstr "從十二點鐘方向逆時針"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:36
+msgid "From Three Counterclockwise"
+msgstr "從三點鐘方向逆時針"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:37
+msgid "From Six Counterclockwise"
+msgstr "從六點鐘方向逆時針"
+
+#: plugins/pageeffects/clockwipe/clockwipe/KPrClockWipeEffectFactory.cpp:38
+msgid "From Nine Counterclockwise"
+msgstr "從九點鐘方向逆時針"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Double Fan"
+msgstr "雙風扇"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:29
+msgid "Fan Out Vertical"
+msgstr "扇形出去垂直"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:30
+msgid "Fan Out Horizontal"
+msgstr "扇形出去水平"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:31
+msgid "Fan In Vertical"
+msgstr "扇形進入垂直"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:32
+msgid "Fan In Horizontal"
+msgstr "扇形進入水平"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:33
+msgid "Fan In Vertical Reverse"
+msgstr "扇形進入垂直反相"
+
+#: plugins/pageeffects/clockwipe/doublefanwipe/KPrDoubleFanWipeEffectFactory.cpp:34
+msgid "Fan In Horizontal Reverse"
+msgstr "扇形進入水平反相"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Double Sweep"
+msgstr "雙向掃描"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:34
+msgid "Parallel Vertical"
+msgstr "平行垂直"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:35
+msgid "Parallel Diagonal"
+msgstr "平行對角"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:36
+msgid "Opposite Vertical"
+msgstr "對面垂直"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:37
+msgid "Opposite Horizontal"
+msgstr "對面水平"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:38
+msgid "Parallel Diagonal Top Left"
+msgstr "平行對角左上"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:39
+msgid "Parallel Diagonal Bottom Left"
+msgstr "平行對角左下"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:40
+msgid "Parallel Vertical Reverse"
+msgstr "平行垂直反相"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:41
+msgid "Parallel Diagonal Reverse"
+msgstr "平行對角反相"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:42
+msgid "Opposite Vertical Reverse"
+msgstr "對面垂直反相"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:43
+msgid "Opposite Horizontal Reverse"
+msgstr "對面水平反相"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:44
+msgid "Parallel Diagonal Top Left Reverse"
+msgstr "平行對角左上反相"
+
+#: plugins/pageeffects/clockwipe/doublesweepwipe/KPrDoubleSweepWipeEffectFactory.cpp:45
+msgid "Parallel Diagonal Bottom Left Reverse"
+msgstr "平行對角左下反相"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:18
+#, kde-format
+msgid "Fan"
+msgstr "風扇"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:37
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:35
+msgid "Center Right"
+msgstr "中右"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:38
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:34
+msgid "Center Top"
+msgstr "中上"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:39
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:37
+msgid "Center Left"
+msgstr "中左"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:40
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:36
+msgid "Center Bottom"
+msgstr "中下"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:41
+msgid "Fan Out Top"
+msgstr "扇形出去頂端"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:42
+msgid "Fan Out Right"
+msgstr "扇形出去右方"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:43
+msgid "Fan Out Bottom"
+msgstr "扇形出去底端"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:44
+msgid "Fan Out Left"
+msgstr "扇形出去左方"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:45
+msgid "Fan In Top"
+msgstr "扇形進入頂端"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:46
+msgid "Fan In Right"
+msgstr "扇形進入右方"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:47
+msgid "Fan In Bottom"
+msgstr "扇形進入底端"
+
+#: plugins/pageeffects/clockwipe/fanwipe/KPrFanWipeEffectFactory.cpp:48
+msgid "Fan In Left"
+msgstr "扇形進入左方"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Pin Wheel"
+msgstr "風車"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:28
+msgid "Two Blades Vertical Clockwise"
+msgstr "兩葉垂直順時針方向"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:29
+msgid "Two Blades Horizontal Clockwise"
+msgstr "兩葉水平順時針方向"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:30
+msgid "Four Blades Horizontal Clockwise"
+msgstr "四葉水平順時針方向"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:31
+msgid "Two Blades Vertical Counterclockwise"
+msgstr "兩葉垂直逆時針方向"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:32
+msgid "Two Blades Horizontal Counterclockwise"
+msgstr "兩葉水平逆時針方向"
+
+#: plugins/pageeffects/clockwipe/pinwheelwipe/KPrPinWheelWipeEffectFactory.cpp:33
+msgid "Four Blades Horizontal Counterclockwise"
+msgstr "四葉水平逆時針方向"
+
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Saloon Door"
+msgstr "展場門"
+
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:35
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:43
+msgid "To Top"
+msgstr "到上方"
+
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:36
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:41
+msgid "To Left"
+msgstr "到左方"
+
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:37
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:44
+msgid "To Bottom"
+msgstr "到下方"
+
+#: plugins/pageeffects/clockwipe/saloondoorwipe/KPrSaloonDoorWipeEffectFactory.cpp:38
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:42
+msgid "To Right"
+msgstr "到右方"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Single Sweep"
+msgstr "單掃描"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:39
+msgid "Clockwise Top"
+msgstr "順時針頂端"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:40
+msgid "Clockwise Right"
+msgstr "順時針右方"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:41
+msgid "Clockwise Bottom"
+msgstr "順時針底端"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:42
+msgid "Clockwise Left"
+msgstr "順時針左方"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:43
+msgid "Clockwise Top Left"
+msgstr "順時針左上"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:44
+msgid "Counterclockwise Bottom Left"
+msgstr "逆時針右下"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:45
+msgid "Clockwise Bottom Right"
+msgstr "順時針右下"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:46
+msgid "Counterclockwise Top Right"
+msgstr "逆時針右上"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:47
+msgid "Counterclockwise Top"
+msgstr "逆時針頂端"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:48
+msgid "Counterclockwise Right"
+msgstr "逆時針右方"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:49
+msgid "Counterclockwise Bottom"
+msgstr "逆時針底端"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:50
+msgid "Counterclockwise Left"
+msgstr "逆時針左方"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:51
+msgid "Counterclockwise Top Left"
+msgstr "逆時針左上"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:52
+msgid "Clockwise Bottom Left"
+msgstr "順時針左下"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:53
+msgid "Counterclockwise Bottom Right"
+msgstr "逆時針右下"
+
+#: plugins/pageeffects/clockwipe/singlesweepwipe/KPrSingleSweepWipeEffectFactory.cpp:54
+msgid "Clockwise Top Right"
+msgstr "順時針右上"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Windshield"
+msgstr "擋風玻璃"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:31
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:74
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:70
+msgid "Right"
+msgstr "右"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:32
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:72
+#: plugins/pageeffects/iriswipe/pentagonWipe/KPrPentagonWipeEffectFactory.cpp:50
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:68
+msgid "Up"
+msgstr "上"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:33
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:30
+#: plugins/pageeffects/edgewipe/barnzigzagwipe/BarnZigZagWipeEffectFactory.cpp:25
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:45
+#: plugins/pageeffects/iriswipe/eyeWipe/KPrEyeWipeEffectFactory.cpp:44
+#: plugins/pageeffects/iriswipe/hexagonWipe/KPrHexagonWipeEffectFactory.cpp:59
+#: plugins/pageeffects/iriswipe/roundRectWipe/KPrRoundRectWipeEffectFactory.cpp:36
+msgid "Vertical"
+msgstr "垂直"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:34
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:32
+#: plugins/pageeffects/edgewipe/barnzigzagwipe/BarnZigZagWipeEffectFactory.cpp:25
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:45
+#: plugins/pageeffects/iriswipe/eyeWipe/KPrEyeWipeEffectFactory.cpp:46
+#: plugins/pageeffects/iriswipe/hexagonWipe/KPrHexagonWipeEffectFactory.cpp:59
+#: plugins/pageeffects/iriswipe/roundRectWipe/KPrRoundRectWipeEffectFactory.cpp:36
+#: plugins/pageeffects/swapeffect/KPrSwapEffectFactory.cpp:23
+msgid "Horizontal"
+msgstr "水平"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:35
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:75
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:71
+msgid "Right Reverse"
+msgstr "右方反向"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:36
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:73
+#: plugins/pageeffects/iriswipe/pentagonWipe/KPrPentagonWipeEffectFactory.cpp:50
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:69
+msgid "Up Reverse"
+msgstr "上方反向"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:37
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:31
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:45
+#: plugins/pageeffects/iriswipe/eyeWipe/KPrEyeWipeEffectFactory.cpp:45
+#: plugins/pageeffects/iriswipe/hexagonWipe/KPrHexagonWipeEffectFactory.cpp:59
+#: plugins/pageeffects/iriswipe/roundRectWipe/KPrRoundRectWipeEffectFactory.cpp:36
+msgid "Vertical Reverse"
+msgstr "垂直反向"
+
+#: plugins/pageeffects/clockwipe/windshieldwipe/KPrWindShieldWipeEffectFactory.cpp:38
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:33
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:45
+#: plugins/pageeffects/iriswipe/eyeWipe/KPrEyeWipeEffectFactory.cpp:47
+#: plugins/pageeffects/iriswipe/hexagonWipe/KPrHexagonWipeEffectFactory.cpp:59
+#: plugins/pageeffects/iriswipe/roundRectWipe/KPrRoundRectWipeEffectFactory.cpp:36
+msgid "Horizontal Reverse"
+msgstr "水平反向"
+
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Barn Door"
+msgstr "倉庫門板"
+
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:34
+msgid "Diagonal Bottom Left"
+msgstr "對角線左下"
+
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:35
+msgid "Diagonal Bottom Left Reverse"
+msgstr "對角線左下反相"
+
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:36
+msgid "Diagonal Top Left"
+msgstr "對角線左上"
+
+#: plugins/pageeffects/edgewipe/barndoorwipe/BarnDoorWipeEffectFactory.cpp:37
+msgid "Diagonal Top Left Reverse"
+msgstr "對角線左上反相"
+
+#: plugins/pageeffects/edgewipe/barnveewipe/BarnVeeWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Barn Vee"
+msgstr "倉庫 V 形"
+
+#: plugins/pageeffects/edgewipe/barnzigzagwipe/BarnZigZagWipeEffectFactory.cpp:15
+#, kde-format
+msgid "Barn Zig Zag"
+msgstr "倉庫鋸齒"
+
+#: plugins/pageeffects/edgewipe/barnzigzagwipe/BarnZigZagWipeEffectFactory.cpp:25
+msgid "Horizontal Reversed"
+msgstr "水平反相"
+
+#: plugins/pageeffects/edgewipe/barnzigzagwipe/BarnZigZagWipeEffectFactory.cpp:25
+msgid "Vertical Reversed"
+msgstr "垂直反相"
+
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Box"
+msgstr "盒式"
+
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:30
+#: plugins/pageeffects/edgewipe/diagonalwipe/DiagonalWipeEffectFactory.cpp:26
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:41
+msgid "From Top Left"
+msgstr "從左上"
+
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:31
+#: plugins/pageeffects/edgewipe/diagonalwipe/DiagonalWipeEffectFactory.cpp:26
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:42
+msgid "From Top Right"
+msgstr "從右上"
+
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:32
+#: plugins/pageeffects/edgewipe/diagonalwipe/DiagonalWipeEffectFactory.cpp:26
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:43
+msgid "From Bottom Left"
+msgstr "從左下"
+
+#: plugins/pageeffects/edgewipe/boxwipe/BoxWipeEffectFactory.cpp:33
+#: plugins/pageeffects/edgewipe/diagonalwipe/DiagonalWipeEffectFactory.cpp:26
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:44
+msgid "From Bottom Right"
+msgstr "從右下"
+
+#: plugins/pageeffects/edgewipe/diagonalwipe/DiagonalWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Diagonal"
+msgstr "對角線"
+
+#: plugins/pageeffects/edgewipe/fourboxwipe/FourBoxWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Four Box"
+msgstr "四方框"
+
+#: plugins/pageeffects/edgewipe/fourboxwipe/FourBoxWipeEffectFactory.cpp:27
+msgid "Corners In"
+msgstr "角落進入"
+
+#: plugins/pageeffects/edgewipe/fourboxwipe/FourBoxWipeEffectFactory.cpp:27
+msgid "Corners In Reverse"
+msgstr "角落進入反向"
+
+#: plugins/pageeffects/edgewipe/fourboxwipe/FourBoxWipeEffectFactory.cpp:27
+msgid "Corners Out"
+msgstr "角落出去"
+
+#: plugins/pageeffects/edgewipe/fourboxwipe/FourBoxWipeEffectFactory.cpp:27
+msgid "Corners Out Reverse"
+msgstr "角落出去反相"
+
+#: plugins/pageeffects/edgewipe/miscdiagonalwipe/MiscDiagonalWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Misc Diagonal"
+msgstr "其他對角"
+
+#: plugins/pageeffects/edgewipe/miscdiagonalwipe/MiscDiagonalWipeEffectFactory.cpp:26
+msgid "Double Barn Door"
+msgstr "雙片門板"
+
+#: plugins/pageeffects/edgewipe/miscdiagonalwipe/MiscDiagonalWipeEffectFactory.cpp:27
+msgid "Double Diamond"
+msgstr "雙鑽石"
+
+#: plugins/pageeffects/edgewipe/veewipe/VeeWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Vee"
+msgstr "V 形"
+
+#: plugins/pageeffects/edgewipe/zigzagwipe/ZigZagWipeEffectFactory.cpp:15
+#, kde-format
+msgid "Zig Zag"
+msgstr "鋸齒狀"
+
+#: plugins/pageeffects/fade/KPrFadeEffectFactory.cpp:18
+#, kde-format
+msgid "Fade"
+msgstr "淡出"
+
+#: plugins/pageeffects/fade/KPrFadeEffectFactory.cpp:26
+msgid "Crossfade"
+msgstr "交叉淡出"
+
+#: plugins/pageeffects/fade/KPrFadeEffectFactory.cpp:26
+msgid "Fade over Color"
+msgstr "在顏色上淡出"
+
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:18
+#, kde-format
+msgid "ArrowHead"
+msgstr "箭頭"
+
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:76
+#: plugins/pageeffects/iriswipe/pentagonWipe/KPrPentagonWipeEffectFactory.cpp:50
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:72
+msgid "Down"
+msgstr "下"
+
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:77
+#: plugins/pageeffects/iriswipe/pentagonWipe/KPrPentagonWipeEffectFactory.cpp:50
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:73
+msgid "Down Reverse"
+msgstr "下方反向"
+
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:78
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:74
+msgid "Left"
+msgstr "左"
+
+#: plugins/pageeffects/iriswipe/arrowHeadWipe/KPrArrowHeadWipeEffectFactory.cpp:79
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:75
+msgid "Left Reverse"
+msgstr "左方反向"
+
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:14
+#, kde-format
+msgid "Ellipse"
+msgstr "橢圓"
+
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:45
+msgid "Circle"
+msgstr "圓形"
+
+#: plugins/pageeffects/iriswipe/ellipseWipe/KPrEllipseWipeEffectFactory.cpp:45
+msgid "Circle Reverse"
+msgstr "圓形反向"
+
+#: plugins/pageeffects/iriswipe/eyeWipe/KPrEyeWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Eye"
+msgstr "眼睛"
+
+#: plugins/pageeffects/iriswipe/hexagonWipe/KPrHexagonWipeEffectFactory.cpp:23
+#, kde-format
+msgid "Hexagon"
+msgstr "六角形"
+
+#: plugins/pageeffects/iriswipe/irisWipe/KPrIrisWipeEffectFactory.cpp:17
+#, kde-format
+msgid "Iris"
+msgstr "彩虹"
+
+#: plugins/pageeffects/iriswipe/irisWipe/KPrIrisWipeEffectFactory.cpp:43
+msgid "Diamond"
+msgstr "鑽石"
+
+#: plugins/pageeffects/iriswipe/irisWipe/KPrIrisWipeEffectFactory.cpp:43
+msgid "Diamond Reverse"
+msgstr "鑽石反向"
+
+#: plugins/pageeffects/iriswipe/irisWipe/KPrIrisWipeEffectFactory.cpp:43
+msgid "Rectangular"
+msgstr "矩形"
+
+#: plugins/pageeffects/iriswipe/irisWipe/KPrIrisWipeEffectFactory.cpp:43
+msgid "Rectangular Reverse"
+msgstr "矩形反向"
+
+#: plugins/pageeffects/iriswipe/miscShapeWipe/KPrMiscShapeWipeEffectFactory.cpp:14
+#, kde-format
+msgid "Misc"
+msgstr "雜項"
+
+#: plugins/pageeffects/iriswipe/miscShapeWipe/KPrMiscShapeWipeEffectFactory.cpp:43
+msgid "Heart"
+msgstr "心"
+
+#: plugins/pageeffects/iriswipe/miscShapeWipe/KPrMiscShapeWipeEffectFactory.cpp:43
+msgid "Heart Reverse"
+msgstr "心反向"
+
+#: plugins/pageeffects/iriswipe/miscShapeWipe/KPrMiscShapeWipeEffectFactory.cpp:43
+msgid "Keyhole"
+msgstr "鑰匙洞"
+
+#: plugins/pageeffects/iriswipe/miscShapeWipe/KPrMiscShapeWipeEffectFactory.cpp:43
+msgid "Keyhole Reverse"
+msgstr "鑰匙洞反向"
+
+#: plugins/pageeffects/iriswipe/pentagonWipe/KPrPentagonWipeEffectFactory.cpp:18
+#, kde-format
+msgid "Pentagon"
+msgstr "五角形"
+
+#: plugins/pageeffects/iriswipe/roundRectWipe/KPrRoundRectWipeEffectFactory.cpp:14
+#, kde-format
+msgid "RoundRect"
+msgstr "圓角矩形"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:23
+#, kde-format
+msgid "Star"
+msgstr "星星"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:83
+msgid "Four Point Star"
+msgstr "四點星"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:84
+msgid "Four Point Star Reverse"
+msgstr "四點星反向"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:85
+msgid "Five Point Star"
+msgstr "五點星"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:86
+msgid "Five Point Star Reverse"
+msgstr "五點星反向"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:87
+msgid "Six Point Star"
+msgstr "六點星"
+
+#: plugins/pageeffects/iriswipe/starWipe/KPrStarWipeEffectFactory.cpp:88
+msgid "Six Point Star Reverse"
+msgstr "六點星反向"
+
+#: plugins/pageeffects/iriswipe/triangleWipe/KPrTriangleWipeEffectFactory.cpp:18
+#, kde-format
+msgid "Triangle"
+msgstr "三角形"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Box Snakes"
+msgstr "方框蛇形"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:34
+msgid "Two Box Top In"
+msgstr "兩方框頂端進入"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:35
+msgid "Two Box Bottom In"
+msgstr "兩方框底端進入"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:36
+msgid "Two Box Left In"
+msgstr "兩方框左方進入"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:37
+msgid "Two Box Right In"
+msgstr "兩方框右方進入"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:38
+msgid "Four Box Vertical In"
+msgstr "四方框垂直進入"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:39
+msgid "Four Box Horizontal In"
+msgstr "四方框水平進入"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:40
+msgid "Two Box Top Out"
+msgstr "兩方框頂端出去"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:41
+msgid "Two Box Bottom Out"
+msgstr "兩方框底端出去"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:42
+msgid "Two Box Left Out"
+msgstr "兩方框左方出去"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:43
+msgid "Two Box Right Out"
+msgstr "兩方框右方出去"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:44
+msgid "Four Box Vertical Out"
+msgstr "四方框垂直出去"
+
+#: plugins/pageeffects/matrixwipe/boxsnakes/KPrBoxSnakesWipeEffectFactory.cpp:45
+msgid "Four Box Horizontal Out"
+msgstr "四方框水平出去"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:18
+#, kde-format
+msgid "Parallel Snakes"
+msgstr "平行蛇形"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:44
+msgid "Vertical Top Same In"
+msgstr "垂直頂端相同進入"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:45
+msgid "Vertical Top Same Out"
+msgstr "垂直頂端相同出去"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:46
+msgid "Vertical Bottom Same In"
+msgstr "垂直底端相同進入"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:47
+msgid "Vertical Bottom Same Out"
+msgstr "垂直底端相同出去"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:48
+msgid "Vertical Top Left Opposite In"
+msgstr "垂直左上對面進入"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:49
+msgid "Vertical Top Left Opposite Out"
+msgstr "垂直左上對面出去"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:50
+msgid "Vertical Bottom Left Opposite In"
+msgstr "垂直左下對面進入"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:51
+msgid "Vertical Bottom Left Opposite Out"
+msgstr "垂直左下對面出去"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:52
+msgid "Horizontal Left Same In"
+msgstr "水平左方相同進入"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:53
+msgid "Horizontal Left Same Out"
+msgstr "水平左方相同出去"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:54
+msgid "Horizontal Right Same In"
+msgstr "水平右方相同進入"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:55
+msgid "Horizontal Right Same Out"
+msgstr "水平右方相同出去"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:56
+msgid "Horizontal Top Left Opposite In"
+msgstr "水平左上對面進入"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:57
+msgid "Horizontal Top Left Opposite Out"
+msgstr "水平左上對面出去"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:58
+msgid "Horizontal Top Right Opposite In"
+msgstr "水平右上對面進入"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:59
+msgid "Horizontal Top Right Opposite Out"
+msgstr "水平右上對面出去"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:60
+msgid "Diagonal Bottom Left Opposite In"
+msgstr "對角線左下對面進入"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:61
+msgid "Diagonal Bottom Left Opposite Out"
+msgstr "對角線左下對面出去"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:62
+msgid "Diagonal Top Left Opposite In"
+msgstr "對角線左上對面進入"
+
+#: plugins/pageeffects/matrixwipe/parallelsnakes/KPrParallelSnakesWipeEffectFactory.cpp:63
+msgid "Diagonal Top Left Opposite Out"
+msgstr "對角線左上對面出去"
+
+#: plugins/pageeffects/matrixwipe/snakewipe/KPrSnakeWipeEffectFactory.cpp:23
+#, kde-format
+msgid "Snake"
+msgstr "蛇形"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:16
+#, kde-format
+msgid "Spiral"
+msgstr "螺旋"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:38
+msgid "Clockwise Top Left In"
+msgstr "順時針左上進入"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:39
+msgid "Clockwise Top Left Out"
+msgstr "順時針左上出去"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:40
+msgid "Clockwise Top Right In"
+msgstr "順時針右上進入"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:41
+msgid "Clockwise Top Right Out"
+msgstr "順時針右上出去"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:42
+msgid "Clockwise Bottom Left In"
+msgstr "順時針左下進入"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:43
+msgid "Clockwise Bottom Left Out"
+msgstr "順時針左下出去"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:44
+msgid "Clockwise Bottom Right In"
+msgstr "順時針右下進入"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:45
+msgid "Clockwise Bottom Right Out"
+msgstr "順時針左下出去"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:46
+msgid "Counterclockwise Top Left In"
+msgstr "逆時針左上進入"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:47
+msgid "Counterclockwise Top Left Out"
+msgstr "逆時針左上出去"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:48
+msgid "Counterclockwise Top Right In"
+msgstr "逆時針右上進入"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:49
+msgid "Counterclockwise Top Right Out"
+msgstr "逆時針右上出去"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:50
+msgid "Counterclockwise Bottom Left In"
+msgstr "逆時針左下進入"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:51
+msgid "Counterclockwise Bottom Left Out"
+msgstr "逆時針左下出去"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:52
+msgid "Counterclockwise Bottom Right In"
+msgstr "逆時針右下進入"
+
+#: plugins/pageeffects/matrixwipe/spiralwipe/KPrSpiralWipeEffectFactory.cpp:53
+msgid "Counterclockwise Bottom Right Out"
+msgstr "逆時針右下出去"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:19
+#, kde-format
+msgid "Waterfall"
+msgstr "瀑布"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:33
+msgid "Top Left Vertical"
+msgstr "左上垂直"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:34
+msgid "Top Left Horizontal"
+msgstr "左上水平"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:35
+msgid "Top Right Vertical"
+msgstr "右上垂直"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:36
+msgid "Top Right Horizontal"
+msgstr "右上水平"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:37
+msgid "Bottom Left Vertical"
+msgstr "左下垂直"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:38
+msgid "Bottom Left Horizontal"
+msgstr "左下水平"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:39
+msgid "Bottom Right Vertical"
+msgstr "右下垂直"
+
+#: plugins/pageeffects/matrixwipe/waterfallwipe/KPrWaterfallWipeEffectFactory.cpp:40
+msgid "Bottom Right Horizontal"
+msgstr "右下水平"
+
+#: plugins/pageeffects/slidewipe/KPrSlideWipeEffectFactory.cpp:23
+#, kde-format
+msgid "Slide"
+msgstr "滑動"
+
+#: plugins/pageeffects/spacerotation/KPrSpaceRotationEffectFactory.cpp:19
+#, kde-format
+msgid "Space Rotation"
+msgstr "空間旋轉"
+
+#: plugins/pageeffects/swapeffect/KPrSwapEffectFactory.cpp:16
+#, kde-format
+msgid "Swap effect"
+msgstr "變換效果"
+
+#: plugins/variable/PresentationVariableFactory.cpp:25
+#, kde-format
+msgid "Header"
+msgstr "標頭"
+
+#: plugins/variable/PresentationVariableFactory.cpp:33
+#, kde-format
+msgid "Footer"
+msgstr "註腳"

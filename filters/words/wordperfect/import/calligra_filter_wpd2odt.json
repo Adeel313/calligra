@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "Words WordPerfect Import Filter",
+        "Name[ar]": "مرشح استيراد WordPerfect لـ Words",
+        "Name[ca@valencia]": "Filtre d'importació WordPerfect de Words",
+        "Name[ca]": "Filtre d'importació WordPerfect del Words",
+        "Name[cs]": "Importní filtr WordPerfect pro Words",
+        "Name[de]": "Words WordPerfect-Importfilter",
+        "Name[el]": "Λέξεις φίλτρο εισαγωγής WordPerfect",
+        "Name[en_GB]": "Words WordPerfect Import Filter",
+        "Name[eo]": "Words WordPerfect Importfiltrilo",
+        "Name[es]": "Filtro de importación WordPerfect de Words",
+        "Name[eu]": "Words-en WordPerfect inportatzeko iragazkia",
+        "Name[fi]": "Wordsin WordPerfect-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « WordPerfect » pour Words",
+        "Name[ga]": "Scagaire Iompórtála WordPerfect",
+        "Name[gl]": "Filtro para Words de importación de WordPerfect",
+        "Name[it]": "Filtro di importazione WordPerfect per Words",
+        "Name[ka]": "Words WordPerfect შემოტანის ფილტრი",
+        "Name[lv]": "„Words“ „WordPerfect“ importa filtrs",
+        "Name[nl]": "WordPerfect-importfilter voor Words",
+        "Name[pl]": "Filtr importu WordPerfect do Słów",
+        "Name[pt_BR]": "Filtro de importação WordPerfect para o Words",
+        "Name[ru]": "Фильтр импорта WordPerfect Words",
+        "Name[sa]": "शब्द WordPerfect आयात फ़िल्टर",
+        "Name[sk]": "Filter importu WordPerfect pre Words",
+        "Name[sl]": "Filter uvoza WordPerfect",
+        "Name[sv]": "Words WordPerfect-importfilter",
+        "Name[tr]": "Sözcükler WordPerfect İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування даних WordPerfect для Words",
+        "Name[zh_CN]": "Words WordPerfect 导入过滤器",
+        "Name[zh_TW]": "Words WordPerfect 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/vnd.oasis.opendocument.text",
+    "X-KDE-Import": "application/vnd.wordperfect",
+    "X-KDE-Weight": 1
+}

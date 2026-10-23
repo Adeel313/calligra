@@ -1,0 +1,209 @@
+# Uyghur translation for calligra-dockers.
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Sahran <sahran.ug@gmail.com>, 2011.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: calligra-dockers\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2026-09-23 06:56+0900\n"
+"Last-Translator: Abduqadir Abliz <sahranbay@gmail.com>\n"
+"Language-Team: Uyghur <kde-i18n-doc@kde.org>\n"
+"Language: ug\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 3.9\n"
+
+#: snapguidedocker/SnapGuideDocker.cpp:39
+#, kde-format
+msgid "Snap Settings"
+msgstr "قاداش تەڭشىكى"
+
+#~ msgid "Shape Properties"
+#~ msgstr "شەكىل خاسلىقى"
+
+#~ msgid "Found no shapes in the collection! %1"
+#~ msgstr "توپلامدىن شەكىل تېپىلمىدى! %1"
+
+#~ msgid "Not a valid Calligra file: %1"
+#~ msgstr "ئىناۋەتلىك كاللىگىرا ھۆججىتى ئەمەس: %1"
+
+#~ msgid "No shapes found in file: %1"
+#~ msgstr "ھۆججەتتىن شەكىل تېپىلمىدى: %1"
+
+#~ msgid "Add Shape"
+#~ msgstr "شەكىل قوش"
+
+#~ msgid "More"
+#~ msgstr "تېخىمۇ كۆپ"
+
+#~ msgid "Open Shape Collection"
+#~ msgstr "شەكىل توپلىمىنى ئېچىش"
+
+#~ msgid "Remove Shape Collection"
+#~ msgstr "شەكىل توپلىمىنى چىقىرىۋېتىش"
+
+#~ msgid "Default"
+#~ msgstr "كۆڭۈلدىكى"
+
+#~ msgid "Geometrics"
+#~ msgstr "گېئومېتىرىيىلىك شەكىللەر"
+
+#~ msgid "Arrows"
+#~ msgstr "يا ئوقلار"
+
+#~ msgid "Funny"
+#~ msgstr "قىزىقارلىق"
+
+#~ msgid "Collection Error"
+#~ msgstr "توپلام خاتالىقى"
+
+#~| msgid "Found no shapes in the collection! %1"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Found no shapes in the collection! %1"
+#~ msgstr "توپلامدىن شەكىل تېپىلمىدى! %1"
+
+#~| msgid "Not a valid Calligra file: %1"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Not a valid Calligra file: %1"
+#~ msgstr "ئىناۋەتلىك كاللىگىرا ھۆججىتى ئەمەس: %1"
+
+#~| msgid "No shapes found in file: %1"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "No body tag found in file: %1"
+#~ msgstr "ھۆججەتتىن شەكىل تېپىلمىدى: %1"
+
+#~| msgid "No shapes found in file: %1"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "No office:drawing tag found in file: %1"
+#~ msgstr "ھۆججەتتىن شەكىل تېپىلمىدى: %1"
+
+#~| msgid "No shapes found in file: %1"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "No shapes found in file: %1"
+#~ msgstr "ھۆججەتتىن شەكىل تېپىلمىدى: %1"
+
+#~| msgid "Add Shape"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Add Shape"
+#~ msgstr "شەكىل قوش"
+
+#~| msgid "More"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "More"
+#~ msgstr "تېخىمۇ كۆپ"
+
+#~| msgid "Open Shape Collection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Open Shape Collection"
+#~ msgstr "شەكىل توپلىمىنى ئېچىش"
+
+#~| msgid "Remove Shape Collection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove Shape Collection"
+#~ msgstr "شەكىل توپلىمىنى چىقىرىۋېتىش"
+
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "كۆڭۈلدىكى"
+
+#~| msgid "Geometrics"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Geometrics"
+#~ msgstr "گېئومېتىرىيىلىك شەكىللەر"
+
+#~| msgid "Arrows"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Arrows"
+#~ msgstr "يا ئوقلار"
+
+#~| msgid "Funny"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Funny"
+#~ msgstr "قىزىقارلىق"
+
+#~| msgid "Collection Error"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Collection Error"
+#~ msgstr "توپلام خاتالىقى"
+
+#~| msgid "Shape Properties"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Shape Properties"
+#~ msgstr "شەكىل خاسلىقى"
+
+#~ msgid "Color Chooser"
+#~ msgstr "رەڭ تاللىغۇچ"
+
+#~ msgid "Shadow Properties"
+#~ msgstr "سايە خاسلىقى"
+
+#~ msgid "Creation error"
+#~ msgstr "قۇرۇش خاتالىقى"
+
+#~ msgid "File not found"
+#~ msgstr "ھۆججەت تېپىلمىدى"
+
+#~ msgid "Cannot create storage"
+#~ msgstr "ساقلىغۇچ قۇرغىلى بولمىدى"
+
+#~ msgid "Bad MIME type"
+#~ msgstr "بولمىغۇر MIME تىپى"
+
+#~ msgid "Error in embedded document"
+#~ msgstr "سىڭدۈرمە پۈتۈكتە خاتالىق بار"
+
+#~ msgid "Format not recognized"
+#~ msgstr "ناتونۇش پىچىم"
+
+#~ msgid "Not implemented"
+#~ msgstr "ئەمەلىيلەشتۈرۈلمىگەن"
+
+#~ msgid "Parsing error"
+#~ msgstr "تەھلىل قىلىش خاتالىقى"
+
+#~ msgid "Document is password protected"
+#~ msgstr "پۈتۈك ئىم بىلەن قوغدالغان"
+
+#~ msgid "Internal error"
+#~ msgstr "ئىچكى خاتالىق"
+
+#~ msgid "Out of memory"
+#~ msgstr "ئەسلەك يېتىشمىدى"
+
+#~ msgid "Unknown error"
+#~ msgstr "نامەلۇم خاتالىق"
+
+#~ msgid ""
+#~ "Could not open\n"
+#~ "%2.\n"
+#~ "Reason: %1"
+#~ msgstr ""
+#~ "ئاچالمىدى\n"
+#~ "%2.\n"
+#~ "سەۋەبى: %1"
+
+#~ msgid "Failed to import the file: %1"
+#~ msgstr "ھۆججەتنى ئىمپورت قىلىش مەغلۇپ بولدى: %1"
+
+#~ msgid "Opacity:"
+#~ msgstr "غۇۋالىقى:"
+
+#~ msgctxt "No stroke or fill"
+#~ msgid "None"
+#~ msgstr "يوق"
+
+#~ msgctxt "Solid color stroke or fill"
+#~ msgid "Solid"
+#~ msgstr "لىق تولغان"
+
+#~ msgid "Gradient"
+#~ msgstr "گۈل نۇسخىسى"
+
+#~ msgid "Pattern"
+#~ msgstr "Pattern"

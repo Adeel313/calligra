@@ -1,0 +1,496 @@
+# translation of AutocorrectPlugin.po to Dutch
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Rinse de Vries <rinsedevries@kde.nl>, 2007.
+# Freek de Kruijf <f.de.kruijf@hetnet.nl>, 2008, 2014, 2016, 2022.
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2022-11-10 18:44-0400\n"
+"Last-Translator: Freek de Kruijf <freekdekruijf@kde.nl>\n"
+"Language-Team: \n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 22.08.3\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "&Autocorrectie instellen..."
+
+#: Autocorrect.cpp:30
+#, kde-format
+msgid "Enable Autocorrection"
+msgstr "Autocorrectie inschakelen"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "Autocorrectie"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Een&voudige autocorrectie"
+
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Herken wanneer er een nieuwe zin wordt gestart en zorg ervoor dat de "
+#~ "eerste letter altijd een hoofdletter is"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Zet de eerste letter van het eerste woord in een zin automatisch om in "
+#~ "een &hoofdletter.\n"
+#~ "(bijv. \"bla. dit is een test\" naar \"bla. Dit is een test\")"
+
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Alle woorden worden gecontroleerd op de veelgemaakte fout van 2 "
+#~ "hoofdletters achter elkaar in een woord, als gevolg van het iets te lang "
+#~ "ingedrukt houden van de Shift-toets. Woorden die wel met twee "
+#~ "hoofdletters dienen te beginnen kunt u toevoegen aan het tabblad "
+#~ "\"Uitzonderingen\"."
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Zet 2 h&oofdletters aan het begin van een woord automatisch om in een "
+#~ "hoofdletter en een kleine letter.\n"
+#~ "(bij. HAllo naar Hallo)"
+
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Herken wanneer er een URL-adres (bijv. een internetadres) wordt getypt en "
+#~ "maak deze automatisch op in de stijl zoals een Webbrowser ze toont."
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "&URL-adressen automatisch opmaken"
+
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Zorg ervoor dat er geen twee spaties achter elkaar kunnen worden getypt. "
+#~ "Dit is namelijk een veelvoorkomende fout, welke moeilijk terug te vinden "
+#~ "is in opgemaakte tekst."
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Dubbele &spaties verwijderen"
+
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Zorg voor een goede opmaak en inspringwijze van zinnen door automatisch "
+#~ "de spaties die aan het begin en einde van een alinea getypt zijn te "
+#~ "verwijderen."
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "V&erwijder spaties aan het begin en einde van alinea's"
+
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Als u in uw tekst gebruik maakt van _onderstrepen_ of *vet*, dan wordt de "
+#~ "tekst tussen de streepjes of asterisken respectievelijk onderstreept of "
+#~ "vet gemaakt."
+
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Automatisch zorgen voor de o&pmaak van vette en onderstreepte tekst"
+
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr ""
+#~ "Indien beschikbaar zullen de meeste standaard breuken worden omgezet"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "1/2... verva&ngen door ½..."
+
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Als u '1)' of iets dergelijks aan het begin van een alinea intypt, dan "
+#~ "zal de alinea automatisch die manier van nummeren gebruiken. Dit heeft "
+#~ "als voordeel dat opvolgende alinea's ook zullen worden genummerd, en dat "
+#~ "de spatiëring op de juiste wijze wordt toegepast."
+
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "&Autonummering gebruiken voor genummerde alinea's"
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "1st... verv&angen door 1^st..."
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "Dagnamen van hoofdletter voorzien"
+
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Als u een '*' of '-' voor een alinea typt, dan zal de alinea automatisch "
+#~ "die lijststijl gebruiken. Het gebruiken van lijststijl-opmaak betekent "
+#~ "dat het juiste opsommingsteken zal worden gebruik om de lijst op te maken."
+
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "L&ijstopmaak gebruiken voor opgesomde alinea's"
+
+#~ msgid "Default"
+#~ msgstr "Standaard"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "Aangepaste aan&halingstekens"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr ""
+#~ "&Dubbele aanhalingstekens vervangen door typografische aanhalingstekens"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr ""
+#~ "Enkelvoudige aanhalingstekens vervangen door typografi&sche "
+#~ "aanhalingstekens"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Gea&vanceerde autocorrectie"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Vervangingen en uitzonderingen voor taal:"
+
+#~ msgid "All Languages"
+#~ msgstr "Alle talen"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "Woordv&ervanging activeren"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "&Tekst vervangen met opmaak"
+
+#~ msgid "&Find"
+#~ msgstr "&Zoeken"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "Ve&rvangen"
+
+#~ msgid "&Add"
+#~ msgstr "&Toevoegen"
+
+#~ msgid "Remove"
+#~ msgstr "Verwijderen"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "O&pmaak wijzigen..."
+
+#~ msgid "C&lear Format"
+#~ msgstr "Opmaa&k verwijderen"
+
+#~ msgid "Find"
+#~ msgstr "Zoeken"
+
+#~ msgid "Replace"
+#~ msgstr "Vervangen"
+
+#~ msgid "E&xceptions"
+#~ msgstr "Uit&zonderingen"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Beschouw dit niet als einde van een zin:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "Auto-insluiten"
+
+#~ msgid "R&emove"
+#~ msgstr "V&erwijderen"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Twee hoofdletters accepteren in:"
+
+#~ msgid "A&dd"
+#~ msgstr "&Toevoegen"
+
+#~ msgid "&Modify"
+#~ msgstr "&Wijzigen"
+
+#~ msgid "Select Character"
+#~ msgstr "Teken selecteren"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Een&voudige autocorrectie"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Herken wanneer er een nieuwe zin wordt gestart en zorg ervoor dat de "
+#~ "eerste letter altijd een hoofdletter is"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Zet de eerste letter van het eerste woord in een zin automatisch om in "
+#~ "een &hoofdletter.\n"
+#~ "(bijv. \"bla. dit is een test\" naar \"bla. Dit is een test\")"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Alle woorden worden gecontroleerd op de veelgemaakte fout van 2 "
+#~ "hoofdletters achter elkaar in een woord, als gevolg van het iets te lang "
+#~ "ingedrukt houden van de Shift-toets. Woorden die wel met twee "
+#~ "hoofdletters dienen te beginnen kunt u toevoegen aan het tabblad "
+#~ "\"Uitzonderingen\"."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Zet 2 h&oofdletters aan het begin van een woord automatisch om in een "
+#~ "hoofdletter en een kleine letter.\n"
+#~ "(bij. HAllo naar Hallo)"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Herken wanneer er een URL-adres (bijv. een internetadres) wordt getypt en "
+#~ "maak deze automatisch op in de stijl zoals een Webbrowser ze toont."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "&URL-adressen automatisch opmaken"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Zorg ervoor dat er geen twee spaties achter elkaar kunnen worden getypt. "
+#~ "Dit is namelijk een veelvoorkomende fout, welke moeilijk terug te vinden "
+#~ "is in opgemaakte tekst."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Dubbele &spaties verwijderen"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Zorg voor een goede opmaak en inspringwijze van zinnen door automatisch "
+#~ "de spaties die aan het begin en einde van een alinea getypt zijn te "
+#~ "verwijderen."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "V&erwijder spaties aan het begin en einde van alinea's"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Als u in uw tekst gebruik maakt van _onderstrepen_ of *vet*, dan wordt de "
+#~ "tekst tussen de streepjes of asterisken respectievelijk onderstreept of "
+#~ "vet gemaakt."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Automatisch zorgen voor de o&pmaak van vette en onderstreepte tekst"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr ""
+#~ "Indien beschikbaar zullen de meeste standaard breuken worden omgezet"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "1/2... verva&ngen door ½..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Als u '1)' of iets dergelijks aan het begin van een alinea intypt, dan "
+#~ "zal de alinea automatisch die manier van nummeren gebruiken. Dit heeft "
+#~ "als voordeel dat opvolgende alinea's ook zullen worden genummerd, en dat "
+#~ "de spatiëring op de juiste wijze wordt toegepast."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "&Autonummering gebruiken voor genummerde alinea's"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "1st... verv&angen door 1^st..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "Dagnamen van hoofdletter voorzien"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Als u een '*' of '-' voor een alinea typt, dan zal de alinea automatisch "
+#~ "die lijststijl gebruiken. Het gebruiken van lijststijl-opmaak betekent "
+#~ "dat het juiste opsommingsteken zal worden gebruik om de lijst op te maken."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "L&ijstopmaak gebruiken voor opgesomde alinea's"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "Standaard"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "Aangepaste aan&halingstekens"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr ""
+#~ "&Dubbele aanhalingstekens vervangen door typografische aanhalingstekens"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr ""
+#~ "Enkelvoudige aanhalingstekens vervangen door typografi&sche "
+#~ "aanhalingstekens"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Gea&vanceerde autocorrectie"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Vervangingen en uitzonderingen voor taal:"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "Alle talen"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "Woordv&ervanging activeren"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "&Tekst vervangen met opmaak"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "&Zoeken"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "Ve&rvangen"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "Verwijderen"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "O&pmaak wijzigen..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "Opmaa&k verwijderen"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "Zoeken"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "Vervangen"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "Uit&zonderingen"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Beschouw dit niet als einde van een zin:"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "Auto-insluiten"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "V&erwijderen"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Twee hoofdletters accepteren in:"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "&Toevoegen"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "&Autocorrectie instellen..."
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "Autocorrectie"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "&Wijzigen"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "&Toevoegen"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "Teken selecteren"
+
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "Autocorrectie"

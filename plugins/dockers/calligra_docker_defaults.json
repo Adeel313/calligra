@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "Calligra Dockers plugin",
+        "Name[ar]": "ملحق أرصفة كاليغرا",
+        "Name[ca@valencia]": "Connector d'acobladors de Calligra",
+        "Name[ca]": "Connector d'acobladors del Calligra",
+        "Name[cs]": "Modul doků Calligra",
+        "Name[de]": "Calligra Docker-Modul",
+        "Name[el]": "Πρόσθετο Calligra Dockers",
+        "Name[en_GB]": "Calligra Dockers plugin",
+        "Name[eo]": "Calligra Dockers kromaĵo",
+        "Name[es]": "Complemento de paneles de Calligra",
+        "Name[eu]": "Calligra zamaketariak plugina",
+        "Name[fi]": "Calligran telakkaliitännäinen",
+        "Name[fr]": "Module externe pour panneaux de Calligra",
+        "Name[ga]": "Breiseán Calligra Dockers",
+        "Name[gl]": "Complemento de docas para Calligra",
+        "Name[he]": "תוסף מעגנים ל־Calligra",
+        "Name[it]": "Estensione per le aree di aggancio di Calligra",
+        "Name[ka]": "Calligra-ის ზოლების დამატება",
+        "Name[lv]": "„Calligra“ dokeru spraudnis",
+        "Name[nl]": "Vastzetterplug-in voor Calligra",
+        "Name[pl]": "Wtyczka dokowań Calligra",
+        "Name[pt_BR]": "Plugin de Dockers do Calligra",
+        "Name[ru]": "Модуль панелей Calligra",
+        "Name[sa]": "Calligra Dockers प्लगइन",
+        "Name[sk]": "Zásuvný modul panelov Calligra",
+        "Name[sl]": "Vtičnik Calligra Dockers",
+        "Name[sv]": "Calligra-dockningsinsticksprogram",
+        "Name[tr]": "Calligra Dockers Eklentisi",
+        "Name[uk]": "Додаток панелей для Calligra",
+        "Name[zh_CN]": "Calligra 停靠插件",
+        "Name[zh_TW]": "Calligra Dockers 外掛程式",
+        "ServiceTypes": [
+            "Calligra/Dock"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

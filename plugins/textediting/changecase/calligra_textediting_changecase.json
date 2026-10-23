@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "Change case plugin",
+        "Name[ar]": "ملحق تغيير الحالة",
+        "Name[ca@valencia]": "Connector de canvi de caixa",
+        "Name[ca]": "Connector de canvi de caixa",
+        "Name[cs]": "Modul pro změnu velikosti písmen",
+        "Name[de]": "„Groß-/Kleinschreibung ändern“-Modul",
+        "Name[el]": "Πρόσθετο αλλαγής πεζών/κεφαλαίων",
+        "Name[en_GB]": "Change case plugin",
+        "Name[eo]": "Kromprogramo po ŝanĝi usklecon",
+        "Name[es]": "Complemento de cambio de mayúsculas y minúsculas",
+        "Name[eu]": "'Aldatu maiuskulak/minuskulak' plugina",
+        "Name[fi]": "Aakkoslajin vaihtoliitännäinen",
+        "Name[fr]": "Module externe de changement de casse",
+        "Name[ga]": "Breiseán athraithe cás",
+        "Name[gl]": "Complemento para o cambio de maiúsculas",
+        "Name[he]": "תוסף החלפת רישיות/רגילות",
+        "Name[it]": "Estensione di modifica delle maiuscole",
+        "Name[ka]": "რეგისტრის შეცვლის დამატება",
+        "Name[lv]": "Burtu reģistra maiņas spraudnis",
+        "Name[nl]": "Hoofd-/kleine lettersplug-in",
+        "Name[pl]": "Wtyczka zmiany wielkości liter",
+        "Name[pt_BR]": "Plugin de mudança de maiúsculas/minúsculas",
+        "Name[ru]": "Модуль изменения регистра",
+        "Name[sa]": "केस प्लगिन् परिवर्तयन्तु",
+        "Name[sk]": "Zásuvný modul zmeny veľkosti písmen",
+        "Name[sl]": "Vtičnik spremembe velikosti črk",
+        "Name[sv]": "Insticksprogram för skiftlägesändring",
+        "Name[tr]": "Harf Biçimini Değiştir Eklentisi",
+        "Name[uk]": "Додаток зміни регістру",
+        "Name[zh_CN]": "更改大小写插件",
+        "Name[zh_TW]": "Change case 外掛程式",
+        "ServiceTypes": [
+            "Calligra/Text-EditingPlugin"
+        ]
+    },
+    "X-KoText-MinVersion": "28",
+    "X-KoText-PluginVersion": "28"
+}

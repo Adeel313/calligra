@@ -1,0 +1,286 @@
+# Uyghur translation for AutocorrectPlugin.
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Sahran <sahran.ug@gmail.com>, 2011.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2026-09-23 06:56+0900\n"
+"Last-Translator: Abduqadir Abliz <sahranbay@gmail.com>\n"
+"Language-Team: Uyghur <kde-i18n-doc@kde.org>\n"
+"Language: ug\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 3.9\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "ئۆزلۈكىدىن تۈزىتىش سەپلىمىسى(&A)…"
+
+#: Autocorrect.cpp:30
+#, kde-format
+msgid "Enable Autocorrection"
+msgstr ""
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "ئۆزلۈكىدىن تۈزەتكۈچ"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "ئاددىي ئۆزلۈكىدىن تۈزەتكۈچ(&M)"
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "&URL نىڭ ئاپتوماتىك پىچىمى"
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "قوش بوشلۇقنى پرېسلا(&S)"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "1/2... نى ½... غا ئالماشتۇر(&P)"
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "كۈن ئاتلىرىنىڭ چوڭ يېزىلىشى"
+
+#~ msgid "Default"
+#~ msgstr "كۆڭۈلدىكى"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "ئۆزلەشتۈرگەن تىرناق(&Q)"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "ئالىي ئاپتوماتىك توغرىلاش(&V)"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "ئالماشتۇرۇش ۋە مۇستەسنا ئىشلىتىدىغان تىل:"
+
+#~ msgid "All Languages"
+#~ msgstr "بارلىق تىللار"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "سۆز ئالماشتۇرۇشنى قوزغات(&E)"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "تېكىستنى پىچىمغا ئالماشتۇر(&T)"
+
+#~ msgid "&Find"
+#~ msgstr "ئىزدە(&F)"
+
+#~ msgid "..."
+#~ msgstr "…"
+
+#~ msgid "Re&place"
+#~ msgstr "ئالماشتۇر(&P)"
+
+#~ msgid "&Add"
+#~ msgstr "قوش(&A)"
+
+#~ msgid "Remove"
+#~ msgstr "چىقىرىۋەت"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "پىچىم ئۆزگەرت(&H)…"
+
+#~ msgid "C&lear Format"
+#~ msgstr "پىچىمنى تازىلا(&L)"
+
+#~ msgid "Find"
+#~ msgstr "ئىزدە"
+
+#~ msgid "Replace"
+#~ msgstr "ئالماشتۇر"
+
+#~ msgid "E&xceptions"
+#~ msgstr "مۇستەسنا(&X)"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "جۈملە ئاخىرلاشقانلىقىنى بىلدۈرمەيدۇ:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "ئۆزلۈكىدىن قوش"
+
+#~ msgid "R&emove"
+#~ msgstr "چىقىرىۋەت(&E)"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "ئىككى چوڭ ھەرپكە قوشۇل:"
+
+#~ msgid "A&dd"
+#~ msgstr "قوش(&D)"
+
+#~ msgid "&Modify"
+#~ msgstr "ئۆزگەرت(&M)"
+
+#~ msgid "Select Character"
+#~ msgstr "ھەرپ تاللا"
+
+#~| msgid "Si&mple Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "ئاددىي ئۆزلۈكىدىن تۈزەتكۈچ(&M)"
+
+#~| msgid "Autoformat &URLs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "&URL نىڭ ئاپتوماتىك پىچىمى"
+
+#~| msgid "&Suppress double spaces"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "قوش بوشلۇقنى پرېسلا(&S)"
+
+#~| msgid "Re&place 1/2... with ½..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "1/2... نى ½... غا ئالماشتۇر(&P)"
+
+#~| msgid "Re&place 1/2... with ½..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "1/2... نى ½... غا ئالماشتۇر(&P)"
+
+#~| msgid "Capitalize name of days"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "كۈن ئاتلىرىنىڭ چوڭ يېزىلىشى"
+
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "كۆڭۈلدىكى"
+
+#~| msgid "Custom &Quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "ئۆزلەشتۈرگەن تىرناق(&Q)"
+
+#~| msgid "Ad&vanced Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "ئالىي ئاپتوماتىك توغرىلاش(&V)"
+
+#~| msgid "Replacements and exceptions for language:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "ئالماشتۇرۇش ۋە مۇستەسنا ئىشلىتىدىغان تىل:"
+
+#~| msgid "All Languages"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "بارلىق تىللار"
+
+#~| msgid "&Enable word replacement"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "سۆز ئالماشتۇرۇشنى قوزغات(&E)"
+
+#~| msgid "Replace &text with format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "تېكىستنى پىچىمغا ئالماشتۇر(&T)"
+
+#~| msgid "&Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "ئىزدە(&F)"
+
+#~| msgid "..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "…"
+
+#~| msgid "Re&place"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "ئالماشتۇر(&P)"
+
+#~| msgid "Remove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "چىقىرىۋەت"
+
+#~| msgid "C&hange Format..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "پىچىم ئۆزگەرت(&H)…"
+
+#~| msgid "C&lear Format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "پىچىمنى تازىلا(&L)"
+
+#~| msgid "Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "ئىزدە"
+
+#~| msgid "Replace"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "ئالماشتۇر"
+
+#~| msgid "E&xceptions"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "مۇستەسنا(&X)"
+
+#~| msgid "Do not treat as the end of a sentence:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "جۈملە ئاخىرلاشقانلىقىنى بىلدۈرمەيدۇ:"
+
+#~| msgid "Autoinclude"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "ئۆزلۈكىدىن قوش"
+
+#~| msgid "R&emove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "چىقىرىۋەت(&E)"
+
+#~| msgid "Accept two uppercase letters in:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "ئىككى چوڭ ھەرپكە قوشۇل:"
+
+#~| msgid "A&dd"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "قوش(&D)"
+
+#~| msgid "Configure &Autocorrection..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "ئۆزلۈكىدىن تۈزىتىش سەپلىمىسى(&A)…"
+
+#~| msgid "Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "ئۆزلۈكىدىن تۈزەت"
+
+#~| msgid "&Modify"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "ئۆزگەرت(&M)"
+
+#~| msgid "&Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "قوش(&A)"
+
+#~| msgid "Select Character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "ھەرپ تاللا"
+
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "ئۆزلۈكىدىن تۈزەتكۈچ"

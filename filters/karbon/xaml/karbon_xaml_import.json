@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Karbon XAML Import Filter",
+        "Name[ar]": "مرشح استيراد XAML لكربون",
+        "Name[ca@valencia]": "Filtre d'importació XAML de Karbon",
+        "Name[ca]": "Filtre d'importació XAML del Karbon",
+        "Name[cs]": "Importní filtr XAML pro Karbon",
+        "Name[de]": "Karbon XAML-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής Karbon XAML",
+        "Name[en_GB]": "Karbon XAML Import Filter",
+        "Name[eo]": "Karbon XAML Importfiltrilo",
+        "Name[es]": "Filtro de importación XAML de Karbon",
+        "Name[eu]": "Karbon-en XAML inportatzeko iragazkia",
+        "Name[fi]": "Karbonin XAML-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « XAML » de Karbon",
+        "Name[ga]": "Scagaire Iompórtála Karbon XAML",
+        "Name[gl]": "Filtro para Karbon de importación de XAML",
+        "Name[he]": "מסנן ייבוא XAML ל־Karbon",
+        "Name[it]": "Filtro di importazione XAML per Karbon",
+        "Name[ka]": "Karbon XAML -ის შემოტანის ფილტრი",
+        "Name[lv]": "„Karbon“ XAML importa filtrs",
+        "Name[nl]": "XAML-importfilter voor Karbon",
+        "Name[pl]": "Filtr importu XAML do Karbon",
+        "Name[pt_BR]": "Filtro de importação XAML para o Karbon",
+        "Name[ru]": "Фильтр импорта XAML Karbon",
+        "Name[sa]": "कार्बन XAML आयात फ़िल्टर",
+        "Name[sk]": "Filter importu XAML pre Karbon",
+        "Name[sl]": "Karbon filter uvoza XAML",
+        "Name[sv]": "Karbon XAML-importfilter",
+        "Name[tr]": "Karbon XAML İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування XAML до Karbon",
+        "Name[zh_CN]": "Karbon XAML 导入过滤器",
+        "Name[zh_TW]": "Karbon XAML 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/x-karbon",
+    "X-KDE-Import": "image/wvg+xml",
+    "X-KDE-Weight": 1
+}

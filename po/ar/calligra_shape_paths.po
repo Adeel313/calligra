@@ -1,0 +1,603 @@
+# translation of PathShapes.po to
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Youssef Chahibi <chahibi@gmail.com>, 2007.
+# SPDX-FileCopyrightText: 2024, 2025 Zayed Al-Saidi <zayed.alsaidi@gmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: PathShapes\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2025-10-05 12:23+0400\n"
+"Last-Translator: Zayed Al-Saidi <zayed.alsaidi@gmail.com>\n"
+"Language-Team: ar\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+"X-Generator: Lokalize 23.08.5\n"
+
+#: ellipse/EllipseShapeConfigCommand.cpp:23
+msgctxt "(qtundo-format)"
+msgid "Change ellipse"
+msgstr "غيِّر الشكل البيضاوي"
+
+#: ellipse/EllipseShapeConfigWidget.cpp:16
+#, kde-format
+msgid "Arc"
+msgstr "قوس"
+
+#: ellipse/EllipseShapeConfigWidget.cpp:17
+#, kde-format
+msgid "Pie"
+msgstr "فطيرة"
+
+#: ellipse/EllipseShapeConfigWidget.cpp:18
+#, kde-format
+msgid "Chord"
+msgstr "الوتر الدائرة"
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, EllipseShapeConfigWidget)
+#: ellipse/EllipseShapeConfigWidget.ui:13
+#, kde-format
+msgid "Ellipse Shape"
+msgstr "شكل بيضاوي"
+
+#. i18n: ectx: property (text), widget (QLabel, label_3)
+#: ellipse/EllipseShapeConfigWidget.ui:19 spiral/SpiralShapeConfigWidget.ui:19
+#, kde-format
+msgid "Type:"
+msgstr "النوع:"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: ellipse/EllipseShapeConfigWidget.ui:29
+#, kde-format
+msgid "Start angle:"
+msgstr "زاوية البدء:"
+
+#. i18n: ectx: property (suffix), widget (QDoubleSpinBox, startAngle)
+#. i18n: ectx: property (suffix), widget (QDoubleSpinBox, endAngle)
+#: ellipse/EllipseShapeConfigWidget.ui:39
+#: ellipse/EllipseShapeConfigWidget.ui:56
+#, kde-format
+msgid "°"
+msgstr "°"
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: ellipse/EllipseShapeConfigWidget.ui:46
+#, kde-format
+msgid "End angle:"
+msgstr "زاوية الانتهاء:"
+
+#. i18n: ectx: property (text), widget (QPushButton, closeEllipse)
+#: ellipse/EllipseShapeConfigWidget.ui:63
+#, kde-format
+msgid "Close ellipse"
+msgstr "أغلق الشكل البيضاوي"
+
+#: ellipse/EllipseShapeFactory.cpp:20
+#, kde-format
+msgid "Ellipse"
+msgstr "شكل بيضاوي"
+
+#: ellipse/EllipseShapeFactory.cpp:22
+#, kde-format
+msgid "An ellipse"
+msgstr "شكل بيضاوي"
+
+#: enhancedpath/CalloutShapeFactory.cpp:31
+#: enhancedpath/CalloutShapeFactory.cpp:33
+#, kde-format
+msgid "A callout shape"
+msgstr "شكل تعليق توضيحي"
+
+#: enhancedpath/CalloutShapeFactory.cpp:148
+#, kde-format
+msgid "Rectangular Callout"
+msgstr "تعليق توضيحي مستطيل"
+
+#: enhancedpath/CalloutShapeFactory.cpp:150
+#, kde-format
+msgid "A rectangular callout"
+msgstr "تعليق توضيحي مستطيل"
+
+#: enhancedpath/CalloutShapeFactory.cpp:229
+#, kde-format
+msgid "Rounded Callout"
+msgstr "تعليق توضيحي مدوَّر"
+
+#: enhancedpath/CalloutShapeFactory.cpp:231
+#, kde-format
+msgid "A rounded rectangular callout"
+msgstr "تعليق توضيحي مستطيل مدوَّر"
+
+#: enhancedpath/CalloutToolFactory.cpp:23
+#, kde-format
+msgid "Callout editing"
+msgstr "تحرير التعليق التوضيحي"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:26
+#, kde-format
+msgid "An enhanced path shape"
+msgstr "شكل مسار محسَّن"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:28
+#, kde-format
+msgid "An enhanced path"
+msgstr "مسار محسَّن"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:142
+#, kde-format
+msgid "Cross"
+msgstr "صليب"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:144
+#, kde-format
+msgid "A cross"
+msgstr "صليب"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:177
+#: enhancedpath/EnhancedPathShapeFactory.cpp:210
+#: enhancedpath/EnhancedPathShapeFactory.cpp:243
+#: enhancedpath/EnhancedPathShapeFactory.cpp:276
+#, kde-format
+msgid "Arrow"
+msgstr "سهم"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:179
+#: enhancedpath/EnhancedPathShapeFactory.cpp:212
+#: enhancedpath/EnhancedPathShapeFactory.cpp:245
+#: enhancedpath/EnhancedPathShapeFactory.cpp:278
+#, kde-format
+msgid "An arrow"
+msgstr "سهم"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:321
+#: enhancedpath/EnhancedPathShapeFactory.cpp:323
+#, kde-format
+msgid "Smiley"
+msgstr "مبتسم"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:401
+#, kde-format
+msgid "Circular Arrow"
+msgstr "سهم دائري"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:403
+#, kde-format
+msgid "A circular-arrow"
+msgstr "سهم دائري"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:446
+#, kde-format
+msgid "Gearhead"
+msgstr "رأس الترس"
+
+#: enhancedpath/EnhancedPathShapeFactory.cpp:448
+#, kde-format
+msgid "A gearhead"
+msgstr "رأس ترس"
+
+#: rectangle/RectangleShapeConfigCommand.cpp:19
+msgctxt "(qtundo-format)"
+msgid "Change rectangle"
+msgstr "غيِّر المستطيل"
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, RectangleShapeConfigWidget)
+#: rectangle/RectangleShapeConfigWidget.ui:5
+#, kde-format
+msgid "Rectangle Shape"
+msgstr "شكل مستطيل"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: rectangle/RectangleShapeConfigWidget.ui:21
+#, kde-format
+msgid "Corner radius x:"
+msgstr "نصف قطر الزاوية س:"
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: rectangle/RectangleShapeConfigWidget.ui:34
+#, kde-format
+msgid "Corner radius y:"
+msgstr "نصف قطر الزاوية ص:"
+
+#: rectangle/RectangleShapeFactory.cpp:20
+#, kde-format
+msgid "Rectangle"
+msgstr "مستطيل"
+
+#: rectangle/RectangleShapeFactory.cpp:22
+#, kde-format
+msgid "A rectangle"
+msgstr "مستطيل"
+
+#: spiral/SpiralShapeConfigCommand.cpp:19
+msgctxt "(qtundo-format)"
+msgid "Change spiral"
+msgstr "غيِّر الحلزون"
+
+#: spiral/SpiralShapeConfigWidget.cpp:16
+#, kde-format
+msgid "Curve"
+msgstr "منحنًى"
+
+#: spiral/SpiralShapeConfigWidget.cpp:17
+#, kde-format
+msgid "Line"
+msgstr "خط"
+
+#: spiral/SpiralShapeConfigWidget.cpp:23
+#, kde-format
+msgid "Clockwise"
+msgstr "مع عقارب السّاعة"
+
+#: spiral/SpiralShapeConfigWidget.cpp:24
+#, kde-format
+msgid "Anticlockwise"
+msgstr "عكس عقارب الساعة"
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, SpiralShapeConfigWidget)
+#: spiral/SpiralShapeConfigWidget.ui:13
+#, kde-format
+msgid "Spiral Shape"
+msgstr "شكل حلزوني"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: spiral/SpiralShapeConfigWidget.ui:29
+#, kde-format
+msgid "Fade:"
+msgstr "التلاشي:"
+
+#. i18n: ectx: property (text), widget (QLabel, label_4)
+#: spiral/SpiralShapeConfigWidget.ui:55
+#, kde-format
+msgid "Direction:"
+msgstr "الاتجاه:"
+
+#: spiral/SpiralShapeFactory.cpp:17
+#, kde-format
+msgid "Spiral"
+msgstr "لولبيّ"
+
+#: spiral/SpiralShapeFactory.cpp:19
+#, kde-format
+msgid "A spiral shape"
+msgstr "شكل حلزوني"
+
+#: star/StarShapeConfigCommand.cpp:21
+msgctxt "(qtundo-format)"
+msgid "Change star"
+msgstr "غيِّر النجمة"
+
+#. i18n: ectx: property (windowTitle), widget (QWidget, StarShapeConfigWidget)
+#: star/StarShapeConfigWidget.ui:13
+#, kde-format
+msgid "Star shape"
+msgstr "شكل نجمة"
+
+#. i18n: ectx: property (text), widget (QLabel, label_4)
+#: star/StarShapeConfigWidget.ui:19
+#, kde-format
+msgid "Polygon:"
+msgstr "مضلع:"
+
+#. i18n: ectx: property (text), widget (QLabel, label)
+#: star/StarShapeConfigWidget.ui:36
+#, kde-format
+msgid "Corners:"
+msgstr "أركان:"
+
+#. i18n: ectx: property (text), widget (QLabel, label_2)
+#: star/StarShapeConfigWidget.ui:46
+#, kde-format
+msgid "Inner radius:"
+msgstr "نصف القطر الداخلي:"
+
+#. i18n: ectx: property (text), widget (QLabel, label_3)
+#: star/StarShapeConfigWidget.ui:60
+#, kde-format
+msgid "Outer radius:"
+msgstr "نصف القطر الخارجي:"
+
+#: star/StarShapeFactory.cpp:24
+#, kde-format
+msgid "A star shape"
+msgstr "شكل نجمة"
+
+#: star/StarShapeFactory.cpp:26 star/StarShapeFactory.cpp:39
+#, kde-format
+msgid "A star"
+msgstr "نجمة"
+
+#: star/StarShapeFactory.cpp:37
+#, kde-format
+msgid "Star"
+msgstr "النجم"
+
+#: star/StarShapeFactory.cpp:51
+#, kde-format
+msgid "Flower"
+msgstr "وردة"
+
+#: star/StarShapeFactory.cpp:53
+#, kde-format
+msgid "A flower"
+msgstr "زهرة"
+
+#: star/StarShapeFactory.cpp:68
+#, kde-format
+msgid "Pentagon"
+msgstr "مخمّس"
+
+#: star/StarShapeFactory.cpp:70
+#, kde-format
+msgid "A pentagon"
+msgstr "مخمّس"
+
+#: star/StarShapeFactory.cpp:84
+#, kde-format
+msgid "Hexagon"
+msgstr "مسدَّس"
+
+#: star/StarShapeFactory.cpp:86
+#, kde-format
+msgid "A hexagon"
+msgstr "مسدَّس"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ellipse Shape"
+#~ msgstr "A شكل"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Start angle:"
+#~ msgstr "A"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Close ellipse"
+#~ msgstr "غيّر"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rectangle Shape"
+#~ msgstr "A شكل"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Star shape"
+#~ msgstr "A نجمة شكل"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Spiral Shape"
+#~ msgstr "A نجمة شكل"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Arc"
+#~ msgstr "قوس"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Pie"
+#~ msgstr "كعكة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Chord"
+#~ msgstr "وتر"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ellipse"
+#~ msgstr "أداة تعريف"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "An ellipse"
+#~ msgstr "أداة تعريف"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "An enhanced path shape"
+#~ msgstr "أداة تعريف المسار شكل"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "An enhanced path"
+#~ msgstr "أداة تعريف المسار"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Cross"
+#~ msgstr "A"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A cross"
+#~ msgstr "A"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Arrow"
+#~ msgstr "A سهم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "An arrow"
+#~ msgstr "أداة تعريف سهم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Callout"
+#~ msgstr "A"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A callout"
+#~ msgstr "A"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Smiley"
+#~ msgstr "A ابتسامه"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Circular Arrow"
+#~ msgstr "A سهم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A circular-arrow"
+#~ msgstr "A سهم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Gearhead"
+#~ msgstr "A"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A gearhead"
+#~ msgstr "A"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rectangle"
+#~ msgstr "A"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A rectangle"
+#~ msgstr "A"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A spiral shape"
+#~ msgstr "A نجمة شكل"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A star shape"
+#~ msgstr "A نجمة شكل"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A star"
+#~ msgstr "A نجمة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Star"
+#~ msgstr "نجم"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Flower"
+#~ msgstr "زهرة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A flower"
+#~ msgstr "A زهرة"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Pentagon"
+#~ msgstr "مخمس"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A pentagon"
+#~ msgstr "A"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Hexagon"
+#~ msgstr "السداسي"
+
+#, fuzzy
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A hexagon"
+#~ msgstr "A مسدس"
+
+#, fuzzy
+#~ msgid "A arrow shape"
+#~ msgstr "A سهم شكل"
+
+#, fuzzy
+#~ msgid "A arrow"
+#~ msgstr "A سهم"
+
+#, fuzzy
+#~ msgid "Right Arrow"
+#~ msgstr "سهم لليمين"
+
+#, fuzzy
+#~ msgid "A right arrow"
+#~ msgstr "A يمين سهم"
+
+#, fuzzy
+#~ msgid "Left Arrow"
+#~ msgstr "سهم لليسار"
+
+#, fuzzy
+#~ msgid "A left arrow"
+#~ msgstr "A يسار سهم"
+
+#, fuzzy
+#~ msgid "Top Arrow"
+#~ msgstr "أعلى سهم"
+
+#, fuzzy
+#~ msgid "A top arrow"
+#~ msgstr "A الأعلى سهم"
+
+#, fuzzy
+#~ msgid "Bottom Arrow"
+#~ msgstr "أسفل سهم"
+
+#, fuzzy
+#~ msgid "A bottom arrow"
+#~ msgstr "A الأسفل سهم"
+
+#, fuzzy
+#~ msgid "Left Down Arrow"
+#~ msgstr "يسار أسفل سهم"
+
+#, fuzzy
+#~ msgid "A left down arrow"
+#~ msgstr "A يسار أسفل سهم"
+
+#, fuzzy
+#~ msgid "Left Top Arrow"
+#~ msgstr "يسار أعلى سهم"
+
+#, fuzzy
+#~ msgid "A left top arrow"
+#~ msgstr "A يسار الأعلى سهم"
+
+#, fuzzy
+#~ msgid "Right Down Arrow"
+#~ msgstr "يمين أسفل سهم"
+
+#, fuzzy
+#~ msgid "A right down arrow"
+#~ msgstr "A يمين أسفل سهم"
+
+#, fuzzy
+#~ msgid "Right Top Arrow"
+#~ msgstr "يمين أعلى سهم"
+
+#, fuzzy
+#~ msgid "A right top arrow"
+#~ msgstr "A يمين الأعلى سهم"
+
+#, fuzzy
+#~ msgid "Enhanced Path"
+#~ msgstr "محسّن المسار"

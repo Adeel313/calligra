@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Flow Visio Import Filter",
+        "Name[ar]": "مرشح استيراد Visio لـ Flow",
+        "Name[ca@valencia]": "Filtre d'exportació Visio de Flow",
+        "Name[ca]": "Filtre d'exportació Visio del Flow",
+        "Name[cs]": "Importní filtr formátu Flow Visio",
+        "Name[de]": "Flow-Visio-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής Flow Visio",
+        "Name[en_GB]": "Flow Visio Import Filter",
+        "Name[eo]": "Flow Visio Importfiltrilo",
+        "Name[es]": "Filtro de importación de Flow Visio",
+        "Name[eu]": "Flow-ren Visio inportazio-iragazkia",
+        "Name[fi]": "Flow’n Visio-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation de Visio pour Flow",
+        "Name[ga]": "Scagaire Iompórtála Flow Visio",
+        "Name[gl]": "Filtro para Flow de importación de Visio",
+        "Name[he]": "מסנן ייבוא Flow Visio",
+        "Name[it]": "Filtro di importazione Visio per Flow",
+        "Name[ka]": "Flow Visio -ის შემოტანის ფილტრი",
+        "Name[lv]": "„Flow“ „Visio“ importa filtrs",
+        "Name[nl]": "Visio-importfilter voor Flow",
+        "Name[pl]": "Filtr importu Flow Visio",
+        "Name[pt_BR]": "Filtro de Importação Visio para o Flow",
+        "Name[ru]": "Фильтр импорта Visio Flow",
+        "Name[sa]": "प्रवाह Visio आयात फ़िल्टर",
+        "Name[sk]": "Filter importu Visio pre Flow",
+        "Name[sl]": "Filter uvoza Flow Visio",
+        "Name[sv]": "Flow Visio-importfilter",
+        "Name[tr]": "Flow Visio İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування даних Visio для Flow",
+        "Name[zh_CN]": "Visio 流程图导入过滤器",
+        "Name[zh_TW]": "Flow Visio 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/vnd.oasis.opendocument.text",
+    "X-KDE-Import": "application/vnd.ms-works",
+    "X-KDE-Weight": 1
+}

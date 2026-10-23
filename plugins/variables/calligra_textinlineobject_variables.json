@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Icon": "",
+        "Name": "Text Variables",
+        "Name[ar]": "متغيرات النص",
+        "Name[ca@valencia]": "Variables de text",
+        "Name[ca]": "Variables de text",
+        "Name[cs]": "Proměnné textu",
+        "Name[de]": "Textvariablen",
+        "Name[el]": "Μεταβλητές κειμένου",
+        "Name[en_GB]": "Text Variables",
+        "Name[eo]": "Tekstaj Variabloj",
+        "Name[es]": "Variables de texto",
+        "Name[eu]": "Testu aldagaiak",
+        "Name[fi]": "Tekstimuuttujat",
+        "Name[fr]": "Variables de texte",
+        "Name[ga]": "Athróga Téacs",
+        "Name[gl]": "Variábeis de texto",
+        "Name[he]": "משתני טקסט",
+        "Name[it]": "Variabili di testo",
+        "Name[ka]": "ტექსტური ცვლადები",
+        "Name[lv]": "Teksta mainīgie",
+        "Name[nl]": "Tekstvariabelen",
+        "Name[pl]": "Zmienne tekstu",
+        "Name[pt_BR]": "Variáveis de Texto",
+        "Name[ru]": "Текстовые переменные",
+        "Name[sa]": "पाठचराः",
+        "Name[sk]": "Textové premenné",
+        "Name[sl]": "Spremenljivke besedila",
+        "Name[sv]": "Textvariabler",
+        "Name[tr]": "Metin Değişkenleri",
+        "Name[uk]": "Текстові змінні",
+        "Name[zh_CN]": "文本变量",
+        "Name[zh_TW]": "文字變數",
+        "ServiceTypes": [
+            "Calligra/Text-InlineObject"
+        ]
+    },
+    "X-KoText-MinVersion": "28",
+    "X-KoText-PluginVersion": "28"
+}

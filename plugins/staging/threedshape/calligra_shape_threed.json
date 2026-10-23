@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "3D Scene Shape",
+        "Name[ar]": "شكل مشهد ثلاثي الأبعاد",
+        "Name[ca@valencia]": "Forma d'escena 3D",
+        "Name[ca]": "Forma d'escena 3D",
+        "Name[cs]": "Tvar 3D scény",
+        "Name[de]": "3D-Szenenobjekt",
+        "Name[el]": "Σχήμα σκηνής 3D",
+        "Name[en_GB]": "3D Scene Shape",
+        "Name[eo]": "3D Scenformo",
+        "Name[es]": "Forma de escena 3D",
+        "Name[eu]": "3D eszena forma",
+        "Name[fi]": "3D-kohtauskuvio",
+        "Name[fr]": "Forme de scène 3D",
+        "Name[ga]": "Cruth Radharc 3T",
+        "Name[gl]": "Forma de escena en 3D",
+        "Name[he]": "צורת סצנה תלת־ממדית",
+        "Name[it]": "Forma di scena 3D",
+        "Name[ka]": "3D სცენის ფორმა",
+        "Name[lv]": "3D ainas objekts",
+        "Name[nl]": "Vorm van 3D-scène",
+        "Name[pl]": "Kształt sceny 3D",
+        "Name[pt_BR]": "Forma de Cena 3D",
+        "Name[ru]": "Объект трёхмерной сцены",
+        "Name[sa]": "3D दृश्य आकार",
+        "Name[sk]": "Tvar 3D scény",
+        "Name[sl]": "Oblika 3D scene",
+        "Name[sv]": "Tredimensionell scenform",
+        "Name[tr]": "3B Sahne Şekli",
+        "Name[uk]": "Форма просторової сцени",
+        "Name[zh_CN]": "3D 场景形状",
+        "Name[zh_TW]": "3D 場景元件",
+        "ServiceTypes": [
+            "Calligra/Shape"
+        ]
+    },
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

@@ -1,0 +1,43 @@
+{
+    "KPlugin": {
+        "Name": "Spreadsheet Shape",
+        "Name[ar]": "شكل جدول البيانات",
+        "Name[ca@valencia]": "Forma de full de càlcul",
+        "Name[ca]": "Forma de full de càlcul",
+        "Name[cs]": "Tvar sešitu",
+        "Name[de]": "Tabellenobjekt",
+        "Name[el]": "Σχήμα φύλλου εργασίας",
+        "Name[en_GB]": "Spreadsheet Shape",
+        "Name[eo]": "Tabelfoli-Formo",
+        "Name[es]": "Forma de hoja de cálculo",
+        "Name[eu]": "Kalkulu-orri forma",
+        "Name[fi]": "Taulukkolaskentakuvio",
+        "Name[fr]": "Forme pour feuille de calcul",
+        "Name[ga]": "Cruth Scarbhileog",
+        "Name[gl]": "Obxecto de folla de cálculo",
+        "Name[he]": "צורת גיליון נתונים",
+        "Name[ia]": "Forma de folio de calculo (Spreadsheet)",
+        "Name[it]": "Forma di foglio di calcolo",
+        "Name[ka]": "ელცხრილის ფორმა",
+        "Name[lv]": "Izklājlapu objekts",
+        "Name[nl]": "Rekenblad-vorm",
+        "Name[pl]": "Kształt arkusza kalkulacyjnego",
+        "Name[pt_BR]": "Forma de Planilha",
+        "Name[ru]": "Объект электронной таблицы",
+        "Name[sa]": "स्प्रेडशीट आकार",
+        "Name[sk]": "Tvar zošita",
+        "Name[sl]": "Oblika preglednice",
+        "Name[sv]": "Kalkylarksform",
+        "Name[tr]": "Çalışma Sayfası Şekli",
+        "Name[ug]": "ئېلېكترونلۇق جەدۋەل شەكلى",
+        "Name[uk]": "Форма електронної таблиці",
+        "Name[zh_CN]": "电子表格形状",
+        "Name[zh_TW]": "工作表元件",
+        "ServiceTypes": [
+            "Calligra/Deferred"
+        ]
+    },
+    "X-DeferredID": "spreadsheetshape-deferred",
+    "X-Flake-MinVersion": "28",
+    "X-Flake-PluginVersion": "28"
+}

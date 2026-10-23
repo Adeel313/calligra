@@ -1,0 +1,600 @@
+# translation of AutocorrectPlugin.po to Low Saxon
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+# Sönke Dibbern <s_dibbern@web.de>, 2007, 2014.
+# Manfred Wiese <m.j.wiese@web.de>, 2008.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: AutocorrectPlugin\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2014-03-27 22:45+0100\n"
+"Last-Translator: Sönke Dibbern <s_dibbern@web.de>\n"
+"Language-Team: Low Saxon <kde-i18n-nds@kde.org>\n"
+"Language: nds\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 1.4\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "&Automaatsche Korrektuur instellen..."
+
+#: Autocorrect.cpp:30
+#, fuzzy, kde-format
+#| msgid "Autocorrection"
+msgid "Enable Autocorrection"
+msgstr "Automaatsche Korrektuur"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "Automaatsche Korrektuur"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Eenfach Auto&maatsche Korrektuur"
+
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Rutfinnen, wat en nieg Satz anfangt un den eersten Bookstaav groot "
+#~ "schrieven"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "&Eerst Bookstaav vun en Satz automaatsch na Grootschrieven ümwanneln (t."
+#~ "B. \"mien Huus. in disse Stadt\" na \"mien Huus. In disse Stadt\")"
+
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "För all Wöör warrt pröövt, wat de Ümschalttast villicht to lang drückt "
+#~ "wöör. Wöör, de twee Grootbookstaven bargt, schullen na de Koort \"Utnahmen"
+#~ "\" toföögt warrn."
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "&Twee Grootbookstaven na een Grootbookstaav un en Lüttbookstaav ännern\n"
+#~ " (t.B. \"MOin\" na \"Moin\")"
+
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Rutfinnen, wat en URL (Internetadress) ingeven wöör, un ehr so formateren "
+#~ "liek en Nettkieker ehr wiest."
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "&URLs automaatsch formateren"
+
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Pröövt, dat nich mehr as een Freeteken ingeven warrt, wiel dat en faken "
+#~ "Fehler is, de sik binnen formateert Text swoor finnen lett."
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Dubbelt Freetekens &weglaten"
+
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Wohrt richtige Formateren un Satzinrücken dör automaatsch Wegdoon vun "
+#~ "Freetekens an'n Anfang un an't Enn vun Afsnitten."
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Freetekens an'n Anfang un an't Enn vun Afsnitten &wegdoon"
+
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Wannelt bi den Bruuk vun _ünnerstreken_ oder *fett* Text den Text "
+#~ "twischen de Ünnerstreken oder Steerns na ünnerstreken oder fett Text üm."
+
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "&Fettdruck un Ünnerstreken automaatsch formateren"
+
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr ""
+#~ "De mehrsten Standard-Brookschriefwiesen warrt ümwannelt, wenn mööglich"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "\"1/2...\" mit \"½...\" &utwesseln"
+
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Bi de Ingaav vun t.B. \"1)\" an'n Anfang vun en Afsnitt bruukt de Afsnitt "
+#~ "automaatsch dissen Stil för't Nummereren. Dit is goot, wiel de nakamen "
+#~ "Afsnitten ok nummereert warrt un de richtigen Afstänn bruukt warrt."
+
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "&Automaatsch Nummereren för nummereert Afsnitten bruken"
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "1st mi 1^st ut&wesseln..."
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "Daagnaams groot schrieven"
+
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Bi de Ingaav vun \"*\" oder \"-\" an'n Anfang vun en Afsnitt bruukt de "
+#~ "Afsnitt automaatsch dissen Liststil. De Bruuk vun Liststil-Formateren "
+#~ "bedüüdt, dat för de List de richtigen Optellenpünkt bruukt warrt."
+
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "&Listformateren för Afsnitten mit Optellpünkt bruken"
+
+#~ msgid "Default"
+#~ msgstr "Standard"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "Egen &Goosfööt"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "&Dubbelt Goosfööt mit typograafsch Goosfööt utwesseln"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "&Enkelgoosfööt mit typograafsch Goosfööt utwesseln"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "&Verwiedert automaatsche Korrektuur"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Utwesseln un Utnahmen för de Spraak:"
+
+#~ msgid "All Languages"
+#~ msgstr "All Spraken"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "Woort-Utwesseln &anmaken"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "Text mit formateert &Text utwesseln"
+
+#~ msgid "&Find"
+#~ msgstr "&Söken"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "&Utwesseln"
+
+#~ msgid "&Add"
+#~ msgstr "&Tofögen"
+
+#~ msgid "Remove"
+#~ msgstr "Wegmaken"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "Formaat ä&nnern..."
+
+#~ msgid "C&lear Format"
+#~ msgstr "Formaat &leddig maken"
+
+#~ msgid "Find"
+#~ msgstr "Söken"
+
+#~ msgid "Replace"
+#~ msgstr "Utwesseln"
+
+#~ msgid "E&xceptions"
+#~ msgstr "&Utnahmen"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Nich as Satzenn ankieken:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "Automaatsch insluten"
+
+#~ msgid "R&emove"
+#~ msgstr "&Wegdoon"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Twee Grootbookstaven tolaten in:"
+
+#~ msgid "A&dd"
+#~ msgstr "&Tofögen"
+
+#~ msgid "&Modify"
+#~ msgstr "Ä&nnern"
+
+#~ msgid "Select Character"
+#~ msgstr "Teken utsöken"
+
+#, fuzzy
+#~| msgid "Si&mple Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Eenfach Auto&maatsche Korrektuur"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a new sentence is started and always ensure that the first "
+#~| "character is an uppercase character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Rutfinnen, wat en nieg Satz anfangt un den eersten Bookstaav groot "
+#~ "schrieven"
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &first letter of a sentence automatically to uppercase\n"
+#~| "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "&Eerst Bookstaav vun en Satz automaatsch na Grootschrieven ümwanneln (t."
+#~ "B. \"mien Huus. in disse Stadt\" na \"mien Huus. In disse Stadt\")"
+
+#, fuzzy
+#~| msgid ""
+#~| "All words are checked for the common mistake of holding the shift key "
+#~| "down a bit too long. If some words must have two uppercase characters, "
+#~| "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "För all Wöör warrt pröövt, wat de Ümschalttast villicht to lang drückt "
+#~ "wöör. Wöör, de twee Grootbookstaven bargt, schullen na de Koort \"Utnahmen"
+#~ "\" toföögt warrn."
+
+#, fuzzy
+#~| msgid ""
+#~| "Convert &two uppercase characters to one uppercase and one lowercase "
+#~| "character\n"
+#~| " (e.g. PErfect to Perfect)"
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "&Twee Grootbookstaven na een Grootbookstaav un en Lüttbookstaav ännern\n"
+#~ " (t.B. \"MOin\" na \"Moin\")"
+
+#, fuzzy
+#~| msgid ""
+#~| "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~| "formatting that matches the way an Internet browser would show a URL."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Rutfinnen, wat en URL (Internetadress) ingeven wöör, un ehr so formateren "
+#~ "liek en Nettkieker ehr wiest."
+
+#, fuzzy
+#~| msgid "Autoformat &URLs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoformat &URLs"
+#~ msgstr "&URLs automaatsch formateren"
+
+#, fuzzy
+#~| msgid ""
+#~| "Make sure that more than one space cannot be typed, as this is a common "
+#~| "mistake which is quite hard to find in formatted text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Pröövt, dat nich mehr as een Freeteken ingeven warrt, wiel dat en faken "
+#~ "Fehler is, de sik binnen formateert Text swoor finnen lett."
+
+#, fuzzy
+#~| msgid "&Suppress double spaces"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Dubbelt Freetekens &weglaten"
+
+#, fuzzy
+#~| msgid ""
+#~| "Keep correct formatting and indenting of sentences by automatically "
+#~| "removing spaces typed at the beginning and end of a paragraph."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Wohrt richtige Formateren un Satzinrücken dör automaatsch Wegdoon vun "
+#~ "Freetekens an'n Anfang un an't Enn vun Afsnitten."
+
+#, fuzzy
+#~| msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Freetekens an'n Anfang un an't Enn vun Afsnitten &wegdoon"
+
+#, fuzzy
+#~| msgid ""
+#~| "When you use _underline_ or *bold*, the text between the underscores or "
+#~| "asterisks will be converted to underlined or bold text."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Wannelt bi den Bruuk vun _ünnerstreken_ oder *fett* Text den Text "
+#~ "twischen de Ünnerstreken oder Steerns na ünnerstreken oder fett Text üm."
+
+#, fuzzy
+#~| msgid "Automatically do &bold and underline formatting"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "&Fettdruck un Ünnerstreken automaatsch formateren"
+
+#, fuzzy
+#~| msgid "Most standard fraction notations will be converted when available"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr ""
+#~ "De mehrsten Standard-Brookschriefwiesen warrt ümwannelt, wenn mööglich"
+
+#, fuzzy
+#~| msgid "Re&place 1/2... with ½..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "\"1/2...\" mit \"½...\" &utwesseln"
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '1)' or similar in front of a paragraph, automatically "
+#~| "convert the paragraph to use that numbering style. This has the "
+#~| "advantage that further paragraphs will also be numbered and the spacing "
+#~| "is done correctly."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Bi de Ingaav vun t.B. \"1)\" an'n Anfang vun en Afsnitt bruukt de Afsnitt "
+#~ "automaatsch dissen Stil för't Nummereren. Dit is goot, wiel de nakamen "
+#~ "Afsnitten ok nummereert warrt un de richtigen Afstänn bruukt warrt."
+
+#, fuzzy
+#~| msgid "Use &autonumbering for numbered paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "&Automaatsch Nummereren för nummereert Afsnitten bruken"
+
+#, fuzzy
+#~| msgid "Rep&lace 1st... with 1^st..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "1st mi 1^st ut&wesseln..."
+
+#, fuzzy
+#~| msgid "Capitalize name of days"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Capitalize name of days"
+#~ msgstr "Daagnaams groot schrieven"
+
+#, fuzzy
+#~| msgid ""
+#~| "When typing '*' or '-' in front of a paragraph, automatically convert "
+#~| "the paragraph to use that list-style. Using a list-style formatting "
+#~| "means that a correct bullet is used to draw the list."
+#~ msgctxt "(qtundo-format)"
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Bi de Ingaav vun \"*\" oder \"-\" an'n Anfang vun en Afsnitt bruukt de "
+#~ "Afsnitt automaatsch dissen Liststil. De Bruuk vun Liststil-Formateren "
+#~ "bedüüdt, dat för de List de richtigen Optellenpünkt bruukt warrt."
+
+#, fuzzy
+#~| msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "&Listformateren för Afsnitten mit Optellpünkt bruken"
+
+#, fuzzy
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "Standard"
+
+#, fuzzy
+#~| msgid "Custom &Quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Custom &Quotes"
+#~ msgstr "Egen &Goosfööt"
+
+#, fuzzy
+#~| msgid "Replace &double quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "&Dubbelt Goosfööt mit typograafsch Goosfööt utwesseln"
+
+#, fuzzy
+#~| msgid "Replace &single quotes with typographical quotes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "&Enkelgoosfööt mit typograafsch Goosfööt utwesseln"
+
+#, fuzzy
+#~| msgid "Ad&vanced Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "&Verwiedert automaatsche Korrektuur"
+
+#, fuzzy
+#~| msgid "Replacements and exceptions for language:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Utwesseln un Utnahmen för de Spraak:"
+
+#, fuzzy
+#~| msgid "All Languages"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "All Languages"
+#~ msgstr "All Spraken"
+
+#, fuzzy
+#~| msgid "&Enable word replacement"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Enable word replacement"
+#~ msgstr "Woort-Utwesseln &anmaken"
+
+#, fuzzy
+#~| msgid "Replace &text with format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace &text with format"
+#~ msgstr "Text mit formateert &Text utwesseln"
+
+#, fuzzy
+#~| msgid "&Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Find"
+#~ msgstr "&Söken"
+
+#, fuzzy
+#~| msgid "..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "..."
+#~ msgstr "..."
+
+#, fuzzy
+#~| msgid "Re&place"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Re&place"
+#~ msgstr "&Utwesseln"
+
+#, fuzzy
+#~| msgid "Remove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Remove"
+#~ msgstr "Wegmaken"
+
+#, fuzzy
+#~| msgid "C&hange Format..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&hange Format..."
+#~ msgstr "Formaat ä&nnern..."
+
+#, fuzzy
+#~| msgid "C&lear Format"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "C&lear Format"
+#~ msgstr "Formaat &leddig maken"
+
+#, fuzzy
+#~| msgid "Find"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Find"
+#~ msgstr "Söken"
+
+#, fuzzy
+#~| msgid "Replace"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Replace"
+#~ msgstr "Utwesseln"
+
+#, fuzzy
+#~| msgid "E&xceptions"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "E&xceptions"
+#~ msgstr "&Utnahmen"
+
+#, fuzzy
+#~| msgid "Do not treat as the end of a sentence:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Nich as Satzenn ankieken:"
+
+#, fuzzy
+#~| msgid "Autoinclude"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autoinclude"
+#~ msgstr "Automaatsch insluten"
+
+#, fuzzy
+#~| msgid "R&emove"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "R&emove"
+#~ msgstr "&Wegdoon"
+
+#, fuzzy
+#~| msgid "Accept two uppercase letters in:"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Twee Grootbookstaven tolaten in:"
+
+#, fuzzy
+#~| msgid "A&dd"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "A&dd"
+#~ msgstr "&Tofögen"
+
+#, fuzzy
+#~| msgid "Configure &Autocorrection..."
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Configure &Autocorrection..."
+#~ msgstr "&Automaatsche Korrektuur instellen..."
+
+#, fuzzy
+#~| msgid "Autocorrection"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrection"
+#~ msgstr "Automaatsche Korrektuur"
+
+#, fuzzy
+#~| msgid "&Modify"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Modify"
+#~ msgstr "Ä&nnern"
+
+#, fuzzy
+#~| msgid "&Add"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "&Add"
+#~ msgstr "&Tofögen"
+
+#, fuzzy
+#~| msgid "Select Character"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Select Character"
+#~ msgstr "Teken utsöken"
+
+#, fuzzy
+#~| msgid "Autocorrect"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Autocorrect"
+#~ msgstr "Automaatsche Korrektuur"

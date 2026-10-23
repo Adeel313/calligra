@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Words ASCII Import Filter",
+        "Name[ar]": "مرشح استيراد ASCII لـ Words",
+        "Name[ca@valencia]": "Filtre d'importació ASCII de Words",
+        "Name[ca]": "Filtre d'importació ASCII del Words",
+        "Name[cs]": "Importní filtr ASCII pro Words",
+        "Name[de]": "Words ASCII-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής λέξεων ASCII",
+        "Name[en_GB]": "Words ASCII Import Filter",
+        "Name[eo]": "Words ASCII Importfiltrilo",
+        "Name[es]": "Filtro de importación ASCII de Words",
+        "Name[eu]": "Words-en ASCII inportatzeko iragazkia",
+        "Name[fi]": "Wordsin ASCII-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « ASCII » de Words",
+        "Name[ga]": "Scagaire Iompórtála ASCII Focail",
+        "Name[gl]": "Filtro para Words de importación de ASCII",
+        "Name[he]": "מסנן ייבוא ASCII ל־Words",
+        "Name[it]": "Filtro di importazione ASCII per Words",
+        "Name[ka]": "Words ASCII -ის შემოტანის ფილტრი",
+        "Name[lv]": "„Words“ ASCII importa filtrs",
+        "Name[nl]": "ASCII-importfilter voor Words",
+        "Name[pl]": "Filtr importu ASCII do Słów",
+        "Name[pt_BR]": "Filtro de importação ASCII para o Words",
+        "Name[ru]": "Фильтр импорта ASCII Words",
+        "Name[sa]": "शब्द ASCII आयात फ़िल्टर",
+        "Name[sk]": "Filter importu ASCII pre Words",
+        "Name[sl]": "Words ASCII filter uvoza",
+        "Name[sv]": "Words ASCII-importfilter",
+        "Name[tr]": "Sözcükler ASCII İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування даних ASCII для Words",
+        "Name[zh_CN]": "Words ASCII 导入过滤器",
+        "Name[zh_TW]": "Words ASCII 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/vnd.oasis.opendocument.text",
+    "X-KDE-Import": "text/plain",
+    "X-KDE-Weight": 1
+}

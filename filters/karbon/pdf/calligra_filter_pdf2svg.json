@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Karbon PDF Import Filter",
+        "Name[ar]": "مرشح استيراد PDF لكربون",
+        "Name[ca@valencia]": "Filtre d'importació PDF de Karbon",
+        "Name[ca]": "Filtre d'importació PDF del Karbon",
+        "Name[cs]": "Importní filtr PDF pro Karbon",
+        "Name[de]": "Karbon PDF-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής PDF Karbon",
+        "Name[en_GB]": "Karbon PDF Import Filter",
+        "Name[eo]": "Karbon PDF-Importfiltrilo",
+        "Name[es]": "Filtro de importación PDF de Karbon",
+        "Name[eu]": "Karbon-en PDF inportatzeko iragazkia",
+        "Name[fi]": "Karbonin PDF-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « PDF » de Karbon",
+        "Name[ga]": "Scagaire Iompórtála PDF Karbon",
+        "Name[gl]": "Filtro para Karbon de importación de PDF",
+        "Name[he]": "מסנן ייבוא PDF ל־Karbon",
+        "Name[it]": "Filtro di importazione PDF per Karbon",
+        "Name[ka]": "Karbon PDF შემოტანის ფილტრი",
+        "Name[lv]": "„Karbon“ PDF importa filtrs",
+        "Name[nl]": "PDF-importfilter voor Karbon",
+        "Name[pl]": "Filtr importu PDF do Karbon",
+        "Name[pt_BR]": "Filtro de importação PDF para o Karbon",
+        "Name[ru]": "Фильтр импорта PDF Karbon",
+        "Name[sa]": "कार्बन पीडीएफ आयात फ़िल्टर",
+        "Name[sk]": "Filter importu PDF pre Karbon",
+        "Name[sl]": "Karbon filter uvoza PDF",
+        "Name[sv]": "Karbon PDF-importfilter",
+        "Name[tr]": "Karbon PDF İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування PDF до Karbon",
+        "Name[zh_CN]": "Karbon PDF 导入过滤器",
+        "Name[zh_TW]": "Karbon PDF 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "image/svg+xml",
+    "X-KDE-Import": "application/pdf",
+    "X-KDE-Weight": 1
+}

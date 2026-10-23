@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "MS Word DOCX Export Filter",
+        "Name[ar]": "مرشح تصدير DOCX لـ MS Word",
+        "Name[ca@valencia]": "Filtre d'exportació DOCX de Word de MS",
+        "Name[ca]": "Filtre d'exportació DOCX del Word de MS",
+        "Name[cs]": "Exportní filtr MS Word DOCX",
+        "Name[de]": "MS Word DOCX-Exportfilter",
+        "Name[el]": "Φίλτρο εξαγωγής DOCX του MS Word",
+        "Name[en_GB]": "MS Word DOCX Export Filter",
+        "Name[eo]": "MS Word DOCX Eksporta Filtrilo",
+        "Name[es]": "Filtro de exportación DOCX de MS Word",
+        "Name[eu]": "MS word DOCX esporatzeko iragazkia",
+        "Name[fi]": "MS Word DOCX -vientisuodatin",
+        "Name[fr]": "Filtre d'exportation « docx » pour MS Word",
+        "Name[ga]": "Scagaire Easpórtála MS Word DOCX",
+        "Name[gl]": "Filtro de exportación de MS Word DOCX",
+        "Name[he]": "מסנן ייצוא ל־DOCX מ־MS Word",
+        "Name[it]": "Filtro di esportazione DOCX per MS Word",
+        "Name[ka]": "MS Word DOCX -ის გატანის ფილტრი",
+        "Name[lv]": "„MS Word“ DOCX eksporta filtrs",
+        "Name[nl]": "DOCX-exportfilter voor MS Word",
+        "Name[pl]": "Filtr eksportu DOCX do MS Word",
+        "Name[pt_BR]": "Filtro de exportação MS Word DOCX para o Words",
+        "Name[ru]": "Фильтр экспорта MS Word DOCX",
+        "Name[sa]": "MS Word DOCX निर्यात फ़िल्टर",
+        "Name[sk]": "Filter exportu MS Word DOCX",
+        "Name[sl]": "Words DOCX filter uvoza",
+        "Name[sv]": "MS Word DOCX-exportfilter",
+        "Name[tr]": "MS Word DOCX Dışa Aktarma Süzgeci",
+        "Name[uk]": "Фільтр експорту MS Word DOCX",
+        "Name[zh_CN]": "Microsoft Word DOCX 导出过滤器",
+        "Name[zh_TW]": "MS Word DOCX 匯出過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "X-KDE-Import": "application/vnd.oasis.opendocument.text",
+    "X-KDE-Weight": 1
+}

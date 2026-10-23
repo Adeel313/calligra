@@ -1,0 +1,39 @@
+{
+    "KPlugin": {
+        "Name": "Quickstates Plugin",
+        "Name[ar]": "ملحق حالات سريعة",
+        "Name[ca@valencia]": "Connector Quickstates",
+        "Name[ca]": "Connector Quickstates",
+        "Name[cs]": "Modul pro rychlé nastavení",
+        "Name[de]": "Quickstates-Modul",
+        "Name[el]": "Πρόσθετο Quickstates",
+        "Name[en_GB]": "Quickstates Plugin",
+        "Name[eo]": "Quickstates-Kromaĵo",
+        "Name[es]": "Complemento de estados rápidos",
+        "Name[eu]": "Quickstates plugina",
+        "Name[fi]": "Quickstates-liitännäinen",
+        "Name[fr]": "Module externe Quickstates",
+        "Name[ga]": "Breiseán Quickstates",
+        "Name[gl]": "Complemento Quickstates",
+        "Name[he]": "תוסף מצבים מהירים",
+        "Name[it]": "Estensione Quickstates",
+        "Name[ka]": "სწრაფი სტატისტიკის მოდული",
+        "Name[lv]": "Ātro stāvokļu spraudnis",
+        "Name[nl]": "Plug-in voor snelstatussen",
+        "Name[pl]": "Wtyczka SzybkichStanów",
+        "Name[pt_BR]": "Plugin Quickstates",
+        "Name[ru]": "Модуль быстрых состояний",
+        "Name[sa]": "Quickstates प्लगिन्",
+        "Name[sk]": "Zásuvný modul Quickstates",
+        "Name[sl]": "Vtičnik Quickstates",
+        "Name[sv]": "Insticksprogram för snabbtillstånd",
+        "Name[tr]": "Quickstates Eklentisi",
+        "Name[uk]": "Додаток станів",
+        "Name[zh_CN]": "快速状态插件",
+        "Name[zh_TW]": "Quickstates 外掛程式",
+        "ServiceTypes": [
+            "Braindump/Extensions"
+        ]
+    },
+    "X-Braindump-Version": "28"
+}

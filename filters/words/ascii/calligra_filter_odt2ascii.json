@@ -1,0 +1,41 @@
+{
+    "KPlugin": {
+        "Name": "Words ASCII Export Filter",
+        "Name[ar]": "مرشح تصدير ASCII لـ Words",
+        "Name[ca@valencia]": "Filtre d'exportació ASCII de Words",
+        "Name[ca]": "Filtre d'exportació ASCII del Words",
+        "Name[cs]": "Exportní filtr formátu ASCII pro Words",
+        "Name[de]": "Words ASCII-Exportfilter",
+        "Name[el]": "Φίλτρο εξαγωγής λέξεων ASCII",
+        "Name[en_GB]": "Words ASCII Export Filter",
+        "Name[eo]": "Words ASCII Eksporta Filtrilo",
+        "Name[es]": "Filtro de exportación ASCII de Words",
+        "Name[eu]": "Words-en ASCII esportatzeko iragazkia",
+        "Name[fi]": "Wordsin ASCII-vientisuodatin",
+        "Name[fr]": "Filtre d'exportation « ASCII » de Words",
+        "Name[ga]": "Scagaire Easpórtála ASCII Focail",
+        "Name[gl]": "Filtro para Words de exportación de ASCII",
+        "Name[he]": "מסנן ייצוא ASCII מ־Words",
+        "Name[it]": "Filtro di esportazione ASCII per Words",
+        "Name[ka]": "Words ASCII -ის გატანის ფილტრი",
+        "Name[lv]": "„Words“ ASCII eksporta filtrs",
+        "Name[nl]": "ASCII-exportfilter voor Words",
+        "Name[pl]": "Filtr eksportu ASCII ze Słów",
+        "Name[pt_BR]": "Filtro de exportação ASCII para o Words",
+        "Name[ru]": "Фильтр экспорта ASCII Words",
+        "Name[sa]": "शब्द ASCII निर्यात फ़िल्टर",
+        "Name[sk]": "Filter exportu ASCII pre Words",
+        "Name[sl]": "Words ASCII filter izvoza",
+        "Name[sv]": "Words ASCII-exportfilter",
+        "Name[tr]": "Sözcükler ASCII Dışa Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування даних ASCII для Words",
+        "Name[zh_CN]": "Words ASCII 导出过滤器",
+        "Name[zh_TW]": "Words ASCII 匯出過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "text/plain",
+    "X-KDE-Import": "application/vnd.oasis.opendocument.text",
+    "X-KDE-Weight": 1
+}

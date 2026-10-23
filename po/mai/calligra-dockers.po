@@ -1,0 +1,103 @@
+# translation of koffice-dockers.po to Maithili
+# Copyright (C) YEAR This_file_is_part_of_KDE
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Sangeeta Kumari <sangeeta09@gmail.com>, 2009.
+msgid ""
+msgstr ""
+"Project-Id-Version: koffice-dockers\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2009-04-22 00:16+0530\n"
+"Last-Translator: Sangeeta Kumari <sangeeta09@gmail.com>\n"
+"Language-Team: Maithili <maithili.sf.net>\n"
+"Language: mai\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: KBabel 1.11.4\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+"\n"
+"\n"
+
+#: snapguidedocker/SnapGuideDocker.cpp:39
+#, kde-format
+msgid "Snap Settings"
+msgstr ""
+
+#~ msgid "More"
+#~ msgstr "बेसी"
+
+#~ msgid "Default"
+#~ msgstr "मूलभूत"
+
+#~ msgid "Arrows"
+#~ msgstr "तीर"
+
+#, fuzzy
+#~| msgid "Shapes"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Add Shape"
+#~ msgstr "आकार"
+
+#, fuzzy
+#~| msgid "More"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "More"
+#~ msgstr "बेसी"
+
+#, fuzzy
+#~| msgid "Default"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Default"
+#~ msgstr "मूलभूत"
+
+#, fuzzy
+#~| msgid "Arrows"
+#~ msgctxt "(qtundo-format)"
+#~ msgid "Arrows"
+#~ msgstr "तीर"
+
+#~ msgid "File not found"
+#~ msgstr "फाइल नहि भेटल"
+
+#~ msgid "Internal error"
+#~ msgstr "भितरका त्रुटि"
+
+#~ msgid "Out of memory"
+#~ msgstr "स्मृति सँ बाहर"
+
+#~ msgid "Unknown error"
+#~ msgstr "अज्ञात त्रुटि"
+
+#~ msgid "Style:"
+#~ msgstr "शैली:"
+
+#~ msgid "Width:"
+#~ msgstr "चओड़ाइ:"
+
+#~ msgid "Cap:"
+#~ msgstr "कैप:"
+
+#~ msgid "Join:"
+#~ msgstr "शामिल होउ:"
+
+#, fuzzy
+#~| msgid "Style:"
+#~ msgid "Styles"
+#~ msgstr "शैली:"
+
+#~ msgid "Open..."
+#~ msgstr "खोलू..."
+
+#~ msgid "New Folder..."
+#~ msgstr "नवीन फोल्डर..."
+
+#~ msgid "Zoom In"
+#~ msgstr "ज़ूम इन"
+
+#~ msgid "Zoom Out"
+#~ msgstr "ज़ूम आउट"
+
+#~ msgid "Templates"
+#~ msgstr "नमूना"

@@ -1,0 +1,234 @@
+# POT_PART_NORMAL only
+# Copyright (C) YEAR This file is copyright:
+# This file is distributed under the same license as the calligra package.
+# Wantoyo <wantoyek@gmail.com>, 2019, 2022.
+# Linerly <linerly@protonmail.com>, 2022.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: calligra\n"
+"Report-Msgid-Bugs-To: https://bugs.kde.org\n"
+"POT-Creation-Date: 2025-11-17 11:52+0000\n"
+"PO-Revision-Date: 2022-09-27 15:34+0700\n"
+"Last-Translator: Wantoyèk <wantoyek@gmail.com>\n"
+"Language-Team: https://matrix.to/#/#i18n_kde_id:matrix.org\n"
+"Language: id\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Lokalize 21.12.3\n"
+
+#: Autocorrect.cpp:26
+#, kde-format
+msgid "Configure &Autocorrection..."
+msgstr "Konfigurasikan &Autokoreksi..."
+
+#: Autocorrect.cpp:30
+#, fuzzy, kde-format
+#| msgid "Autocorrection"
+msgid "Enable Autocorrection"
+msgstr "Autokoreksi"
+
+#: AutocorrectFactory.cpp:16
+#, kde-format
+msgid "Autocorrect"
+msgstr "Autokoreksi"
+
+#~ msgid "Si&mple Autocorrection"
+#~ msgstr "Autokoreksi Se&derhana"
+
+#~ msgid ""
+#~ "Detect when a new sentence is started and always ensure that the first "
+#~ "character is an uppercase character"
+#~ msgstr ""
+#~ "Deteksi ketika sebuah kalimat baru dimulai dan selalu memastikan bahwa "
+#~ "karakter pertama adalah sebuah karakter huruf-besar"
+
+#~ msgid ""
+#~ "Convert &first letter of a sentence automatically to uppercase\n"
+#~ "(e.g. \"my house. in this town\" to \"my house. In this town\")"
+#~ msgstr ""
+#~ "Konversikan huruf per&tama pada sebuah kalimat yang secara otomatis ke "
+#~ "huruf-besar\n"
+#~ "(mis. \"rumahku. di kota ini\" menjadi \"rumahku. Di kota ini\")"
+
+#~ msgid ""
+#~ "All words are checked for the common mistake of holding the shift key "
+#~ "down a bit too long. If some words must have two uppercase characters, "
+#~ "then those exceptions should be added in the 'Exceptions' tab."
+#~ msgstr ""
+#~ "Semua kata yang diperiksa untuk kesalahan pada umumnya dari penekanan "
+#~ "tuts shift yang agak lama. Jika beberapa kata harus memiliki dua karakter "
+#~ "huruf-besar, maka kekecualian seharusnya ditambahkan di dalam tab "
+#~ "Pengecualian."
+
+#~ msgid ""
+#~ "Convert &two uppercase characters to one uppercase and one lowercase "
+#~ "character\n"
+#~ " (e.g. PErfect to Perfect)"
+#~ msgstr ""
+#~ "Konversikan &dua karakter huruf-besar ke karakter satu huruf-besar dan "
+#~ "satu huruf-kecil\n"
+#~ "(mis. SEmpurna ke Sempurna)"
+
+#~ msgid ""
+#~ "Detect when a URL (Uniform Resource Locator) is typed and provide "
+#~ "formatting that matches the way an Internet browser would show a URL."
+#~ msgstr ""
+#~ "Deteksikan ketika sebuah URL (Uniform Resource Locator) telah diketik dan "
+#~ "menyediakan pemformatan yang cocok seperti cara sebuah penelusur Internet "
+#~ "yang menampilkan sebuah URL."
+
+#~ msgid "Autoformat &URLs"
+#~ msgstr "&URL-URL Autoformat"
+
+#~ msgid ""
+#~ "Make sure that more than one space cannot be typed, as this is a common "
+#~ "mistake which is quite hard to find in formatted text."
+#~ msgstr ""
+#~ "Pastikan bahwa lebih dari satu spasi tidak boleh diketikkan, sebagaimana "
+#~ "ini adalah kesalahan pada umumnya yang mana adalah sangat sukar untuk "
+#~ "dicari dalam teks terformat."
+
+#~ msgid "&Suppress double spaces"
+#~ msgstr "Me&nekan spasi dua kali"
+
+#~ msgid ""
+#~ "Keep correct formatting and indenting of sentences by automatically "
+#~ "removing spaces typed at the beginning and end of a paragraph."
+#~ msgstr ""
+#~ "Jaga pemformatan yang benar dan pelekukan kalimat dengan secara otomatis "
+#~ "menghapus spasi yang diketik di awal dan akhir paragraf."
+
+#~ msgid "R&emove spaces at the beginning and end of paragraphs"
+#~ msgstr "Ha&pus spasi di awal dan akhir paragraf"
+
+#~ msgid ""
+#~ "When you use _underline_ or *bold*, the text between the underscores or "
+#~ "asterisks will be converted to underlined or bold text."
+#~ msgstr ""
+#~ "Ketika kamu menggunakan _garisi-bawah_ atau *tebal*, teks yang antara "
+#~ "bergarisbawahan atau bertandabintangan akan dikonversikan ke teks yang "
+#~ "digarisibawah atau ditebali."
+
+#~ msgid "Automatically do &bold and underline formatting"
+#~ msgstr "Secara otomatis melakukan pemformatan te&bal dan garisi-bawah"
+
+#~ msgid "Most standard fraction notations will be converted when available"
+#~ msgstr ""
+#~ "Sebagian besar notasi fraksi standar akan dikonversikan ketika tersedia"
+
+#~ msgid "Re&place 1/2... with ½..."
+#~ msgstr "&Gantikan 1/2... dengan ½..."
+
+#~ msgid ""
+#~ "When typing '1)' or similar in front of a paragraph, automatically "
+#~ "convert the paragraph to use that numbering style. This has the advantage "
+#~ "that further paragraphs will also be numbered and the spacing is done "
+#~ "correctly."
+#~ msgstr ""
+#~ "Ketika mengetik '1)' atau yang mirip dalam font sebuah paragraf, secara "
+#~ "otomatis mengkonversikan paragraf untuk menggunakan gaya penomoran "
+#~ "tersebut. Ini memiliki keuntungan paragraf lebih lanjut juga akan "
+#~ "menomori dan menspasi yang dilakukan dengan benar."
+
+#~ msgid "Use &autonumbering for numbered paragraphs"
+#~ msgstr "Gunakan &autopenomoran untuk paragraf yang dinomori"
+
+#~ msgid "Rep&lace 1st... with 1^st..."
+#~ msgstr "Gant&ikan 1st... dengan 1^st..."
+
+#~ msgid "Capitalize name of days"
+#~ msgstr "Kapitalkan nama-nama hari"
+
+#~ msgid ""
+#~ "When typing '*' or '-' in front of a paragraph, automatically convert the "
+#~ "paragraph to use that list-style. Using a list-style formatting means "
+#~ "that a correct bullet is used to draw the list."
+#~ msgstr ""
+#~ "Ketika mengetik '*' atau '-' di depan sebuah paragraf, secara otomatis "
+#~ "mengkonversikan paragraf untuk menggunakan daftar-gaya tersebut. "
+#~ "Menggunakan sebuah pemformatan daftar-gaya tersebut berarti bahwa bullet "
+#~ "yang benar adalah digunakan untuk menggambari daftar."
+
+#~ msgid "Use l&ist-formatting for bulleted paragraphs"
+#~ msgstr "Gunakan d&aftar-pemformatan untuk paragraf yang di-bullet-i"
+
+#~ msgid "Default"
+#~ msgstr "Baku"
+
+#~ msgid "Custom &Quotes"
+#~ msgstr "Kustomkan &Kutipan"
+
+#~ msgid "Replace &double quotes with typographical quotes"
+#~ msgstr "Ganti kutipan gan&da dengan kutipan tipografi"
+
+#~ msgid "Replace &single quotes with typographical quotes"
+#~ msgstr "Ganti kutipan tung&gal dengan kutipan tipografi"
+
+#~ msgid "Ad&vanced Autocorrection"
+#~ msgstr "Autokoreksi Tingkat Lan&jut"
+
+#~ msgid "Replacements and exceptions for language:"
+#~ msgstr "Penggantian dan pengecualian untuk bahasa:"
+
+#~ msgid "All Languages"
+#~ msgstr "Semua Bahasa"
+
+#~ msgid "&Enable word replacement"
+#~ msgstr "&Fungsikan penggantian kata"
+
+#~ msgid "Replace &text with format"
+#~ msgstr "Ganti &teks dengan format"
+
+#~ msgid "&Find"
+#~ msgstr "Te&mukan"
+
+#~ msgid "..."
+#~ msgstr "..."
+
+#~ msgid "Re&place"
+#~ msgstr "&Ganti"
+
+#~ msgid "&Add"
+#~ msgstr "&Tambah"
+
+#~ msgid "Remove"
+#~ msgstr "Hapus"
+
+#~ msgid "C&hange Format..."
+#~ msgstr "U&bah Format..."
+
+#~ msgid "C&lear Format"
+#~ msgstr "Ber&sihkan Format"
+
+#~ msgid "Find"
+#~ msgstr "Temukan"
+
+#~ msgid "Replace"
+#~ msgstr "Ganti"
+
+#~ msgid "E&xceptions"
+#~ msgstr "Penge&cualian"
+
+#~ msgid "Do not treat as the end of a sentence:"
+#~ msgstr "Jangan memperlakukan sebagai akhir kalimat:"
+
+#~ msgid "Autoinclude"
+#~ msgstr "Autoserta"
+
+#~ msgid "R&emove"
+#~ msgstr "&Hapus"
+
+#~ msgid "Accept two uppercase letters in:"
+#~ msgstr "Setujui dua huruf hufuf-besar dalam:"
+
+#~ msgid "A&dd"
+#~ msgstr "Tam&bah"
+
+#~ msgid "&Modify"
+#~ msgstr "&Modifikasi"
+
+#~ msgid "Select Character"
+#~ msgstr "Pilih Karakter"

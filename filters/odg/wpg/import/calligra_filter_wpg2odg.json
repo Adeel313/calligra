@@ -1,0 +1,40 @@
+{
+    "KPlugin": {
+        "Name": "Flow WPG Import Filter",
+        "Name[ar]": "مرشح استيراد WPG لـ Flow",
+        "Name[ca@valencia]": "Filtre d'importació WPG de Flow",
+        "Name[ca]": "Filtre d'importació WPG del Flow",
+        "Name[cs]": "Importní filtr formátu WPG pro Flow",
+        "Name[de]": "Flow WPG-Importfilter",
+        "Name[el]": "Φίλτρο εισαγωγής ροής WPG",
+        "Name[en_GB]": "Flow WPG Import Filter",
+        "Name[eo]": "Flua WPG-Importa Filtrilo",
+        "Name[es]": "Filtro de importación de Flow WPG",
+        "Name[eu]": "Flow-ren WPG inportazio-iragazkia",
+        "Name[fi]": "Flow’n WPG-tuontisuodatin",
+        "Name[fr]": "Filtre d'importation « WPG » pour Flow",
+        "Name[ga]": "Scagaire Iompórtála Flow WPG",
+        "Name[gl]": "Filtro para Flow de importación de WPG",
+        "Name[it]": "Filtro di importazione WPG per Flow",
+        "Name[ka]": "Flow WPG -ის შემოტანის ფილტრი",
+        "Name[lv]": "„Flow“ WPG importa filtrs",
+        "Name[nl]": "WPG-importfilter voor Flow",
+        "Name[pl]": "Filtr importu WPG do Schematów",
+        "Name[pt_BR]": "Filtro de importação WPG para o Flow",
+        "Name[ru]": "Фильтр импорта WPG Flow",
+        "Name[sa]": "प्रवाह WPG आयात फ़िल्टर",
+        "Name[sk]": "Filter importu WPG pre Flow",
+        "Name[sl]": "Filter uvoza Flow WPG",
+        "Name[sv]": "Flow WPG-importfilter",
+        "Name[tr]": "Flow WPG İçe Aktarma Süzgeci",
+        "Name[uk]": "Фільтр імпортування WPG до Flow",
+        "Name[zh_CN]": "Flow 的 DPG 导入过滤器",
+        "Name[zh_TW]": "Flow WPG 匯入過濾程式",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/vnd.oasis.opendocument.graphics",
+    "X-KDE-Import": "application/x-wpg",
+    "X-KDE-Weight": 1
+}
