@@ -15,13 +15,16 @@ class Q_DECL_HIDDEN KoModeBoxFactory::Private
 public:
     KoCanvasControllerWidget *canvasController;
     QString applicationName;
+    KoDockFactoryBase::DockPosition defaultPosition;
 };
 
-KoModeBoxFactory::KoModeBoxFactory(KoCanvasControllerWidget *canvasController, const QString &applicationName, const QString & /*title*/)
+KoModeBoxFactory::KoModeBoxFactory(KoCanvasControllerWidget *canvasController, const QString &applicationName, const QString & /*title*/,
+                                   KoDockFactoryBase::DockPosition defaultPosition)
     : d(new Private())
 {
     d->canvasController = canvasController;
     d->applicationName = applicationName;
+    d->defaultPosition = defaultPosition;
 }
 
 KoModeBoxFactory::~KoModeBoxFactory()
@@ -36,12 +39,21 @@ QString KoModeBoxFactory::id() const
 
 KoDockFactoryBase::DockPosition KoModeBoxFactory::defaultDockPosition() const
 {
-    return KoDockFactoryBase::DockRight;
+    return d->defaultPosition;
+}
+
+bool KoModeBoxFactory::keepDefaultDockPosition() const
+{
+    return d->defaultPosition == KoDockFactoryBase::DockTop;
 }
 
 QDockWidget *KoModeBoxFactory::createDockWidget()
 {
     KoModeBox *box = new KoModeBox(d->canvasController, d->applicationName);
+    box->setOrientation(d->defaultPosition == KoDockFactoryBase::DockTop
+                            || d->defaultPosition == KoDockFactoryBase::DockBottom
+                        ? Qt::Horizontal
+                        : Qt::Vertical);
     QDockWidget *docker = new KoModeBoxDocker(box);
 
     return docker;

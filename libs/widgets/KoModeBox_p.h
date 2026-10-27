@@ -79,6 +79,14 @@ public Q_SLOTS:
     void setCanvas(KoCanvasBase *canvas);
     void unsetCanvas();
 
+    /**
+     * Set the orientation of the mode box.
+     * A vertical mode box is a sidebar with rotated tabs on the left or right.
+     * A horizontal mode box is a ribbon-like bar with tabs on top and the
+     * tool options laid out side by side.
+     */
+    void setOrientation(Qt::Orientation orientation);
+
 private Q_SLOTS:
     void setCurrentLayer(const KoCanvasController *canvas, const KoShapeLayer *newLayer);
 

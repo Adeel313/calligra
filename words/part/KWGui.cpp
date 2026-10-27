@@ -28,8 +28,11 @@
 #include <KoMainWindow.h>
 #include <QAction>
 #include <QGridLayout>
+#include <QMenuBar>
 #include <QScrollBar>
+#include <QSizePolicy>
 #include <QTimer>
+#include <QToolBar>
 
 KWGui::KWGui(const QString &viewMode, KWView *parent)
     : QWidget(parent)
@@ -65,10 +68,32 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
     KoToolManager::instance()->registerTools(m_view->actionCollection(), m_canvasController);
 
     if (m_view->mainWindow()) {
-        KoModeBoxFactory modeBoxFactory(canvasController, qApp->applicationName(), i18n("Tools"));
+        KoModeBoxFactory modeBoxFactory(canvasController, qApp->applicationName(), i18n("Tools"), KoDockFactoryBase::DockTop);
         QDockWidget *modeBox = m_view->mainWindow()->createDockWidget(&modeBoxFactory);
+        m_view->mainWindow()->addDockWidget(Qt::TopDockWidgetArea, modeBox);
+        modeBox->show();
         m_view->mainWindow()->dockerManager()->removeToolOptionsDocker();
         dynamic_cast<KoCanvasObserverBase *>(modeBox)->setObservedCanvas(m_canvas);
+
+        QToolBar *editToolBar = m_view->mainWindow()->findChild<QToolBar *>(QStringLiteral("mainToolBar"));
+        if (!editToolBar) {
+            const QList<QToolBar *> toolBars = m_view->mainWindow()->findChildren<QToolBar *>();
+            if (!toolBars.isEmpty()) {
+                editToolBar = toolBars.constFirst();
+            }
+        }
+        if (editToolBar) {
+            QMenuBar *menuBar = m_view->mainWindow()->menuBar();
+            menuBar->setNativeMenuBar(false);
+            menuBar->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+            QAction *firstAction = editToolBar->actions().value(0);
+            if (firstAction) {
+                editToolBar->insertWidget(firstAction, menuBar);
+            } else {
+                editToolBar->addWidget(menuBar);
+            }
+            menuBar->show();
+        }
     }
 
     gridLayout->addWidget(m_horizontalRuler->tabChooser(), 0, 0);

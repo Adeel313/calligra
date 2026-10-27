@@ -28,6 +28,7 @@
 #include <KTitleWidget>
 
 #include <QApplication>
+#include <QBoxLayout>
 #include <QFontDatabase>
 #include <QFrame>
 #include <QGridLayout>
@@ -58,18 +59,23 @@ public:
         , fittingIterations(0)
         , iconMode(IconAndText)
         , horizontalTabsSide(LeftSide)
+        , orientation(Qt::Vertical)
     {
     }
 
     KoCanvasBase *canvas;
-    QHBoxLayout *layout;
+    QBoxLayout *layout;
+    Qt::Orientation orientation;
     QList<KoToolAction *> toolActions; // toolActions maintained by toolmanager
     QList<KoToolAction *> addedToolActions; // tools in the order added to QToolBox
     QMap<int, QWidget *> addedWidgets;
     QSet<QWidget *> currentAuxWidgets;
+    QList<QPointer<QWidget>> lastOptionWidgets;
+    QList<QString> lastShownCodes;
     int activeId;
     QTabBar *tabBar;
     QStackedWidget *stack;
+    QFrame *separator;
     bool iconTextFitted;
     int fittingIterations;
     IconMode iconMode;
@@ -117,7 +123,7 @@ KoModeBox::KoModeBox(KoCanvasControllerWidget *canvas, const QString &appName)
 
     setContentsMargins({});
 
-    d->layout = new QHBoxLayout(this);
+    d->layout = new QBoxLayout(QBoxLayout::LeftToRight, this);
     d->layout->setObjectName("KoModeBoxLayout");
     d->layout->setContentsMargins({});
     d->layout->setSpacing({});
@@ -134,10 +140,10 @@ KoModeBox::KoModeBox(KoCanvasControllerWidget *canvas, const QString &appName)
     d->tabBar->setPalette(palette);
     d->layout->addWidget(d->tabBar);
 
-    auto separator = new QFrame;
-    separator->setFrameStyle(QFrame::VLine);
-    separator->setFixedWidth(1);
-    d->layout->addWidget(separator);
+    d->separator = new QFrame;
+    d->separator->setFrameStyle(QFrame::VLine);
+    d->separator->setFixedWidth(1);
+    d->layout->addWidget(d->separator);
 
     setIconSize();
     d->tabBar->setExpanding(false);
@@ -167,6 +173,38 @@ KoModeBox::KoModeBox(KoCanvasControllerWidget *canvas, const QString &appName)
 }
 
 KoModeBox::~KoModeBox() = default;
+
+void KoModeBox::setOrientation(Qt::Orientation orientation)
+{
+    if (d->orientation == orientation) {
+        return;
+    }
+    d->orientation = orientation;
+    const bool horizontal = orientation == Qt::Horizontal;
+
+    d->layout->setDirection(horizontal ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
+    d->tabBar->setShape(horizontal ? QTabBar::RoundedNorth : QTabBar::RoundedWest);
+    d->tabBar->setSizePolicy(horizontal ? QSizePolicy::Expanding : QSizePolicy::Minimum,
+                             horizontal ? QSizePolicy::Minimum : QSizePolicy::Expanding);
+
+    d->separator->setFrameStyle(horizontal ? QFrame::HLine : QFrame::VLine);
+    d->separator->setMinimumWidth(horizontal ? 0 : 1);
+    d->separator->setMaximumWidth(horizontal ? QWIDGETSIZE_MAX : 1);
+    d->separator->setMinimumHeight(horizontal ? 1 : 0);
+    d->separator->setMaximumHeight(horizontal ? 1 : QWIDGETSIZE_MAX);
+
+    for (int i = 0; i < d->stack->count(); ++i) {
+        if (auto sa = qobject_cast<ScrollArea *>(d->stack->widget(i))) {
+            sa->setHorizontalScrollBarPolicy(horizontal ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff);
+            sa->setVerticalScrollBarPolicy(horizontal ? Qt::ScrollBarAlwaysOff : Qt::ScrollBarAsNeeded);
+        }
+    }
+
+    updateShownTools(d->lastShownCodes);
+    if (!d->lastOptionWidgets.isEmpty()) {
+        setOptionWidgets(d->lastOptionWidgets);
+    }
+}
 
 void KoModeBox::addToolAction(KoToolAction *toolAction)
 {
@@ -282,17 +320,22 @@ void KoModeBox::addItem(KoToolAction *toolAction)
     // a widget (even though the item had been removed)
     QLayout *layout;
     if (!oldwidget) {
-        layout = new QVBoxLayout;
+        layout = new QBoxLayout(d->orientation == Qt::Horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
     } else {
         layout = oldwidget->layout();
+        if (auto boxLayout = qobject_cast<QBoxLayout *>(layout)) {
+            boxLayout->setDirection(d->orientation == Qt::Horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
+        }
     }
     widget = new QWidget();
     widget->setLayout(layout);
     layout->setSizeConstraint(QLayout::SetMinAndMaxSize);
     d->addedWidgets[toolAction->buttonGroupId()] = widget;
 
-    // Create a rotated icon with text
-    if (d->iconMode == IconAndText) {
+    if (d->orientation == Qt::Horizontal) {
+        const int index = d->tabBar->addTab(QIcon::fromTheme(toolAction->iconName()), toolAction->iconText());
+        d->tabBar->setTabToolTip(index, toolAction->toolTip());
+    } else if (d->iconMode == IconAndText) {
         const int index = d->tabBar->addTab(createTextIcon(toolAction), QString());
         d->tabBar->setTabToolTip(index, toolAction->toolTip());
     } else {
@@ -301,8 +344,8 @@ void KoModeBox::addItem(KoToolAction *toolAction)
     }
     d->tabBar->blockSignals(false);
     ScrollArea *sa = new ScrollArea();
-    sa->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    sa->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    sa->setHorizontalScrollBarPolicy(d->orientation == Qt::Horizontal ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff);
+    sa->setVerticalScrollBarPolicy(d->orientation == Qt::Horizontal ? Qt::ScrollBarAlwaysOff : Qt::ScrollBarAsNeeded);
     sa->setWidgetResizable(true);
     sa->setContentsMargins(0, 0, 0, 0);
     sa->setWidget(widget);
@@ -314,6 +357,7 @@ void KoModeBox::addItem(KoToolAction *toolAction)
 
 void KoModeBox::updateShownTools(const QList<QString> &codes)
 {
+    d->lastShownCodes = codes;
     if (d->iconTextFitted) {
         d->fittingIterations = 0;
     }
@@ -377,17 +421,27 @@ void KoModeBox::setOptionWidgets(const QList<QPointer<QWidget>> &optionWidgetLis
     if (!d->addedWidgets.contains(d->activeId))
         return;
 
+    QWidget *page = d->addedWidgets[d->activeId];
+
+    for (const QPointer<QWidget> &widget : std::as_const(d->lastOptionWidgets)) {
+        if (widget) {
+            widget->setParent(page);
+        }
+    }
+    d->lastOptionWidgets = optionWidgetList;
+
     // For some reason we need to set some attr on our placeholder widget here
     // even though these settings should be default
     // Otherwise Sheets' celltool's optionwidget looks ugly
-    d->addedWidgets[d->activeId]->setAutoFillBackground(false);
-    d->addedWidgets[d->activeId]->setBackgroundRole(QPalette::NoRole);
+    page->setAutoFillBackground(false);
+    page->setBackgroundRole(QPalette::NoRole);
 
     qDeleteAll(d->currentAuxWidgets);
     d->currentAuxWidgets.clear();
 
-    auto layout = qobject_cast<QVBoxLayout *>(d->addedWidgets[d->activeId]->layout());
+    auto layout = qobject_cast<QBoxLayout *>(page->layout());
     Q_ASSERT(layout);
+    layout->setDirection(d->orientation == Qt::Horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
     layout->setSpacing(2);
     QList<QLayoutItem *> spacerItems;
     for (int i = 0, count = layout->count(); i < count; i++) {
@@ -402,36 +456,83 @@ void KoModeBox::setOptionWidgets(const QList<QPointer<QWidget>> &optionWidgetLis
         delete spacer;
     }
 
-    auto title = new KTitleWidget;
-    title->setText(d->tabBar->tabToolTip(d->tabBar->currentIndex()));
-    layout->addWidget(title);
-    d->currentAuxWidgets.insert(title);
-
-    for (QWidget *widget : optionWidgetList) {
-        if (!widget->windowTitle().isEmpty()) {
-            if (widget != optionWidgetList.constFirst()) {
-                layout->addSpacing(style()->pixelMetric(QStyle::PM_LayoutVerticalSpacing));
+    if (d->orientation == Qt::Horizontal) {
+        bool first = true;
+        for (QWidget *widget : optionWidgetList) {
+            if (!widget) {
+                continue;
             }
-            auto sectionTitle = new QLabel(widget->windowTitle());
-            QPalette palette = sectionTitle->palette();
-            auto foregroundColor = palette.color(QPalette::WindowText);
-            foregroundColor.setAlphaF(0.8);
-            palette.setColor(QPalette::WindowText, foregroundColor);
-            sectionTitle->setPalette(palette);
-            layout->addWidget(sectionTitle);
-            d->currentAuxWidgets.insert(sectionTitle);
+            if (!first) {
+                auto separator = new QFrame(page);
+                separator->setFrameStyle(QFrame::VLine);
+                separator->setFixedWidth(1);
+                layout->addWidget(separator);
+                d->currentAuxWidgets.insert(separator);
+            }
+            first = false;
 
-            auto separator = new QFrame;
-            separator->setFrameStyle(QFrame::HLine);
-            separator->setFixedHeight(1);
-            separator->setPalette(palette);
-            layout->addWidget(separator);
-            d->currentAuxWidgets.insert(separator);
+            auto group = new QWidget(page);
+            auto groupLayout = new QVBoxLayout(group);
+            groupLayout->setContentsMargins(0, 0, 0, 0);
+            groupLayout->setSpacing(2);
+            groupLayout->setSizeConstraint(QLayout::SetMinAndMaxSize);
 
-            layout->addSpacing(style()->pixelMetric(QStyle::PM_LayoutVerticalSpacing) / 2);
+            if (!widget->windowTitle().isEmpty()) {
+                auto sectionTitle = new QLabel(widget->windowTitle(), group);
+                sectionTitle->setAlignment(Qt::AlignHCenter);
+                QPalette palette = sectionTitle->palette();
+                auto foregroundColor = palette.color(QPalette::WindowText);
+                foregroundColor.setAlphaF(0.8);
+                palette.setColor(QPalette::WindowText, foregroundColor);
+                sectionTitle->setPalette(palette);
+                groupLayout->addWidget(sectionTitle);
+
+                auto line = new QFrame(group);
+                line->setFrameStyle(QFrame::HLine);
+                line->setFixedHeight(1);
+                line->setPalette(palette);
+                groupLayout->addWidget(line);
+            }
+            groupLayout->addWidget(widget);
+            widget->show();
+
+            layout->addWidget(group, 0, Qt::AlignTop);
+            d->currentAuxWidgets.insert(group);
         }
-        layout->addWidget(widget);
-        widget->show();
+    } else {
+        auto title = new KTitleWidget;
+        title->setText(d->tabBar->tabToolTip(d->tabBar->currentIndex()));
+        layout->addWidget(title);
+        d->currentAuxWidgets.insert(title);
+
+        for (QWidget *widget : optionWidgetList) {
+            if (widget && !widget->windowTitle().isEmpty()) {
+                if (widget != optionWidgetList.constFirst()) {
+                    layout->addSpacing(style()->pixelMetric(QStyle::PM_LayoutVerticalSpacing));
+                }
+                auto sectionTitle = new QLabel(widget->windowTitle());
+                QPalette palette = sectionTitle->palette();
+                auto foregroundColor = palette.color(QPalette::WindowText);
+                foregroundColor.setAlphaF(0.8);
+                palette.setColor(QPalette::WindowText, foregroundColor);
+                sectionTitle->setPalette(palette);
+                layout->addWidget(sectionTitle);
+                d->currentAuxWidgets.insert(sectionTitle);
+
+                auto separator = new QFrame;
+                separator->setFrameStyle(QFrame::HLine);
+                separator->setFixedHeight(1);
+                separator->setPalette(palette);
+                layout->addWidget(separator);
+                d->currentAuxWidgets.insert(separator);
+
+                layout->addSpacing(style()->pixelMetric(QStyle::PM_LayoutVerticalSpacing) / 2);
+            }
+            if (widget) {
+                layout->addWidget(widget);
+                widget->show();
+            }
+        }
     }
 
     layout->addStretch();

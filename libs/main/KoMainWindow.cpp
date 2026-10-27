@@ -213,6 +213,7 @@ public:
     int lastExportSpecialOutputFlag;
 
     QMap<QString, QDockWidget *> dockWidgetsMap;
+    QStringList topDockers;
     KActionMenu *dockWidgetMenu;
     QMap<QDockWidget *, bool> dockWidgetVisibilityMap;
     KoDockerManager *dockerManager;
@@ -1760,7 +1761,11 @@ QDockWidget *KoMainWindow::createDockWidget(KoDockFactoryBase *factory)
             visible = false;
         }
 
-        if (rootDocument()) {
+        const bool forceTop = factory->keepDefaultDockPosition();
+        if (forceTop && !d->topDockers.contains(factory->id())) {
+            d->topDockers.append(factory->id());
+        }
+        if (rootDocument() && !forceTop) {
             KConfigGroup group = KSharedConfig::openConfig()->group(d->rootPart->componentData().componentName()).group("DockWidget " + factory->id());
             side = static_cast<Qt::DockWidgetArea>(group.readEntry("DockArea", static_cast<int>(side)));
             if (side == Qt::NoDockWidgetArea)
@@ -2000,6 +2005,11 @@ void KoMainWindow::setActivePart(KoPart *part, QWidget *widget)
 
         // Position and show toolbars according to user's preference
         setAutoSaveSettings(newPart->componentData().componentName(), false);
+        for (const QString &id : d->topDockers) {
+            if (QDockWidget *dock = d->dockWidgetsMap.value(id)) {
+                addDockWidget(Qt::TopDockWidgetArea, dock);
+            }
+        }
 
         KConfigGroup configGroupInterface = KSharedConfig::openConfig()->group("Interface");
         const bool showDockerTitleBar = configGroupInterface.readEntry("ShowDockerTitleBars", true);

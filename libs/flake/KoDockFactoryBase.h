@@ -38,6 +38,15 @@ public:
     /// @return the dock widget area the widget should appear in by default
     virtual DockPosition defaultDockPosition() const = 0;
 
+    /**
+     * Returns true if the dock widget should always be restored to its
+     * default dock position instead of a position from a saved layout.
+     */
+    virtual bool keepDefaultDockPosition() const
+    {
+        return false;
+    }
+
     /// @return the dockers default visibility
     /// Default is true.
     virtual bool defaultVisible() const

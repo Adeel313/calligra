@@ -19,9 +19,12 @@ KoModeBoxDocker::KoModeBoxDocker(KoModeBox *modeBox)
 {
     setWidget(modeBox);
     setFeatures(QDockWidget::NoDockWidgetFeatures);
-    setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    setAllowedAreas(Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea | Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     setObjectName("ModeBox");
     setTitleBarWidget(new QWidget(this));
+    connect(this, &QDockWidget::dockLocationChanged, this, [this](Qt::DockWidgetArea area) {
+        m_modeBox->setOrientation((area == Qt::TopDockWidgetArea || area == Qt::BottomDockWidgetArea) ? Qt::Horizontal : Qt::Vertical);
+    });
     connect(modeBox, &KoModeBox::switchTabsSide, [this](KoModeBox::HorizontalTabsSide side) {
         auto mainWindow = qobject_cast<QMainWindow *>(parent());
         if (!mainWindow) {
