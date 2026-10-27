@@ -6,8 +6,7 @@
 
 // pagetool includes
 #include "KWPageTool.h"
-#include "SimpleHeaderFooterWidget.h"
-#include "SimpleSetupWidget.h"
+#include "KWView.h"
 #include "frames/KWTextFrameSet.h"
 
 // words includes
@@ -16,6 +15,10 @@
 
 // Qt includes
 #include <QList>
+#include <QGridLayout>
+#include <QIcon>
+#include <QToolButton>
+#include <QVBoxLayout>
 
 // calligra includes
 #include <KoCanvasBase.h>
@@ -79,13 +82,44 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
 {
     QList<QPointer<QWidget>> widgets;
 
-    SimpleSetupWidget *ssw = new SimpleSetupWidget(m_canvas->view());
-    ssw->setWindowTitle(i18n("Page Setup"));
-    widgets.append(ssw);
+    const auto addGroup = [this, &widgets](const QString &title, const QList<QPair<QString, QString>> &actions) {
+        auto *group = new QWidget;
+        group->setWindowTitle(title);
+        auto *layout = new QGridLayout(group);
+        layout->setContentsMargins(2, 1, 2, 1);
+        layout->setHorizontalSpacing(4);
+        layout->setVerticalSpacing(1);
+        layout->setSizeConstraint(QLayout::SetFixedSize);
 
-    SimpleHeaderFooterWidget *shfw = new SimpleHeaderFooterWidget(m_canvas->view());
-    shfw->setWindowTitle(i18n("Header & Footer"));
-    widgets.append(shfw);
+        QList<QPair<QAction *, QString>> availableActions;
+        for (const auto &[name, label] : actions) {
+            if (QAction *action = m_canvas->view()->action(name)) {
+                availableActions.append({action, label});
+            }
+        }
+        const int columns = qMax(1, (availableActions.size() + 1) / 2);
+        for (int i = 0; i < availableActions.size(); ++i) {
+            QAction *action = availableActions.at(i).first;
+            auto *button = new QToolButton(group);
+            button->setDefaultAction(action);
+            if (!availableActions.at(i).second.isEmpty()) {
+                button->setText(availableActions.at(i).second);
+            }
+            button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+            button->setIconSize(QSize(28, 28));
+            button->setAutoRaise(true);
+            if (action->menu()) {
+                button->setPopupMode(QToolButton::MenuButtonPopup);
+            }
+            layout->addWidget(button, i / columns, i % columns, Qt::AlignLeft | Qt::AlignTop);
+        }
+        widgets.append(group);
+    };
+
+    addGroup(i18n("Page"), {{QStringLiteral("format_page"), i18n("Page Style")}});
+    addGroup(i18n("Breaks"), {{QStringLiteral("insert_framebreak"), i18n("Page Break")}});
+    addGroup(i18n("Paragraph"), {{QStringLiteral("format_paragraph"), i18n("Paragraph")}});
+    addGroup(i18n("Tools"), {{QStringLiteral("insert_header"), i18n("Header")}, {QStringLiteral("insert_footer"), i18n("Footer")}});
 
     return widgets;
 }

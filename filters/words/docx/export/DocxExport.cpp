@@ -101,6 +101,7 @@ KoFilter::ConversionStatus DocxExport::convert(const QByteArray &from, const QBy
         commentWriter.startDocument(nullptr);
         commentWriter.startElement("w:comments");
         commentWriter.addAttribute("xmlns:w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main");
+        commentWriter.addAttribute("xmlns:r", "http://schemas.openxmlformats.org/officeDocument/2006/relationships");
         commentWriter.addCompleteElement(docxBackendContext.commentsContent());
         commentWriter.endElement(); // w:comments
         commentWriter.endDocument();

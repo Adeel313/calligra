@@ -63,8 +63,30 @@ public:
     {
     }
 
+    /// A page that is not bound to a tool, shown as its own tab.
+    struct CustomPage {
+        QString title;
+        QString toolTip;
+        QIcon icon;
+        QPointer<QWidget> page;
+        QPointer<QWidget> wrapper;
+        bool beforeToolTabs;
+    };
+
+    struct ToolTabWidget {
+        QString toolId;
+        QPointer<QWidget> widget;
+    };
+
+    /// Sentinel value stored as tab data for custom (non-tool) pages.
+    static constexpr int customPageMarker = -2;
+
     KoCanvasBase *canvas;
     QBoxLayout *layout;
+    QWidget *header;
+    QHBoxLayout *headerLayout;
+    QWidget *leadingWidget = nullptr;
+    QWidget *trailingWidget = nullptr;
     Qt::Orientation orientation;
     QList<KoToolAction *> toolActions; // toolActions maintained by toolmanager
     QList<KoToolAction *> addedToolActions; // tools in the order added to QToolBox
@@ -72,6 +94,8 @@ public:
     QSet<QWidget *> currentAuxWidgets;
     QList<QPointer<QWidget>> lastOptionWidgets;
     QList<QString> lastShownCodes;
+    QList<CustomPage> customPages;
+    QList<ToolTabWidget> toolTabWidgets;
     int activeId;
     QTabBar *tabBar;
     QStackedWidget *stack;
@@ -111,6 +135,25 @@ static bool compareToolActions(const KoToolAction *b1, const KoToolAction *b2)
     }
 }
 
+// Connect Shapes and Draw Path share a single ribbon page in Words. Keep their
+// tool ids and activation behavior separate while mapping both to one tab.
+static bool isCombinedShapeTool(const QString &toolId)
+{
+    return toolId == QLatin1String("ConnectionTool") || toolId == QLatin1String("CreatePathTool");
+}
+
+static int ribbonGroupId(const KoToolAction *toolAction, const QList<KoToolAction *> &toolActions, bool combineShapeTools)
+{
+    if (combineShapeTools && isCombinedShapeTool(toolAction->id())) {
+        for (KoToolAction *candidate : toolActions) {
+            if (candidate->id() == QLatin1String("ConnectionTool")) {
+                return candidate->buttonGroupId();
+            }
+        }
+    }
+    return toolAction->buttonGroupId();
+}
+
 KoModeBox::KoModeBox(KoCanvasControllerWidget *canvas, const QString &appName)
     : QWidget()
     , d(std::make_unique<Private>(canvas))
@@ -129,6 +172,12 @@ KoModeBox::KoModeBox(KoCanvasControllerWidget *canvas, const QString &appName)
     d->layout->setSpacing({});
     d->stack = new QStackedWidget;
 
+    d->header = new QWidget(this);
+    d->header->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    d->headerLayout = new QHBoxLayout(d->header);
+    d->headerLayout->setContentsMargins({});
+    d->headerLayout->setSpacing({});
+
     d->tabBar = new QTabBar;
     d->tabBar->setDocumentMode(true);
     d->tabBar->setShape(QTabBar::RoundedWest);
@@ -138,7 +187,9 @@ KoModeBox::KoModeBox(KoCanvasControllerWidget *canvas, const QString &appName)
     QPalette palette = d->tabBar->palette();
     palette.setColor(QPalette::Window, palette.color(QPalette::Base));
     d->tabBar->setPalette(palette);
-    d->layout->addWidget(d->tabBar);
+    d->headerLayout->addWidget(d->tabBar);
+    d->headerLayout->addStretch(1);
+    d->layout->addWidget(d->header);
 
     d->separator = new QFrame;
     d->separator->setFrameStyle(QFrame::VLine);
@@ -184,8 +235,10 @@ void KoModeBox::setOrientation(Qt::Orientation orientation)
 
     d->layout->setDirection(horizontal ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
     d->tabBar->setShape(horizontal ? QTabBar::RoundedNorth : QTabBar::RoundedWest);
-    d->tabBar->setSizePolicy(horizontal ? QSizePolicy::Expanding : QSizePolicy::Minimum,
+    d->tabBar->setSizePolicy(horizontal ? QSizePolicy::Maximum : QSizePolicy::Minimum,
                              horizontal ? QSizePolicy::Minimum : QSizePolicy::Expanding);
+    d->headerLayout->setDirection(horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
+    d->layout->setAlignment(d->header, Qt::Alignment{});
 
     d->separator->setFrameStyle(horizontal ? QFrame::HLine : QFrame::VLine);
     d->separator->setMinimumWidth(horizontal ? 0 : 1);
@@ -214,28 +267,124 @@ void KoModeBox::addToolAction(KoToolAction *toolAction)
 void KoModeBox::setActiveTool(KoCanvasController *canvas, int id)
 {
     if (canvas->canvas() == d->canvas) {
+        const bool combineShapeTools = d->orientation == Qt::Horizontal && applicationName.contains(QLatin1String("words"), Qt::CaseInsensitive);
+        int pageId = id;
+        if (combineShapeTools) {
+            for (KoToolAction *toolAction : std::as_const(d->toolActions)) {
+                if (toolAction->buttonGroupId() == id) {
+                    pageId = ribbonGroupId(toolAction, d->toolActions, true);
+                    break;
+                }
+            }
+        }
         // Clear the minimumSize instigated by the previous tool
         // The new minimumSize will be set in updateShownTools()
-        if (d->addedWidgets.contains(d->activeId)) {
-            ScrollArea *sa = qobject_cast<ScrollArea *>(d->addedWidgets[d->activeId]->parentWidget()->parentWidget());
+        int oldPageId = d->activeId;
+        if (combineShapeTools) {
+            for (KoToolAction *toolAction : std::as_const(d->toolActions)) {
+                if (toolAction->buttonGroupId() == d->activeId) {
+                    oldPageId = ribbonGroupId(toolAction, d->toolActions, true);
+                    break;
+                }
+            }
+        }
+        if (d->addedWidgets.contains(oldPageId)) {
+            ScrollArea *sa = qobject_cast<ScrollArea *>(d->addedWidgets[oldPageId]->parentWidget()->parentWidget());
             sa->setMinimumWidth(0);
             sa->setMinimumHeight(0);
         }
 
         d->activeId = id;
         d->tabBar->blockSignals(true);
-        int i = 0;
-        foreach (KoToolAction *toolAction, d->addedToolActions) {
-            if (toolAction->buttonGroupId() == d->activeId) {
+        for (int i = 0; i < d->tabBar->count(); ++i) {
+            if (d->tabBar->tabData(i).toInt() == pageId) {
                 d->tabBar->setCurrentIndex(i);
                 d->stack->setCurrentIndex(i);
                 break;
             }
-            ++i;
         }
         d->tabBar->blockSignals(false);
         return;
     }
+}
+
+void KoModeBox::addCustomPage(const QString &title, const QIcon &icon, const QString &toolTip, QWidget *page, bool beforeToolTabs)
+{
+    if (!page) {
+        return;
+    }
+    const bool horizontal = d->orientation == Qt::Horizontal;
+    auto *wrapper = new ScrollArea;
+    wrapper->setHorizontalScrollBarPolicy(horizontal ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff);
+    wrapper->setVerticalScrollBarPolicy(horizontal ? Qt::ScrollBarAlwaysOff : Qt::ScrollBarAsNeeded);
+    // Must be resizable, like the tool pages in addItem(): the page's actions
+    // are added after this point, and a non-resizable scroll area never grows
+    // the widget to its new sizeHint, leaving the tab looking empty.
+    wrapper->setWidgetResizable(true);
+    wrapper->setContentsMargins(0, 0, 0, 0);
+    wrapper->setWidget(page);
+    wrapper->setFrameShape(QFrame::NoFrame);
+    wrapper->setFocusPolicy(Qt::NoFocus);
+
+    d->customPages.append({title, toolTip, icon, page, wrapper, beforeToolTabs});
+    updateShownTools(d->lastShownCodes);
+}
+
+void KoModeBox::addWidgetToToolTab(const QString &toolId, QWidget *widget)
+{
+    if (!widget) {
+        return;
+    }
+    d->toolTabWidgets.append({toolId, widget});
+    for (KoToolAction *toolAction : std::as_const(d->toolActions)) {
+        if (toolAction->id() != toolId) {
+            continue;
+        }
+        QWidget *page = d->addedWidgets.value(toolAction->buttonGroupId());
+        QLayout *layout = page ? page->layout() : nullptr;
+        if (auto gridLayout = qobject_cast<QGridLayout *>(layout)) {
+            gridLayout->addWidget(widget, 0, 0);
+        } else if (auto boxLayout = qobject_cast<QBoxLayout *>(layout)) {
+            boxLayout->insertWidget(0, widget);
+        }
+        break;
+    }
+}
+
+void KoModeBox::setLeadingWidget(QWidget *widget)
+{
+    if (!widget || d->leadingWidget == widget) {
+        return;
+    }
+    d->leadingWidget = widget;
+    widget->setParent(d->header);
+    d->headerLayout->insertWidget(0, widget, 0, Qt::AlignVCenter);
+}
+
+void KoModeBox::setTrailingWidget(QWidget *widget)
+{
+    if (!widget || d->trailingWidget == widget) {
+        return;
+    }
+    d->trailingWidget = widget;
+    widget->setParent(d->header);
+    d->headerLayout->addWidget(widget, 0, Qt::AlignVCenter);
+}
+
+
+void KoModeBox::appendCustomPages(bool beforeToolTabs)
+{
+    const bool wasBlocked = d->tabBar->blockSignals(true);
+    for (const Private::CustomPage &customPage : std::as_const(d->customPages)) {
+        if (!customPage.wrapper || customPage.beforeToolTabs != beforeToolTabs) {
+            continue;
+        }
+        const int index = d->tabBar->addTab(customPage.icon, customPage.title);
+        d->tabBar->setTabToolTip(index, customPage.toolTip);
+        d->tabBar->setTabData(index, Private::customPageMarker);
+        d->stack->addWidget(customPage.wrapper);
+    }
+    d->tabBar->blockSignals(wasBlocked);
 }
 
 QIcon KoModeBox::createTextIcon(KoToolAction *toolAction) const
@@ -313,34 +462,65 @@ QIcon KoModeBox::createSimpleIcon(KoToolAction *toolAction) const
 
 void KoModeBox::addItem(KoToolAction *toolAction)
 {
-    QWidget *oldwidget = d->addedWidgets[toolAction->buttonGroupId()];
+    const bool combineShapeTools = d->orientation == Qt::Horizontal && applicationName.contains(QLatin1String("words"), Qt::CaseInsensitive);
+    const int groupId = ribbonGroupId(toolAction, d->toolActions, combineShapeTools);
+    if (combineShapeTools && isCombinedShapeTool(toolAction->id())) {
+        for (int i = 0; i < d->tabBar->count(); ++i) {
+            if (d->tabBar->tabData(i).toInt() == groupId) {
+                d->addedToolActions.append(toolAction);
+                return;
+            }
+        }
+    }
+
+    QWidget *oldwidget = d->addedWidgets[groupId];
     QWidget *widget;
 
     // We need to create a new widget in all cases as QToolBox seems to crash if we reuse
     // a widget (even though the item had been removed)
-    QLayout *layout;
-    if (!oldwidget) {
+    QLayout *layout = oldwidget ? oldwidget->layout() : nullptr;
+    if (!qobject_cast<QBoxLayout *>(layout)) {
         layout = new QBoxLayout(d->orientation == Qt::Horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
     } else {
-        layout = oldwidget->layout();
-        if (auto boxLayout = qobject_cast<QBoxLayout *>(layout)) {
-            boxLayout->setDirection(d->orientation == Qt::Horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
-        }
+        qobject_cast<QBoxLayout *>(layout)->setDirection(d->orientation == Qt::Horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
     }
     widget = new QWidget();
     widget->setLayout(layout);
     layout->setSizeConstraint(QLayout::SetMinAndMaxSize);
-    d->addedWidgets[toolAction->buttonGroupId()] = widget;
+    d->addedWidgets[groupId] = widget;
+
+    for (const Private::ToolTabWidget &toolTabWidget : std::as_const(d->toolTabWidgets)) {
+        if (toolTabWidget.toolId != toolAction->id() || !toolTabWidget.widget) {
+            continue;
+        }
+        if (auto boxLayout = qobject_cast<QBoxLayout *>(layout); boxLayout && boxLayout->indexOf(toolTabWidget.widget) < 0) {
+            boxLayout->insertWidget(0, toolTabWidget.widget);
+        }
+    }
 
     if (d->orientation == Qt::Horizontal) {
-        const int index = d->tabBar->addTab(QIcon::fromTheme(toolAction->iconName()), toolAction->iconText());
+        QString tabTitle = toolAction->iconText();
+        if (applicationName.contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+            if (toolAction->id() == QLatin1String("TextToolFactory_ID")) {
+                tabTitle = i18n("Home");
+            } else if (toolAction->id() == QLatin1String("PageToolFactory_ID")) {
+                tabTitle = i18n("Layout");
+            } else if (combineShapeTools && isCombinedShapeTool(toolAction->id())) {
+                tabTitle = i18n("Shapes");
+            }
+        }
+        const QString iconName = combineShapeTools && isCombinedShapeTool(toolAction->id()) ? QStringLiteral("draw-freehand") : toolAction->iconName();
+        const int index = d->tabBar->addTab(QIcon::fromTheme(iconName), tabTitle);
         d->tabBar->setTabToolTip(index, toolAction->toolTip());
+        d->tabBar->setTabData(index, groupId);
     } else if (d->iconMode == IconAndText) {
         const int index = d->tabBar->addTab(createTextIcon(toolAction), QString());
         d->tabBar->setTabToolTip(index, toolAction->toolTip());
+        d->tabBar->setTabData(index, groupId);
     } else {
         const int index = d->tabBar->addTab(createSimpleIcon(toolAction), QString());
         d->tabBar->setTabToolTip(index, toolAction->toolTip());
+        d->tabBar->setTabData(index, groupId);
     }
     d->tabBar->blockSignals(false);
     ScrollArea *sa = new ScrollArea();
@@ -372,14 +552,18 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
 
     d->addedToolActions.clear();
 
-    int newIndex = -1;
+    appendCustomPages(true);
+
+    bool customPagesInserted = false;
     foreach (KoToolAction *toolAction, d->toolActions) {
         const QString toolCodes = toolAction->visibilityCode();
-        if (toolAction->buttonGroupId() == d->activeId) {
-            newIndex = d->addedToolActions.length();
-        }
         if (toolAction->section().contains(applicationName)) {
             addItem(toolAction);
+            // In Words, put the View page directly after the Text Editing tab.
+            if (!customPagesInserted && toolAction->id() == QLatin1String("TextToolFactory_ID")) {
+                appendCustomPages(false);
+                customPagesInserted = true;
+            }
             continue;
         } else if (!toolAction->section().contains("dynamic") && !toolAction->section().contains("main")) {
             continue;
@@ -404,9 +588,26 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
             }
         }
     }
-    if (newIndex != -1) {
-        d->tabBar->setCurrentIndex(newIndex);
-        d->stack->setCurrentIndex(newIndex);
+    if (!customPagesInserted) {
+        appendCustomPages(false);
+    }
+
+    // Restore the active tool's tab
+    int activePageId = d->activeId;
+    if (d->orientation == Qt::Horizontal && applicationName.contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        for (KoToolAction *toolAction : std::as_const(d->toolActions)) {
+            if (toolAction->buttonGroupId() == d->activeId) {
+                activePageId = ribbonGroupId(toolAction, d->toolActions, true);
+                break;
+            }
+        }
+    }
+    for (int i = 0; i < d->tabBar->count(); ++i) {
+        if (d->tabBar->tabData(i).toInt() == activePageId) {
+            d->tabBar->setCurrentIndex(i);
+            d->stack->setCurrentIndex(i);
+            break;
+        }
     }
     d->tabBar->blockSignals(false);
 
@@ -418,14 +619,29 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
 
 void KoModeBox::setOptionWidgets(const QList<QPointer<QWidget>> &optionWidgetList)
 {
-    if (!d->addedWidgets.contains(d->activeId))
+    const bool combineShapeTools = d->orientation == Qt::Horizontal && applicationName.contains(QLatin1String("words"), Qt::CaseInsensitive);
+    QString activeToolId;
+    int pageId = d->activeId;
+    for (KoToolAction *toolAction : std::as_const(d->toolActions)) {
+        if (toolAction->buttonGroupId() == d->activeId) {
+            activeToolId = toolAction->id();
+            pageId = ribbonGroupId(toolAction, d->toolActions, combineShapeTools);
+            break;
+        }
+    }
+    if (!d->addedWidgets.contains(pageId))
         return;
 
-    QWidget *page = d->addedWidgets[d->activeId];
+    QWidget *page = d->addedWidgets[pageId];
 
     for (const QPointer<QWidget> &widget : std::as_const(d->lastOptionWidgets)) {
         if (widget) {
             widget->setParent(page);
+        }
+    }
+    for (const Private::ToolTabWidget &toolTabWidget : std::as_const(d->toolTabWidgets)) {
+        if ((toolTabWidget.toolId == activeToolId || (combineShapeTools && isCombinedShapeTool(toolTabWidget.toolId) && isCombinedShapeTool(activeToolId))) && toolTabWidget.widget) {
+            toolTabWidget.widget->setParent(page);
         }
     }
     d->lastOptionWidgets = optionWidgetList;
@@ -436,32 +652,31 @@ void KoModeBox::setOptionWidgets(const QList<QPointer<QWidget>> &optionWidgetLis
     page->setAutoFillBackground(false);
     page->setBackgroundRole(QPalette::NoRole);
 
-    qDeleteAll(d->currentAuxWidgets);
-    d->currentAuxWidgets.clear();
-
     auto layout = qobject_cast<QBoxLayout *>(page->layout());
     Q_ASSERT(layout);
     layout->setDirection(d->orientation == Qt::Horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
     layout->setSpacing(2);
-    QList<QLayoutItem *> spacerItems;
-    for (int i = 0, count = layout->count(); i < count; i++) {
-        const auto item = layout->itemAt(i);
-        const auto spacer = item->spacerItem();
-        if (spacer) {
-            spacerItems << spacer;
-        }
+    while (QLayoutItem *item = layout->takeAt(0)) {
+        delete item;
     }
-    for (const auto spacer : std::as_const(spacerItems)) {
-        layout->removeItem(spacer);
-        delete spacer;
-    }
+    qDeleteAll(d->currentAuxWidgets);
+    d->currentAuxWidgets.clear();
 
     if (d->orientation == Qt::Horizontal) {
-        bool first = true;
-        for (QWidget *widget : optionWidgetList) {
-            if (!widget) {
-                continue;
+        QList<QWidget *> ribbonWidgets;
+        for (const Private::ToolTabWidget &toolTabWidget : std::as_const(d->toolTabWidgets)) {
+            if (toolTabWidget.toolId == activeToolId && toolTabWidget.widget) {
+                ribbonWidgets.append(toolTabWidget.widget);
             }
+        }
+        for (QWidget *widget : optionWidgetList) {
+            if (widget) {
+                ribbonWidgets.append(widget);
+            }
+        }
+
+        bool first = true;
+        for (QWidget *widget : std::as_const(ribbonWidgets)) {
             if (!first) {
                 auto separator = new QFrame(page);
                 separator->setFrameStyle(QFrame::VLine);
@@ -473,32 +688,35 @@ void KoModeBox::setOptionWidgets(const QList<QPointer<QWidget>> &optionWidgetLis
 
             auto group = new QWidget(page);
             auto groupLayout = new QVBoxLayout(group);
-            groupLayout->setContentsMargins(0, 0, 0, 0);
-            groupLayout->setSpacing(2);
+            groupLayout->setContentsMargins(1, 0, 1, 0);
+            groupLayout->setSpacing(1);
             groupLayout->setSizeConstraint(QLayout::SetMinAndMaxSize);
 
+            QLabel *sectionTitle = nullptr;
             if (!widget->windowTitle().isEmpty()) {
-                auto sectionTitle = new QLabel(widget->windowTitle(), group);
+                sectionTitle = new QLabel(widget->windowTitle(), group);
                 sectionTitle->setAlignment(Qt::AlignHCenter);
+                QFont sectionFont = sectionTitle->font();
+                sectionFont.setPointSizeF(qMax(7.0, sectionFont.pointSizeF() - 1.0));
+                sectionTitle->setFont(sectionFont);
+                sectionTitle->setMaximumHeight(14);
                 QPalette palette = sectionTitle->palette();
                 auto foregroundColor = palette.color(QPalette::WindowText);
                 foregroundColor.setAlphaF(0.8);
                 palette.setColor(QPalette::WindowText, foregroundColor);
                 sectionTitle->setPalette(palette);
-                groupLayout->addWidget(sectionTitle);
-
-                auto line = new QFrame(group);
-                line->setFrameStyle(QFrame::HLine);
-                line->setFixedHeight(1);
-                line->setPalette(palette);
-                groupLayout->addWidget(line);
             }
             groupLayout->addWidget(widget);
             widget->show();
 
+            if (sectionTitle) {
+                groupLayout->addWidget(sectionTitle);
+            }
+
             layout->addWidget(group, 0, Qt::AlignTop);
             d->currentAuxWidgets.insert(group);
         }
+        layout->addStretch();
     } else {
         auto title = new KTitleWidget;
         title->setText(d->tabBar->tabToolTip(d->tabBar->currentIndex()));
@@ -533,9 +751,8 @@ void KoModeBox::setOptionWidgets(const QList<QPointer<QWidget>> &optionWidgetLis
                 widget->show();
             }
         }
+        layout->addStretch();
     }
-
-    layout->addStretch();
 }
 
 void ScrollArea::showEvent(QShowEvent *e)
@@ -588,8 +805,21 @@ void KoModeBox::toolAdded(KoToolAction *toolAction, KoCanvasController *canvas)
 
 void KoModeBox::toolSelected(int index)
 {
-    if (index != -1) {
-        d->addedToolActions.at(index)->trigger();
+    if (index < 0) {
+        return;
+    }
+    const int id = d->tabBar->tabData(index).toInt();
+    if (id == Private::customPageMarker) {
+        // a custom page has no tool to activate; just show its content
+        d->stack->setCurrentIndex(index);
+    } else {
+        // find the tool action with this buttonGroupId and trigger it
+        for (KoToolAction *toolAction : std::as_const(d->addedToolActions)) {
+            if (toolAction->buttonGroupId() == id) {
+                toolAction->trigger();
+                return;
+            }
+        }
     }
 }
 

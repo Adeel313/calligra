@@ -12,11 +12,11 @@ public:
     explicit KoTabBarProxyStyle();
 
     KStatefulBrush _viewHoverBrush;
-    static constexpr int TabBar_TabMarginHeight = 8;
-    static constexpr int TabBar_TabMarginWidth = 8;
-    static constexpr int TabBar_TabItemSpacing = 8;
+    static constexpr int TabBar_TabMarginHeight = 5;
+    static constexpr int TabBar_TabMarginWidth = 6;
+    static constexpr int TabBar_TabItemSpacing = 6;
     static constexpr int TabBar_TabMinWidth = 80;
-    static constexpr int TabBar_TabMinHeight = 30;
+    static constexpr int TabBar_TabMinHeight = 26;
     static constexpr int TabBar_TabOverlap = 0;
     static constexpr int TabBar_BaseOverlap = 0;
     static constexpr int TabBar_ActiveEffectSize = 3;

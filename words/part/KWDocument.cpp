@@ -583,6 +583,7 @@ void KWDocument::initEmpty()
 
     setMimeTypeAfterLoading("application/vnd.oasis.opendocument.text");
     KoDocument::initEmpty();
+    setOutputMimeType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     clearUndoHistory();
 }
 

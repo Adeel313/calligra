@@ -8,14 +8,14 @@
 #define DOCXFILE_H
 
 // Qt
-#include <QFlags>
-#include <QHash>
+#include <QString>
 
 // Calligra
 #include <KoFilter.h>
 
 // This filter
 #include "FileCollector.h"
+#include "OpcRelSetManager.h"
 
 class QString;
 class QByteArray;
@@ -44,14 +44,11 @@ public:
      */
     KoFilter::ConversionStatus writeDocx(const QString &fileName, const QByteArray &appIdentification, const OdfReaderDocxContext &context, bool commentsExist);
 
-private:
-    // Private functions
-    KoFilter::ConversionStatus writeTopLevelRels(KoStore *docxStore);
-    KoFilter::ConversionStatus writeDocumentRels(KoStore *docxStore);
+    QString addRelationship(const QString &sourcePart, const QString &type, const QString &target, bool external = false);
 
 private:
-    // data
-    bool m_commentsExist;
+    OpcRelSetManager m_relationships;
+
 };
 
 #endif // DOCXFILE_H

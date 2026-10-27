@@ -10,6 +10,7 @@
 
 // Qt
 #include <QtGlobal>
+#include <QUrl>
 
 // Calligra
 #include <KoOdfStyle.h>
@@ -19,6 +20,7 @@
 
 // This filter
 #include "DocxExportDebug.h"
+#include "DocxFile.h"
 #include "DocxStyleHelper.h"
 #include "OdfReaderDocxContext.h"
 
@@ -119,6 +121,9 @@ void OdfTextReaderDocxBackend::elementTextP(KoXmlStreamReader &reader, OdfReader
     }
     if (reader.isStartElement()) {
         writer->startElement("w:p");
+        if (!m_cellParagraphStack.isEmpty()) {
+            m_cellParagraphStack.top() = true;
+        }
         // FIXME: Add paragraph attributes here
         writer->startElement("w:pPr");
         if (m_currentOutlineLevel >= 0) {
@@ -148,6 +153,83 @@ void OdfTextReaderDocxBackend::elementTextP(KoXmlStreamReader &reader, OdfReader
     } else {
         writer->endElement(); // w:p
     }
+}
+
+void OdfTextReaderDocxBackend::elementTableTable(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext) {
+        return;
+    }
+    KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+    if (reader.isStartElement()) {
+        writer->startElement("w:tbl");
+        writer->startElement("w:tblPr");
+        writer->startElement("w:tblW");
+        writer->addAttribute("w:w", 0);
+        writer->addAttribute("w:type", "auto");
+        writer->endElement(); // w:tblW
+        writer->endElement(); // w:tblPr
+    } else {
+        writer->endElement(); // w:tbl
+    }
+}
+
+void OdfTextReaderDocxBackend::elementTableTableRow(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext) {
+        return;
+    }
+    KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+    if (reader.isStartElement()) {
+        writer->startElement("w:tr");
+    } else {
+        writer->endElement(); // w:tr
+    }
+}
+
+void OdfTextReaderDocxBackend::elementTableTableCell(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext) {
+        return;
+    }
+    KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+    if (reader.isStartElement()) {
+        writer->startElement("w:tc");
+        writer->startElement("w:tcPr");
+        writer->endElement(); // w:tcPr
+        m_cellParagraphStack.push(false);
+    } else {
+        if (!m_cellParagraphStack.isEmpty() && !m_cellParagraphStack.pop()) {
+            writer->startElement("w:p");
+            writer->endElement(); // w:p
+        }
+        writer->endElement(); // w:tc
+    }
+}
+
+void OdfTextReaderDocxBackend::elementTableCoveredTableCell(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    if (!reader.isStartElement()) {
+        return;
+    }
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext) {
+        return;
+    }
+    KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+    writer->startElement("w:tc");
+    writer->startElement("w:tcPr");
+    writer->endElement(); // w:tcPr
+    writer->startElement("w:p");
+    writer->endElement(); // w:p
+    writer->endElement(); // w:tc
 }
 
 // ----------------------------------------------------------------
@@ -181,16 +263,97 @@ void OdfTextReaderDocxBackend::elementTextS(KoXmlStreamReader &reader, OdfReader
         return;
     }
 
-#if 0
-    QString dummy = element.attribute("text:c", "1");
-    bool ok;
-    int  numSpaces = dummy.toUInt(&ok);
-    if (!ok)
-        numSpaces = 1;
+    bool ok = false;
+    int count = reader.attributes().value("text:c").toInt(&ok);
+    if (!ok || count < 1) {
+        count = 1;
+    }
+    count = qMin(count, 32767);
 
-    // At the end of a paragraph, output two newlines.
-    docxContext->outStream << "\n\n";
-#endif
+    KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+    const bool ownRun = m_insideSpanLevel == 0;
+    if (ownRun) {
+        startRun(reader, docxContext);
+    }
+    writer->startElement("w:t");
+    writer->addAttribute("xml:space", "preserve");
+    writer->addTextNode(QString(count, QLatin1Char(' ')));
+    writer->endElement(); // w:t
+    if (ownRun) {
+        endRun(docxContext);
+    }
+}
+
+void OdfTextReaderDocxBackend::elementTextA(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext) {
+        return;
+    }
+
+    if (reader.isStartElement()) {
+        // WordprocessingML hyperlinks contain runs, so they cannot be nested
+        // inside the run opened for an enclosing ODF text:span. In that case
+        // preserve the link text and omit only the hyperlink wrapper.
+        if (m_insideSpanLevel > 0) {
+            m_linkStack.push(false);
+            return;
+        }
+        const QString href = reader.attributes().value("xlink:href").toString();
+        if (href.isEmpty()) {
+            m_linkStack.push(false);
+            return;
+        }
+
+        KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+        writer->startElement("w:hyperlink");
+        if (href.startsWith(QLatin1Char('#'))) {
+            writer->addAttribute("w:anchor", href.mid(1));
+        } else {
+            const QString sourcePart = m_insideComment ? QStringLiteral("word/comments.xml") : QStringLiteral("word/document.xml");
+            const QString relationshipId = docxContext->m_docxFile->addRelationship(
+                sourcePart,
+                "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
+                href,
+                true);
+            if (relationshipId.isEmpty()) {
+                writer->endElement(); // w:hyperlink
+                m_linkStack.push(false);
+                return;
+            }
+            writer->addAttribute("r:id", relationshipId);
+        }
+        m_linkStack.push(true);
+    } else if (!m_linkStack.isEmpty()) {
+        const bool opened = m_linkStack.pop();
+        if (opened) {
+            KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+            writer->endElement(); // w:hyperlink
+        }
+    }
+}
+
+void OdfTextReaderDocxBackend::elementTextLineBreak(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    if (!reader.isStartElement()) {
+        return;
+    }
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext) {
+        return;
+    }
+    KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+    const bool ownRun = m_insideSpanLevel == 0;
+    if (ownRun) {
+        startRun(reader, docxContext);
+    }
+    writer->startElement("w:br");
+    writer->endElement(); // w:br
+    if (ownRun) {
+        endRun(docxContext);
+    }
 }
 
 void OdfTextReaderDocxBackend::characterData(KoXmlStreamReader &reader, OdfReaderContext *context)
@@ -221,8 +384,12 @@ void OdfTextReaderDocxBackend::characterData(KoXmlStreamReader &reader, OdfReade
             startRun(reader, docxContext);
         }
 
+        const QString text = reader.text().toString();
         writer->startElement("w:t");
-        writer->addTextNode(reader.text().toString());
+        if (text.startsWith(QLatin1Char(' ')) || text.endsWith(QLatin1Char(' ')) || text.contains(QStringLiteral("  "))) {
+            writer->addAttribute("xml:space", "preserve");
+        }
+        writer->addTextNode(text);
         writer->endElement(); // w:t
 
         if (m_insideSpanLevel == 0) {

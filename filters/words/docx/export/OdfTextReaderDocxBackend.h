@@ -9,6 +9,7 @@
 #define ODFTEXTREADERDOCXBACKEND_H
 
 // Calligra
+#include <QStack>
 #include <KoFilter.h>
 #include <KoXmlStreamReader.h>
 #include <OdfTextReaderBackend.h>
@@ -33,12 +34,18 @@ public:
     // Paragraph level functions: spans, annotations, notes, text content itself, etc.
 
     void elementOfficeAnnotation(KoXmlStreamReader &reader, OdfReaderContext *context) override;
+    void elementTableTable(KoXmlStreamReader &reader, OdfReaderContext *context) override;
+    void elementTableTableRow(KoXmlStreamReader &reader, OdfReaderContext *context) override;
+    void elementTableTableCell(KoXmlStreamReader &reader, OdfReaderContext *context) override;
+    void elementTableCoveredTableCell(KoXmlStreamReader &reader, OdfReaderContext *context) override;
 
     void elementDcCreator(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void elementDcDate(KoXmlStreamReader &reader, OdfReaderContext *context) override;
 
     void elementTextSpan(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void elementTextS(KoXmlStreamReader &reader, OdfReaderContext *context) override;
+    void elementTextA(KoXmlStreamReader &reader, OdfReaderContext *context) override;
+    void elementTextLineBreak(KoXmlStreamReader &reader, OdfReaderContext *context) override;
 
     void characterData(KoXmlStreamReader &reader, OdfReaderContext *context) override;
 
@@ -56,6 +63,8 @@ private:
     bool m_insideDcDate;
     KoOdfStyleProperties *m_currentParagraphTextProperties;
     QString m_currentParagraphParent;
+    QStack<bool> m_linkStack;
+    QStack<bool> m_cellParagraphStack;
 };
 
 #endif // ODFTEXTREADERDOCXBACKEND_H

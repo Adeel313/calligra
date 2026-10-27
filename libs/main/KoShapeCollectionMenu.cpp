@@ -6,6 +6,7 @@
 #include "KoShapeCollectionMenu.h"
 
 #include <KoCanvasController.h>
+#include <KoCanvasBase.h>
 #include <KoCreateShapesTool.h>
 #include <KoProperties.h>
 #include <KoShape.h>
@@ -230,6 +231,8 @@ KoShapeCollectionMenu::KoShapeCollectionMenu(QWidget *parent)
     d->collectionView->setSelectionMode(QListView::SingleSelection);
     d->collectionView->setResizeMode(QListView::Adjust);
     d->collectionView->setGridSize(QSize(48 + 20, 48));
+    d->collectionView->setMaximumHeight(2 * d->collectionView->gridSize().height() + 4);
+    d->collectionView->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     d->collectionView->setWordWrap(true);
 
     connect(d->collectionView, &QAbstractItemView::clicked, this, &KoShapeCollectionMenu::activateShapeCreationTool);
@@ -411,8 +414,13 @@ void KoShapeCollectionMenu::activateShapeCreationTool(const QModelIndex &index)
         tool->setShapeId(id);
         tool->setShapeProperties(properties);
         KoToolManager::instance()->switchToolRequested(KoCreateShapesTool_ID);
+        if (!isWindow() && canvasController->canvas()->canvasWidget()) {
+            canvasController->canvas()->canvasWidget()->setFocus(Qt::OtherFocusReason);
+        }
     }
-    hide();
+    if (isWindow()) {
+        hide();
+    }
 }
 
 #include "KoShapeCollectionMenu.moc"

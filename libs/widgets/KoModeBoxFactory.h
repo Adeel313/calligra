@@ -13,6 +13,7 @@
 #include <KoDockFactoryBase.h>
 
 #include <QDockWidget>
+#include <QIcon>
 #include <QString>
 
 class KoCanvasControllerWidget;
@@ -32,6 +33,21 @@ public:
     KoDockFactoryBase::DockPosition defaultDockPosition() const override;
     bool keepDefaultDockPosition() const override;
     QDockWidget *createDockWidget() override;
+
+    /**
+     * Add a page which is shown as its own tab in the mode box, after the
+     * tool tabs. Ownership of @p page passes to the mode box.
+     */
+    void addCustomPage(const QString &title, const QIcon &icon, const QString &toolTip, QWidget *page, bool beforeToolTabs = false);
+
+    /** Add a widget to an existing tool tab, such as a ribbon toolbar. */
+    void addWidgetToToolTab(const QString &toolId, QWidget *widget);
+
+    /** Place quick access controls before and after the tab bar. */
+    void setLeadingWidget(QWidget *widget);
+    void setTrailingWidget(QWidget *widget);
+
+
     bool isCollapsable() const override
     {
         return false;

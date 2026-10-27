@@ -10,6 +10,8 @@
 
 // Qt
 #include <QHash>
+#include <QDir>
+#include <QFileInfo>
 #include <QString>
 
 // odf lib
@@ -38,6 +40,15 @@ public:
                                // Stored in _rels/.rels
 };
 
+static QString normalizedPartPath(const QString &path)
+{
+    QString normalized = QDir::cleanPath(path);
+    while (normalized.startsWith(QLatin1Char('/'))) {
+        normalized.remove(0, 1);
+    }
+    return normalized;
+}
+
 OpcRelSetManager::Private::Private()
     : documentRelSet(nullptr)
 {
@@ -63,12 +74,17 @@ OpcRelSetManager::~OpcRelSetManager()
 
 OpcRelSet *OpcRelSetManager::relSet(const QString &path) const
 {
-    return d->relSets.value(path, 0);
+    return d->relSets.value(normalizedPartPath(path), nullptr);
 }
 
 void OpcRelSetManager::setRelSet(const QString &path, OpcRelSet *relSet)
 {
-    d->relSets.insert(path, relSet);
+    const QString normalizedPath = normalizedPartPath(path);
+    OpcRelSet *oldRelSet = d->relSets.value(normalizedPath, nullptr);
+    if (oldRelSet != relSet) {
+        delete oldRelSet;
+        d->relSets.insert(normalizedPath, relSet);
+    }
 }
 
 OpcRelSet *OpcRelSetManager::documentRelSet() const
@@ -78,6 +94,9 @@ OpcRelSet *OpcRelSetManager::documentRelSet() const
 
 void OpcRelSetManager::setDocumentRelSet(OpcRelSet *relSet)
 {
+    if (d->documentRelSet != relSet) {
+        delete d->documentRelSet;
+    }
     d->documentRelSet = relSet;
 }
 
@@ -113,14 +132,21 @@ bool OpcRelSetManager::loadRelSets(KoStore *odfStore)
 
 bool OpcRelSetManager::saveRelSets(KoStore *odfStore)
 {
-    Q_UNUSED(odfStore);
+    if (!odfStore) {
+        return false;
+    }
 
-    // FIXME: save the document relset here
+    if (d->documentRelSet && d->documentRelSet->writeToStore(odfStore, QStringLiteral("_rels/.rels")) != KoFilter::OK) {
+        return false;
+    }
 
-    //     foreach (const QString &path, d->relSets.keys()) {
-    // FIXME: save the .rels file for the file with path 'path' here.
-    //     }
-
-    // FIXME: Return actual return status.
+    for (auto it = d->relSets.cbegin(); it != d->relSets.cend(); ++it) {
+        const QFileInfo sourcePart(it.key());
+        const QString directory = sourcePart.path() == QLatin1String(".") ? QString() : sourcePart.path() + QLatin1Char('/');
+        const QString relsPath = directory + QStringLiteral("_rels/") + sourcePart.fileName() + QStringLiteral(".rels");
+        if (!it.value() || it.value()->writeToStore(odfStore, relsPath) != KoFilter::OK) {
+            return false;
+        }
+    }
     return true;
 }

@@ -929,12 +929,24 @@ bool KoMainWindow::saveDocument(bool saveas, bool silent, int specialOutputFlag)
         if (suggestedURL.isEmpty()) {
             suggestedURL = d->rootDocument->defaultUrl();
         }
+        const bool preferDocx = _native_format == "application/vnd.oasis.opendocument.text";
+        if (preferDocx && d->rootDocument->url().isEmpty()) {
+            QString suggestedFilename = suggestedURL.fileName();
+            const int extensionPosition = suggestedFilename.lastIndexOf('.');
+            if (extensionPosition > 0)
+                suggestedFilename = suggestedFilename.left(extensionPosition);
+            suggestedFilename += QStringLiteral(".docx");
+            suggestedURL = suggestedURL.adjusted(QUrl::RemoveFilename);
+            suggestedURL.setPath(suggestedURL.path() + suggestedFilename);
+        }
         const auto localfile = suggestedURL.toLocalFile();
         const bool overrideDefaultDir = !suggestedURL.adjusted(QUrl::RemoveFilename).isEmpty();
         KoFileDialog dialog(this, KoFileDialog::SaveFile, "SaveDocument");
         dialog.setCaption(i18n("untitled"));
         dialog.setDefaultDir(localfile, overrideDefaultDir);
-        dialog.setMimeTypeFilters(mimeFilter);
+        dialog.setMimeTypeFilters(mimeFilter, preferDocx
+            ? QStringLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+            : QString());
         QUrl newURL = QUrl::fromUserInput(dialog.filename());
         debugMain << newURL;
         ret = !newURL.isEmpty();
@@ -1199,7 +1211,12 @@ void KoMainWindow::slotFileOpen()
         dialog.setCaption(i18n("Open Document"));
         dialog.setDefaultDir(qApp->applicationName().contains("karbon") ? QStandardPaths::writableLocation(QStandardPaths::PicturesLocation)
                                                                         : QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
-        dialog.setMimeTypeFilters(koApp->mimeFilter(KoFilterManager::Import));
+        const QStringList importFilters = koApp->mimeFilter(KoFilterManager::Import);
+        const bool preferDocx = d->rootDocument
+            && d->rootDocument->nativeFormatMimeType() == "application/vnd.oasis.opendocument.text";
+        dialog.setMimeTypeFilters(importFilters, preferDocx
+            ? QStringLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+            : QString());
         dialog.setHideNameFilterDetailsOption();
         url = QUrl::fromUserInput(dialog.filename());
     } else {
@@ -1207,7 +1224,12 @@ void KoMainWindow::slotFileOpen()
         dialog.setCaption(i18n("Import Document"));
         dialog.setDefaultDir(qApp->applicationName().contains("karbon") ? QStandardPaths::writableLocation(QStandardPaths::PicturesLocation)
                                                                         : QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
-        dialog.setMimeTypeFilters(koApp->mimeFilter(KoFilterManager::Import));
+        const QStringList importFilters = koApp->mimeFilter(KoFilterManager::Import);
+        const bool preferDocx = d->rootDocument
+            && d->rootDocument->nativeFormatMimeType() == "application/vnd.oasis.opendocument.text";
+        dialog.setMimeTypeFilters(importFilters, preferDocx
+            ? QStringLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+            : QString());
         dialog.setHideNameFilterDetailsOption();
         url = QUrl::fromUserInput(dialog.filename());
     }

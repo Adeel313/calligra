@@ -296,7 +296,9 @@ void KoPart::showStartUpWidget(KoMainWindow *mainWindow, bool alwaysShow)
         }
     }
 
-    mainWindow->factory()->container("mainToolBar", mainWindow)->hide();
+    if (QWidget *mainToolBar = mainWindow->factory()->container("mainToolBar", mainWindow)) {
+        mainToolBar->hide();
+    }
 
     if (d->startUpWidget) {
         d->startUpWidget->show();
@@ -315,8 +317,13 @@ void KoPart::deleteOpenPane(bool closing)
         d->startUpWidget->deleteLater();
 
         if (!closing) {
-            mainWindows().first()->setRootDocument(d->document, this);
-            KoPart::mainWindows().first()->factory()->container("mainToolBar", mainWindows().first())->show();
+            KoMainWindow *mainWindow = KoPart::mainWindows().isEmpty() ? nullptr : KoPart::mainWindows().first();
+            if (mainWindow) {
+                mainWindow->setRootDocument(d->document, this);
+                if (QWidget *mainToolBar = mainWindow->factory()->container("mainToolBar", mainWindow)) {
+                    mainToolBar->show();
+                }
+            }
         }
     }
 }

@@ -8,13 +8,12 @@
 #ifndef OPCRELSET_H
 #define OPCRELSET_H
 
-#include <QHash>
+#include <QList>
+#include <QString>
 
 #include <KoFilter.h>
 
-#include "FileCollector.h"
-
-class QString;
+class KoStore;
 
 /**
  * @brief this class manages a set of relationships in a file in the OPC format
@@ -37,6 +36,13 @@ class QString;
 class OpcRelSet
 {
 public:
+    struct Relationship {
+        QString id;
+        QString type;
+        QString target;
+        bool external = false;
+    };
+
     OpcRelSet();
     ~OpcRelSet();
 
@@ -44,16 +50,15 @@ public:
     //        case we should also lookup and reading.
 
     // Return the ID
-    QString addRelationship(const QString &type, const QString &target);
+    QString addRelationship(const QString &type, const QString &target, bool external = false);
+    QList<Relationship> relationships() const;
+    KoFilter::ConversionStatus writeToStore(KoStore *store, const QString &path) const;
 
 private:
     // Privat functions
 
 private:
-    // data
-
-    // FIXME: Hmmm, I want to use a QHash here but which of the 3
-    //        attributes above should we use as key(s)?
+    QList<Relationship> m_relationships;
 };
 
 #endif // OPCRELSET_H

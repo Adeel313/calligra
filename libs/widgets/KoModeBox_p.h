@@ -14,6 +14,7 @@
 
 #include <QDockWidget>
 #include <QHash>
+#include <QIcon>
 #include <QList>
 #include <QMap>
 #include <QPointer>
@@ -87,6 +88,22 @@ public Q_SLOTS:
      */
     void setOrientation(Qt::Orientation orientation);
 
+    /**
+     * Add a page that is not bound to a tool, shown as its own tab after the
+     * tool tabs, for instance a ribbon style View tab.
+     * The mode box takes ownership of @p page.
+     */
+    void addCustomPage(const QString &title, const QIcon &icon, const QString &toolTip, QWidget *page, bool beforeToolTabs = false);
+
+    /// Add a widget to a tool's page, preserving it when tool pages are rebuilt.
+    void addWidgetToToolTab(const QString &toolId, QWidget *widget);
+
+    /// Place quick access controls before and after the tab bar.
+    void setLeadingWidget(QWidget *widget);
+    void setTrailingWidget(QWidget *widget);
+
+
+
 private Q_SLOTS:
     void setCurrentLayer(const KoCanvasController *canvas, const KoShapeLayer *newLayer);
 
@@ -128,6 +145,9 @@ private:
     QIcon createSimpleIcon(KoToolAction *toolAction) const;
     void addItem(KoToolAction *toolAction);
     void setIconSize() const;
+
+    /// re-create the tabs and pages of all pages added with addCustomPage()
+    void appendCustomPages(bool beforeToolTabs);
 
 private:
     class Private;

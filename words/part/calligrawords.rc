@@ -71,10 +71,6 @@
   <Action name="add_bookmark"/>
  -->
 
- <Menu name="format"><text>S&amp;tyles</text>
-  <Action name="format_stylist"/>
- </Menu>
-
  <Menu name="settings"><text>&amp;Settings</text>
   <Menu name="SpellCheck"><text>Spellcheck</text>
       <Action name="tool_auto_spellcheck"/>
@@ -91,19 +87,6 @@
  </Menu>
 </MenuBar>
 
-<ToolBar name="edit_toolbar" position="top"><Text>Edit</Text>
-  <Action name="edit_undo"/>
-  <Action name="edit_redo"/>
-  <!--
-  <Action name="edit_findprevious"/>
-  <Action name="edit_findnext"/>
-  <Action name="edit_replace"/>
-  <Action name="select_bookmark"/>
-  -->
-  <Spacer/>
-  <Action name="add_shape" />
-  <Action name="edit_find"/>
-</ToolBar>
 <Menu name="text_popup">
  <Action name="format_font"/>
  <Action name="format_paragraph"/>

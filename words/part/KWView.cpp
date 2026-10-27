@@ -59,6 +59,7 @@
 #include <KoShapeAnchor.h>
 #include <KoShapeContainer.h>
 #include <KoShapeCreateCommand.h>
+#include <KoShapeController.h>
 #include <KoShapeFactoryBase.h>
 #include <KoShapeGroupCommand.h>
 #include <KoShapeManager.h>
@@ -762,6 +763,17 @@ void KWView::viewMouseMoveEvent(QMouseEvent *e)
 
 void KWView::editDeleteSelection()
 {
+    const QList<KoShape *> selectedShapes = canvasBase()->shapeManager()->selection()->selectedShapes(KoFlake::TopLevelSelection);
+    QList<KoShape *> deletableShapes;
+    for (KoShape *shape : selectedShapes) {
+        if (shape->isDeletable() && !shape->isGeometryProtected()) {
+            deletableShapes.append(shape);
+        }
+    }
+    if (!deletableShapes.isEmpty()) {
+        canvasBase()->addCommand(canvasBase()->shapeController()->removeShapes(deletableShapes));
+        return;
+    }
     canvasBase()->toolProxy()->deleteSelection();
 }
 

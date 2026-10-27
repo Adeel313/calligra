@@ -384,6 +384,7 @@ private:
 
     QMap<QString, QString> m_headers;
     QMap<QString, QString> m_footers;
+    bool m_differentFirstPage = false;
 
     // processing the ins/del element (Inserted/Deleted Run Content)
     enum ChangeTrackingState {

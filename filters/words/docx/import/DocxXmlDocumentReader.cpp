@@ -141,6 +141,7 @@ void DocxXmlDocumentReader::init()
     m_insideParagraph = false;
     m_createSectionStyle = false;
     m_createSectionToNext = false;
+    m_differentFirstPage = false;
     m_currentVMLProperties.insideGroup = false;
     m_outputFrames = true;
     m_currentNumId.clear();
@@ -345,6 +346,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
 
     m_footers.clear();
     m_headers.clear();
+    m_differentFirstPage = false;
 
     m_pageMargins.clear();
     m_pageBorderStyles.clear();
@@ -361,6 +363,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
             ELSE_TRY_READ_IF(textDirection)
             ELSE_TRY_READ_IF(headerReference)
             ELSE_TRY_READ_IF(footerReference)
+            else if (name() == QLatin1StringView("titlePg")) {
+                m_differentFirstPage = true;
+                skipCurrentElement();
+            }
             ELSE_TRY_READ_IF(cols)
             ELSE_TRY_READ_IF(footnotePr)
             ELSE_TRY_READ_IF(endnotePr)
@@ -375,7 +381,6 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
 
     applyPageBorders(m_currentPageStyle, m_pageMargins, m_pageBorderStyles, m_pageBorderPaddings, m_pageBorderOffsetFrom);
 
-    // Currently if there are 3 header/footer styles, the one with 'first' is ignored
     bool useEvenAndOddHeaders = false;
     if (m_context->import->documentSettings().contains("evenAndOddHeaders")) {
         QString val = m_context->import->documentSettings()["evenAndOddHeaders"].toString();
@@ -383,30 +388,26 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     }
     // the numbering in addChildElement is needed to correctly sort the element when writing out the values.
     if (!m_headers.isEmpty()) {
-        bool odd = false;
         if (useEvenAndOddHeaders && !m_headers["even"].isEmpty()) {
             m_masterPageStyle.addChildElement("2 style:header-left", m_headers["even"]);
         }
         if (!m_headers["default"].isEmpty()) {
-            odd = true;
             m_masterPageStyle.addChildElement("1 style:header", m_headers["default"]);
         }
-        if (!odd) {
-            m_masterPageStyle.addChildElement("1 style:header", m_headers["first"]);
+        if (m_differentFirstPage && !m_headers["first"].isEmpty()) {
+            m_masterPageStyle.addChildElement("3 style:header-first", m_headers["first"]);
         }
     }
 
     if (!m_footers.isEmpty()) {
-        bool odd = false;
         if (useEvenAndOddHeaders && !m_footers["even"].isEmpty()) {
-            m_masterPageStyle.addChildElement("4 style:footer-left", m_footers["even"]);
+            m_masterPageStyle.addChildElement("5 style:footer-left", m_footers["even"]);
         }
         if (!m_footers["default"].isEmpty()) {
-            odd = true;
-            m_masterPageStyle.addChildElement("3 style:footer", m_footers["default"]);
+            m_masterPageStyle.addChildElement("4 style:footer", m_footers["default"]);
         }
-        if (!odd) {
-            m_masterPageStyle.addChildElement("3 style:footer", m_footers["first"]);
+        if (m_differentFirstPage && !m_footers["first"].isEmpty()) {
+            m_masterPageStyle.addChildElement("6 style:footer-first", m_footers["first"]);
         }
     }
 
@@ -692,6 +693,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_footerReference()
             footerContent = "<style:footer-left>";
             footerContent.append(reader.content());
             footerContent.append("</style:footer-left>");
+        } else if (type == "first") {
+            footerContent = "<style:footer-first style:display=\"true\">";
+            footerContent.append(reader.content());
+            footerContent.append("</style:footer-first>");
         } else {
             footerContent = "<style:footer>";
             footerContent.append(reader.content());
@@ -766,6 +771,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_headerReference()
             headerContent = "<style:header-left>";
             headerContent.append(reader.content());
             headerContent.append("</style:header-left>");
+        } else if (type == "first") {
+            headerContent = "<style:header-first style:display=\"true\">";
+            headerContent.append(reader.content());
+            headerContent.append("</style:header-first>");
         } else {
             headerContent = "<style:header>";
             headerContent.append(reader.content());
