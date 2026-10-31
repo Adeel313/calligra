@@ -89,6 +89,7 @@ protected:
     // Frames
 
     DECLARE_READER_FUNCTION(DrawFrame);
+    DECLARE_READER_FUNCTION(DrawImage);
     DECLARE_READER_FUNCTION(DrawObject);
     DECLARE_READER_FUNCTION(DrawObjectOle);
 

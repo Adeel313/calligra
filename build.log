@@ -1,0 +1,616 @@
+ninja: Entering directory `build'
+[1/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/KChartConvertions.cpp.o
+[2/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/kochart_global.cpp.o
+[3/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/CellRegion.cpp.o
+[4/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/chartshapecore_autogen/mocs_compilation.cpp.o
+[5/594] Building CXX object filters/words/msword-odf/wv2/src/CMakeFiles/kowv2.dir/word95_generated.cpp.o
+[6/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/CellRegionStringValidator.cpp.o
+[7/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/Axis.cpp.o
+[8/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/DataSet.cpp.o
+[9/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/TextLabelDummy.cpp.o
+[10/594] Building CXX object filters/words/msword-odf/wv2/src/CMakeFiles/kowv2.dir/word97_generated.cpp.o
+[11/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/ChartTableModel.cpp.o
+[12/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/KChartModel.cpp.o
+[13/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/Legend.cpp.o
+[14/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/TableSource.cpp.o
+[15/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/Surface.cpp.o
+[16/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/ChartPart.cpp.o
+[17/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/PlotArea.cpp.o
+[18/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/ChartProxyModel.cpp.o
+[19/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/ChartDocument.cpp.o
+[20/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/ChartToolFactory.cpp.o
+[21/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/ChartTool.cpp.o
+[22/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/ConfigSubWidgetBase.cpp.o
+[23/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/TitlesConfigWidget.cpp.o
+[24/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/ChartShape.cpp.o
+[25/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/LegendConfigWidget.cpp.o
+[26/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/AxesConfigWidget.cpp.o
+[27/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/PlotAreaConfigWidget.cpp.o
+[28/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/StockConfigWidget.cpp.o
+[29/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/PieConfigWidget.cpp.o
+[30/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/DataSetConfigWidget.cpp.o
+[31/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/ChartTableView.cpp.o
+[32/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/ScreenConversions.cpp.o
+[33/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/SingleModelHelper.cpp.o
+[34/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/OdfLoadingHelper.cpp.o
+[35/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/dialogs/AxisScalingDialog.cpp.o
+[36/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/ChartLayout.cpp.o
+[37/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/dialogs/TableEditorDialog.cpp.o
+[38/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/dialogs/NewAxisDialog.cpp.o
+[39/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/dialogs/CellRegionDialog.cpp.o
+[40/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/dialogs/FontEditorDialog.cpp.o
+[41/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/OdfHelper.cpp.o
+[42/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/dialogs/FormatErrorBarDialog.cpp.o
+[43/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/dialogs/PieDataEditor.cpp.o
+[44/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/dialogs/BubbleDataEditor.cpp.o
+[45/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/dialogs/ScatterDataEditor.cpp.o
+[46/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/dialogs/BubbleDataSetTableModel.cpp.o
+[47/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/dialogs/ScatterDataSetTableModel.cpp.o
+[48/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/commands/ChartTypeCommand.cpp.o
+[49/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/dialogs/StockDataEditor.cpp.o
+[50/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/commands/AxisCommand.cpp.o
+[51/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/commands/ChartTextShapeCommand.cpp.o
+[52/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/commands/LegendCommand.cpp.o
+[53/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/commands/DatasetCommand.cpp.o
+[54/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/commands/PlotAreaCommand.cpp.o
+[55/594] Creating library symlink bin/libkoformula.so.41 bin/libkoformula.so
+[56/594] Linking CXX shared library bin/libkoodfreader.so.26.11.70
+[57/594] Linking CXX shared library bin/libkomsooxml.so.26.11.70
+[58/594] Linking CXX shared library bin/libkowv2.so.9.0.0
+[59/594] Running moc --collect-json for target calligralauncher
+[60/594] Creating library symlink bin/libbasicflakes.so.41 bin/libbasicflakes.so
+[61/594] Creating library symlink bin/libkovectorimage.so.41 bin/libkovectorimage.so
+[62/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/commands/AddRemoveAxisCommand.cpp.o
+[63/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/commands/GapCommand.cpp.o
+[64/594] Creating library symlink bin/libautocorrection.so.41 bin/libautocorrection.so
+[65/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/widgets/StrokeConfigWidget.cpp.o
+[66/594] Automatic MOC for target calligra_shape_artistictext
+[67/594] Automatic MOC for target braindump_shape_web
+[68/594] Automatic MOC for target calligra_tool_defaults
+[69/594] Automatic MOC for target calligra_textinlineobject_variables
+[70/594] Automatic MOC for target calligra_shape_paths
+[71/594] Creating library symlink bin/libkoodfreader.so.41 bin/libkoodfreader.so
+[72/594] Creating library symlink bin/libkomsooxml.so.41 bin/libkomsooxml.so
+[73/594] Automatic MOC for target calligra_shape_picture
+[74/594] Creating library symlink bin/libkowv2.so.9 bin/libkowv2.so
+[75/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/widgets/RadarDataSetConfigWidget.cpp.o
+[76/594] Automatic QML type registration for target calligralauncher
+[77/594] Automatic MOC for target calligrawords
+[78/594] Automatic MOC for target calligrawordspart
+[79/594] Generating ui_WebShapeConfigWidget.h
+[80/594] Generating ui_ArtisticTextShapeConfigWidget.h
+[81/594] Generating ui_ArtisticTextShapeOnPathWidget.h
+[82/594] Building CXX object plugins/chartshape/CMakeFiles/chartshapecore.dir/widgets/RingConfigWidget.cpp.o
+[83/594] Automatic MOC for target calligra_filter_ascii2words
+[84/594] Automatic MOC for target calligra_tool_basicflakes
+[85/594] Automatic MOC for target calligra_shape_formula
+[86/594] Automatic MOC for target calligra_docker_defaults
+[87/594] Automatic MOC for target calligra_textediting_autocorrect
+[88/594] Generating ui_DefaultToolWidget.h
+[89/594] Generating ui_DefaultToolArrangeWidget.h
+[90/594] Generating ui_DefaultToolTransformWidget.h
+[91/594] Generating ui_GuidesToolOptionWidget.h
+[92/594] Generating ui_InsertGuidesToolOptionWidget.h
+[93/594] Generating ui_ConnectionPointWidget.h
+[94/594] Generating ui_StarShapeConfigWidget.h
+[95/594] Generating ui_RectangleShapeConfigWidget.h
+[96/594] Automatic MOC for target calligra_textediting_changecase
+[97/594] Generating ui_EllipseShapeConfigWidget.h
+[98/594] Generating ui_FixedDateFormat.h
+[99/594] Generating ui_SpiralShapeConfigWidget.h
+[100/594] Generating ui_wdgPictureTool.h
+[101/594] Generating ui_FormulaToolWidget.h
+[102/594] Generating ui_FormulaToolEditWidget.h
+[103/594] Automatic MOC for target calligra_textediting_thesaurus
+[104/594] Automatic MOC for target calligra_textediting_spellcheck
+[105/594] Automatic MOC for target updateautocorrection
+[106/594] Automatic MOC for target calligra_shape_plugin
+[107/594] Linking CXX static library lib/libchartshapecore.a
+[108/594] Automatic MOC for target calligradocinfopropspage
+[109/594] Automatic MOC for target calligrathumbnail
+[110/594] Automatic MOC for target calligra_shape_vector
+[111/594] Automatic MOC for target calligra_docker_stencils
+[112/594] Automatic MOC for target calligra_filter_applixword2odt
+[113/594] Generating ui_ImportDialogUI.h
+[114/594] Automatic MOC for target calligra_filter_wpd2odt
+[115/594] Automatic MOC for target calligra_filter_wps2odt
+[116/594] Automatic MOC for target calligra_filter_odt2ascii
+[117/594] Automatic MOC for target calligra_shape_chart
+[118/594] Automatic MOC for target calligra_filter_odt2wiki
+[119/594] Automatic MOC for target calligra_filter_odt2epub2
+[120/594] Automatic MOC for target calligra_filter_odt2mobi
+[121/594] Running rcc for resource qmake_org_kde_calligra
+[122/594] Generating .rcc/qmlcache/calligralauncher_qmlcache_loader.cpp
+[123/594] Automatic MOC for target calligra_filter_odt2html
+[124/594] Running rcc for resource calligralauncher_raw_qml_0
+[125/594] Building CXX object words/part/CMakeFiles/calligrawordspart.dir/calligrawordspart_autogen/mocs_compilation.cpp.o
+[126/594] Automatic MOC for target calligra_filter_odt2docx
+[127/594] Building CXX object words/app/CMakeFiles/calligrawords.dir/calligrawords_autogen/mocs_compilation.cpp.o
+[128/594] Automatic MOC for target calligra_filter_doc2odt
+[129/594] Generating .rcc/qmlcache/calligralauncher_Main_qml.cpp, .rcc/qmlcache/calligralauncher_Main_qml.cpp.aotstats
+[130/594] Automatic MOC for target calligra_filter_docx2odt
+[131/594] Building CXX object words/part/CMakeFiles/calligrawordspart.dir/KWFactoryInit.cpp.o
+[132/594] Building CXX object libs/basicflakes/plugin/CMakeFiles/calligra_tool_basicflakes.dir/calligra_tool_basicflakes_autogen/mocs_compilation.cpp.o
+[133/594] Building CXX object libs/basicflakes/plugin/CMakeFiles/calligra_tool_basicflakes.dir/KoCreatePathToolFactory.cpp.o
+[134/594] Building CXX object libs/basicflakes/plugin/CMakeFiles/calligra_tool_basicflakes.dir/Plugin.cpp.o
+[135/594] Automatic MOC for target calligra_shape_text
+[136/594] Generating ui_SimpleCharacterWidget.h
+[137/594] Generating ui_SimpleParagraphWidget.h
+[138/594] Generating ui_SimpleTableWidget.h
+[139/594] Generating ui_SimpleInsertWidget.h
+[140/594] Generating ui_SimpleTableOfContentsWidget.h
+[141/594] Generating ui_SimpleCitationBibliographyWidget.h
+[142/594] Generating ui_SimpleSpellCheckingWidget.h
+[143/594] Generating ui_CitationInsertionDialog.h
+[144/594] Generating ui_InsertBibliographyDialog.h
+[145/594] Generating ui_SimpleFootEndNotesWidget.h
+[146/594] Generating ui_NotesConfigurationDialog.h
+[147/594] Generating ui_SimpleCaptionsWidget.h
+[148/594] Generating ui_StylesWidget.h
+[149/594] Generating ui_ParagraphLayout.h
+/home/adeel/calligra/plugins/textshape/dialogs/ParagraphLayout.ui: Warning: The name 'distanceLabel' (QLabel) is already in use, defaulting to 'distanceLabel1'.
+[150/594] Generating ui_ParagraphIndentSpacing.h
+[151/594] Generating ui_ParagraphDecorations.h
+[152/594] Generating ui_ParagraphBulletsNumbers.h
+[153/594] Generating ui_ParagraphDropCaps.h
+[154/594] Generating ui_StyleManager.h
+/home/adeel/calligra/plugins/textshape/dialogs/StyleManager.ui: Warning: The name 'sidebarLayout' (QHBoxLayout) is already in use, defaulting to 'sidebarLayout1'.
+/home/adeel/calligra/plugins/textshape/dialogs/StyleManager.ui: Warning: The name 'sidebarLayout' (QVBoxLayout) is already in use, defaulting to 'sidebarLayout2'.
+/home/adeel/calligra/plugins/textshape/dialogs/StyleManager.ui: Warning: The name 'sidebarLayout' (QVBoxLayout) is already in use, defaulting to 'sidebarLayout3'.
+[155/594] Building CXX object words/app/CMakeFiles/calligrawords.dir/main.cpp.o
+[156/594] Generating ui_CharacterGeneral.h
+[157/594] Generating ui_CharacterHighlighting.h
+[158/594] Generating ui_StyleManagerWelcome.h
+[159/594] Generating ui_TableDialog.h
+[160/594] Generating ui_BibliographyConfigureDialog.h
+[161/594] Generating ui_SimpleLinksWidget.h
+[162/594] Generating ui_TableOfContentsConfigure.h
+[163/594] Generating ui_TableOfContentsStyleConfigure.h
+[164/594] Generating ui_SimpleAnnotationWidget.h
+[165/594] Generating ui_ListLevelWidget.h
+/home/adeel/calligra/plugins/textshape/dialogs/ListLevelWidget.ui: Warning: Z-order assignment: 'verticalSpacer_4' is not a valid widget.
+[166/594] Generating ui_FontDecorations.h
+[167/594] Generating ui_ChangeConfigureDialog.h
+[168/594] Generating ui_LanguageTab.h
+[169/594] Generating ui_AcceptRejectChangeDialog.h
+[170/594] Generating ui_TrackedChangeManager.h
+[171/594] Generating ui_LinkInsertionDialog.h
+[172/594] Generating ui_ManageBookmark.h
+[173/594] Generating ui_SectionFormatDialog.h
+[174/594] Generating ui_SectionsSplitDialog.h
+[175/594] Building CXX object libs/basicflakes/plugin/CMakeFiles/calligra_tool_basicflakes.dir/KoPencilToolFactory.cpp.o
+[176/594] Building CXX object plugins/webshape/CMakeFiles/braindump_shape_web.dir/braindump_shape_web_autogen/mocs_compilation.cpp.o
+[177/594] Building CXX object plugins/webshape/CMakeFiles/braindump_shape_web.dir/WebToolFactory.cpp.o
+[178/594] Building CXX object plugins/webshape/CMakeFiles/braindump_shape_web.dir/WebShapeFactory.cpp.o
+[179/594] Building CXX object plugins/webshape/CMakeFiles/braindump_shape_web.dir/WebShape.cpp.o
+[180/594] Building CXX object plugins/webshape/CMakeFiles/braindump_shape_web.dir/WebTool.cpp.o
+[181/594] Building CXX object plugins/webshape/CMakeFiles/braindump_shape_web.dir/WebToolWidget.cpp.o
+[182/594] Building CXX object plugins/webshape/CMakeFiles/braindump_shape_web.dir/WebShapePlugin.cpp.o
+[183/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/calligra_shape_artistictext_autogen/mocs_compilation.cpp.o
+[184/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ArtisticTextRange.cpp.o
+[185/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ArtisticTextToolFactory.cpp.o
+[186/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ArtisticTextTool.cpp.o
+[187/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ArtisticTextShapeFactory.cpp.o
+[188/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ArtisticTextShapePlugin.cpp.o
+[189/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ArtisticTextToolSelection.cpp.o
+[190/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ArtisticTextShape.cpp.o
+[191/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ArtisticTextShapeConfigWidget.cpp.o
+[192/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ArtisticTextShapeLoadingUpdater.cpp.o
+[193/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ArtisticTextShapeOnPathWidget.cpp.o
+[194/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/AttachTextToPathCommand.cpp.o
+[195/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ChangeTextOffsetCommand.cpp.o
+[196/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/DetachTextFromPathCommand.cpp.o
+[197/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ChangeTextFontCommand.cpp.o
+[198/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ChangeTextAnchorCommand.cpp.o
+[199/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ArtisticTextLoadingContext.cpp.o
+[200/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/AddTextRangeCommand.cpp.o
+[201/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/RemoveTextRangeCommand.cpp.o
+[202/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/MoveStartOffsetStrategy.cpp.o
+[203/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/SelectTextStrategy.cpp.o
+[204/594] Building CXX object plugins/artistictextshape/CMakeFiles/calligra_shape_artistictext.dir/ReplaceTextRangeCommand.cpp.o
+[205/594] Building CXX object plugins/dockers/CMakeFiles/calligra_docker_defaults.dir/calligra_docker_defaults_autogen/mocs_compilation.cpp.o
+[206/594] Building CXX object plugins/dockers/CMakeFiles/calligra_docker_defaults.dir/snapguidedocker/SnapGuideDocker.cpp.o
+[207/594] Building CXX object plugins/dockers/CMakeFiles/calligra_docker_defaults.dir/snapguidedocker/SnapGuideDockerFactory.cpp.o
+[208/594] Building CXX object plugins/textediting/autocorrection/CMakeFiles/calligra_textediting_autocorrect.dir/calligra_textediting_autocorrect_autogen/mocs_compilation.cpp.o
+[209/594] Building CXX object plugins/textediting/autocorrection/CMakeFiles/calligra_textediting_autocorrect.dir/AutocorrectDebug.cpp.o
+[210/594] Building CXX object plugins/dockers/CMakeFiles/calligra_docker_defaults.dir/Plugin.cpp.o
+[211/594] Building CXX object plugins/textediting/autocorrection/CMakeFiles/calligra_textediting_autocorrect.dir/AutocorrectPlugin.cpp.o
+[212/594] Building CXX object plugins/textediting/autocorrection/CMakeFiles/calligra_textediting_autocorrect.dir/AutocorrectFactory.cpp.o
+[213/594] Building CXX object plugins/textediting/autocorrection/CMakeFiles/calligra_textediting_autocorrect.dir/Autocorrect.cpp.o
+[214/594] Building CXX object plugins/textediting/changecase/CMakeFiles/calligra_textediting_changecase.dir/ChangecaseDebug.cpp.o
+[215/594] Building CXX object plugins/textediting/changecase/CMakeFiles/calligra_textediting_changecase.dir/calligra_textediting_changecase_autogen/mocs_compilation.cpp.o
+[216/594] Building CXX object plugins/textediting/changecase/CMakeFiles/calligra_textediting_changecase.dir/Changecase.cpp.o
+[217/594] Building CXX object plugins/textediting/changecase/CMakeFiles/calligra_textediting_changecase.dir/ChangecaseFactory.cpp.o
+[218/594] Building CXX object plugins/textediting/changecase/CMakeFiles/calligra_textediting_changecase.dir/ChangecasePlugin.cpp.o
+[219/594] Building CXX object plugins/textediting/spellcheck/CMakeFiles/calligra_textediting_spellcheck.dir/SpellCheckDebug.cpp.o
+[220/594] Building CXX object plugins/textediting/spellcheck/CMakeFiles/calligra_textediting_spellcheck.dir/calligra_textediting_spellcheck_autogen/mocs_compilation.cpp.o
+[221/594] Building CXX object plugins/textediting/spellcheck/CMakeFiles/calligra_textediting_spellcheck.dir/SpellCheckFactory.cpp.o
+[222/594] Building CXX object plugins/textediting/spellcheck/CMakeFiles/calligra_textediting_spellcheck.dir/SpellCheckPlugin.cpp.o
+[223/594] Building CXX object plugins/textediting/spellcheck/CMakeFiles/calligra_textediting_spellcheck.dir/SpellCheck.cpp.o
+[224/594] Building CXX object plugins/textediting/thesaurus/CMakeFiles/calligra_textediting_thesaurus.dir/ThesaurusDebug.cpp.o
+[225/594] Building CXX object plugins/textediting/spellcheck/CMakeFiles/calligra_textediting_spellcheck.dir/BgSpellCheck.cpp.o
+[226/594] Building CXX object plugins/textediting/thesaurus/CMakeFiles/calligra_textediting_thesaurus.dir/calligra_textediting_thesaurus_autogen/mocs_compilation.cpp.o
+[227/594] Building CXX object plugins/textediting/spellcheck/CMakeFiles/calligra_textediting_spellcheck.dir/SpellCheckMenu.cpp.o
+[228/594] Building CXX object plugins/textediting/thesaurus/CMakeFiles/calligra_textediting_thesaurus.dir/ThesaurusFactory.cpp.o
+[229/594] Building CXX object plugins/textediting/thesaurus/CMakeFiles/calligra_textediting_thesaurus.dir/ThesaurusPlugin.cpp.o
+[230/594] Building CXX object plugins/textediting/thesaurus/CMakeFiles/calligra_textediting_thesaurus.dir/Thesaurus.cpp.o
+[231/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/Plugin.cpp.o
+[232/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/calligra_tool_defaults_autogen/mocs_compilation.cpp.o
+[233/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/defaulttool/DefaultToolFactory.cpp.o
+[234/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/defaulttool/DefaultTool.cpp.o
+[235/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/defaulttool/DefaultToolArrangeWidget.cpp.o
+[236/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/defaulttool/DefaultToolWidget.cpp.o
+[237/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/defaulttool/ShapeMoveStrategy.cpp.o
+[238/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/defaulttool/DefaultToolTransformWidget.cpp.o
+[239/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/defaulttool/ShapeResizeStrategy.cpp.o
+[240/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/defaulttool/SelectionDecorator.cpp.o
+[241/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/defaulttool/ShapeRotateStrategy.cpp.o
+[242/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/defaulttool/ShapeShearStrategy.cpp.o
+[243/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/defaulttool/SelectionTransformCommand.cpp.o
+[244/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/defaulttool/ChartResizeStrategy.cpp.o
+[245/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/guidestool/GuidesToolFactory.cpp.o
+[246/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/guidestool/InsertGuidesToolOptionWidget.cpp.o
+[247/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/guidestool/GuidesToolOptionWidget.cpp.o
+[248/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/guidestool/GuidesTool.cpp.o
+[249/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/connectionTool/ConnectionToolFactory.cpp.o
+[250/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/connectionTool/AddConnectionPointCommand.cpp.o
+[251/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/connectionTool/RemoveConnectionPointCommand.cpp.o
+[252/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/connectionTool/ChangeConnectionPointCommand.cpp.o
+[253/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/connectionTool/MoveConnectionPointStrategy.cpp.o
+[254/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/connectionTool/ConnectionPointWidget.cpp.o
+[255/594] Building CXX object plugins/defaultTools/CMakeFiles/calligra_tool_defaults.dir/connectionTool/ConnectionTool.cpp.o
+[256/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/calligra_shape_paths_autogen/mocs_compilation.cpp.o
+[257/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/ellipse/EllipseShapeConfigCommand.cpp.o
+[258/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/ellipse/EllipseShapeConfigWidget.cpp.o
+[259/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/ellipse/EllipseShape.cpp.o
+[260/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/ellipse/EllipseShapeFactory.cpp.o
+[261/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/spiral/SpiralShapeConfigCommand.cpp.o
+[262/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/spiral/SpiralShape.cpp.o
+[263/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/spiral/SpiralShapeConfigWidget.cpp.o
+[264/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/spiral/SpiralShapeFactory.cpp.o
+[265/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/star/StarShapeConfigCommand.cpp.o
+[266/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/star/StarShapeConfigWidget.cpp.o
+[267/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/star/StarShapeFactory.cpp.o
+[268/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/star/StarShape.cpp.o
+[269/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/rectangle/RectangleShape.cpp.o
+[270/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/rectangle/RectangleShapeFactory.cpp.o
+[271/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/rectangle/RectangleShapeConfigCommand.cpp.o
+[272/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/rectangle/RectangleShapeConfigWidget.cpp.o
+[273/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/enhancedpath/EnhancedPathCommand.cpp.o
+[274/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/enhancedpath/EnhancedPathParameter.cpp.o
+[275/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/enhancedpath/EnhancedPathFormula.cpp.o
+[276/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/enhancedpath/EnhancedPathShapeFactory.cpp.o
+[277/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/enhancedpath/EnhancedPathShape.cpp.o
+[278/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/enhancedpath/EnhancedPathHandle.cpp.o
+[279/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/enhancedpath/CalloutToolFactory.cpp.o
+[280/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/enhancedpath/CalloutDebug.cpp.o
+[281/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/enhancedpath/CalloutContainerModel.cpp.o
+[282/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/enhancedpath/CalloutShape.cpp.o
+[283/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/enhancedpath/CalloutShapeFactory.cpp.o
+[284/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/VariablesDebug.cpp.o
+[285/594] Building CXX object plugins/pathshapes/CMakeFiles/calligra_shape_paths.dir/PathShapesPlugin.cpp.o
+[286/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/calligra_textinlineobject_variables_autogen/mocs_compilation.cpp.o
+[287/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/VariablesPlugin.cpp.o
+[288/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/UserVariableFactory.cpp.o
+[289/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/UserVariableOptionsWidget.cpp.o
+[290/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/UserVariable.cpp.o
+[291/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/DateVariableFactory.cpp.o
+[292/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/FixedDateFormat.cpp.o
+[293/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/DateVariable.cpp.o
+[294/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/InfoVariableFactory.cpp.o
+[295/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/PageVariable.cpp.o
+[296/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/PageVariableFactory.cpp.o
+[297/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/ChapterVariableFactory.cpp.o
+[298/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/InfoVariable.cpp.o
+[299/594] Building CXX object plugins/variables/CMakeFiles/calligra_textinlineobject_variables.dir/ChapterVariable.cpp.o
+[300/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/calligra_shape_picture_autogen/mocs_compilation.cpp.o
+[301/594] Building CXX object plugins/chartshape/CMakeFiles/calligra_shape_chart.dir/calligra_shape_chart_autogen/mocs_compilation.cpp.o
+[302/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/PictureDebug.cpp.o
+[303/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/PictureToolFactory.cpp.o
+[304/594] Building CXX object plugins/chartshape/CMakeFiles/calligra_shape_chart.dir/ChartShapeFactory.cpp.o
+[305/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/PictureTool.cpp.o
+[306/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/PictureShape.cpp.o
+[307/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/PictureShapeFactory.cpp.o
+[308/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/PictureShapeConfigWidget.cpp.o
+[309/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/SelectionRect.cpp.o
+[310/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/Plugin.cpp.o
+[311/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/ClipCommand.cpp.o
+[312/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/ChangeImageCommand.cpp.o
+[313/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/ClippingRect.cpp.o
+[314/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/CropWidget.cpp.o
+[315/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/filters/MonoFilterEffect.cpp.o
+[316/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/filters/GreyscaleFilterEffect.cpp.o
+[317/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/filters/WatermarkFilterEffect.cpp.o
+[318/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/filters/ColoringFilterEffect.cpp.o
+[319/594] Building CXX object plugins/pictureshape/CMakeFiles/calligra_shape_picture.dir/filters/GammaFilterEffect.cpp.o
+[320/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/TextShapeDebug.cpp.o
+[321/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/TextPlugin.cpp.o
+[322/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/TextShape.cpp.o
+[323/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/TextShapeFactory.cpp.o
+[324/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/TextEditingPluginContainer.cpp.o
+[325/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/calligra_shape_text_autogen/mocs_compilation.cpp.o
+[326/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/TextToolFactory.cpp.o
+[327/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/TextTool.cpp.o
+[328/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/SimpleRootAreaProvider.cpp.o
+[329/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/ShrinkToFitShapeContainer.cpp.o
+[330/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/AnnotationTextShape.cpp.o
+[331/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/TextChanges.cpp.o
+[332/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/TextChange.cpp.o
+[333/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/AnnotationTextShapeFactory.cpp.o
+[334/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/ChangeTracker.cpp.o
+[335/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/ReviewTool.cpp.o
+[336/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/FontFamilyAction.cpp.o
+[337/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/FontSizeAction.cpp.o
+[338/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/ReviewToolFactory.cpp.o
+[339/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/StylesCombo.cpp.o
+[340/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/StylesComboPreview.cpp.o
+[341/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/ReferencesToolFactory.cpp.o
+[342/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/ReferencesTool.cpp.o
+[343/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/DockerStylesComboModel.cpp.o
+[344/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SimpleCharacterWidget.cpp.o
+[345/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SimpleTableWidget.cpp.o
+[346/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SimpleParagraphWidget.cpp.o
+[347/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SimpleInsertWidget.cpp.o
+[348/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/LinkInsertionDialog.cpp.o
+[349/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SimpleTableOfContentsWidget.cpp.o
+[350/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SimpleCitationBibliographyWidget.cpp.o
+[351/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SimpleLinksWidget.cpp.o
+[352/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SimpleSpellCheckingWidget.cpp.o
+[353/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/CitationInsertionDialog.cpp.o
+[354/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/InsertBibliographyDialog.cpp.o
+[355/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SimpleFootEndNotesWidget.cpp.o
+[356/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SimpleCaptionsWidget.cpp.o
+[357/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ParagraphLayout.cpp.o
+[358/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/NotesConfigurationDialog.cpp.o
+[359/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ParagraphIndentSpacing.cpp.o
+[360/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ParagraphDecorations.cpp.o
+[361/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ParagraphDropCaps.cpp.o
+[362/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/StylesManagerModel.cpp.o
+[363/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ParagraphBulletsNumbers.cpp.o
+[364/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ParagraphSettingsDialog.cpp.o
+[365/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/StylesSortFilterProxyModel.cpp.o
+[366/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ListsSpinBox.cpp.o
+[367/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/AbstractStylesModel.cpp.o
+[368/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/StylesDelegate.cpp.o
+[369/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/StylesFilteredModelBase.cpp.o
+[370/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/StylesModel.cpp.o
+[371/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/StyleManagerDialog.cpp.o
+[372/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ValidParentStylesProxyModel.cpp.o
+[373/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/StyleManager.cpp.o
+[374/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/InsertCharacter.cpp.o
+[375/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/CharacterHighlighting.cpp.o
+[376/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ParagraphGeneral.cpp.o
+[377/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/CharacterGeneral.cpp.o
+[378/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/FontDia.cpp.o
+[379/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/FontDecorations.cpp.o
+[380/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/FormattingPreview.cpp.o
+[381/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/LanguageTab.cpp.o
+[382/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/StyleManagerWelcome.cpp.o
+[383/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/QuickTableButton.cpp.o
+[384/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/TableDialog.cpp.o
+[385/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/AcceptRejectChangeDialog.cpp.o
+[386/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/TrackedChangeManager.cpp.o
+[387/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ChangeConfigureDialog.cpp.o
+[388/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/FormattingButton.cpp.o
+[389/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/BibliographyConfigureDialog.cpp.o
+[390/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/TrackedChangeModel.cpp.o
+[391/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/TableOfContentsStyleDelegate.cpp.o
+[392/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/TableOfContentsConfigure.cpp.o
+[393/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/TableOfContentsStyleConfigure.cpp.o
+[394/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/TableOfContentsStyleModel.cpp.o
+[395/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/TableOfContentsEntryDelegate.cpp.o
+[396/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/TableOfContentsEntryModel.cpp.o
+[397/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/TableOfContentsPreview.cpp.o
+[398/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/TableOfContentsTemplate.cpp.o
+[399/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ListLevelChooser.cpp.o
+[400/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/BibliographyTemplate.cpp.o
+[401/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/BibliographyPreview.cpp.o
+[402/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ManageBookmarkDialog.cpp.o
+[403/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/ListLevelWidget.cpp.o
+[404/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SimpleAnnotationWidget.cpp.o
+[405/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SectionFormatDialog.cpp.o
+[406/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/dialogs/SectionsSplitDialog.cpp.o
+[407/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/commands/ShowChangesCommand.cpp.o
+[408/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/commands/ChangeListLevelCommand.cpp.o
+[409/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/commands/AcceptChangeCommand.cpp.o
+[410/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/commands/AutoResizeCommand.cpp.o
+[411/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/commands/RejectChangeCommand.cpp.o
+[412/594] Building CXX object plugins/pluginshape/CMakeFiles/calligra_shape_plugin.dir/calligra_shape_plugin_autogen/mocs_compilation.cpp.o
+[413/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/TextDocumentInspectionDockerFactory.cpp.o
+[414/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/TextDocumentStructureModel.cpp.o
+[415/594] Building CXX object plugins/textshape/CMakeFiles/calligra_shape_text.dir/TextDocumentInspectionDocker.cpp.o
+[416/594] Building CXX object plugins/pluginshape/CMakeFiles/calligra_shape_plugin.dir/PluginShape.cpp.o
+[417/594] Building CXX object plugins/pluginshape/CMakeFiles/calligra_shape_plugin.dir/PluginShapeFactory.cpp.o
+[418/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/calligra_shape_formula_autogen/mocs_compilation.cpp.o
+[419/594] Building CXX object plugins/pluginshape/CMakeFiles/calligra_shape_plugin.dir/Plugin.cpp.o
+[420/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/FormulaCommandUpdate.cpp.o
+[421/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/KoFormulaShapePlugin.cpp.o
+[422/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/KoFormulaToolFactory.cpp.o
+[423/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/FormulaCommand.cpp.o
+[424/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/KoFormulaShape.cpp.o
+[425/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/KoFormulaShapeFactory.cpp.o
+[426/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/FormulaToolEditWidget.cpp.o
+[427/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/KoFormulaTool.cpp.o
+[428/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/FormulaToolWidget.cpp.o
+[429/594] Building C object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/3rdparty/itexToMML/lex.yy.c.o
+[430/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/FormulaPart.cpp.o
+[431/594] Building C object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/3rdparty/itexToMML/y.tab.c.o
+itex2MML.y:124:33: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+y.tab.c: In function ‘itex2MML_yyparse’:
+y.tab.c:6140:20: warning: passing argument 1 of ‘itex2MML_yyerror’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+y.tab.c:776:22: note: in definition of macro ‘YY_’
+itex2MML.y:30:30: note: expected ‘char *’ but argument is of type ‘const char *’
+y.tab.c:6282:16: warning: passing argument 1 of ‘itex2MML_yyerror’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+y.tab.c:776:22: note: in definition of macro ‘YY_’
+itex2MML.y:30:30: note: expected ‘char *’ but argument is of type ‘const char *’
+[432/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/FormulaDocument.cpp.o
+[433/594] Building CXX object plugins/vectorshape/CMakeFiles/calligra_shape_vector.dir/VectorDebug.cpp.o
+[434/594] Building CXX object plugins/vectorshape/CMakeFiles/calligra_shape_vector.dir/calligra_shape_vector_autogen/mocs_compilation.cpp.o
+[435/594] Building CXX object plugins/formulashape/CMakeFiles/calligra_shape_formula.dir/KoM2MMLForumulaTool.cpp.o
+[436/594] Building CXX object plugins/vectorshape/CMakeFiles/calligra_shape_vector.dir/VectorShapePlugin.cpp.o
+[437/594] Building CXX object plugins/vectorshape/CMakeFiles/calligra_shape_vector.dir/VectorShape.cpp.o
+[438/594] Building CXX object plugins/vectorshape/CMakeFiles/calligra_shape_vector.dir/VectorShapeConfigWidget.cpp.o
+[439/594] Building CXX object plugins/vectorshape/CMakeFiles/calligra_shape_vector.dir/VectorTool.cpp.o
+[440/594] Building CXX object plugins/vectorshape/CMakeFiles/calligra_shape_vector.dir/VectorToolFactory.cpp.o
+[441/594] Building CXX object plugins/vectorshape/CMakeFiles/calligra_shape_vector.dir/VectorShapeFactory.cpp.o
+[442/594] Building CXX object plugins/vectorshape/CMakeFiles/calligra_shape_vector.dir/ChangeVectorDataCommand.cpp.o
+[443/594] Building CXX object plugins/stencilsdocker/CMakeFiles/calligra_docker_stencils.dir/StencilBoxDebug.cpp.o
+[444/594] Building CXX object plugins/stencilsdocker/CMakeFiles/calligra_docker_stencils.dir/calligra_docker_stencils_autogen/mocs_compilation.cpp.o
+[445/594] Building CXX object plugins/stencilsdocker/CMakeFiles/calligra_docker_stencils.dir/StencilBoxPlugin.cpp.o
+[446/594] Building CXX object devtools/autocorrection/CMakeFiles/updateautocorrection.dir/updateautocorrection_autogen/mocs_compilation.cpp.o
+[447/594] Building CXX object plugins/stencilsdocker/CMakeFiles/calligra_docker_stencils.dir/StencilListView.cpp.o
+[448/594] Building CXX object plugins/stencilsdocker/CMakeFiles/calligra_docker_stencils.dir/CollectionTreeWidget.cpp.o
+[449/594] Building CXX object devtools/autocorrection/CMakeFiles/updateautocorrection.dir/updateautocorrection.cpp.o
+[450/594] Building CXX object devtools/autocorrection/CMakeFiles/updateautocorrection.dir/Importabstractautocorrection.cpp.o
+[451/594] Building CXX object plugins/stencilsdocker/CMakeFiles/calligra_docker_stencils.dir/CollectionItemModel.cpp.o
+[452/594] Building CXX object extras/properties/CMakeFiles/calligradocinfopropspage.dir/calligradocinfopropspage_autogen/mocs_compilation.cpp.o
+[453/594] Building CXX object plugins/stencilsdocker/CMakeFiles/calligra_docker_stencils.dir/StencilShapeFactory.cpp.o
+[454/594] Building CXX object plugins/stencilsdocker/CMakeFiles/calligra_docker_stencils.dir/StencilBoxDocker.cpp.o
+[455/594] Building CXX object devtools/autocorrection/CMakeFiles/updateautocorrection.dir/importkmailautocorrection.cpp.o
+/home/adeel/calligra/devtools/autocorrection/importkmailautocorrection.cpp: In member function ‘virtual bool ImportKMailAutocorrection::import(const QString&, QString&, ImportAbstractAutocorrection::LoadAttribute)’:
+/home/adeel/calligra/devtools/autocorrection/importkmailautocorrection.cpp:17:74: warning: unused parameter ‘errorMessage’ [-Wunused-parameter]
+   17 | bool ImportKMailAutocorrection::import(const QString &fileName, QString &errorMessage, LoadAttribute loadAttribute)
+      |                                                                 ~~~~~~~~~^~~~~~~~~~~~
+[456/594] Building CXX object devtools/autocorrection/CMakeFiles/updateautocorrection.dir/importlibreofficeautocorrection.cpp.o
+[457/594] Building CXX object extras/properties/CMakeFiles/calligradocinfopropspage.dir/KoDocInfoPropsFactory.cpp.o
+/home/adeel/calligra/extras/properties/KoDocInfoPropsFactory.cpp: In function ‘QObject* createDocInfoPropsPage(QWidget*, QObject*, const KPluginMetaData&, const QVariantList&)’:
+/home/adeel/calligra/extras/properties/KoDocInfoPropsFactory.cpp:13:92: warning: unused parameter ‘data’ [-Wunused-parameter]
+   13 | static QObject *createDocInfoPropsPage(QWidget *w, QObject *parent, const KPluginMetaData &data, const QVariantList &args)
+      |                                                                     ~~~~~~~~~~~~~~~~~~~~~~~^~~~
+[458/594] Building CXX object extras/thumbnail/CMakeFiles/calligrathumbnail.dir/calligrathumbnail_autogen/mocs_compilation.cpp.o
+[459/594] Building CXX object extras/thumbnail/CMakeFiles/calligrathumbnail.dir/calligracreator.cpp.o
+[460/594] Building CXX object devtools/autocorrection/CMakeFiles/updateautocorrection.dir/Autocorrection.cpp.o
+[461/594] Building CXX object filters/words/wordperfect/import/CMakeFiles/calligra_filter_wpd2odt.dir/__/__/__/outputhelper/FemtoZip.cxx.o
+[462/594] Building CXX object filters/words/wordperfect/import/CMakeFiles/calligra_filter_wpd2odt.dir/calligra_filter_wpd2odt_autogen/mocs_compilation.cpp.o
+[463/594] Building CXX object filters/words/wordperfect/import/CMakeFiles/calligra_filter_wpd2odt.dir/__/__/__/outputhelper/StringDocumentHandler.cxx.o
+[464/594] Building CXX object filters/words/wordperfect/import/CMakeFiles/calligra_filter_wpd2odt.dir/__/__/__/outputhelper/OutputFileHelper.cxx.o
+[465/594] Building CXX object filters/words/applixword/CMakeFiles/calligra_filter_applixword2odt.dir/calligra_filter_applixword2odt_autogen/mocs_compilation.cpp.o
+[466/594] Building CXX object filters/words/works/import/CMakeFiles/calligra_filter_wps2odt.dir/__/__/__/outputhelper/StringDocumentHandler.cxx.o
+[467/594] Building CXX object filters/words/works/import/CMakeFiles/calligra_filter_wps2odt.dir/__/__/__/outputhelper/FemtoZip.cxx.o
+[468/594] Building CXX object filters/words/works/import/CMakeFiles/calligra_filter_wps2odt.dir/__/__/__/outputhelper/OutputFileHelper.cxx.o
+[469/594] Building CXX object filters/words/works/import/CMakeFiles/calligra_filter_wps2odt.dir/calligra_filter_wps2odt_autogen/mocs_compilation.cpp.o
+[470/594] Building CXX object filters/words/wordperfect/import/CMakeFiles/calligra_filter_wpd2odt.dir/WPDImport.cpp.o
+[471/594] Building CXX object filters/words/applixword/CMakeFiles/calligra_filter_applixword2odt.dir/applixwordimport.cc.o
+[472/594] Building CXX object filters/words/works/import/CMakeFiles/calligra_filter_wps2odt.dir/WPSImport.cpp.o
+[473/594] Building CXX object filters/words/ascii/CMakeFiles/calligra_filter_ascii2words.dir/AsciiImportDebug.cpp.o
+[474/594] Building CXX object filters/words/ascii/CMakeFiles/calligra_filter_ascii2words.dir/calligra_filter_ascii2words_autogen/mocs_compilation.cpp.o
+[475/594] Building CXX object filters/words/ascii/CMakeFiles/calligra_filter_odt2ascii.dir/calligra_filter_odt2ascii_autogen/mocs_compilation.cpp.o
+[476/594] Building CXX object filters/words/ascii/CMakeFiles/calligra_filter_odt2ascii.dir/AsciiExportDebug.cpp.o
+[477/594] Building CXX object filters/words/ascii/CMakeFiles/calligra_filter_ascii2words.dir/ImportDialog.cc.o
+[478/594] Building CXX object filters/words/ascii/CMakeFiles/calligra_filter_odt2ascii.dir/AsciiExport.cpp.o
+[479/594] Building CXX object filters/words/ascii/CMakeFiles/calligra_filter_ascii2words.dir/AsciiImport.cpp.o
+[480/594] Building CXX object filters/words/wiki/export/CMakeFiles/calligra_filter_odt2wiki.dir/WikiExportDebug.cpp.o
+[481/594] Building CXX object filters/words/wiki/export/CMakeFiles/calligra_filter_odt2wiki.dir/calligra_filter_odt2wiki_autogen/mocs_compilation.cpp.o
+[482/594] Building CXX object filters/words/ascii/CMakeFiles/calligra_filter_odt2ascii.dir/OdtReaderAsciiBackend.cpp.o
+[483/594] Building CXX object filters/words/ascii/CMakeFiles/calligra_filter_odt2ascii.dir/OdfReaderAsciiContext.cpp.o
+[484/594] Building CXX object filters/words/wiki/export/CMakeFiles/calligra_filter_odt2wiki.dir/WikiExport.cpp.o
+[485/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2epub2.dir/calligra_filter_odt2epub2_autogen/mocs_compilation.cpp.o
+[486/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2epub2.dir/EpubExportDebug.cpp.o
+[487/594] Building CXX object filters/words/wiki/export/CMakeFiles/calligra_filter_odt2wiki.dir/OdfReaderWikiContext.cpp.o
+[488/594] Building CXX object filters/words/wiki/export/CMakeFiles/calligra_filter_odt2wiki.dir/OdtReaderWikiBackend.cpp.o
+[489/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2epub2.dir/OdfParser.cpp.o
+[490/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2epub2.dir/FileCollector.cpp.o
+[491/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2epub2.dir/EpubFile.cpp.o
+[492/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2epub2.dir/exportepub2.cpp.o
+[493/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2html.dir/calligra_filter_odt2html_autogen/mocs_compilation.cpp.o
+[494/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2html.dir/HtmlExportDebug.cpp.o
+[495/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2html.dir/HtmlFile.cpp.o
+[496/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2html.dir/FileCollector.cpp.o
+[497/594] Building CXX object filters/words/mobi/CMakeFiles/calligra_filter_odt2mobi.dir/calligra_filter_odt2mobi_autogen/mocs_compilation.cpp.o
+[498/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2epub2.dir/OdtHtmlConverter.cpp.o
+[499/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2html.dir/exporthtml.cpp.o
+[500/594] Building CXX object filters/words/mobi/CMakeFiles/calligra_filter_odt2mobi.dir/MobiExportDebug.cpp.o
+[501/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2html.dir/OdfParser.cpp.o
+[502/594] Building CXX object filters/words/mobi/CMakeFiles/calligra_filter_odt2mobi.dir/PalmDocCompression.cpp.o
+[503/594] Building CXX object filters/words/mobi/CMakeFiles/calligra_filter_odt2mobi.dir/MobiHeaderGenerator.cpp.o
+[504/594] Building CXX object filters/words/epub/CMakeFiles/calligra_filter_odt2html.dir/OdtHtmlConverter.cpp.o
+[505/594] Building CXX object filters/words/mobi/CMakeFiles/calligra_filter_odt2mobi.dir/MobiFile.cpp.o
+[506/594] Building CXX object filters/words/mobi/CMakeFiles/calligra_filter_odt2mobi.dir/exportmobi.cpp.o
+[507/594] Building CXX object filters/words/mobi/CMakeFiles/calligra_filter_odt2mobi.dir/__/epub/FileCollector.cpp.o
+[508/594] Building CXX object filters/words/msword-odf/CMakeFiles/calligra_filter_doc2odt.dir/MsDocDebug.cpp.o
+[509/594] Building CXX object filters/words/msword-odf/CMakeFiles/calligra_filter_doc2odt.dir/calligra_filter_doc2odt_autogen/mocs_compilation.cpp.o
+[510/594] Building CXX object filters/words/mobi/CMakeFiles/calligra_filter_odt2mobi.dir/__/epub/OdfParser.cpp.o
+[511/594] Building CXX object filters/words/msword-odf/CMakeFiles/calligra_filter_doc2odt.dir/mswordodfimport.cpp.o
+[512/594] Building CXX object filters/words/msword-odf/CMakeFiles/calligra_filter_doc2odt.dir/conversion.cpp.o
+[513/594] Building CXX object filters/words/mobi/CMakeFiles/calligra_filter_odt2mobi.dir/OdtMobiHtmlConverter.cpp.o
+[514/594] Building CXX object filters/words/msword-odf/CMakeFiles/calligra_filter_doc2odt.dir/tablehandler.cpp.o
+[515/594] Building CXX object filters/words/msword-odf/CMakeFiles/calligra_filter_doc2odt.dir/document.cpp.o
+[516/594] Building CXX object filters/words/msword-odf/CMakeFiles/calligra_filter_doc2odt.dir/texthandler.cpp.o
+[517/594] Building CXX object filters/words/msword-odf/CMakeFiles/calligra_filter_doc2odt.dir/paragraph.cpp.o
+[518/594] Building CXX object filters/words/msword-odf/CMakeFiles/calligra_filter_doc2odt.dir/drawclient.cpp.o
+[519/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/DocxDebug.cpp.o
+[520/594] Building CXX object filters/words/msword-odf/CMakeFiles/calligra_filter_doc2odt.dir/graphicshandler.cpp.o
+[521/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/calligra_filter_docx2odt_autogen/mocs_compilation.cpp.o
+[522/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/DocxXmlFontTableReader.cpp.o
+[523/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/DocxXmlCommentsReader.cpp.o
+[524/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/DocxXmlFooterReader.cpp.o
+[525/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/DocxXmlStylesReader.cpp.o
+[526/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/DocxXmlHeaderReader.cpp.o
+[527/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/DocxXmlFootnoteReader.cpp.o
+[528/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/DocxXmlEndnoteReader.cpp.o
+[529/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/DocxXmlNumberingReader.cpp.o
+[530/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/DocxXmlSettingsReader.cpp.o
+[531/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/DocxImport.cpp.o
+[532/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/calligra_filter_odt2docx_autogen/mocs_compilation.cpp.o
+[533/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/DocxExportDebug.cpp.o
+[534/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/__/__/__/sheets/xlsx/XlsxChartOdfWriter.cpp.o
+[535/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/DocxExport.cpp.o
+[536/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/DocxStyleWriter.cpp.o
+[537/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/DocxStyleHelper.cpp.o
+[538/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/OdfReaderDocxContext.cpp.o
+[539/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/OdtReaderDocxBackend.cpp.o
+[540/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/UnitConversions.cpp.o
+[541/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/FileCollector.cpp.o
+[542/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/OdfTextReaderDocxBackend.cpp.o
+[543/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/DocxFile.cpp.o
+[544/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/OpcContentTypes.cpp.o
+[545/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/__/__/__/sheets/xlsx/XlsxXmlChartReader.cpp.o
+[546/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/OpcRelSet.cpp.o
+[547/594] Building CXX object filters/words/docx/export/CMakeFiles/calligra_filter_odt2docx.dir/OpcRelSetManager.cpp.o
+[548/594] Building CXX object launcher/CMakeFiles/calligralauncher.dir/.qt/rcc/qrc_qmake_org_kde_calligra.cpp.o
+[549/594] Building CXX object launcher/CMakeFiles/calligralauncher.dir/calligralauncher_autogen/mocs_compilation.cpp.o
+[550/594] Building CXX object launcher/CMakeFiles/calligralauncher.dir/main.cpp.o
+[551/594] Building CXX object launcher/CMakeFiles/calligralauncher.dir/.qt/rcc/qrc_calligralauncher_raw_qml_0.cpp.o
+[552/594] Building CXX object launcher/CMakeFiles/calligralauncher.dir/calligralauncher_qmltyperegistrations.cpp.o
+[553/594] Generating ts...
+[554/594] Linking CXX shared module bin/calligrawordspart.so
+[555/594] Building CXX object launcher/CMakeFiles/calligralauncher.dir/helper.cpp.o
+[556/594] Linking CXX shared module bin/calligra_tool_basicflakes.so
+[557/594] Linking CXX executable bin/calligrawords
+[558/594] Building CXX object launcher/CMakeFiles/calligralauncher.dir/.rcc/qmlcache/calligralauncher_qmlcache_loader.cpp.o
+[559/594] Linking CXX shared module bin/calligra_docker_defaults.so
+[560/594] Linking CXX shared module bin/calligra_shape_artistictext.so
+[561/594] Linking CXX shared module bin/braindump_shape_web.so
+[562/594] Building CXX object launcher/CMakeFiles/calligralauncher.dir/.rcc/qmlcache/calligralauncher_Main_qml.cpp.o
+[563/594] Linking CXX shared module bin/calligra_textediting_autocorrect.so
+[564/594] Linking CXX shared module bin/calligra_textediting_changecase.so
+[565/594] Linking CXX shared module bin/calligra_textediting_spellcheck.so
+[566/594] Linking CXX shared module bin/calligra_textediting_thesaurus.so
+[567/594] Linking CXX shared module bin/calligra_tool_defaults.so
+[568/594] Linking CXX shared module bin/calligra_shape_paths.so
+[569/594] Linking CXX shared module bin/calligra_textinlineobject_variables.so
+[570/594] Linking CXX shared module bin/calligra_shape_plugin.so
+[571/594] Linking CXX shared module bin/calligra_shape_picture.so
+[572/594] Linking CXX shared module bin/calligra_shape_chart.so
+[573/594] Linking CXX shared module bin/calligra_shape_text.so
+[574/594] Linking CXX executable bin/updateautocorrection
+[575/594] Linking CXX shared module bin/calligra_shape_formula.so
+[576/594] Linking CXX shared module bin/calligra_shape_vector.so
+[577/594] Linking CXX shared module bin/calligra_docker_stencils.so
+[578/594] Linking CXX shared module bin/kf6/propertiesdialog/calligradocinfopropspage.so
+[579/594] Linking CXX shared module bin/calligrathumbnail.so
+[580/594] Linking CXX shared module bin/calligra_filter_wpd2odt.so
+[581/594] Linking CXX shared module bin/calligra_filter_wps2odt.so
+[582/594] Linking CXX shared module bin/calligra_filter_applixword2odt.so
+[583/594] Linking CXX shared module bin/calligra_filter_odt2ascii.so
+[584/594] Linking CXX shared module bin/calligra_filter_odt2wiki.so
+[585/594] Linking CXX shared module bin/calligra_filter_ascii2words.so
+[586/594] Linking CXX shared module bin/calligra_filter_odt2epub2.so
+[587/594] Linking CXX shared module bin/calligra_filter_odt2html.so
+[588/594] Linking CXX shared module bin/calligra_filter_odt2mobi.so
+[589/594] Linking CXX shared module bin/calligra_filter_odt2docx.so
+[590/594] Linking CXX shared module bin/calligra_filter_doc2odt.so
+[591/594] Linking CXX executable bin/calligralauncher
+[592/594] Building CXX object filters/words/docx/import/CMakeFiles/calligra_filter_docx2odt.dir/DocxXmlDocumentReader.cpp.o
+[593/594] Linking CXX shared module bin/calligra_filter_docx2odt.so
+[594/594] Generating mo...

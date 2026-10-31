@@ -29,7 +29,10 @@ const qreal DefaultFontSize = 12.0;
 void DocxStyleHelper::inheritTextStyles(KoOdfStyleProperties *destinationProperties, const QString &parent, KoOdfStyleManager *manager)
 {
     // Inherits text styles from paragraphs
-    KoOdfStyle *style = manager->style(parent, "paragraph");
+    KoOdfStyle *style = manager ? manager->style(parent, "paragraph") : nullptr;
+    if (!style) {
+        return;
+    }
     QString ancestor = style->parent();
     if (!ancestor.isEmpty()) {
         inheritTextStyles(destinationProperties, ancestor, manager);
@@ -70,51 +73,156 @@ static int wordTwips(qint64 value)
     return static_cast<int>(qBound(minimum, value, maximum));
 }
 
+// Maps an ODF underline style to the corresponding WordprocessingML value.
+static QString wordUnderline(const QString &odfStyle)
+{
+    if (odfStyle == QLatin1String("solid")) {
+        return QStringLiteral("single");
+    } else if (odfStyle == QLatin1String("dotted")) {
+        return QStringLiteral("dotted");
+    } else if (odfStyle == QLatin1String("dash") || odfStyle == QLatin1String("long-dash")) {
+        return QStringLiteral("dashed");
+    } else if (odfStyle == QLatin1String("dot-dash")) {
+        return QStringLiteral("dotDash");
+    } else if (odfStyle == QLatin1String("dot-dot-dash")) {
+        return QStringLiteral("dotDotDash");
+    } else if (odfStyle == QLatin1String("wave")) {
+        return QStringLiteral("wave");
+    } else if (odfStyle == QLatin1String("none")) {
+        return QStringLiteral("none");
+    }
+    return QString();
+}
+
+// Returns true when an ODF weight/style value selects the "on" state.
+static bool isBoldValue(const QString &value)
+{
+    if (value == QLatin1String("bold") || value == QLatin1String("bolder")) {
+        return true;
+    }
+    bool ok = false;
+    const int numeric = value.toInt(&ok);
+    return ok && numeric >= 600;
+}
+
 void DocxStyleHelper::handleTextStyles(KoOdfStyleProperties *properties, KoXmlWriter *writer)
 {
     if (!properties) {
         return;
     }
 
+    // The children of w:rPr have a fixed order in WordprocessingML; Word
+    // ignores elements that appear out of sequence.  The order used here is:
+    // rFonts, b, bCs, i, iCs, caps, smallCaps, strike/dstrike, color, spacing,
+    // w, sz, szCs, u, shd, vertAlign, lang.
+
     const QString fontName = properties->attribute("style:font-name");
-    if (!fontName.isEmpty()) {
+    const QString fontNameComplex = properties->attribute("style:font-name-complex");
+    if (!fontName.isEmpty() || !fontNameComplex.isEmpty()) {
         writer->startElement("w:rFonts");
-        writer->addAttribute("w:ascii", fontName);
-        writer->addAttribute("w:hAnsi", fontName);
-        writer->addAttribute("w:eastAsia", fontName);
-        writer->addAttribute("w:cs", fontName);
+        if (!fontName.isEmpty()) {
+            writer->addAttribute("w:ascii", fontName);
+            writer->addAttribute("w:hAnsi", fontName);
+            writer->addAttribute("w:eastAsia", fontName);
+        }
+        writer->addAttribute("w:cs", fontNameComplex.isEmpty() ? fontName : fontNameComplex);
         writer->endElement(); // w:rFonts
     }
 
-    QString fontWeight = properties->attribute("fo:font-weight");
-    if (fontWeight == "bold") {
+    // ODF styles may explicitly reset an inherited bold/italic setting, so an
+    // explicit "normal" has to be written as an off switch in DOCX as well.
+    const QString fontWeight = properties->attribute("fo:font-weight");
+    if (!fontWeight.isEmpty()) {
         writer->startElement("w:b");
-        writer->addAttribute("w:val", "1");
+        if (!isBoldValue(fontWeight)) {
+            writer->addAttribute("w:val", "0");
+        }
         writer->endElement(); // w:b
     }
-    QString fontWeightC = properties->attribute("style:font-weight-complex");
-    if (fontWeightC == "bold") {
+    const QString fontWeightC = properties->attribute("style:font-weight-complex");
+    if (!fontWeightC.isEmpty()) {
         writer->startElement("w:bCs");
-        writer->addAttribute("w:val", "1");
+        if (!isBoldValue(fontWeightC)) {
+            writer->addAttribute("w:val", "0");
+        }
         writer->endElement(); // w:bCs
     }
-    QString fontStyle = properties->attribute("fo:font-style");
-    if (fontStyle == "italic") {
+    const QString fontStyle = properties->attribute("fo:font-style");
+    if (!fontStyle.isEmpty()) {
         writer->startElement("w:i");
-        writer->addAttribute("w:val", "1");
+        if (fontStyle != QLatin1String("italic") && fontStyle != QLatin1String("oblique")) {
+            writer->addAttribute("w:val", "0");
+        }
         writer->endElement(); // w:i
     }
-    QString fontStyleC = properties->attribute("style:font-style-complex");
-    if (fontStyleC == "italic") {
+    const QString fontStyleC = properties->attribute("style:font-style-complex");
+    if (!fontStyleC.isEmpty()) {
         writer->startElement("w:iCs");
-        writer->addAttribute("w:val", "1");
+        if (fontStyleC != QLatin1String("italic") && fontStyleC != QLatin1String("oblique")) {
+            writer->addAttribute("w:val", "0");
+        }
         writer->endElement(); // w:iCs
     }
-    QString textColor = properties->attribute("fo:color");
+
+    // Forced upper/lower case and small caps are separate attributes in ODF.
+    const QString textTransform = properties->attribute("fo:text-transform");
+    if (textTransform == QLatin1String("uppercase")) {
+        writer->startElement("w:caps");
+        writer->endElement(); // w:caps
+    } else if (textTransform == QLatin1String("lowercase")) {
+        writer->startElement("w:caps");
+        writer->addAttribute("w:val", "0");
+        writer->endElement(); // w:caps
+    }
+    const QString fontVariant = properties->attribute("fo:font-variant");
+    if (!fontVariant.isEmpty()) {
+        writer->startElement("w:smallCaps");
+        if (fontVariant != QLatin1String("small-caps")) {
+            writer->addAttribute("w:val", "0");
+        }
+        writer->endElement(); // w:smallCaps
+    }
+
+    const QString strikeStyle = properties->attribute("style:text-line-through-style");
+    if (!strikeStyle.isEmpty()) {
+        if (strikeStyle == QLatin1String("none")) {
+            writer->startElement("w:strike");
+            writer->addAttribute("w:val", "0");
+            writer->endElement(); // w:strike
+        } else if (properties->attribute("style:text-line-through-type") == QLatin1String("double")) {
+            writer->startElement("w:dstrike");
+            writer->endElement(); // w:dstrike
+        } else {
+            writer->startElement("w:strike");
+            writer->endElement(); // w:strike
+        }
+    }
+
+    const QString textColor = properties->attribute("fo:color");
     if (textColor.startsWith(QLatin1Char('#')) && textColor.size() == 7) {
         writer->startElement("w:color");
         writer->addAttribute("w:val", textColor.mid(1));
         writer->endElement(); // w:color
+    }
+
+    // Character spacing (letter spacing) and horizontal scaling.
+    const QString letterSpacing = properties->attribute("fo:letter-spacing");
+    qint64 spacingTwips = 0;
+    if (toTwips(letterSpacing, &spacingTwips)) {
+        writer->startElement("w:spacing");
+        writer->addAttribute("w:val", wordTwips(spacingTwips));
+        writer->endElement(); // w:spacing
+    }
+    QString textScale = properties->attribute("style:text-scale");
+    if (textScale.endsWith(QLatin1Char('%'))) {
+        textScale.chop(1);
+    }
+    bool scaleOk = false;
+    const int scale = textScale.toInt(&scaleOk);
+    if (scaleOk && scale > 0 && scale <= 600 && scale != 100) {
+        writer->startElement("w:w");
+        writer->addAttribute("w:val", scale);
+        writer->endElement(); // w:w
     }
 
     const QString fontSize = properties->attribute("fo:font-size");
@@ -122,7 +230,7 @@ void DocxStyleHelper::handleTextStyles(KoOdfStyleProperties *properties, KoXmlWr
         const qreal sizeInHalfPoints = getHalfPoints(fontSize, DefaultFontSize * 2);
         if (sizeInHalfPoints > 0) {
             writer->startElement("w:sz");
-            writer->addAttribute("w:val", sizeInHalfPoints);
+            writer->addAttribute("w:val", static_cast<int>(qRound(sizeInHalfPoints)));
             writer->endElement(); // w:sz
         }
     }
@@ -131,40 +239,194 @@ void DocxStyleHelper::handleTextStyles(KoOdfStyleProperties *properties, KoXmlWr
         const qreal sizeInHalfPoints = getHalfPoints(fontSizeC, DefaultFontSize * 2);
         if (sizeInHalfPoints > 0) {
             writer->startElement("w:szCs");
-            writer->addAttribute("w:val", sizeInHalfPoints);
+            writer->addAttribute("w:val", static_cast<int>(qRound(sizeInHalfPoints)));
             writer->endElement(); // w:szCs
         }
     }
 
+    const QString underlineStyle = properties->attribute("style:text-underline-style");
+    if (!underlineStyle.isEmpty()) {
+        const QString wordStyle = wordUnderline(underlineStyle);
+        if (!wordStyle.isEmpty()) {
+            writer->startElement("w:u");
+            writer->addAttribute("w:val", wordStyle);
+            writer->endElement(); // w:u
+        }
+    }
+
+    // Character background is a shading pattern in DOCX.
+    const QString backgroundColor = properties->attribute("fo:background-color");
+    if (!backgroundColor.isEmpty()) {
+        QString fill = backgroundColor;
+        if (fill == QLatin1String("transparent")) {
+            fill = QStringLiteral("auto");
+        } else if (fill.startsWith(QLatin1Char('#'))) {
+            fill = fill.mid(1);
+        }
+        writer->startElement("w:shd");
+        writer->addAttribute("w:val", "clear");
+        writer->addAttribute("w:color", "auto");
+        writer->addAttribute("w:fill", fill);
+        writer->endElement(); // w:shd
+    }
+
     const QString textPosition = properties->attribute("style:text-position");
-    if (textPosition == QLatin1String("super") || textPosition == QLatin1String("sub")) {
+    if (textPosition.startsWith(QLatin1String("super"))) {
         writer->startElement("w:vertAlign");
-        writer->addAttribute("w:val", textPosition == QLatin1String("super") ? "superscript" : "subscript");
+        writer->addAttribute("w:val", "superscript");
+        writer->endElement(); // w:vertAlign
+    } else if (textPosition.startsWith(QLatin1String("sub"))) {
+        writer->startElement("w:vertAlign");
+        writer->addAttribute("w:val", "subscript");
         writer->endElement(); // w:vertAlign
     }
 
-    QString underlineStyle = properties->attribute("style:text-underline-style");
-    if (!underlineStyle.isEmpty()) {
-        if (underlineStyle == "solid") {
-            writer->startElement("w:u");
-            writer->addAttribute("w:val", "single");
-            writer->endElement(); //: u
+    // Language tags matter for right-to-left and complex script shaping.
+    const QString language = properties->attribute("fo:language");
+    const QString country = properties->attribute("fo:country");
+    if (!language.isEmpty()) {
+        QString tag = language;
+        if (!country.isEmpty()) {
+            tag += QLatin1Char('-') + country;
         }
+        writer->startElement("w:lang");
+        writer->addAttribute("w:val", tag);
+        writer->endElement(); // w:lang
     }
 }
 
-void DocxStyleHelper::handleParagraphStyles(KoOdfStyleProperties *properties, KoXmlWriter *writer)
+void DocxStyleHelper::handleParagraphStyles(KoOdfStyleProperties *properties, KoXmlWriter *writer, const ParagraphExtras &extras)
 {
-    if (!properties) {
+    if (!properties && extras.numId < 0 && extras.outlineLevel < 0 && extras.tabStops.isEmpty()) {
         return;
     }
 
-    const QString marginTop = properties->attribute("fo:margin-top");
-    const QString marginBottom = properties->attribute("fo:margin-bottom");
-    const QString marginLeft = properties->attribute("fo:margin-left");
-    const QString marginRight = properties->attribute("fo:margin-right");
-    const QString textIndent = properties->attribute("fo:text-indent");
-    const QString lineHeight = properties->attribute("fo:line-height");
+    // The children of w:pPr have a fixed order in WordprocessingML.  Word
+    // silently drops or misinterprets elements that appear out of sequence,
+    // so this function writes them in schema order:
+    // keepNext, keepLines, pageBreakBefore, numPr, pBdr, shd, tabs, bidi,
+    // spacing, ind, jc, outlineLvl.
+
+    QString breakBefore;
+    QString keepTogether;
+    QString keepWithNext;
+    QString backgroundColor;
+    QString border;
+    QString writingMode;
+    QString marginTop;
+    QString marginBottom;
+    QString marginLeft;
+    QString marginRight;
+    QString textIndent;
+    QString lineHeight;
+    QString textAlign;
+    if (properties) {
+        breakBefore = properties->attribute("fo:break-before");
+        keepTogether = properties->attribute("fo:keep-together");
+        keepWithNext = properties->attribute("fo:keep-with-next");
+        backgroundColor = properties->attribute("fo:background-color");
+        border = properties->attribute("fo:border");
+        writingMode = properties->attribute("style:writing-mode");
+        marginTop = properties->attribute("fo:margin-top");
+        marginBottom = properties->attribute("fo:margin-bottom");
+        marginLeft = properties->attribute("fo:margin-left");
+        marginRight = properties->attribute("fo:margin-right");
+        textIndent = properties->attribute("fo:text-indent");
+        lineHeight = properties->attribute("fo:line-height");
+        textAlign = properties->attribute("fo:text-align");
+    }
+
+    // Keep controls.
+    if (keepWithNext == QLatin1String("always")) {
+        writer->startElement("w:keepNext");
+        writer->endElement(); // w:keepNext
+    }
+    if (keepTogether == QLatin1String("always")) {
+        writer->startElement("w:keepLines");
+        writer->endElement(); // w:keepLines
+    }
+    if (breakBefore == QLatin1String("page") || breakBefore == QLatin1String("column")) {
+        writer->startElement("w:pageBreakBefore");
+        writer->endElement(); // w:pageBreakBefore
+    }
+
+    // List numbering.
+    if (extras.numId >= 0) {
+        writer->startElement("w:numPr");
+        writer->startElement("w:ilvl");
+        writer->addAttribute("w:val", qBound(0, extras.ilvl, 8));
+        writer->endElement(); // w:ilvl
+        writer->startElement("w:numId");
+        writer->addAttribute("w:val", extras.numId);
+        writer->endElement(); // w:numId
+        writer->endElement(); // w:numPr
+    }
+
+    // Paragraph borders (ODF only has a full border; DOCX needs all edges).
+    if (!border.isEmpty() && border != QLatin1String("none")) {
+        const QStringList parts = border.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+        QString lineWidth;
+        QString lineStyle;
+        QString lineColor;
+        for (const QString &part : parts) {
+            if (part.endsWith(QLatin1String("pt")) || part.endsWith(QLatin1String("in")) || part.endsWith(QLatin1String("cm")) || part.endsWith(QLatin1String("mm"))) {
+                lineWidth = part;
+            } else if (part.startsWith(QLatin1Char('#'))) {
+                lineColor = part.mid(1);
+            } else {
+                lineStyle = part;
+            }
+        }
+        qint64 widthTwips = 0;
+        int wordSize = 4;
+        if (toTwips(lineWidth, &widthTwips) && widthTwips > 0) {
+            wordSize = qBound(2, static_cast<int>(qRound(widthTwips / 20.0 * 8.0)), 96);
+        }
+        QString wordStyle = QStringLiteral("single");
+        if (lineStyle == QLatin1String("dashed")) {
+            wordStyle = QStringLiteral("dashed");
+        } else if (lineStyle == QLatin1String("dotted")) {
+            wordStyle = QStringLiteral("dotted");
+        } else if (lineStyle == QLatin1String("double")) {
+            wordStyle = QStringLiteral("double");
+        }
+        writer->startElement("w:pBdr");
+        for (const char *side : {"w:top", "w:left", "w:bottom", "w:right"}) {
+            writer->startElement(side);
+            writer->addAttribute("w:val", wordStyle);
+            writer->addAttribute("w:sz", wordSize);
+            writer->addAttribute("w:space", 1);
+            writer->addAttribute("w:color", lineColor.isEmpty() ? "auto" : lineColor);
+            writer->endElement(); // side
+        }
+        writer->endElement(); // w:pBdr
+    }
+
+    // Paragraph background.
+    if (!backgroundColor.isEmpty()) {
+        writer->startElement("w:shd");
+        writer->addAttribute("w:val", "clear");
+        writer->addAttribute("w:color", "auto");
+        writer->addAttribute("w:fill", backgroundColor == QLatin1String("transparent") ? "auto" : backgroundColor.mid(backgroundColor.startsWith(QLatin1Char('#')) ? 1 : 0));
+        writer->endElement(); // w:shd
+    }
+
+    // Tab stops collected from the ODF paragraph style.
+    if (!extras.tabStops.isEmpty()) {
+        writer->addCompleteElement(extras.tabStops.constData());
+    }
+
+    // Writing direction. Word needs an explicit bidi flag for right-to-left
+    // paragraphs, otherwise the alignment and indentation are mirrored.
+    if (writingMode == QLatin1String("rl-tb")) {
+        writer->startElement("w:bidi");
+        writer->endElement(); // w:bidi
+    } else if (writingMode == QLatin1String("lr-tb")) {
+        writer->startElement("w:bidi");
+        writer->addAttribute("w:val", "0");
+        writer->endElement(); // w:bidi
+    }
+
     qint64 before = 0;
     qint64 after = 0;
     qint64 left = 0;
@@ -221,22 +483,31 @@ void DocxStyleHelper::handleParagraphStyles(KoOdfStyleProperties *properties, Ko
         }
         writer->endElement(); // w:ind
     }
-    QString textAlign = properties->attribute("fo:text-align");
     if (!textAlign.isEmpty()) {
-        writer->startElement("w:jc");
-        if (textAlign == "center") {
-            writer->addAttribute("w:val", "center");
-        } else if (textAlign == "start") {
-            writer->addAttribute("w:val", "left");
-        } else if (textAlign == "left") {
-            writer->addAttribute("w:val", "left");
-        } else if (textAlign == "end") {
-            writer->addAttribute("w:val", "right");
-        } else if (textAlign == "right") {
-            writer->addAttribute("w:val", "right");
-        } else if (textAlign == "justify") {
-            writer->addAttribute("w:val", "both");
+        QString value;
+        if (textAlign == QLatin1String("center")) {
+            value = QStringLiteral("center");
+        } else if (textAlign == QLatin1String("start")) {
+            value = writingMode == QLatin1String("rl-tb") ? QStringLiteral("right") : QStringLiteral("left");
+        } else if (textAlign == QLatin1String("left")) {
+            value = QStringLiteral("left");
+        } else if (textAlign == QLatin1String("end")) {
+            value = writingMode == QLatin1String("rl-tb") ? QStringLiteral("left") : QStringLiteral("right");
+        } else if (textAlign == QLatin1String("right")) {
+            value = QStringLiteral("right");
+        } else if (textAlign == QLatin1String("justify")) {
+            value = QStringLiteral("both");
         }
-        writer->endElement(); // w:jc
+        if (!value.isEmpty()) {
+            writer->startElement("w:jc");
+            writer->addAttribute("w:val", value);
+            writer->endElement(); // w:jc
+        }
+    }
+
+    if (extras.outlineLevel >= 0) {
+        writer->startElement("w:outlineLvl");
+        writer->addAttribute("w:val", qBound(0, extras.outlineLevel, 8));
+        writer->endElement(); // w:outlineLvl
     }
 }

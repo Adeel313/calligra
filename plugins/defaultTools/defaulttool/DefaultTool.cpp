@@ -57,6 +57,7 @@
 
 #include <math.h>
 
+#include <QDebug>
 #include <QVector2D>
 
 #define HANDLE_DISTANCE 10
@@ -460,8 +461,15 @@ void DefaultTool::updateCursor()
                 if (m_guideLine->isValid()) {
                     cursor = m_guideLine->orientation() == Qt::Horizontal ? Qt::SizeVerCursor : Qt::SizeHorCursor;
                     statusText = i18n("Click and drag to move guide line.");
-                } else
+                } else {
                     cursor = Qt::ArrowCursor;
+                    // With a shape selected, hovering document text still means text
+                    // editing: show the I-beam instead of the selection arrow.
+                    KoShape *hoveredShape = canvas()->shapeManager()->shapeAt(m_lastPoint);
+                    if (hoveredShape && hoveredShape->shapeId() == QLatin1String("TextShapeID") && !koSelection()->isSelected(hoveredShape)) {
+                        cursor = Qt::IBeamCursor;
+                    }
+                }
                 break;
             }
             if (rotateHandle)
@@ -532,6 +540,15 @@ void DefaultTool::updateCursor()
         if (m_guideLine->isValid()) {
             cursor = m_guideLine->orientation() == Qt::Horizontal ? Qt::SizeVerCursor : Qt::SizeHorCursor;
             statusText = i18n("Click and drag to move guide line.");
+        } else if (!m_lastPoint.isNull()) {
+            // Nothing is selected: hint what the shape under the pointer does.
+            KoShape *hoveredShape = canvas()->shapeManager()->shapeAt(m_lastPoint);
+            if (hoveredShape && hoveredShape->shapeId() == QLatin1String("PictureShape")) {
+                cursor = Qt::PointingHandCursor;
+                statusText = i18n("Click to select the picture, drag to move it.");
+            } else if (hoveredShape && hoveredShape->shapeId() == QLatin1String("TextShapeID")) {
+                cursor = Qt::IBeamCursor;
+            }
         }
     }
     useCursor(cursor);
@@ -557,12 +574,14 @@ void DefaultTool::paint(QPainter &painter, const KoViewConverter &converter)
 
 void DefaultTool::mousePressEvent(KoPointerEvent *event)
 {
+    m_lastPoint = event->point;
     KoInteractionTool::mousePressEvent(event);
     updateCursor();
 }
 
 void DefaultTool::mouseMoveEvent(KoPointerEvent *event)
 {
+    m_lastPoint = event->point;
     KoInteractionTool::mouseMoveEvent(event);
     if (currentStrategy() == nullptr && koSelection()->count() > 0) {
         QRectF bound = handlesSize();
@@ -1210,6 +1229,12 @@ KoInteractionStrategy *DefaultTool::createStrategy(KoPointerEvent *event)
 
     bool editableShape = editableShapesCount(select->selectedShapes());
     KoShape::AllowedInteractions interactions = allowedInteractions(select->selectedShapes());
+
+    { // DRAGDBG temporary instrumentation
+        KoShape *dbgShape = shapeManager->shapeAt(event->point);
+        qWarning() << "[DRAGDBG] DefaultTool createStrategy shapeAt=" << (dbgShape ? dbgShape->shapeId() : QString("none")) << "handle=" << (int)handle
+                   << "editable=" << editableShape << "selectedCount=" << select->count() << "pos=" << (dbgShape ? dbgShape->position() : QPointF());
+    }
 
     if (event->buttons() & Qt::MiddleButton) {
         // change the hot selection position when middle clicking on a handle

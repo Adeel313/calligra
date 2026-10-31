@@ -42,6 +42,9 @@ public:
 
 private:
     void moveSelection();
+    /*! Promote as-character anchored shapes to floating (page-anchored)
+     *  ones at their current position, so they can be dragged at all. */
+    void promoteInlineAnchors();
     QVector<QPointF> m_previousPositions;
     QVector<QPointF> m_newPositions;
     QVector<QPointF> m_previousOffsets;

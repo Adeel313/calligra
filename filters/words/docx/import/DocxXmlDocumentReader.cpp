@@ -53,30 +53,30 @@
 static QMap<QString, KoBorder::BorderStyle> borderMap = {
     {QString(), KoBorder::BorderNone},
     {"nil", KoBorder::BorderNone},
-    {"none", KoBorder::BorderSolid}, // TODO: verify this value, it seems surprising
+    {"none", KoBorder::BorderNone},
     {"single", KoBorder::BorderSolid},
-    {"thick", KoBorder::BorderSolid}, // FIXME find a better representation
+    {"thick", KoBorder::BorderSolid},
     {"double", KoBorder::BorderDouble},
     {"dotted", KoBorder::BorderDotted},
     {"dashed", KoBorder::BorderDashed},
     {"dotDash", KoBorder::BorderDashDot},
     {"dotDotDash", KoBorder::BorderDashDotDot},
-    {"triple", KoBorder::BorderDouble}, // FIXME
-    {"thinThickSmallGap", KoBorder::BorderSolid}, // FIXME
-    {"thickThinSmallGap", KoBorder::BorderSolid}, // FIXME
-    {"thinThickThinSmallGap", KoBorder::BorderSolid}, // FIXME
-    {"thinThickMediumGap", KoBorder::BorderSolid}, // FIXME
-    {"thickThinMediumGap", KoBorder::BorderSolid}, // FIXME
-    {"thinThickThinMediumGap", KoBorder::BorderSolid}, // FIXME
-    {"thinThickLargeGap", KoBorder::BorderSolid}, // FIXME
-    {"thickThinLargeGap", KoBorder::BorderSolid}, // FIXME
-    {"thinThickThinLargeGap", KoBorder::BorderSolid}, // FIXME
-    {"wave", KoBorder::BorderSolid}, // FIXME
-    {"dobleWave", KoBorder::BorderSolid}, // FIXME
-    {"dashSmallGap", KoBorder::BorderSolid}, // FIXME
-    {"dashDotStroked", KoBorder::BorderSolid}, // FIXME
-    {"threeDEmboss", KoBorder::BorderSolid}, // FIXME
-    {"threeDEngrave", KoBorder::BorderSolid}, // FIXME
+    {"triple", KoBorder::BorderTriple},
+    {"thinThickSmallGap", KoBorder::BorderDouble},
+    {"thickThinSmallGap", KoBorder::BorderDouble},
+    {"thinThickThinSmallGap", KoBorder::BorderTriple},
+    {"thinThickMediumGap", KoBorder::BorderDouble},
+    {"thickThinMediumGap", KoBorder::BorderDouble},
+    {"thinThickThinMediumGap", KoBorder::BorderTriple},
+    {"thinThickLargeGap", KoBorder::BorderDouble},
+    {"thickThinLargeGap", KoBorder::BorderDouble},
+    {"thinThickThinLargeGap", KoBorder::BorderTriple},
+    {"wave", KoBorder::BorderWave},
+    {"doubleWave", KoBorder::BorderDoubleWave},
+    {"dashSmallGap", KoBorder::BorderDashed},
+    {"dashDotStroked", KoBorder::BorderDashDot},
+    {"threeDEmboss", KoBorder::BorderOutset},
+    {"threeDEngrave", KoBorder::BorderInset},
     {"outset", KoBorder::BorderOutset},
     {"inset", KoBorder::BorderInset},
 };
@@ -429,6 +429,14 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     if (sectionStyle) {
         sectionStyle->addAttribute("style:master-page-name", currentMasterPageName);
     }
+
+    // The header/footer flags only describe this section: while its
+    // references and margins are read they map positions into the header
+    // frame instead of the page.  Body content that follows the section
+    // properties must see the flags cleared again, otherwise drawings are
+    // attributed to a header/footer that is not active at that point.
+    m_footerActive = false;
+    m_headerActive = false;
 
     READ_EPILOGUE
 }
@@ -1790,8 +1798,12 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_hyperlink()
         link_target.clear();
     } else {
         link_target = m_context->relationships->target(m_context->path, m_context->file, r_id);
-        // The return value also contains the path in the start and directory separator, we need to remove them
-        link_target.remove(0, m_context->path.size() + 1);
+        // Internal relationship targets are prefixed with the package path.
+        // External targets (TargetMode="External") are absolute URLs and must
+        // be kept intact instead of having the path prefix chopped off.
+        if (link_target.startsWith(m_context->path + QLatin1Char('/'))) {
+            link_target.remove(0, m_context->path.size() + 1);
+        }
     }
 
     bool closeTag = false;
@@ -3470,6 +3482,11 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_drawing()
 
     //! @todo add more cases for text:anchor-type! use m_drawing_inline and see CASE #1343
     if (m_drawing_inline) {
+        // Inline (wp:inline) drawings sit in the text flow like a
+        // character: the layout derives their position from the anchor
+        // paragraph, which is exactly where Word had them.  A paragraph
+        // anchor would need an absolute svg:x/y that cannot be known
+        // while parsing, and would drop the image at the page origin.
         body->addAttribute("text:anchor-type", "as-char");
         m_currentDrawStyle->addProperty("style:vertical-rel", "baseline");
     } else {
@@ -3553,6 +3570,14 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_drawing()
         } else if (m_relativeFromH == "rightMargin") {
             m_currentDrawStyle->addProperty("style:horizontal-rel", "page-end-margin");
             body->addAttribute("text:anchor-type", "paragraph");
+        }
+
+        if (!m_anchorWrapSeen) {
+            // A floating drawing without a wrapping element does not affect
+            // the surrounding text.  LibreOffice maps this to wrap="none";
+            // without it the ODF default would put the image in a parallel
+            // run-around with the paragraphs.
+            m_currentDrawStyle->addProperty("style:wrap", "none");
         }
     }
 
@@ -6419,10 +6444,16 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_anchor()
     m_docPrName.clear();
     m_docPrDescr.clear();
     m_drawing_anchor = true; // for pic:pic
+    m_svgX = m_svgY = m_svgWidth = m_svgHeight = 0;
     bool behindDoc = false;
     bool allowOverlap = false;
     m_alignH.clear();
     m_alignV.clear();
+    m_posOffsetH = 0;
+    m_posOffsetV = 0;
+    m_hasPosOffsetH = false;
+    m_hasPosOffsetV = false;
+    m_anchorWrapSeen = false;
 
     const QXmlStreamAttributes attrs(attributes());
     //! @todo parse 20.4.3.4 ST_RelFromH (Horizontal Relative Positioning), p. 3511
@@ -6450,7 +6481,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_anchor()
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
-            TRY_READ_IF_NS(a, graphic)
+            TRY_READ_IF_NS(wp, extent)
+            ELSE_TRY_READ_IF_NS(a, graphic)
             ELSE_TRY_READ_IF(positionH)
             ELSE_TRY_READ_IF(positionV)
             ELSE_TRY_READ_IF(docPr)
@@ -6478,6 +6510,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_anchor()
                 } else {
                     m_currentDrawStyle->addProperty("style:wrap", "none");
                 }
+                m_anchorWrapSeen = true;
             }
             else if (QUALIFIED_NAME_IS(wrapTopAndBottom))
             {
@@ -6490,6 +6523,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_anchor()
                     return KoFilter::WrongFormat;
                 }
                 m_currentDrawStyle->addProperty("style:wrap", "none");
+                m_anchorWrapSeen = true;
             }
             SKIP_UNKNOWN
             //! @todo add ELSE_WRONG_FORMAT
@@ -6756,6 +6790,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_posOffset(posOffsetCaller
 
 void DocxXmlDocumentReader::readWrapAttrs()
 {
+    m_anchorWrapSeen = true;
     if (QUALIFIED_NAME_IS(wrapTight)) {
         m_currentDrawStyle->addProperty("style:wrap-contour", "true");
         m_currentDrawStyle->addProperty("style:wrap-contour-mode", "outside");

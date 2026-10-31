@@ -123,6 +123,7 @@ IMPLEMENT_READER_FUNCTION_NO_CHILDREN(OdfDrawReader, Dr3dCube) // ODF 1.2  10.5.
 IMPLEMENT_READER_FUNCTION_NO_CHILDREN(OdfDrawReader, Dr3dSphere) // ODF 1.2  10.5.5
 IMPLEMENT_READER_FUNCTION_NO_CHILDREN(OdfDrawReader, Dr3dExtrude) // ODF 1.2  10.5.6
 IMPLEMENT_READER_FUNCTION_NO_CHILDREN(OdfDrawReader, Dr3dRotate) // ODF 1.2  10.5.7
+IMPLEMENT_READER_FUNCTION_NO_CHILDREN(OdfDrawReader, DrawImage) // ODF 1.2  10.4.4
 
 // ================================================================
 //                         namespace draw
@@ -347,8 +348,7 @@ void OdfDrawReader::readElementDrawFrame(KoXmlStreamReader &reader)
         QString tagName = reader.qualifiedName().toString();
 
         if (tagName == "draw:image") {
-            // FIXME: NYI
-            reader.skipCurrentElement();
+            readElementDrawImage(reader);
         } else if (tagName == "draw:object") {
             readElementDrawObject(reader);
         } else if (tagName == "draw:object-ole") {

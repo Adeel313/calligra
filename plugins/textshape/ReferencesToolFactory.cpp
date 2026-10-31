@@ -19,7 +19,8 @@ ReferencesToolFactory::ReferencesToolFactory()
     setToolTip(i18n("References"));
     setToolType("calligrawords,calligraauthor");
     setIconName(koIconName("tool_references"));
-    setPriority(20);
+    // Keep References after Review in the Words tool tab order.
+    setPriority(31);
     setActivationShapeId(TextShape_SHAPEID);
 }
 

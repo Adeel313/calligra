@@ -14,6 +14,7 @@
 #define MSOOXMLCOMMONREADERDRAWINGML_IMPL_H
 
 #include <QRandomGenerator>
+#include <QCryptographicHash>
 #include <QTime>
 #include <math.h>
 #include <memory>
@@ -3224,7 +3225,11 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_hlinkClick()
     if (!r_id.isEmpty() && m_context->relationships) {
         m_hyperLink = true;
         m_hyperLinkTarget = m_context->relationships->target(m_context->path, m_context->file, r_id);
-        m_hyperLinkTarget.remove(0, m_context->path.length() + 1);
+        // Only package-internal targets carry the source part path prefix.
+        // External URLs must remain untouched.
+        if (m_hyperLinkTarget.startsWith(m_context->path + QLatin1Char('/'))) {
+            m_hyperLinkTarget.remove(0, m_context->path.length() + 1);
+        }
     }
 
     while (!atEnd()) {
@@ -3574,12 +3579,25 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_blip()
             READ_EPILOGUE
         }
 
-        m_context->import->imageSize(sourceName, m_imageSize);
-
         if (sourceName.isEmpty()) {
             return KoFilter::FileNotFound;
         }
-        QString destinationName = QLatin1String("Pictures/") + sourceName.mid(sourceName.lastIndexOf('/') + 1);
+
+        // External linked images are not package members. Avoid asking the
+        // ZIP reader to resolve a URL as an image part; linked-image support
+        // requires a separate download/security policy.
+        if (sourceName.contains(QLatin1String("://"))) {
+            skipCurrentElement();
+            READ_EPILOGUE
+        }
+
+        m_context->import->imageSize(sourceName, m_imageSize);
+        // Keep image members from different package directories distinct.
+        // Using only the basename can silently overwrite another picture
+        // when a DOCX contains duplicate names in different folders.
+        const QString imageBaseName = sourceName.mid(sourceName.lastIndexOf('/') + 1);
+        const QByteArray sourceHash = QCryptographicHash::hash(sourceName.toUtf8(), QCryptographicHash::Sha256).toHex().left(12);
+        const QString destinationName = QLatin1String("Pictures/") + sourceHash + QLatin1Char('_') + imageBaseName;
 
         RETURN_IF_ERROR(m_context->import->copyFile(sourceName, destinationName, false))
         addManifestEntryForFile(destinationName);

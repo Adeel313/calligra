@@ -22,9 +22,12 @@
 #include <KoCanvasController.h>
 #include <KoGridData.h>
 #include <KoGuidesData.h>
+#include <KoInteractionTool.h>
 #include <KoPointerEvent.h>
+#include <KoSelection.h>
 #include <KoShape.h>
 #include <KoShapeManager.h>
+#include <KoToolManager.h>
 #include <KoToolProxy.h>
 #include <KoUnit.h>
 #include <KoViewConverter.h>
@@ -33,6 +36,7 @@
 
 // Qt
 #include <QBrush>
+#include <QDebug>
 #include <QPainter>
 #include <QPainterPath>
 #include <QThread>
@@ -763,6 +767,35 @@ void KWCanvasBase::setCacheEnabled(bool enabled, int cacheSize, qreal maxZoom)
 QPoint KWCanvasBase::documentOffset() const
 {
     return m_documentOffset;
+}
+
+bool KWCanvasBase::isPictureShapeSelected() const
+{
+    const QList<KoShape *> selection = m_shapeManager->selection()->selectedShapes(KoFlake::TopLevelSelection);
+    if (selection.count() != 1)
+        return false;
+    return selection.first()->shapeId() == QLatin1String("PictureShape");
+}
+
+void KWCanvasBase::preferShapeHandlingForPictures(bool pictureWasSelectedBefore)
+{
+    KoToolManager *toolManager = KoToolManager::instance();
+    qWarning() << "[DRAGDBG] preferShape before=" << pictureWasSelectedBefore << "active=" << toolManager->activeToolId() << "pictureSelected=" << isPictureShapeSelected(); // DRAGDBG temporary
+    if (pictureWasSelectedBefore) {
+        // The user may have explicitly activated the Picture editing tab; don't kick
+        // them out of it when they click on the picture they are working on.
+        return;
+    }
+    // The picture tool only offers options (replace image, color mode, crop) and has no
+    // move/resize support, so landing in it after a plain click makes pictures appear
+    // unselectable/unmovable. Give the shape handling tool precedence instead; the
+    // Picture editing tab stays available in the mode box while the picture is selected.
+    if (toolManager->activeToolId() != QLatin1String("PictureToolFactoryId"))
+        return;
+    if (!isPictureShapeSelected())
+        return;
+    qWarning() << "[DRAGDBG] preferShape -> switching to InteractionTool"; // DRAGDBG temporary
+    toolManager->switchToolRequested(KoInteractionTool_ID);
 }
 
 const qreal KWCanvasBase::AnnotationAreaWidth = 200.0; // only static const integral data members can be initialized within a class

@@ -235,7 +235,7 @@ QMultiHash<int, KoTextRange *> KoTextRangeManager::textRangesChangingWithin(cons
     } else {
         for (const auto &docIndex : d->indexes.value(doc).values()) {
             auto comp = [](KoTextRange *r, int value) {
-                return r->rangeStart() <= value;
+                return r->rangeStart() < value;
             };
 
             // First, singlePoints
@@ -346,7 +346,7 @@ QMultiHash<int, KoTextRange *> KoTextRangeManager::textRangesChangingWithin(cons
         const auto &docIndex = d->indexes.value(doc).value(type);
 
         auto comp = [](KoTextRange *r, int value) {
-            return r->rangeStart() <= value;
+            return r->rangeStart() < value;
         };
 
         // First, singlePoints

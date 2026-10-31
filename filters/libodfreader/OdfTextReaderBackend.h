@@ -71,8 +71,12 @@ public:
 
     DECLARE_BACKEND_FUNCTION(TextA);
     DECLARE_BACKEND_FUNCTION(TextLineBreak);
+    DECLARE_BACKEND_FUNCTION(TextNote);
+    DECLARE_BACKEND_FUNCTION(TextNoteCitation);
+    DECLARE_BACKEND_FUNCTION(TextNoteBody);
     DECLARE_BACKEND_FUNCTION(TextSpan);
     DECLARE_BACKEND_FUNCTION(TextS);
+    DECLARE_BACKEND_FUNCTION(TextTab);
 
     // ----------------------------------------------------------------
     // List level functions: list-header and list-item.

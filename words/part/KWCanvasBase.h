@@ -132,6 +132,22 @@ protected:
 
     virtual void updateCanvasInternal(const QRectF &clip) = 0;
 
+    /**
+     * @return true if the current selection consists of exactly one picture shape.
+     * Call before forwarding a mouse release to the tool proxy to remember the state.
+     */
+    bool isPictureShapeSelected() const;
+
+    /**
+     * After a mouse release was forwarded to the tool proxy, call this with the value
+     * isPictureShapeSelected() returned before forwarding. If a picture became newly
+     * selected while the picture tool (which only offers image options and cannot move
+     * or resize) was activated for it, this switches to the shape handling tool instead
+     * so the picture gets selection handles and can be dragged. The Picture editing tab
+     * remains visible in the mode box while the picture stays selected.
+     */
+    void preferShapeHandlingForPictures(bool pictureWasSelectedBefore);
+
 protected:
     KWDocument *m_document;
     KoShapeManager *m_shapeManager;

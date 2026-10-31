@@ -28,14 +28,30 @@ OdfReaderDocxContext::OdfReaderDocxContext(KoStore *store, DocxFile *dxf)
     , m_docxFile(dxf)
     , m_documentContent()
     , m_commentsContent()
+    , m_footnotesContent()
+    , m_endnotesContent()
     , m_documentIO(&m_documentContent)
     , m_commentsIO(&m_commentsContent)
+    , m_footnotesIO(&m_footnotesContent)
+    , m_endnotesIO(&m_endnotesContent)
 {
     m_documentWriter = new KoXmlWriter(&m_documentIO);
     m_commentsWriter = new KoXmlWriter(&m_commentsIO);
+    m_footnotesWriter = new KoXmlWriter(&m_footnotesIO);
+    m_endnotesWriter = new KoXmlWriter(&m_endnotesIO);
 }
 
 OdfReaderDocxContext::~OdfReaderDocxContext()
 {
     delete m_documentWriter;
+    delete m_commentsWriter;
+    delete m_footnotesWriter;
+    delete m_endnotesWriter;
+}
+
+KoXmlWriter *OdfReaderDocxContext::setDocumentWriter(KoXmlWriter *writer)
+{
+    KoXmlWriter *previous = m_documentWriter;
+    m_documentWriter = writer;
+    return previous;
 }

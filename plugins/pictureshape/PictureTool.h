@@ -29,9 +29,7 @@ public:
     /// reimplemented from superclass
     void mouseDoubleClickEvent(KoPointerEvent *event) override;
     /// reimplemented from KoToolBase
-    void mouseMoveEvent(KoPointerEvent *) override
-    {
-    }
+    void mouseMoveEvent(KoPointerEvent *event) override;
     /// reimplemented from KoToolBase
     void mouseReleaseEvent(KoPointerEvent *) override
     {

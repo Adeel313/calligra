@@ -60,19 +60,15 @@ bool KoOdfGraphicProperties::readOdf(KoXmlStreamReader &reader)
     //  - style:background-image
     //  - style:columns
     //  - text:list-style
-    while (reader.readNextStartElement()) {
-        QString child = reader.qualifiedName().toString();
-
-        if (child == "style:background-image") {
-            // FIXME: NYI
-        } else if (child == "style:columns") {
-            // FIXME: NYI
-        } else if (child == "text:list-style") {
-            // FIXME: NYI
+    // None of them is interpreted yet, but they all have to be skipped.
+    while (!reader.atEnd()) {
+        reader.readNext();
+        if (reader.isEndElement()) {
+            break;
         }
-
-        // Skip rest of each element including children that are not read yet (shouldn't be any).
-        reader.skipCurrentElement();
+        if (reader.isStartElement()) {
+            reader.skipCurrentElement();
+        }
     }
 
     return retval;

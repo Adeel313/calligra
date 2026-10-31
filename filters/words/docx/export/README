@@ -7,20 +7,38 @@ document and style XML, collects package parts in DocxFile, and emits OPC
 relationship parts and [Content_Types].xml when creating the final package.
 
 The current exporter supports a limited subset of DOCX. It writes basic text,
-simple tables, comments, hyperlinks, explicit spaces and line breaks, and maps
-a subset of paragraph and character formatting. It does not yet provide full
-fidelity for merged or styled tables, lists, images, page sections, headers and
-footers, fields, or many advanced Word features. Unsupported ODF constructs
+tables (column widths, cell/table borders, cell background, vertical alignment,
+horizontal and vertical merges), lists and numbered paragraphs (via
+word/numbering.xml and w:numPr), tab stops and tab characters, explicit page
+breaks, keep-with-next/keep-together controls, inline PNG, JPEG, GIF, BMP, and
+TIFF images, comments, hyperlinks, explicit spaces and line breaks, and maps a
+broad subset of paragraph and character formatting (fonts, sizes, bold, italic,
+underline variants, strikethrough, small caps, caps, letter spacing, text
+scaling, super/subscript, colors, character and paragraph background, paragraph
+borders, alignment, indentation, spacing, and heading outline levels). The first
+paragraph's selected master page (or the first master page when none
+is selected) is exported from styles.xml as word/header1.xml and
+word/footer1.xml (including their images and tables), and the matching w:sectPr
+with page size, margins, and header/footer references is appended to the
+document body. Floating and inline placement, basic square/top-and-bottom/
+run-through wrapping, and image rotation are preserved. Image cropping,
+tight/through contour wrapping, SVG images, and many other advanced Word
+features are not yet preserved; only the first master page is used and its
+first/left header and footer variants are skipped. Unsupported ODF constructs
 may be lost in conversion.
 
 Key classes
 -----------
 
-DocxExport                  Coordinates ODT traversal and DOCX package output
-OdfReaderDocxContext        Holds output XML writers and the package collector
+DocxExport                  Coordinates ODT traversal, header/footer export,
+                            and DOCX package output
+OdfReaderDocxContext        Holds output XML writers, the current output part,
+                            the section properties, and the package collector
 OdfTextReaderDocxBackend    Converts ODF paragraphs, runs, links, and comments
+DocxDrawReaderBackend       Embeds raster images and writes DrawingML pictures
 DocxStyleWriter             Writes Word style definitions
 DocxStyleHelper             Maps supported ODF text and paragraph properties
+DocxNumbering               Maps ODF list styles to word/numbering.xml
 DocxFile                    Collects package parts and writes the DOCX package
 OpcRelSet                   Stores and serializes relationships for one part
 OpcRelSetManager            Writes package-level and part-level relationships

@@ -16,6 +16,7 @@
 #include <KoOdfStyle.h>
 #include <KoOdfStyleManager.h>
 #include <KoOdfStyleProperties.h>
+#include <KoUnit.h>
 #include <KoXmlWriter.h>
 
 // This filter
@@ -38,6 +39,7 @@ OdfTextReaderDocxBackend::OdfTextReaderDocxBackend()
     , m_insideSpanLevel(0)
     , m_currentOutlineLevel(-1)
     , m_commentIndex(0)
+    , m_insideListItem(0)
     , m_writeComment(false)
     , m_insideComment(false)
     , m_insideDcCreator(false)
@@ -99,9 +101,15 @@ void OdfTextReaderDocxBackend::elementDcDate(KoXmlStreamReader &reader, OdfReade
 void OdfTextReaderDocxBackend::elementTextH(KoXmlStreamReader &reader, OdfReaderContext *context)
 {
     DEBUG_BACKEND();
-    KoXmlStreamAttributes attributes = reader.attributes();
-    m_currentOutlineLevel = attributes.value("text:outline-level").toString().toInt();
-    elementTextP(reader, context);
+    if (reader.isStartElement()) {
+        // ODF outline levels are 1-based, w:outlineLvl is 0-based.
+        const int level = reader.attributes().value("text:outline-level").toInt();
+        m_currentOutlineLevel = level > 0 ? level - 1 : 0;
+        elementTextP(reader, context);
+    } else {
+        elementTextP(reader, context);
+        m_currentOutlineLevel = -1;
+    }
 }
 
 void OdfTextReaderDocxBackend::elementTextP(KoXmlStreamReader &reader, OdfReaderContext *context)
@@ -115,44 +123,254 @@ void OdfTextReaderDocxBackend::elementTextP(KoXmlStreamReader &reader, OdfReader
     m_currentParagraphTextProperties = nullptr;
     m_currentParagraphParent.clear();
 
-    KoXmlWriter *writer = docxContext->m_documentWriter;
-    if (m_insideComment) {
-        writer = docxContext->m_commentsWriter;
-    }
+    KoXmlWriter *writer = currentWriter(docxContext);
     if (reader.isStartElement()) {
         writer->startElement("w:p");
+        if (!m_insideFootnote) {
+            docxContext->m_insideParagraph = true;
+        }
         if (!m_cellParagraphStack.isEmpty()) {
             m_cellParagraphStack.top() = true;
         }
-        // FIXME: Add paragraph attributes here
-        writer->startElement("w:pPr");
+
+        DocxStyleHelper::ParagraphExtras extras;
         if (m_currentOutlineLevel >= 0) {
-            writer->startElement("w:outlineLvl");
-            writer->addAttribute("w:val", m_currentOutlineLevel);
-            writer->endElement(); // w:outlineLvl
+            extras.outlineLevel = m_currentOutlineLevel;
         }
+
         KoXmlStreamAttributes attributes = reader.attributes();
-        QString textStyle = attributes.value("text:style-name").toString();
+        const QString textStyle = attributes.value("text:style-name").toString();
+
+        // <text:numbered-paragraph> carries its own numbering; otherwise a
+        // paragraph inside a list item inherits the numbering of the innermost
+        // open <text:list>.
+        if (reader.qualifiedName() == QLatin1StringView("text:numbered-paragraph")) {
+            extras.numId = docxContext->numbering().numIdForStyle(textStyle);
+            const int level = attributes.value("text:level").toInt();
+            extras.ilvl = level > 0 ? level - 1 : 0;
+        } else if (m_insideListItem > 0 && !m_listStack.isEmpty()) {
+            extras.numId = m_listStack.top();
+            extras.ilvl = m_listStack.size() - 1;
+        }
+
         if (!textStyle.isEmpty()) {
-            KoOdfStyle *style = docxContext->styleManager()->style(textStyle, "paragraph");
+            extras.tabStops = docxContext->tabStopsForStyle(textStyle);
+        }
+
+        writer->startElement("w:pPr");
+        KoOdfStyle *style = textStyle.isEmpty() ? nullptr : docxContext->styleManager()->style(textStyle, "paragraph");
+        if (style) {
             KoOdfStyleProperties *parProperties = style->properties("style:paragraph-properties");
             m_currentParagraphTextProperties = style->properties("style:text-properties");
             m_currentParagraphParent = style->parent();
-            if (!m_currentParagraphParent.isEmpty()) {
+
+            // Only named styles from styles.xml are emitted as w:style
+            // entries. Automatic styles live in content.xml, so use
+            // their named parent as the base style and keep their direct
+            // formatting inline below.
+            const QString wordStyleId = style->isFromStylesXml() ? style->name() : m_currentParagraphParent;
+            if (!wordStyleId.isEmpty()) {
                 writer->startElement("w:pStyle");
-                writer->addAttribute("w:val", m_currentParagraphParent);
+                writer->addAttribute("w:val", wordStyleId);
                 writer->endElement(); // w:pStyle
             }
-            DocxStyleHelper::handleParagraphStyles(parProperties, writer);
+            DocxStyleHelper::handleParagraphStyles(parProperties, writer, extras);
             writer->startElement("w:rPr");
             DocxStyleHelper::handleTextStyles(m_currentParagraphTextProperties, writer);
             writer->endElement(); // w:rPr
+        } else {
+            DocxStyleHelper::handleParagraphStyles(nullptr, writer, extras);
         }
-        // FIXME: Add paragraph properties (styling) here
         writer->endElement(); // w:pPr
+        if (m_insideFootnote && m_footnoteNeedsReference) {
+            // Word renders the note number from this marker; it belongs at
+            // the start of the first paragraph of the note body.
+            writer->startElement("w:r");
+            writer->startElement(m_insideEndnote ? "w:endnoteRef" : "w:footnoteRef");
+            writer->endElement(); // w:footnoteRef/w:endnoteRef
+            writer->endElement(); // w:r
+            m_footnoteNeedsReference = false;
+        }
     } else {
         writer->endElement(); // w:p
+        if (!m_insideFootnote) {
+            docxContext->m_insideParagraph = false;
+        }
     }
+}
+
+// Converts an ODF length value to twips.
+static bool toTwipsValue(const QString &value, qint64 *twips)
+{
+    if (value.isEmpty()) {
+        return false;
+    }
+    const qreal points = KoUnit::parseValue(value, -1.0);
+    if (points < 0) {
+        return false;
+    }
+    *twips = qRound64(points * 20.0);
+    return true;
+}
+
+// Appends a single border edge; shared by table and cell borders.
+static void writeBorderEdge(KoXmlWriter *writer, const char *element, const QString &style, int size, const QString &color)
+{
+    writer->startElement(element);
+    writer->addAttribute("w:val", style);
+    writer->addAttribute("w:sz", size);
+    writer->addAttribute("w:space", 0);
+    writer->addAttribute("w:color", color.isEmpty() ? QStringLiteral("auto") : color);
+    writer->endElement(); // element
+}
+
+// Parses an ODF "1pt solid #000000" border value.
+static void parseBorder(const QString &border, QString *style, int *size, QString *color)
+{
+    *style = QStringLiteral("single");
+    *size = 4;
+    color->clear();
+    const QStringList parts = border.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    QString width;
+    QString odfStyle;
+    for (const QString &part : parts) {
+        if (part.startsWith(QLatin1Char('#'))) {
+            *color = part.mid(1);
+        } else if (part.endsWith(QLatin1String("pt")) || part.endsWith(QLatin1String("in")) || part.endsWith(QLatin1String("cm"))
+                   || part.endsWith(QLatin1String("mm"))) {
+            width = part;
+        } else {
+            odfStyle = part;
+        }
+    }
+    if (odfStyle == QLatin1String("dashed")) {
+        *style = QStringLiteral("dashed");
+    } else if (odfStyle == QLatin1String("dotted")) {
+        *style = QStringLiteral("dotted");
+    } else if (odfStyle == QLatin1String("double")) {
+        *style = QStringLiteral("double");
+    } else if (odfStyle == QLatin1String("dot-dash")) {
+        *style = QStringLiteral("dotDash");
+    } else if (odfStyle == QLatin1String("dot-dot-dash")) {
+        *style = QStringLiteral("dotDotDash");
+    } else if (odfStyle == QLatin1String("dash-largegap")) {
+        *style = QStringLiteral("dashSmallGap");
+    } else if (odfStyle == QLatin1String("wave")) {
+        *style = QStringLiteral("wave");
+    } else if (odfStyle == QLatin1String("double-wave")) {
+        *style = QStringLiteral("doubleWave");
+    } else if (odfStyle == QLatin1String("groove")) {
+        *style = QStringLiteral("threeDEngrave");
+    } else if (odfStyle == QLatin1String("ridge")) {
+        *style = QStringLiteral("threeDEmboss");
+    } else if (odfStyle == QLatin1String("inset") || odfStyle == QLatin1String("outset")) {
+        *style = odfStyle;
+    }
+    const qreal points = KoUnit::parseValue(width, 0.0);
+    if (points > 0) {
+        *size = qBound(2, static_cast<int>(qRound(points * 8.0)), 96);
+    }
+}
+
+// Width of the text area (page width minus left/right margins) from the
+// serialized <w:sectPr> of the document.  Used to scale relative table and
+// column widths.  Returns 0 when the geometry is not known yet.
+static qint64 pageTextWidthTwips(const QByteArray &sectPr)
+{
+    qint64 pageWidth = 0;
+    qint64 leftMargin = 0;
+    qint64 rightMargin = 0;
+    QXmlStreamReader reader(sectPr);
+    while (!reader.atEnd()) {
+        if (reader.readNext() != QXmlStreamReader::StartElement) {
+            continue;
+        }
+        const QString name = reader.qualifiedName().toString();
+        const QXmlStreamAttributes attributes = reader.attributes();
+        if (name == QLatin1String("w:pgSz")) {
+            pageWidth = attributes.value(QLatin1String("w:w")).toLongLong();
+        } else if (name == QLatin1String("w:pgMar")) {
+            leftMargin = attributes.value(QLatin1String("w:left")).toLongLong();
+            rightMargin = attributes.value(QLatin1String("w:right")).toLongLong();
+        }
+    }
+    if (pageWidth <= 0) {
+        return 0;
+    }
+    return pageWidth - leftMargin - rightMargin;
+}
+
+// ODF stores borders either as one fo:border or as per-edge
+// fo:border-top / -bottom / -left / -right properties.  Return the value that
+// applies to a given edge, falling back to the generic property.
+static QString borderForEdge(KoOdfStyleProperties *properties, const char *odfSide)
+{
+    const QString edge = properties->attribute(QStringLiteral("fo:border-") + QLatin1String(odfSide));
+    if (!edge.isEmpty()) {
+        return edge;
+    }
+    return properties->attribute(QStringLiteral("fo:border"));
+}
+
+static bool hasAnyBorder(KoOdfStyleProperties *properties)
+{
+    if (!properties) {
+        return false;
+    }
+    for (const char *side : {"top", "left", "bottom", "right"}) {
+        const QString border = borderForEdge(properties, side);
+        if (!border.isEmpty() && border != QLatin1String("none")) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void OdfTextReaderDocxBackend::writeTableBorders(KoOdfStyleProperties *properties, KoXmlWriter *writer)
+{
+    writer->startElement("w:tblBorders");
+    for (const char *side : {"w:top", "w:left", "w:bottom", "w:right", "w:insideH", "w:insideV"}) {
+        const char *odfSide = side + 2; // skip the "w:" prefix
+        QString border = borderForEdge(properties, odfSide);
+        if (border == QLatin1String("none")) {
+            border.clear();
+        }
+        QString style;
+        int size = 4;
+        QString color;
+        if (border.isEmpty()) {
+            // No border on this edge: Word needs an explicit "none".
+            style = QStringLiteral("none");
+            size = 0;
+        } else {
+            parseBorder(border, &style, &size, &color);
+        }
+        writeBorderEdge(writer, side, style, size, color);
+    }
+    writer->endElement(); // w:tblBorders
+}
+
+void OdfTextReaderDocxBackend::writeCellBorders(KoOdfStyleProperties *properties, KoXmlWriter *writer)
+{
+    writer->startElement("w:tcBorders");
+    for (const char *side : {"w:top", "w:left", "w:bottom", "w:right"}) {
+        const char *odfSide = side + 2; // skip the "w:" prefix
+        QString border = borderForEdge(properties, odfSide);
+        QString style;
+        int size = 4;
+        QString color;
+        if (border.isEmpty()) {
+            continue;
+        }
+        if (border == QLatin1String("none")) {
+            style = QStringLiteral("nil");
+            size = 0;
+        } else {
+            parseBorder(border, &style, &size, &color);
+        }
+        writeBorderEdge(writer, side, style, size, color);
+    }
+    writer->endElement(); // w:tcBorders
 }
 
 void OdfTextReaderDocxBackend::elementTableTable(KoXmlStreamReader &reader, OdfReaderContext *context)
@@ -162,17 +380,147 @@ void OdfTextReaderDocxBackend::elementTableTable(KoXmlStreamReader &reader, OdfR
     if (!docxContext) {
         return;
     }
-    KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+    KoXmlWriter *writer = currentWriter(docxContext);
     if (reader.isStartElement()) {
+        m_tables.push(TableState());
+        TableState &state = m_tables.top();
+
+        const KoXmlStreamAttributes attributes = reader.attributes();
+        const QString tableStyle = attributes.value("table:style-name").toString();
+        KoOdfStyleProperties *tableProperties = nullptr;
+        if (!tableStyle.isEmpty()) {
+            if (KoOdfStyle *style = docxContext->styleManager()->style(tableStyle, "table")) {
+                tableProperties = style->properties("style:table-properties");
+            }
+        }
+
         writer->startElement("w:tbl");
         writer->startElement("w:tblPr");
+
+        // ODF tables can express their width either absolutely (style:width)
+        // or relative to the text area (style:rel-width).  Word knows both.
+        qint64 tableWidth = 0;
+        bool hasWidth = false;
+        int relativeWidth = 0;
+        if (tableProperties) {
+            const QString width = tableProperties->attribute("style:width");
+            if (!width.isEmpty()) {
+                hasWidth = toTwipsValue(width, &tableWidth) && tableWidth > 0;
+            }
+            const QString relWidth = tableProperties->attribute("style:rel-width");
+            if (relWidth.endsWith(QLatin1Char('%'))) {
+                relativeWidth = qRound(relWidth.chopped(1).toDouble() * 50.0);
+            }
+        }
         writer->startElement("w:tblW");
-        writer->addAttribute("w:w", 0);
-        writer->addAttribute("w:type", "auto");
+        if (relativeWidth > 0) {
+            writer->addAttribute("w:w", relativeWidth);
+            writer->addAttribute("w:type", "pct");
+        } else if (hasWidth) {
+            writer->addAttribute("w:w", static_cast<int>(tableWidth));
+            writer->addAttribute("w:type", "dxa");
+        } else {
+            writer->addAttribute("w:w", 5000);
+            writer->addAttribute("w:type", "pct");
+        }
         writer->endElement(); // w:tblW
+
+        // Horizontal table position.  ODF either centers/right aligns the
+        // table or gives it a left margin; Word uses w:jc / w:tblInd.
+        if (tableProperties) {
+            const QString align = tableProperties->attribute("table:align");
+            if (align == QLatin1String("center") || align == QLatin1String("right")) {
+                writer->startElement("w:tblJc");
+                writer->addAttribute("w:val", align);
+                writer->endElement(); // w:tblJc
+            }
+            qint64 indent = 0;
+            if (toTwipsValue(tableProperties->attribute("fo:margin-left"), &indent) && indent != 0) {
+                writer->startElement("w:tblInd");
+                writer->addAttribute("w:w", static_cast<int>(indent));
+                writer->addAttribute("w:type", "dxa");
+                writer->endElement(); // w:tblInd
+            }
+        }
+        if (hasAnyBorder(tableProperties)) {
+            writeTableBorders(tableProperties, writer);
+        }
+        // w:tblLayout must come after w:tblBorders / w:shd in the schema.
+        if (hasWidth || relativeWidth > 0) {
+            writer->startElement("w:tblLayout");
+            writer->addAttribute("w:type", "fixed");
+            writer->endElement(); // w:tblLayout
+        }
         writer->endElement(); // w:tblPr
+
+        // Column widths in ODF are often the widths for a 100% table even
+        // when the table itself is only e.g. 80% of the text area.  Scale the
+        // grid down so that Word reproduces the original proportions.
+        if (relativeWidth > 0 && hasWidth && tableWidth > 0) {
+            const qint64 textWidth = pageTextWidthTwips(docxContext->sectPrContent());
+            if (textWidth > 0) {
+                const qreal targetWidth = textWidth * relativeWidth / 5000.0;
+                state.widthScale = qBound(0.05, targetWidth / tableWidth, 4.0);
+            }
+        }
     } else {
+        if (!m_tables.isEmpty()) {
+            TableState &state = m_tables.top();
+            if (state.gridOpen) {
+                writer->endElement(); // w:tblGrid
+                state.gridOpen = false;
+            }
+            m_tables.pop();
+        }
         writer->endElement(); // w:tbl
+    }
+}
+
+void OdfTextReaderDocxBackend::elementTableTableColumn(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    if (!reader.isStartElement()) {
+        return;
+    }
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext || m_tables.isEmpty()) {
+        return;
+    }
+    KoXmlWriter *writer = currentWriter(docxContext);
+    TableState &state = m_tables.top();
+
+    qint64 width = 0;
+    const QString columnStyle = reader.attributes().value("table:style-name").toString();
+    if (!columnStyle.isEmpty()) {
+        if (KoOdfStyle *style = docxContext->styleManager()->style(columnStyle, "table-column")) {
+            if (KoOdfStyleProperties *properties = style->properties("style:table-column-properties")) {
+                if (!toTwipsValue(properties->attribute("style:column-width"), &width) || width <= 0) {
+                    // Fall back to the relative column width ("1234*"): split
+                    // the remaining space proportionally to the weights.
+                    const QString relWidth = properties->attribute("style:rel-column-width");
+                    if (relWidth.endsWith(QLatin1Char('*'))) {
+                        const int weight = relWidth.chopped(1).toInt();
+                        if (weight > 0) {
+                            width = weight;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (width > 0 && state.widthScale != 1.0) {
+        width = qRound64(width * state.widthScale);
+    }
+    const int repeat = qMax(1, reader.attributes().value("table:number-columns-repeated").toInt());
+    for (int i = 0; i < qMin(repeat, 64); ++i) {
+        state.columnWidths.append(static_cast<int>(width));
+        if (!state.gridOpen) {
+            writer->startElement("w:tblGrid");
+            state.gridOpen = true;
+        }
+        writer->startElement("w:gridCol");
+        writer->addAttribute("w:w", static_cast<int>(width));
+        writer->endElement(); // w:gridCol
     }
 }
 
@@ -183,10 +531,57 @@ void OdfTextReaderDocxBackend::elementTableTableRow(KoXmlStreamReader &reader, O
     if (!docxContext) {
         return;
     }
-    KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+    KoXmlWriter *writer = currentWriter(docxContext);
     if (reader.isStartElement()) {
+        if (m_tables.isEmpty()) {
+            return;
+        }
+        TableState &state = m_tables.top();
+        if (state.gridOpen) {
+            writer->endElement(); // w:tblGrid
+            state.gridOpen = false;
+        } else if (state.columnWidths.isEmpty()) {
+            // Word expects a w:tblGrid before the first row even when the ODF
+            // table does not declare any columns.
+            writer->startElement("w:tblGrid");
+            writer->endElement(); // w:tblGrid
+        }
+        state.currentColumn = 0;
+
+        // Columns still covered by a row span from an earlier row belong to
+        // the continuation cells of this row.  Consume one of their remaining
+        // rows here; spans started by cells of this row are unaffected.
+        state.rowSpanActive.resize(state.rowSpanRemaining.size());
+        for (int i = 0; i < state.rowSpanRemaining.size(); ++i) {
+            state.rowSpanActive[i] = state.rowSpanRemaining.at(i) > 0;
+            if (state.rowSpanActive.at(i)) {
+                state.rowSpanRemaining[i] -= 1;
+            }
+        }
+
         writer->startElement("w:tr");
+
+        KoXmlWriter *trPrWriter = writer;
+        trPrWriter->startElement("w:trPr");
+        const QString rowStyle = reader.attributes().value("table:style-name").toString();
+        if (!rowStyle.isEmpty()) {
+            if (KoOdfStyle *style = docxContext->styleManager()->style(rowStyle, "table-row")) {
+                if (KoOdfStyleProperties *properties = style->properties("style:table-row-properties")) {
+                    qint64 height = 0;
+                    if (toTwipsValue(properties->attribute("style:row-height"), &height) && height > 0) {
+                        writer->startElement("w:trHeight");
+                        writer->addAttribute("w:val", static_cast<int>(height));
+                        writer->addAttribute("w:hRule", "atLeast");
+                        writer->endElement(); // w:trHeight
+                    }
+                }
+            }
+        }
+        trPrWriter->endElement(); // w:trPr
     } else {
+        if (m_tables.isEmpty()) {
+            return;
+        }
         writer->endElement(); // w:tr
     }
 }
@@ -198,10 +593,74 @@ void OdfTextReaderDocxBackend::elementTableTableCell(KoXmlStreamReader &reader, 
     if (!docxContext) {
         return;
     }
-    KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+    KoXmlWriter *writer = currentWriter(docxContext);
     if (reader.isStartElement()) {
+        const KoXmlStreamAttributes attributes = reader.attributes();
+        const int columnSpan = qMax(1, attributes.value("table:number-columns-spanned").toInt());
+        const int rowSpan = qMax(1, attributes.value("table:number-rows-spanned").toInt());
+
+        int columnWidth = 0;
+        int columnIndex = 0;
+        if (!m_tables.isEmpty()) {
+            TableState &state = m_tables.top();
+            columnIndex = state.currentColumn;
+            for (int i = 0; i < columnSpan && columnIndex + i < state.columnWidths.size(); ++i) {
+                columnWidth += state.columnWidths.at(columnIndex + i);
+            }
+            state.currentColumn += columnSpan;
+            if (rowSpan > 1) {
+                while (state.rowSpanRemaining.size() < columnIndex + columnSpan) {
+                    state.rowSpanRemaining.append(0);
+                }
+                for (int i = 0; i < columnSpan; ++i) {
+                    state.rowSpanRemaining[columnIndex + i] = rowSpan - 1;
+                }
+            }
+        }
+
         writer->startElement("w:tc");
         writer->startElement("w:tcPr");
+        writer->startElement("w:tcW");
+        writer->addAttribute("w:w", columnWidth);
+        writer->addAttribute("w:type", columnWidth > 0 ? "dxa" : "auto");
+        writer->endElement(); // w:tcW
+        if (columnSpan > 1) {
+            writer->startElement("w:gridSpan");
+            writer->addAttribute("w:val", columnSpan);
+            writer->endElement(); // w:gridSpan
+        }
+        if (rowSpan > 1) {
+            writer->startElement("w:vMerge");
+            writer->addAttribute("w:val", "restart");
+            writer->endElement(); // w:vMerge
+        }
+
+        // Cell formatting from the ODF cell style.
+        const QString cellStyle = attributes.value("table:style-name").toString();
+        if (!cellStyle.isEmpty()) {
+            if (KoOdfStyle *style = docxContext->styleManager()->style(cellStyle, "table-cell")) {
+                KoOdfStyleProperties *properties = style->properties("style:table-cell-properties");
+                if (properties) {
+                    if (hasAnyBorder(properties)) {
+                        writeCellBorders(properties, writer);
+                    }
+                    const QString background = properties->attribute("fo:background-color");
+                    if (!background.isEmpty() && background != QLatin1String("transparent")) {
+                        writer->startElement("w:shd");
+                        writer->addAttribute("w:val", "clear");
+                        writer->addAttribute("w:color", "auto");
+                        writer->addAttribute("w:fill", background.mid(background.startsWith(QLatin1Char('#')) ? 1 : 0));
+                        writer->endElement(); // w:shd
+                    }
+                    const QString verticalAlign = properties->attribute("style:vertical-align");
+                    if (!verticalAlign.isEmpty()) {
+                        writer->startElement("w:vAlign");
+                        writer->addAttribute("w:val", verticalAlign == QLatin1String("middle") ? QStringLiteral("center") : verticalAlign);
+                        writer->endElement(); // w:vAlign
+                    }
+                }
+            }
+        }
         writer->endElement(); // w:tcPr
         m_cellParagraphStack.push(false);
     } else {
@@ -223,9 +682,44 @@ void OdfTextReaderDocxBackend::elementTableCoveredTableCell(KoXmlStreamReader &r
     if (!docxContext) {
         return;
     }
-    KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+    KoXmlWriter *writer = currentWriter(docxContext);
+
+    int columnIndex = 0;
+    bool verticallyMerged = false;
+    int columnWidth = 0;
+    if (!m_tables.isEmpty()) {
+        TableState &state = m_tables.top();
+        columnIndex = state.currentColumn;
+        verticallyMerged = columnIndex < state.rowSpanActive.size() && state.rowSpanActive.at(columnIndex);
+        if (columnIndex < state.columnWidths.size()) {
+            columnWidth = state.columnWidths.at(columnIndex);
+        }
+        // A horizontally covered cell is part of the gridSpan of the cell
+        // before it, so it does not advance the column counter.  Only a
+        // vertical continuation occupies a column of its own in this row.
+        if (verticallyMerged) {
+            state.currentColumn += 1;
+        }
+    } else {
+        return;
+    }
+
+    // A cell covered horizontally is already represented by the gridSpan of
+    // the preceding cell; only vertical continuations need a w:tc of their own.
+    // Do not touch the reader here: the OdtReader still has to traverse the
+    // element and relies on its position.
+    if (!verticallyMerged) {
+        return;
+    }
+
     writer->startElement("w:tc");
     writer->startElement("w:tcPr");
+    writer->startElement("w:tcW");
+    writer->addAttribute("w:w", columnWidth);
+    writer->addAttribute("w:type", columnWidth > 0 ? "dxa" : "auto");
+    writer->endElement(); // w:tcW
+    writer->startElement("w:vMerge");
+    writer->endElement(); // w:vMerge
     writer->endElement(); // w:tcPr
     writer->startElement("w:p");
     writer->endElement(); // w:p
@@ -270,8 +764,8 @@ void OdfTextReaderDocxBackend::elementTextS(KoXmlStreamReader &reader, OdfReader
     }
     count = qMin(count, 32767);
 
-    KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
-    const bool ownRun = m_insideSpanLevel == 0;
+    KoXmlWriter *writer = currentWriter(docxContext);
+    const bool ownRun = m_insideFootnote ? m_insideSpanLevel == m_noteSpanBase : m_insideSpanLevel == 0;
     if (ownRun) {
         startRun(reader, docxContext);
     }
@@ -306,12 +800,17 @@ void OdfTextReaderDocxBackend::elementTextA(KoXmlStreamReader &reader, OdfReader
             return;
         }
 
-        KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+        KoXmlWriter *writer = currentWriter(docxContext);
         writer->startElement("w:hyperlink");
         if (href.startsWith(QLatin1Char('#'))) {
             writer->addAttribute("w:anchor", href.mid(1));
         } else {
-            const QString sourcePart = m_insideComment ? QStringLiteral("word/comments.xml") : QStringLiteral("word/document.xml");
+            QString sourcePart = docxContext->outputPart();
+        if (m_insideComment) {
+            sourcePart = QStringLiteral("word/comments.xml");
+        } else if (m_insideFootnote) {
+            sourcePart = m_insideEndnote ? QStringLiteral("word/endnotes.xml") : QStringLiteral("word/footnotes.xml");
+        }
             const QString relationshipId = docxContext->m_docxFile->addRelationship(
                 sourcePart,
                 "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
@@ -328,7 +827,7 @@ void OdfTextReaderDocxBackend::elementTextA(KoXmlStreamReader &reader, OdfReader
     } else if (!m_linkStack.isEmpty()) {
         const bool opened = m_linkStack.pop();
         if (opened) {
-            KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
+            KoXmlWriter *writer = currentWriter(docxContext);
             writer->endElement(); // w:hyperlink
         }
     }
@@ -344,8 +843,8 @@ void OdfTextReaderDocxBackend::elementTextLineBreak(KoXmlStreamReader &reader, O
     if (!docxContext) {
         return;
     }
-    KoXmlWriter *writer = m_insideComment ? docxContext->m_commentsWriter : docxContext->m_documentWriter;
-    const bool ownRun = m_insideSpanLevel == 0;
+    KoXmlWriter *writer = currentWriter(docxContext);
+    const bool ownRun = m_insideFootnote ? m_insideSpanLevel == m_noteSpanBase : m_insideSpanLevel == 0;
     if (ownRun) {
         startRun(reader, docxContext);
     }
@@ -356,7 +855,167 @@ void OdfTextReaderDocxBackend::elementTextLineBreak(KoXmlStreamReader &reader, O
     }
 }
 
-void OdfTextReaderDocxBackend::characterData(KoXmlStreamReader &reader, OdfReaderContext *context)
+void OdfTextReaderDocxBackend::elementTextTab(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    if (!reader.isStartElement()) {
+        return;
+    }
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext) {
+        return;
+    }
+    KoXmlWriter *writer = currentWriter(docxContext);
+    const bool ownRun = m_insideFootnote ? m_insideSpanLevel == m_noteSpanBase : m_insideSpanLevel == 0;
+    if (ownRun) {
+        startRun(reader, docxContext);
+    }
+    writer->startElement("w:tab");
+    writer->endElement(); // w:tab
+    if (ownRun) {
+        endRun(docxContext);
+    }
+}
+
+void OdfTextReaderDocxBackend::elementTextSoftPageBreak(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    if (!reader.isStartElement()) {
+        return;
+    }
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext) {
+        return;
+    }
+    KoXmlWriter *writer = currentWriter(docxContext);
+
+    // A soft page break between two paragraphs is a page break run.  Word
+    // requires every run to live inside a paragraph, so outside a text:p the
+    // break is wrapped in a paragraph of its own.
+    const bool standalone = !docxContext->m_insideParagraph;
+    if (standalone) {
+        writer->startElement("w:p");
+    }
+    writer->startElement("w:r");
+    writer->startElement("w:br");
+    writer->addAttribute("w:type", "page");
+    writer->endElement(); // w:br
+    writer->endElement(); // w:r
+    if (standalone) {
+        writer->endElement(); // w:p
+    }
+}
+
+// ----------------------------------------------------------------
+//                             Notes
+
+void OdfTextReaderDocxBackend::elementTextNote(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext) {
+        return;
+    }
+
+    if (reader.isStartElement()) {
+        const QString noteClass = reader.attributes().value("text:note-class").toString();
+        m_insideEndnote = (noteClass == QLatin1StringView("endnote"));
+
+        // The reference marker goes at the position of the note in the
+        // running text.  Word numbers notes automatically, so the ODF
+        // citation text is never needed.
+        KoXmlWriter *docWriter = currentWriter(docxContext); // still the text writer here
+        const int id = m_insideEndnote ? ++m_endnoteIndex : ++m_footnoteIndex;
+        const char *referenceElement = m_insideEndnote ? "w:endnoteReference" : "w:footnoteReference";
+        if (docxContext->m_insideRun) {
+            // Already inside a run (the note sits in a text:span); the
+            // reference has to be a child of that open run.
+            docWriter->startElement(referenceElement);
+            docWriter->addAttribute("w:id", id);
+            docWriter->endElement(); // reference
+        } else {
+            docWriter->startElement("w:r");
+            docWriter->startElement(referenceElement);
+            docWriter->addAttribute("w:id", id);
+            docWriter->endElement(); // reference
+            docWriter->endElement(); // w:r
+        }
+
+        // Everything from here on is written into the note part.
+        m_noteSpanBase = m_insideSpanLevel;
+        m_insideFootnote = true;
+        m_footnoteNeedsReference = true;
+        KoXmlWriter *notesWriter = m_insideEndnote ? docxContext->m_endnotesWriter : docxContext->m_footnotesWriter;
+        notesWriter->startElement(m_insideEndnote ? "w:endnote" : "w:footnote");
+        notesWriter->addAttribute("w:id", id);
+    } else {
+        KoXmlWriter *notesWriter = m_insideEndnote ? docxContext->m_endnotesWriter : docxContext->m_footnotesWriter;
+        notesWriter->endElement(); // w:footnote/w:endnote
+        m_insideFootnote = false;
+        m_footnoteNeedsReference = false;
+        m_insideEndnote = false;
+    }
+}
+
+void OdfTextReaderDocxBackend::elementTextNoteCitation(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    Q_UNUSED(reader);
+    Q_UNUSED(context);
+    // Both sides number automatically: w:footnoteReference in the body and
+    // w:footnoteRef in the note text replace the ODF citation.
+}
+
+void OdfTextReaderDocxBackend::elementTextNoteBody(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    Q_UNUSED(reader);
+    Q_UNUSED(context);
+    // The paragraphs of the body are written by elementTextP into the note
+    // part; the first one picks up the w:footnoteRef marker through
+    // m_footnoteNeedsReference.
+}
+
+// ----------------------------------------------------------------
+//                             Lists
+
+void OdfTextReaderDocxBackend::elementTextList(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext) {
+        return;
+    }
+    if (reader.isStartElement()) {
+        const QString styleName = reader.attributes().value("text:style-name").toString();
+        const int numId = docxContext->numbering().numIdForStyle(styleName);
+        m_listStack.push(numId);
+    } else if (!m_listStack.isEmpty()) {
+        m_listStack.pop();
+    }
+}
+
+void OdfTextReaderDocxBackend::elementTextListItem(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    Q_UNUSED(context);
+    if (reader.isStartElement()) {
+        ++m_insideListItem;
+    } else if (m_insideListItem > 0) {
+        --m_insideListItem;
+    }
+}
+
+void OdfTextReaderDocxBackend::elementTextListHeader(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    Q_UNUSED(context);
+    if (reader.isStartElement()) {
+        ++m_insideListItem;
+    } else if (m_insideListItem > 0) {
+        --m_insideListItem;
+    }
+}void OdfTextReaderDocxBackend::characterData(KoXmlStreamReader &reader, OdfReaderContext *context)
 {
     DEBUG_BACKEND();
     OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
@@ -375,12 +1034,9 @@ void OdfTextReaderDocxBackend::characterData(KoXmlStreamReader &reader, OdfReade
         // In docx, a text always has to be inside a run (w:r). This is
         // created when a text:span is encountered in odf but text nodes
         // can exist also without a text:span surrounding it.
-        KoXmlWriter *writer = docxContext->m_documentWriter;
-        if (m_insideComment) {
-            writer = docxContext->m_commentsWriter;
-        }
+        KoXmlWriter *writer = currentWriter(docxContext);
 
-        if (m_insideSpanLevel == 0) {
+        if (m_insideFootnote ? m_insideSpanLevel == m_noteSpanBase : m_insideSpanLevel == 0) {
             startRun(reader, docxContext);
         }
 
@@ -392,7 +1048,7 @@ void OdfTextReaderDocxBackend::characterData(KoXmlStreamReader &reader, OdfReade
         writer->addTextNode(text);
         writer->endElement(); // w:t
 
-        if (m_insideSpanLevel == 0) {
+        if (m_insideFootnote ? m_insideSpanLevel == m_noteSpanBase : m_insideSpanLevel == 0) {
             endRun(docxContext);
         }
     }
@@ -401,14 +1057,22 @@ void OdfTextReaderDocxBackend::characterData(KoXmlStreamReader &reader, OdfReade
 // ----------------------------------------------------------------
 //                         Private functions
 
+KoXmlWriter *OdfTextReaderDocxBackend::currentWriter(OdfReaderDocxContext *context) const
+{
+    if (m_insideComment) {
+        return context->m_commentsWriter;
+    }
+    if (m_insideFootnote) {
+        return m_insideEndnote ? context->m_endnotesWriter : context->m_footnotesWriter;
+    }
+    return context->m_documentWriter;
+}
+
 void OdfTextReaderDocxBackend::startRun(const KoXmlStreamReader &reader, OdfReaderDocxContext *docxContext)
 {
-    KoXmlWriter *writer = docxContext->m_documentWriter;
-    if (m_insideComment) {
-        writer = docxContext->m_commentsWriter;
-    }
+    KoXmlWriter *writer = currentWriter(docxContext);
 
-    if (m_writeComment && !m_insideComment) {
+    if (m_writeComment && !m_insideComment && !m_insideFootnote) {
         writer->startElement("w:commentRangeStart");
         writer->addAttribute("w:id", m_commentIndex);
         writer->endElement(); // w:commentRangeStart
@@ -427,32 +1091,40 @@ void OdfTextReaderDocxBackend::startRun(const KoXmlStreamReader &reader, OdfRead
     QString textStyle = attributes.value("text:style-name").toString();
     if (!textStyle.isEmpty()) {
         KoOdfStyle *style = docxContext->styleManager()->style(textStyle, "text");
-        KoOdfStyleProperties *textProperties = style->properties("style:text-properties");
-        if (textProperties != nullptr) {
-            properties.copyPropertiesFrom(*textProperties);
-        }
-        QString parent = style->parent();
-        if (!parent.isEmpty()) {
-            writer->startElement("w:rStyle");
-            writer->addAttribute("w:val", parent);
-            writer->endElement(); // w:rStyle
+        if (style) {
+            KoOdfStyleProperties *textProperties = style->properties("style:text-properties");
+            if (textProperties != nullptr) {
+                properties.copyPropertiesFrom(*textProperties);
+            }
+            // The emitted style is the style itself when it is named in
+            // styles.xml; an automatic content style can only refer to its
+            // named parent in the DOCX style table.
+            const QString wordStyleId = style->isFromStylesXml() ? style->name() : style->parent();
+            if (!wordStyleId.isEmpty()) {
+                writer->startElement("w:rStyle");
+                writer->addAttribute("w:val", wordStyleId);
+                writer->endElement(); // w:rStyle
+            }
         }
     }
     DocxStyleHelper::handleTextStyles(&properties, writer);
 
     writer->endElement(); // w:rPr
+    if (!m_insideFootnote) {
+        docxContext->m_insideRun = true;
+    }
 }
 
 void OdfTextReaderDocxBackend::endRun(OdfReaderDocxContext *docxContext)
 {
     // FIXME: More here?
-    KoXmlWriter *writer = docxContext->m_documentWriter;
-    if (m_insideComment) {
-        writer = docxContext->m_commentsWriter;
-    }
+    KoXmlWriter *writer = currentWriter(docxContext);
     writer->endElement(); // w:r
+    if (!m_insideFootnote) {
+        docxContext->m_insideRun = false;
+    }
 
-    if (m_writeComment && !m_insideComment) {
+    if (m_writeComment && !m_insideComment && !m_insideFootnote) {
         writer->startElement("w:commentRangeEnd");
         writer->addAttribute("w:id", m_commentIndex);
         writer->endElement(); // w:commentRangeEnd

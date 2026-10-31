@@ -53,8 +53,6 @@ QString DocxFile::addRelationship(const QString &sourcePart, const QString &type
 KoFilter::ConversionStatus
 DocxFile::writeDocx(const QString &fileName, const QByteArray &appIdentification, const OdfReaderDocxContext &context, bool commentsExist)
 {
-    Q_UNUSED(context);
-
     KoStore *docxStore = KoStore::createStore(fileName, KoStore::Write, appIdentification, KoStore::Auto, false);
     if (!docxStore || docxStore->bad()) {
         warnDocx << "Unable to create output file!";
@@ -67,6 +65,9 @@ DocxFile::writeDocx(const QString &fileName, const QByteArray &appIdentification
     addRelationship("word/document.xml", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles", "styles.xml");
     if (commentsExist) {
         addRelationship("word/document.xml", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments", "comments.xml");
+    }
+    if (!context.numbering().isEmpty()) {
+        addRelationship("word/document.xml", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering", "numbering.xml");
     }
 
     // Write contents of added files.

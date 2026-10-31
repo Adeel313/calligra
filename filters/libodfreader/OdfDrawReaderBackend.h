@@ -75,6 +75,7 @@ public:
     // Frames
 
     DECLARE_BACKEND_FUNCTION(DrawFrame);
+    DECLARE_BACKEND_FUNCTION(DrawImage);
     DECLARE_BACKEND_FUNCTION(DrawObject);
     DECLARE_BACKEND_FUNCTION(DrawObjectOle);
 

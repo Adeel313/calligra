@@ -74,8 +74,12 @@ IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TableCoveredTableCell)
 
 IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextA)
 IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextLineBreak)
+IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextNote)
+IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextNoteCitation)
+IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextNoteBody)
 IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextSpan)
 IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextS)
+IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextTab)
 IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextSoftPageBreak)
 
 // ----------------------------------------------------------------

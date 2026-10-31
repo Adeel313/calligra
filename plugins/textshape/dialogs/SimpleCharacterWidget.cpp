@@ -41,6 +41,9 @@ SimpleCharacterWidget::SimpleCharacterWidget(TextTool *tool, QWidget *parent)
     , m_stylesDelegate(nullptr)
 {
     widget.setupUi(this);
+    // The character-style picker duplicates the paragraph style control on
+    // the Home tab and exposes mostly internal footnote/endnote styles.
+    widget.characterStyleCombo->hide();
     widget.bold->setDefaultAction(tool->action("format_bold"));
     widget.italic->setDefaultAction(tool->action("format_italic"));
     widget.strikeOut->setDefaultAction(tool->action("format_strike"));

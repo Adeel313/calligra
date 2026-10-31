@@ -127,6 +127,12 @@ bool KoOdfStyle::readOdf(KoXmlStreamReader &reader)
             properties = new KoOdfParagraphProperties();
         } else if (propertiesType == "style:graphic-properties") {
             properties = new KoOdfGraphicProperties();
+        } else if (propertiesType == "style:table-properties" || propertiesType == "style:table-column-properties"
+                   || propertiesType == "style:table-row-properties" || propertiesType == "style:table-cell-properties") {
+            // Table styles only need their plain attributes; the generic
+            // property set is enough to expose e.g. style:width,
+            // style:column-width, style:row-height and fo:border.
+            properties = new KoOdfStyleProperties();
         }
 
         if (properties) {
@@ -135,6 +141,8 @@ bool KoOdfStyle::readOdf(KoXmlStreamReader &reader)
                 return false;
             }
             d->properties[propertiesType] = properties;
+        } else {
+            reader.skipCurrentElement();
         }
     }
 

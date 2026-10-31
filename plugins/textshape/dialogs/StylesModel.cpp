@@ -285,11 +285,12 @@ void StylesModel::setStyleThumbnailer(KoStyleThumbnailer *thumbnailer)
     m_styleThumbnailer = thumbnailer;
 }
 
+bool sortParagraphStyleByName(KoParagraphStyle *style1, KoParagraphStyle *style2);
+
 // called when the stylemanager adds a style
 void StylesModel::addParagraphStyle(KoParagraphStyle *style)
 {
     Q_ASSERT(style);
-    QCollator collator;
     QList<int>::iterator begin = m_styleList.begin();
     int index = 0;
     for (; begin != m_styleList.end(); ++begin) {
@@ -298,7 +299,7 @@ void StylesModel::addParagraphStyle(KoParagraphStyle *style)
             s = m_draftParStyleList[*begin];
         // s should be found as the manager and the m_styleList should be in sync
         Q_ASSERT(s);
-        if (collator.compare(style->name(), s->name()) < 0) {
+        if (sortParagraphStyleByName(style, s)) {
             break;
         }
         ++index;
@@ -312,10 +313,55 @@ void StylesModel::addParagraphStyle(KoParagraphStyle *style)
     endInsertRows();
 }
 
+namespace
+{
+QString normalizedParagraphStyleName(const QString &name)
+{
+    QString normalized = name.toCaseFolded();
+    normalized.remove(QLatin1Char(' '));
+    normalized.remove(QLatin1Char('_'));
+    normalized.remove(QLatin1Char('-'));
+    return normalized;
+}
+
+int paragraphStylePriority(const QString &name)
+{
+    const QString normalized = normalizedParagraphStyleName(name);
+    if (normalized == QLatin1String("documenttitle") || normalized == QLatin1String("title")) {
+        return 0;
+    }
+    if (normalized == QLatin1String("subtitle")) {
+        return 1;
+    }
+    if (normalized.startsWith(QLatin1String("heading")) && normalized.size() == 8 && normalized.at(7).isDigit()) {
+        const int level = normalized.at(7).digitValue();
+        if (level > 0 && level <= 9) {
+            return level + 1;
+        }
+    }
+    if (normalized.startsWith(QLatin1String("head")) && normalized.size() == 5 && normalized.at(4).isDigit()) {
+        const int level = normalized.at(4).digitValue();
+        if (level > 0 && level <= 9) {
+            return level + 1;
+        }
+    }
+    if (normalized == QLatin1String("normal") || normalized == QLatin1String("standard") || normalized == QLatin1String("defaultparagraphstyle")
+        || normalized == QLatin1String("textbody") || normalized == QLatin1String("bodytext")) {
+        return 11;
+    }
+    return 100;
+}
+}
+
 bool sortParagraphStyleByName(KoParagraphStyle *style1, KoParagraphStyle *style2)
 {
     Q_ASSERT(style1);
     Q_ASSERT(style2);
+    const int priority1 = paragraphStylePriority(style1->name());
+    const int priority2 = paragraphStylePriority(style2->name());
+    if (priority1 != priority2) {
+        return priority1 < priority2;
+    }
     return QCollator().compare(style1->name(), style2->name()) < 0;
 }
 
@@ -456,7 +502,7 @@ void StylesModel::updateName(int styleId)
                         s = m_draftParStyleList[*begin];
                     // s should be found as the manager and the m_styleList should be in sync
                     Q_ASSERT(s);
-                    if (collator.compare(paragStyle->name(), s->name()) < 0) {
+                    if (sortParagraphStyleByName(paragStyle, s)) {
                         break;
                     }
                     ++newIndex;

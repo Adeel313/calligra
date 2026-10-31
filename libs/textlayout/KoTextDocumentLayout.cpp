@@ -14,6 +14,7 @@
 #include "FrameIterator.h"
 #include "IndexGeneratorManager.h"
 #include "InlineAnchorStrategy.h"
+#include "KoInlineObjectHandler.h"
 #include "KoInlineTextObjectManager.h"
 #include "KoTextBlockData.h"
 #include "KoTextLayoutObstruction.h"
@@ -37,6 +38,7 @@
 #include <KoUnit.h>
 
 #include <QList>
+#include <QPainter>
 #include <QTextBlock>
 #include <QTextTable>
 #include <QTimer>
@@ -140,6 +142,11 @@ KoTextDocumentLayout::KoTextDocumentLayout(QTextDocument *doc, KoTextLayoutRootA
     d->changeTracker = KoTextDocument(document()).changeTracker();
     d->inlineTextObjectManager = KoTextDocument(document()).inlineTextObjectManager();
     d->textRangeManager = KoTextDocument(document()).textRangeManager();
+
+    // KoInlineTextObjectManager::insertInlineObject() uses this object type for
+    // every inline object it inserts.  The handler object is parented to the
+    // layout so it is deleted together with it; no unregisterHandler needed.
+    registerHandler(QTextFormat::UserObject + 1, new KoInlineObjectHandler(this));
 
     setTabSpacing(MM_TO_POINT(23)); // use same default as open office
 

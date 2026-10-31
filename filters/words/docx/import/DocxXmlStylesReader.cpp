@@ -458,6 +458,27 @@ KoFilter::ConversionStatus DocxXmlStylesReader::read_style()
     // When reading from styles, we allow duplicates
     insertionFlags = insertionFlags | KoGenStyles::AllowDuplicates;
 
+    // Keep Word's stable styleId as the ODF style:name so basedOn and
+    // paragraph references continue to resolve, but expose the human-facing
+    // w:name in Calligra's style selector via ODF's style:display-name.
+    QString displayName = m_name;
+    // Some OOXML producers omit w:name for the built-in heading styles (or
+    // repeat the compact styleId such as "Heading1"). Give those styles the
+    // familiar UI label while keeping the internal styleId unchanged.
+    const QString normalizedStyleId = styleName.toLower();
+    if (type == QLatin1String("paragraph") && (displayName.isEmpty() || displayName == styleName)
+        && normalizedStyleId.startsWith(QLatin1String("heading")) && normalizedStyleId.size() == 8
+        && normalizedStyleId.at(7).isDigit() && normalizedStyleId.at(7) != QLatin1Char('0')) {
+        displayName = i18n("Heading %1", QString(normalizedStyleId.at(7)));
+    }
+    if (!displayName.isEmpty() && type != QLatin1String("table")) {
+        if (type == QLatin1String("character")) {
+            m_currentTextStyle.addAttribute("style:display-name", displayName);
+        } else if (type == QLatin1String("paragraph")) {
+            m_currentParagraphStyle.addAttribute("style:display-name", displayName);
+        }
+    }
+
     // style:class - A style may belong to an arbitrary class of styles.  The
     // class is an arbitrary string.  The class has no meaning within the file
     // format itself, but it can for instance be evaluated by user interfaces
@@ -604,7 +625,6 @@ KoFilter::ConversionStatus DocxXmlStylesReader::read_name()
     READ_PROLOGUE
     const QXmlStreamAttributes attrs(attributes());
     READ_ATTR_INTO(val, m_name)
-    m_name.replace(QLatin1Char(' '), QLatin1Char('_'));
     readNext();
     READ_EPILOGUE
 }

@@ -13,6 +13,8 @@
 #include <MsooXmlSchemas.h>
 #include <MsooXmlUtils.h>
 
+#include <QDir>
+
 // #define MSOOXML_CURRENT_NS
 #define MSOOXML_CURRENT_CLASS MsooXmlRelationshipsReader
 #define BIND_READ_CLASS MSOOXML_CURRENT_CLASS
@@ -144,21 +146,24 @@ KoFilter::ConversionStatus MsooXmlRelationshipsReader::read_Relationship()
     READ_ATTR_WITHOUT_NS(Id)
     READ_ATTR_WITHOUT_NS(Type)
     READ_ATTR_WITHOUT_NS(Target)
-    QString fixedPath(m_context->path);
-    while (Target.startsWith(QLatin1String("../"))) {
-        // debugMsooXml << "- Target:" << Target << "fixedPath:" << fixedPath;
-        Target.remove(0, 3);
-        fixedPath.truncate(fixedPath.lastIndexOf('/'));
-        // debugMsooXml << "= Target:" << Target << "fixedPath:" << fixedPath;
+    QString targetPath;
+    if (attrs.value(QLatin1String("TargetMode")) == QLatin1String("External")) {
+        targetPath = Target;
+    } else if (Target.startsWith(QLatin1Char('/'))) {
+        // OPC relationship targets beginning with '/' are rooted at the
+        // package, rather than relative to the source part's directory.
+        targetPath = QDir::cleanPath(Target.mid(1));
+    } else {
+        targetPath = QDir::cleanPath(m_context->path + QLatin1Char('/') + Target);
     }
     // debugMsooXml << "adding rel:";
     // debugMsooXml << d->pathAndFile + Id;
     // debugMsooXml << fixedPath + '/' + Target;
 
-    m_context->rels->insert(d->pathAndFile + Id, fixedPath + '/' + Target);
+    m_context->rels->insert(d->pathAndFile + Id, targetPath);
     // debugMsooXml << "added target" << Target << "for type" << Type << "path=" << fixedPath << "key=" << targetKey(m_context->path + '/' + m_context->file,
     // Type);
-    m_context->targetsForTypes->insert(targetKey(m_context->path + '/' + m_context->file, Type), fixedPath + '/' + Target);
+    m_context->targetsForTypes->insert(targetKey(m_context->path + '/' + m_context->file, Type), targetPath);
 
     readNext();
     READ_EPILOGUE

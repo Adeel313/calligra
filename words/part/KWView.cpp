@@ -1118,6 +1118,10 @@ void KWView::addImages(const QVector<QImage> &imageList, const QPoint &insertAt)
         params.setProperty("qimage", image);
 
         KoShape *shape = factory->createShape(&params, kwdocument()->resourceManager());
+        if (!shape) {
+            warnWords << "Could not create a shape from the image";
+            continue;
+        }
 
         // resize the shape so it will fit in the document, with some nice
         // hard-coded constants.
@@ -1128,11 +1132,6 @@ void KWView::addImages(const QVector<QImage> &imageList, const QPoint &insertAt)
             QSizeF sz = shape->size();
             sz.scale(QSizeF(pageWidth * 0.6, pageHeight * .6), Qt::KeepAspectRatio);
             shape->setSize(sz);
-        }
-
-        if (!shape) {
-            warnWords << "Could not create a shape from the image";
-            return;
         }
 
         shape->setTextRunAroundSide(KoShape::BothRunAroundSide);

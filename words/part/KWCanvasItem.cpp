@@ -89,7 +89,9 @@ void KWCanvasItem::mousePressEvent(QGraphicsSceneMouseEvent *e)
 void KWCanvasItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 {
     QMouseEvent me(e->type(), e->pos(), e->screenPos(), e->button(), e->buttons(), e->modifiers());
+    const bool pictureWasSelected = isPictureShapeSelected();
     m_toolProxy->mouseReleaseEvent(&me, m_viewMode->viewToDocument(e->pos() + m_documentOffset, m_viewConverter));
+    preferShapeHandlingForPictures(pictureWasSelected);
     e->setAccepted(me.isAccepted());
 }
 

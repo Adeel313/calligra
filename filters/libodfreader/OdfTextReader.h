@@ -63,6 +63,7 @@ public:
     DECLARE_READER_FUNCTION(TextH);
     DECLARE_READER_FUNCTION(TextP);
     DECLARE_READER_FUNCTION(TextList);
+    DECLARE_READER_FUNCTION(TextNumberedParagraph);
     DECLARE_READER_FUNCTION(TextA);
 
     DECLARE_READER_FUNCTION(TableTableColumnGroup);
@@ -82,8 +83,12 @@ public:
     void readParagraphContents(KoXmlStreamReader &reader);
 
     DECLARE_READER_FUNCTION(TextLineBreak);
+    DECLARE_READER_FUNCTION(TextNote);
+    DECLARE_READER_FUNCTION(TextNoteCitation);
+    DECLARE_READER_FUNCTION(TextNoteBody);
     DECLARE_READER_FUNCTION(TextS);
     DECLARE_READER_FUNCTION(TextSpan);
+    DECLARE_READER_FUNCTION(TextTab);
 
     // ----------------------------------------------------------------
     // List level functions: list-item and list header.

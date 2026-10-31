@@ -102,7 +102,9 @@ void KWCanvas::mousePressEvent(QMouseEvent *e)
 
 void KWCanvas::mouseReleaseEvent(QMouseEvent *e)
 {
+    const bool pictureWasSelected = isPictureShapeSelected();
     m_toolProxy->mouseReleaseEvent(e, m_viewMode->viewToDocument(e->position().toPoint() + m_documentOffset, m_viewConverter));
+    preferShapeHandlingForPictures(pictureWasSelected);
 }
 
 void KWCanvas::mouseDoubleClickEvent(QMouseEvent *e)

@@ -10,6 +10,7 @@
 #include "SelectionDecorator.h"
 
 #include <KLocalizedString>
+
 #include <KoCanvasBase.h>
 #include <KoPointerEvent.h>
 #include <KoSelection.h>
@@ -80,6 +81,14 @@ void ShapeMoveStrategy::handleMouseMove(const QPointF &point, Qt::KeyboardModifi
         diff = snappedPosition - m_initialOffset - m_start;
     }
 
+    if (diff.x() != 0 || diff.y() != 0) {
+        // The user really started dragging: images that are glued to the
+        // text flow (as-character anchors) become floating images here,
+        // starting at their current position.  A click without movement
+        // keeps the image inline.
+        promoteInlineAnchors();
+    }
+
     m_diff = diff;
 
     moveSelection();
@@ -97,9 +106,39 @@ void ShapeMoveStrategy::handleCustomEvent(KoPointerEvent *event)
             diff.setY(0);
     }
 
+    if (diff.x() != 0 || diff.y() != 0) {
+        promoteInlineAnchors();
+    }
     m_diff += 0.1 * diff;
 
     moveSelection();
+}
+
+void ShapeMoveStrategy::promoteInlineAnchors()
+{
+    for (int i = 0; i < m_selectedShapes.count(); ++i) {
+        KoShape *shape = m_selectedShapes.at(i);
+        KoShapeAnchor *anchor = shape->anchor();
+        if (!anchor || anchor->anchorType() != KoShapeAnchor::AnchorAsCharacter) {
+            continue;
+        }
+        // An as-character image is glued to the text flow: the layout keeps
+        // recomputing its position, so a position-only drag would be undone
+        // at the next relayout.  Turn it into a floating image anchored to
+        // the page and take the current position as the new offset so it
+        // does not visually jump.  From here on the generic move code
+        // (position + offset kept in sync) applies.
+        anchor->setAnchorType(KoShapeAnchor::AnchorParagraph);
+        anchor->setHorizontalPos(KoShapeAnchor::HFromLeft);
+        anchor->setVerticalPos(KoShapeAnchor::VFromTop);
+        anchor->setHorizontalRel(KoShapeAnchor::HPage);
+        anchor->setVerticalRel(KoShapeAnchor::VPage);
+        anchor->setOffset(shape->position());
+        // The old offset belonged to the as-character anchor; record the
+        // new one so undo restores a consistent state.
+        m_previousOffsets[i] = anchor->offset();
+        m_newOffsets[i] = anchor->offset();
+    }
 }
 
 void ShapeMoveStrategy::moveSelection()
@@ -119,6 +158,12 @@ void ShapeMoveStrategy::moveSelection()
         shape->setPosition(newPos);
         shape->update();
         if (shape->anchor()) {
+            // The layout re-derives the position of an anchored shape from
+            // its anchor offset, so a position-only change would be undone
+            // on the next relayout (and be lost on save).  Apply the same
+            // delta to the offset; KoShapeMoveCommand already stores and
+            // restores both values for undo/redo.
+            shape->anchor()->setOffset(shape->anchor()->offset() + delta);
             m_newOffsets[i] = shape->anchor()->offset();
         }
         i++;

@@ -68,6 +68,7 @@ void KoOdfParagraphProperties::clear()
         d->dropCap = nullptr;
     }
     qDeleteAll(d->tabStops);
+    d->tabStops.clear();
 }
 
 bool KoOdfParagraphProperties::readOdf(KoXmlStreamReader &reader)
@@ -81,11 +82,25 @@ bool KoOdfParagraphProperties::readOdf(KoXmlStreamReader &reader)
     //  - style:background-image
     //  - style:drop-cap
     //  - style:tab-stops
-    while (reader.readNextStartElement()) {
-        QString child = reader.qualifiedName().toString();
+    //
+    // Do not use readNextStartElement() here: it stops at *any* end element,
+    // which would make us miss all but the first child of list-like elements
+    // such as style:tab-stops.
+    while (!reader.atEnd()) {
+        reader.readNext();
+        if (reader.isEndElement()) {
+            // End of style:paragraph-properties; all children have been
+            // consumed (or skipped) by the code below.
+            break;
+        }
+        if (!reader.isStartElement()) {
+            continue;
+        }
 
+        const QString child = reader.qualifiedName().toString();
         if (child == "style:background-image") {
             // FIXME: NYI
+            reader.skipCurrentElement();
         } else if (child == "style:drop-cap") {
             if (d->dropCap) {
                 d->dropCap->attributes.clear();
@@ -93,19 +108,27 @@ bool KoOdfParagraphProperties::readOdf(KoXmlStreamReader &reader)
                 d->dropCap = new KoOdfStyleDropCap();
             }
             copyAttributes(reader, d->dropCap->attributes);
+            reader.skipCurrentElement();
         } else if (child == "style:tab-stops") {
-            while (reader.readNextStartElement()) {
+            // Read every style:tab-stop child of this element.
+            while (!reader.atEnd()) {
+                reader.readNext();
+                if (reader.isEndElement() && reader.qualifiedName() == QLatin1StringView("style:tab-stops")) {
+                    break;
+                }
+                if (!reader.isStartElement()) {
+                    continue;
+                }
                 if (reader.qualifiedName() == QLatin1StringView("style:tab-stop")) {
                     KoOdfStyleTabStop *tabStop = new KoOdfStyleTabStop;
-
                     copyAttributes(reader, tabStop->attributes);
                     d->tabStops.append(tabStop);
                 }
+                reader.skipCurrentElement();
             }
+        } else {
+            reader.skipCurrentElement();
         }
-
-        // Skip rest of each element including children that are not read yet (shouldn't be any).
-        reader.skipCurrentElement();
     }
 
     return retval;

@@ -56,7 +56,12 @@ void OdtReaderDocxBackend::elementOfficeBody(KoXmlStreamReader &reader, OdfReade
 
         writer->startElement("w:body");
     } else {
-        // FIXME: Do we have to add w:sectPr here always or only sometimes?
+        // Append the section properties (page size, margins and
+        // header/footer references) collected from styles.xml by
+        // DocxExport::exportHeaderAndFooter().
+        if (!docxContext->sectPrContent().isEmpty()) {
+            writer->addCompleteElement(docxContext->sectPrContent().constData());
+        }
 
         writer->endElement(); // w:body
         writer->endElement(); // w:document

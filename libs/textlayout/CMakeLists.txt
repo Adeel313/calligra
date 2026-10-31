@@ -15,6 +15,7 @@ set(textlayout_LIB_SRCS
     KoTextLayoutRootArea.cpp
     KoTextLayoutRootAreaProvider.cpp
     KoTextDocumentLayout.cpp
+    KoInlineObjectHandler.h
     ListItemsHelper.cpp
     KoTextShapeContainerModel.cpp
     RunAroundHelper.cpp

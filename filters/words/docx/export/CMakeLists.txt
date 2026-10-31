@@ -10,8 +10,10 @@ set(Odt2Docx_PART_SRCS
     DocxExport.cpp
     DocxStyleWriter.cpp
     DocxStyleHelper.cpp
+    DocxNumbering.cpp
     OdfReaderDocxContext.cpp
     OdtReaderDocxBackend.cpp
+    DocxDrawReaderBackend.cpp
     OdfTextReaderDocxBackend.cpp
     FileCollector.cpp
     DocxFile.cpp

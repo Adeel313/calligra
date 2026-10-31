@@ -184,6 +184,8 @@ void OdfTextReader::readTextLevelElement(KoXmlStreamReader &reader)
         readElementTextP(reader);
     } else if (tagName == "text:list") {
         readElementTextList(reader);
+    } else if (tagName == "text:numbered-paragraph") {
+        readElementTextNumberedParagraph(reader);
     } else if (tagName == "table:table") {
         readElementTableTable(reader);
     } else if (tagName == "text:soft-page-break") {
@@ -615,8 +617,14 @@ void OdfTextReader::readParagraphContents(KoXmlStreamReader &reader)
             continue;
         }
 
-        if (!reader.isStartElement())
+        if (!reader.isStartElement()) {
+            // Comments, processing instructions (e.g. the <?opendocument
+            // cursor-position?> marker) and other tokens are not part of the
+            // paragraph text.  They still have to be consumed, otherwise this
+            // loop would spin on them forever.
+            reader.readNext();
             continue;
+        }
 
         // We define the common elements on the paragraph level as the
         // following list.  They are the basic paragraph level contents that
@@ -782,10 +790,14 @@ void OdfTextReader::readParagraphContents(KoXmlStreamReader &reader)
                 readElementTextA(reader);
             } else if (tagName == "text:line-break") {
                 readElementTextLineBreak(reader);
+            } else if (tagName == "text:note") {
+                readElementTextNote(reader);
             } else if (tagName == "text:span") {
                 readElementTextSpan(reader);
             } else if (tagName == "text:s") {
                 readElementTextS(reader);
+            } else if (tagName == "text:tab") {
+                readElementTextTab(reader);
             } else if (tagName == "text:soft-page-break") {
                 readElementTextSoftPageBreak(reader);
             } else {
@@ -893,6 +905,57 @@ void OdfTextReader::readElementTextA(KoXmlStreamReader &reader)
     DEBUGEND();
 }
 
+void OdfTextReader::readElementTextNote(KoXmlStreamReader &reader)
+{
+    DEBUGSTART();
+    m_backend->elementTextNote(reader, m_context);
+
+    while (reader.readNextStartElement()) {
+        const QString tagName = reader.qualifiedName().toString();
+        if (tagName == "text:note-citation") {
+            readElementTextNoteCitation(reader);
+        } else if (tagName == "text:note-body") {
+            readElementTextNoteBody(reader);
+        } else {
+            reader.skipCurrentElement();
+        }
+    }
+
+    m_backend->elementTextNote(reader, m_context);
+    DEBUGEND();
+}
+
+void OdfTextReader::readElementTextNoteCitation(KoXmlStreamReader &reader)
+{
+    DEBUGSTART();
+    m_backend->elementTextNoteCitation(reader, m_context);
+    reader.skipCurrentElement();
+    m_backend->elementTextNoteCitation(reader, m_context);
+    DEBUGEND();
+}
+
+void OdfTextReader::readElementTextNoteBody(KoXmlStreamReader &reader)
+{
+    DEBUGSTART();
+    m_backend->elementTextNoteBody(reader, m_context);
+
+    while (reader.readNextStartElement()) {
+        const QString tagName = reader.qualifiedName().toString();
+        if (tagName == "text:p") {
+            readElementTextP(reader);
+        } else if (tagName == "text:h") {
+            readElementTextH(reader);
+        } else if (tagName == "text:list") {
+            readElementTextList(reader);
+        } else {
+            readTextLevelElement(reader);
+        }
+    }
+
+    m_backend->elementTextNoteBody(reader, m_context);
+    DEBUGEND();
+}
+
 void OdfTextReader::readElementTextLineBreak(KoXmlStreamReader &reader)
 {
     DEBUGSTART();
@@ -914,6 +977,46 @@ void OdfTextReader::readElementTextS(KoXmlStreamReader &reader)
     reader.skipCurrentElement();
 
     m_backend->elementTextS(reader, m_context);
+    DEBUGEND();
+}
+
+void OdfTextReader::readElementTextTab(KoXmlStreamReader &reader)
+{
+    DEBUGSTART();
+    m_backend->elementTextTab(reader, m_context);
+
+    // This element has no child elements in ODF 1.2.
+    reader.skipCurrentElement();
+
+    m_backend->elementTextTab(reader, m_context);
+    DEBUGEND();
+}
+
+// <text:numbered-paragraph> wraps the paragraph that carries the number.  It
+// is treated like a text:p with additional numbering attributes so that a
+// backend can emit list numbering for it.  The literal <text:number> content
+// is dropped because the number is generated from the numbering definition.
+void OdfTextReader::readElementTextNumberedParagraph(KoXmlStreamReader &reader)
+{
+    DEBUGSTART();
+    m_backend->elementTextP(reader, m_context);
+
+    m_context->setIsInsideParagraph(true);
+    while (reader.readNextStartElement()) {
+        const QString tagName = reader.qualifiedName().toString();
+        if (tagName == "text:number") {
+            reader.skipCurrentElement();
+        } else if (tagName == "text:p" || tagName == "text:h") {
+            reader.readNext();
+            readParagraphContents(reader);
+            reader.readNext();
+        } else {
+            readUnknownElement(reader);
+        }
+    }
+    m_context->setIsInsideParagraph(false);
+
+    m_backend->elementTextP(reader, m_context);
     DEBUGEND();
 }
 

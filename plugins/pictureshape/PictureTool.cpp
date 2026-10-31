@@ -116,7 +116,15 @@ QWidget *PictureTool::createOptionWidget()
 void PictureTool::updateControlElements()
 {
     if (m_pictureshape) {
-        QSizeF imageSize = m_pictureshape->imageData()->imageSize();
+        KoImageData *imageData = m_pictureshape->imageData();
+        if (!imageData) {
+            // Newly inserted picture shapes have their image data attached when the
+            // create command is executed. The tool's options may be constructed just
+            // before that, so there is nothing to populate until the selection changes.
+            return;
+        }
+
+        QSizeF imageSize = imageData->imageSize();
         PictureShape::ColorMode mode = m_pictureshape->colorMode();
         ClippingRect clippingRect(m_pictureshape->cropRect());
 
@@ -235,8 +243,27 @@ void PictureTool::setImageData(KJob *job)
     }
 }
 
+void PictureTool::mouseMoveEvent(KoPointerEvent *event)
+{
+    KoShape *hoveredShape = canvas()->shapeManager()->shapeAt(event->point);
+
+    if (m_pictureshape && hoveredShape == m_pictureshape) {
+        useCursor(Qt::OpenHandCursor);
+        return;
+    }
+
+    // Hovering document text means text editing, also while the picture tool is active.
+    if (hoveredShape && hoveredShape->shapeId() == QLatin1String("TextShapeID")) {
+        useCursor(Qt::IBeamCursor);
+        return;
+    }
+
+    useCursor(Qt::ArrowCursor);
+}
+
 void PictureTool::mousePressEvent(KoPointerEvent *event)
 {
+    qWarning() << "[DRAGDBG] PictureTool press, selected shape=" << (m_pictureshape ? m_pictureshape->shapeId() : QString("none")); // DRAGDBG temporary
     if (event->button() == Qt::RightButton) {
         event->ignore();
     }

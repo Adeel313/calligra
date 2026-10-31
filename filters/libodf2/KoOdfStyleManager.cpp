@@ -188,7 +188,8 @@ void KoOdfStyleManager::collectStyleSet(KoXmlStreamReader &reader, bool fromStyl
 
         if (tagName == "style:style" || tagName == "style:default-style") {
             QString family = attrs.value("style:family").toString();
-            if (family == "text" || family == "paragraph" || family == "graphic") {
+            if (family == "text" || family == "paragraph" || family == "graphic" || family == "table" || family == "table-column"
+                || family == "table-row" || family == "table-cell") {
                 // FIXME: In the future, create style per type (family).
                 KoOdfStyle *style = new KoOdfStyle;
 

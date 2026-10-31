@@ -76,5 +76,6 @@ IMPLEMENT_BACKEND_FUNCTION(OdfDrawReader, DrawMeasure); // ODF 1.2  10.3.12
 //                             Frames
 
 IMPLEMENT_BACKEND_FUNCTION(OdfDrawReader, DrawFrame)
+IMPLEMENT_BACKEND_FUNCTION(OdfDrawReader, DrawImage)
 IMPLEMENT_BACKEND_FUNCTION(OdfDrawReader, DrawObject)
 IMPLEMENT_BACKEND_FUNCTION(OdfDrawReader, DrawObjectOle)

@@ -868,6 +868,11 @@ void TextTool::mousePressEvent(KoPointerEvent *event)
     if (m_textEditor.isNull())
         return;
 
+    { // DRAGDBG temporary instrumentation
+        KoShape *s = canvas()->shapeManager()->shapeAt(event->point);
+        qWarning() << "[DRAGDBG] TextTool press shapeAt=" << (s ? s->shapeId() : QString("none")) << "buttons=" << event->buttons();
+    }
+
     // request the software keyboard, if any
     if (event->button() == Qt::LeftButton && qApp->autoSipEnabled()) {
         QStyle::RequestSoftwareInputPanel behavior = QStyle::RequestSoftwareInputPanel(qApp->style()->styleHint(QStyle::SH_RequestSoftwareInputPanel));
@@ -1335,6 +1340,14 @@ void TextTool::mouseMoveEvent(KoPointerEvent *event)
     KoPointedAt pointedAt = hitTest(event->point);
 
     if (event->buttons() == Qt::NoButton) {
+        // Give feedback when hovering a picture: the pointer changes so the user
+        // can see the image can be clicked (to select it) and dragged.
+        KoShape *hoveredShape = canvas()->shapeManager()->shapeAt(event->point);
+        if (hoveredShape && hoveredShape != m_textShape && hoveredShape->shapeId() == QLatin1String("PictureShape")) {
+            useCursor(Qt::PointingHandCursor);
+            return;
+        }
+
         if (m_tablePenMode) {
             if (pointedAt.tableHit == KoPointedAt::ColumnDivider || pointedAt.tableHit == KoPointedAt::RowDivider) {
                 useTableBorderCursor();

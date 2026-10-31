@@ -65,8 +65,12 @@ protected:
     KoFilter::ConversionStatus read_numId();
     KoFilter::ConversionStatus read_ilvl();
     KoFilter::ConversionStatus read_sectPr();
-    bool m_footerActive;
-    bool m_headerActive;
+    bool m_footerActive = false;
+    bool m_headerActive = false;
+    //! True while the current wp:anchor contained a wrap element.  When it
+    //! did not, the drawing must not run text around it (wrap="none"),
+    //! matching how LibreOffice interprets the same WordprocessingML.
+    bool m_anchorWrapSeen = false;
     KoFilter::ConversionStatus read_footerReference();
     KoFilter::ConversionStatus read_headerReference();
     KoFilter::ConversionStatus read_cols();
