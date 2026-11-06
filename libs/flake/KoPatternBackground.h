@@ -63,6 +63,9 @@ public:
     /// Returns the pattern
     QImage pattern() const;
 
+    /// Original image data, retained for lossless export. Owned by this fill.
+    KoImageData *patternData();
+
     /// Sets the pattern repeatgfl
     void setRepeat(PatternRepeat repeat);
 

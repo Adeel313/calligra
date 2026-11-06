@@ -310,8 +310,13 @@ QBrush KoOdfGraphicStyles::loadOdfGradientStyleByName(const KoOdfStylesReader &s
             QLinearGradient *lg = new QLinearGradient();
             lg->setCoordinateMode(QGradient::ObjectBoundingMode);
             // Dividing by 10 here because OOo saves as degree * 10
-            qreal angle = 90 + e->attributeNS(KoXmlNS::draw, "angle", "0").toDouble() / 10;
-            qreal radius = sqrt(0.5);
+            const QString angleValue = e->attributeNS(KoXmlNS::draw, "angle", "0");
+            bool legacyAngle = false;
+            const qreal tenths = angleValue.toDouble(&legacyAngle);
+            qreal angle = 90 + (legacyAngle ? tenths / 10 : KoUnit::parseAngle(angleValue));
+            // The gradient spans the bounding box's projection onto its axis.
+            // A fixed half-diagonal clips cardinal fades before their endpoints.
+            qreal radius = (qAbs(cos(angle * M_PI / 180)) + qAbs(sin(angle * M_PI / 180))) / 2;
 
             qreal sx = cos(angle * M_PI / 180) * radius;
             qreal sy = sin(angle * M_PI / 180) * radius;

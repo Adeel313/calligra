@@ -1696,15 +1696,14 @@ static QString getNumber(QString &source)
 {
     QString number;
     int index = 0;
-    bool numberOk = true;
-    while (true) {
+    while (index < source.size()) {
+        bool numberOk = false;
         QString(source.at(index)).toInt(&numberOk);
-        if (numberOk) {
-            number = number + source.at(index);
-            ++index;
-        } else {
+        if (!numberOk) {
             break;
         }
+        number = number + source.at(index);
+        ++index;
     }
     source.remove(0, index);
     return number;
@@ -1712,6 +1711,10 @@ static QString getNumber(QString &source)
 
 static QString getArgument(QString &source, bool commaMeansZero, bool &wasCommand)
 {
+    if (source.isEmpty()) {
+        wasCommand = true;
+        return "0";
+    }
     wasCommand = false;
     if (source.at(0) == ',') {
         source.remove(0, 1);
@@ -1779,8 +1782,11 @@ static QString convertToEnhancedPath(const QString &source, QString &extraShapeF
         if (parsedString.length() == 0) {
             break;
         }
-        while (parsedString.at(0) == ' ') {
+        while (!parsedString.isEmpty() && parsedString.at(0) == ' ') {
             parsedString = parsedString.trimmed();
+        }
+        if (parsedString.isEmpty()) {
+            break;
         }
         switch (state) {
         case CommandExpected:
@@ -1804,6 +1810,10 @@ static QString convertToEnhancedPath(const QString &source, QString &extraShapeF
             } else if (command == 'v') {
                 lastCommand = RelativeCurveCommand;
             } else if (command == 'q') {
+                if (parsedString.isEmpty()) {
+                    state = CommandExpected;
+                    break;
+                }
                 QChar subcommand = parsedString.at(0);
                 parsedString.remove(0, 1);
                 if (subcommand == 'x') {
@@ -1814,6 +1824,10 @@ static QString convertToEnhancedPath(const QString &source, QString &extraShapeF
                     returnedString += " Y";
                 }
             } else if (command == 'a') {
+                if (parsedString.isEmpty()) {
+                    state = CommandExpected;
+                    break;
+                }
                 QChar subcommand = parsedString.at(0);
                 parsedString.remove(0, 1);
                 if (subcommand == 'r') {
@@ -1830,6 +1844,10 @@ static QString convertToEnhancedPath(const QString &source, QString &extraShapeF
                     returnedString += " A";
                 }
             } else if (command == 'w') {
+                if (parsedString.isEmpty()) {
+                    state = CommandExpected;
+                    break;
+                }
                 QChar subcommand = parsedString.at(0);
                 parsedString.remove(0, 1);
                 if (subcommand == 'r') {
@@ -1840,6 +1858,10 @@ static QString convertToEnhancedPath(const QString &source, QString &extraShapeF
                     returnedString += " W";
                 }
             } else if (command == 'n') {
+                if (parsedString.isEmpty()) {
+                    state = CommandExpected;
+                    break;
+                }
                 QChar subcommand = parsedString.at(0);
                 parsedString.remove(0, 1);
                 if (subcommand == 'f') {

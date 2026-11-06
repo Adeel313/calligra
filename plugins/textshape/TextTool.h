@@ -357,6 +357,8 @@ private:
     QTimer m_caretTimer;
     bool m_caretTimerState;
     QAction *m_actionPasteAsText;
+    QAction *m_actionFormatPainter = nullptr;
+    QTextCharFormat m_painterFormat;
     QAction *m_actionFormatBold;
     QAction *m_actionFormatItalic;
     QAction *m_actionFormatUnderline;

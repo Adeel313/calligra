@@ -173,6 +173,10 @@ protected:
     KoFilter::ConversionStatus read_sld();
     KoFilter::ConversionStatus read_notes();
     KoFilter::ConversionStatus read_sldInternal();
+    KoFilter::ConversionStatus read_timing();
+    int m_textParagraphIndex = 0;
+    QString m_mediaHref;
+    QString m_mediaMimeType;
     KoFilter::ConversionStatus read_notesMaster();
     KoFilter::ConversionStatus read_sldMaster(); //!< For SlideMaster mode
     KoFilter::ConversionStatus read_sldLayout(); //!< For SlideLayout mode

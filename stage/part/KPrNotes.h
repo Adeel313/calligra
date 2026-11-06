@@ -11,12 +11,14 @@
 #include <KoPAPageBase.h>
 #include <KoPageLayout.h>
 
+#include "stage_export.h"
+
 class KoShape;
 class KoImageCollection;
 class KPrDocument;
 class KPrPage;
 
-class KPrNotes : public KoPAPageBase
+class STAGE_EXPORT KPrNotes : public KoPAPageBase
 {
 public:
     KPrNotes(KPrPage *page, KPrDocument *document);

@@ -501,7 +501,7 @@ bool Odf::saveCell(Cell *cell, int &repeated, OdfSavingContext &tableContext)
     Validity validity = cell->validity();
     if (!validity.isEmpty()) {
         GenValidationStyle styleVal(&validity, sheet->map()->calculationSettings());
-        xmlwriter.addAttribute("table:validation-name", tableContext.valStyle.insert(styleVal));
+        xmlwriter.addAttribute("table:content-validation-name", tableContext.valStyle.insert(styleVal));
     }
     if (cell->isFormula()) {
         // debugSheetsODF <<"Formula found";
@@ -524,8 +524,8 @@ bool Odf::saveCell(Cell *cell, int &repeated, OdfSavingContext &tableContext)
 
     if (!cell->isFormula() && !cell->link().isEmpty()) {
         // debugSheetsODF<<"Link found";
-        xmlwriter.startElement("text:p");
-        xmlwriter.startElement("text:a");
+        xmlwriter.startElement("text:p", false);
+        xmlwriter.startElement("text:a", false);
         const QString url = cell->link();
         // Reference cell is started by '#'
         if (Util::localReferenceAnchor(url))
@@ -611,10 +611,12 @@ QString Odf::loadCellTextNodes(Cell *cell, const KoXmlElement &element, int *tex
         } else {
             KoXmlElement e = n.toElement();
             if (!e.isNull()) {
-                if (prevWasText && !cellText.isEmpty() && cellText[cellText.length() - 1].isSpace()) {
-                    // A trailing space of the cellText collected so far needs to be preserved when
-                    // more text-nodes within the same parent follow but if an element like e.g.
-                    // text:s follows then a trailing space needs to be removed.
+                const bool isTextNs = e.namespaceURI() == KoXmlNS::text;
+                // A trailing space needs to be kept when more text follows inside the
+                // same parent, but dropped when an inline element starts a new run.
+                // text:s is the exception: it contributes its own spaces on top of the
+                // literal one, so chopping here loses a space ("a <text:s c=2/>b").
+                if (!(isTextNs && e.localName() == "s") && prevWasText && !cellText.isEmpty() && cellText[cellText.length() - 1].isSpace()) {
                     cellText.chop(1);
                 }
                 prevWasText = false;
@@ -622,7 +624,6 @@ QString Odf::loadCellTextNodes(Cell *cell, const KoXmlElement &element, int *tex
                 // We can optimize some elements like text:s (space), text:tab (tabulator) and
                 // text:line-break (new-line) to not produce rich-text but add the equivalent
                 // for them in plain-text.
-                const bool isTextNs = e.namespaceURI() == KoXmlNS::text;
                 if (isTextNs && e.localName() == "s") {
                     const int howmany = qMax(1, e.attributeNS(KoXmlNS::text, "c", QString()).toInt());
                     cellText += QString().fill(u' ', howmany);
@@ -1416,10 +1417,10 @@ QString Odf::convertMSOOXMLFormula(const QString &formula)
                     // such whole column-definitions are only allowed for ranges like
                     // "A:B" but not for single column definitions like "A" or "B".
                     const QString ref = result.mid(qMax(0, cellReferenceStart - 1), i - cellReferenceStart + 2);
-                    QRegularExpression rxStart(".*(|\\$)[A-Za-z]+\\:");
-                    QRegularExpression rxEnd("\\:(|\\$)[A-Za-z]+(|(|\\$)[0-9]+).*");
+                    static const QRegularExpression rxStart(QStringLiteral(".*\\$?[A-Za-z]+:"));
+                    static const QRegularExpression rxEnd(QStringLiteral(":\\$?[A-Za-z]+(\\$?[0-9]+)?(?=[^A-Za-z0-9$]|$)"));
                     QRegularExpressionMatch match = rxEnd.match(ref);
-                    if (match.hasMatch() && match.captured(2).isEmpty()) {
+                    if (match.hasMatch() && match.captured(1).isEmpty()) {
                         result.insert(i, "$65536");
                         i += 6;
                     } else if (rxStart.match(ref).hasMatch()) {

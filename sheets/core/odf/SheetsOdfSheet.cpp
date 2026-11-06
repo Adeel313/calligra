@@ -688,6 +688,23 @@ void Odf::loadMasterLayoutPage(Sheet *sheet, KoStyleStack &styleStack)
     if (styleStack.hasProperty(KoXmlNS::style, "print-orientation")) {
         pageLayout.orientation = (styleStack.property(KoXmlNS::style, "print-orientation") == "landscape") ? KoPageFormat::Landscape : KoPageFormat::Portrait;
     }
+    if (styleStack.hasProperty(KoXmlNS::style, "scale-to-pages")) {
+        bool ok = false;
+        const int pages = styleStack.property(KoXmlNS::style, "scale-to-pages").toInt(&ok);
+        if (ok && pages > 0) {
+            // ODF stores the total page count, while Sheets tracks horizontal
+            // and vertical limits separately. Retain the count as a bounded
+            // width with one page of height.
+            sheet->printSettings()->setPageLimits(QSize(pages, 1));
+        }
+    } else if (styleStack.hasProperty(KoXmlNS::style, "scale-to")) {
+        bool ok = false;
+        QString scale = styleStack.property(KoXmlNS::style, "scale-to");
+        scale.remove(QLatin1Char('%'));
+        const double percent = scale.toDouble(&ok);
+        if (ok && percent > 0)
+            sheet->printSettings()->setZoom(percent / 100.0);
+    }
     if (styleStack.hasProperty(KoXmlNS::style, "num-format")) {
         // not implemented into kspread
         // These attributes specify the numbering style to use.
@@ -841,6 +858,7 @@ bool Odf::loadColumnFormat(Sheet *sheet,
             cf->setFiltered(indexCol, indexCol + number - 1, true);
     }
 
+    indexCol += number;
     return true;
 }
 
@@ -1087,7 +1105,10 @@ bool Odf::saveSheet(Sheet *sheet, OdfSavingContext &tableContext)
         xmlWriter.endElement();
     }
 
-    const QRect usedArea = sheet->usedArea();
+    // The complete style area may span the whole spreadsheet grid. Row and
+    // column styles are written separately below, so only content and shapes
+    // should determine how many cells are serialized here.
+    const QRect usedArea = sheet->usedArea(true);
     saveColRowCell(sheet, usedArea.width(), usedArea.height(), tableContext);
 
     xmlWriter.endElement();
@@ -1141,7 +1162,9 @@ void Odf::saveColRowCell(Sheet *sheet, int maxCols, int maxRows, OdfSavingContex
         maxRows = qMax(maxRows, (--tableContext.rowDefaultStyles.constEnd()).key());
     // Take the actual used area into account so we also catch shapes that are
     // anchored after any content.
-    QRect r = sheet->usedArea(false);
+    // Keep style-only regions out of the row loop. Column defaults are saved
+    // separately, and maxMaxRows preserves a trailing styled extent compactly.
+    QRect r = sheet->usedArea(true);
     maxRows = qMax(maxRows, r.bottom());
     maxCols = qMax(maxCols, r.right());
     // OpenDocument needs at least one cell per sheet.

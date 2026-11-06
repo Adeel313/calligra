@@ -26,12 +26,8 @@ KPrPageData::KPrPageData(KPrDocument *document)
 {
 }
 
-KPrPageData::~KPrPageData()
-{
-    foreach (KPrAnimationStep *step, m_animations.steps()) {
-        delete step;
-    }
-}
+// KPrShapeAnimations owns its steps and releases them in its destructor.
+KPrPageData::~KPrPageData() = default;
 
 KPrShapeAnimations &KPrPageData::animations()
 {

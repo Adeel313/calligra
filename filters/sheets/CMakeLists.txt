@@ -21,6 +21,6 @@ add_subdirectory( latex )
 
 add_subdirectory( excel )
 
-if(SHOULD_BUILD_FILTER_XLSX_TO_ODS)
+if(SHOULD_BUILD_FILTER_XLSX_TO_ODS OR SHOULD_BUILD_FILTER_ODS_TO_XLSX)
     add_subdirectory( xlsx )
 endif()

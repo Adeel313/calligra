@@ -21,6 +21,8 @@ public:
         QString toolTip;
         QWidget *page;
         bool beforeToolTabs;
+        bool afterToolTabs;
+        QString afterToolId;
     };
 
     struct ToolTabWidget {
@@ -35,6 +37,7 @@ public:
     QList<ToolTabWidget> toolTabWidgets;
     QWidget *leadingWidget = nullptr;
     QWidget *trailingWidget = nullptr;
+    QWidget *titleWidget = nullptr;
 };
 
 KoModeBoxFactory::KoModeBoxFactory(KoCanvasControllerWidget *canvasController, const QString &applicationName, const QString & /*title*/,
@@ -66,12 +69,18 @@ bool KoModeBoxFactory::keepDefaultDockPosition() const
     return d->defaultPosition == KoDockFactoryBase::DockTop;
 }
 
-void KoModeBoxFactory::addCustomPage(const QString &title, const QIcon &icon, const QString &toolTip, QWidget *page, bool beforeToolTabs)
+void KoModeBoxFactory::addCustomPage(const QString &title,
+                                     const QIcon &icon,
+                                     const QString &toolTip,
+                                     QWidget *page,
+                                     bool beforeToolTabs,
+                                     bool afterToolTabs,
+                                     const QString &afterToolId)
 {
     if (!page) {
         return;
     }
-    d->customPages.append({title, icon, toolTip, page, beforeToolTabs});
+    d->customPages.append({title, icon, toolTip, page, beforeToolTabs, afterToolTabs, afterToolId});
 }
 
 void KoModeBoxFactory::addWidgetToToolTab(const QString &toolId, QWidget *widget)
@@ -91,6 +100,11 @@ void KoModeBoxFactory::setTrailingWidget(QWidget *widget)
     d->trailingWidget = widget;
 }
 
+void KoModeBoxFactory::setTitleWidget(QWidget *widget)
+{
+    d->titleWidget = widget;
+}
+
 QDockWidget *KoModeBoxFactory::createDockWidget()
 {
     KoModeBox *box = new KoModeBox(d->canvasController, d->applicationName);
@@ -99,13 +113,20 @@ QDockWidget *KoModeBoxFactory::createDockWidget()
                         ? Qt::Horizontal
                         : Qt::Vertical);
     for (const Private::CustomPage &customPage : d->customPages) {
-        box->addCustomPage(customPage.title, customPage.icon, customPage.toolTip, customPage.page, customPage.beforeToolTabs);
+        box->addCustomPage(customPage.title,
+                           customPage.icon,
+                           customPage.toolTip,
+                           customPage.page,
+                           customPage.beforeToolTabs,
+                           customPage.afterToolTabs,
+                           customPage.afterToolId);
     }
     for (const Private::ToolTabWidget &toolTabWidget : d->toolTabWidgets) {
         box->addWidgetToToolTab(toolTabWidget.toolId, toolTabWidget.widget);
     }
     box->setLeadingWidget(d->leadingWidget);
     box->setTrailingWidget(d->trailingWidget);
+    box->setTitleWidget(d->titleWidget);
     QDockWidget *docker = new KoModeBoxDocker(box);
 
     return docker;

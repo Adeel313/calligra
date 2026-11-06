@@ -311,8 +311,15 @@ qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily
 
     // compute font height stretch
     // font_size * font_stretch = windows_font_height
+    // USE_TYPO_METRICS requests typographic line metrics. Math fonts such as
+    // Cambria Math reserve very large Windows ascent/descent values for
+    // stretchy operators; treating those clipping bounds as line height makes
+    // ordinary inline equations expand paragraphs and shrink whole text boxes.
     qreal height = os2->usWinAscent + os2->usWinDescent;
-    height = height * (2048 / header->Units_Per_EM);
+    if ((os2->fsSelection & 0x0080) && os2->sTypoAscender > os2->sTypoDescender) {
+        height = os2->sTypoAscender - os2->sTypoDescender + qMax<qreal>(0, os2->sTypoLineGap);
+    }
+    height *= qreal(2048) / header->Units_Per_EM;
     stretch = (1.215 * height) / 2500;
     stretch = (1.15 * height) / 2500; // seems a better guess but probably not right
 
@@ -1488,7 +1495,8 @@ void KoCharacterStyle::loadOdfProperties(KoShapeLoadingContext &scontext)
         if (fontName == "StarSymbol")
             fontName = "OpenSymbol";
 
-        fontName.remove(QRegularExpression("\\sCE$")); // Arial CE -> Arial
+        static const QRegularExpression centralEuropeanSuffix(QStringLiteral("\\sCE$"));
+        fontName.remove(centralEuropeanSuffix); // Arial CE -> Arial
         setFontFamily(fontName);
     }
 

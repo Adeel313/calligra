@@ -9,6 +9,7 @@
 #define ODFTEXTREADERDOCXBACKEND_H
 
 // Calligra
+#include <QHash>
 #include <QStack>
 #include <QVector>
 #include <KoFilter.h>
@@ -30,6 +31,9 @@ public:
 
     void elementTextH(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void elementTextP(KoXmlStreamReader &reader, OdfReaderContext *context) override;
+    void elementTextSection(KoXmlStreamReader &reader, OdfReaderContext *context) override;
+    void elementTextTableOfContent(KoXmlStreamReader &reader, OdfReaderContext *context) override;
+    void elementTextIndexBody(KoXmlStreamReader &reader, OdfReaderContext *context) override;
 
     // ----------------------------------------------------------------
     // Paragraph level functions: spans, annotations, notes, text content itself, etc.
@@ -53,6 +57,9 @@ public:
     void elementTextLineBreak(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void elementTextSoftPageBreak(KoXmlStreamReader &reader, OdfReaderContext *context) override;
 
+    void elementTextField(const QString &tagName, const KoXmlStreamAttributes &attributes,
+                          const QString &text, OdfReaderContext *context) override;
+
     void elementTextList(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void elementTextListItem(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void elementTextListHeader(KoXmlStreamReader &reader, OdfReaderContext *context) override;
@@ -62,9 +69,10 @@ public:
     void characterData(KoXmlStreamReader &reader, OdfReaderContext *context) override;
 
 private:
-    void startRun(const KoXmlStreamReader &reader, OdfReaderDocxContext *context);
+    void startRun(const KoXmlStreamAttributes &attributes, OdfReaderDocxContext *context);
     void endRun(OdfReaderDocxContext *context);
     KoXmlWriter *currentWriter(OdfReaderDocxContext *context) const;
+    void writeSectionBreak(OdfReaderDocxContext *context, int columns, int gapTwips);
     void writeTableBorders(KoOdfStyleProperties *properties, KoXmlWriter *writer);
     void writeCellBorders(KoOdfStyleProperties *properties, KoXmlWriter *writer);
 
@@ -80,9 +88,16 @@ private:
     };
 
 private:
-    int m_insideSpanLevel; // Number of nexted <text:span> levels.
+    int m_insideSpanLevel; // Number of nested <text:span> levels.
+    QVector<QString> m_spanStyles; // Logical ODF spans; emitted runs stay flat.
     int m_currentOutlineLevel;
     int m_commentIndex;
+    int m_insideSection = 0; //!< Number of open <text:section> elements.
+    QStack<QString> m_paragraphBreakAfter;
+    int m_tocLevels = 3;
+    bool m_tocFieldOpen = false; //!< true between TOC field begin and end.
+    bool m_bodyHasContent = false; //!< A body paragraph or table has been written.
+    bool m_lastWasSectionBreak = false; //!< Last body output was a section break.
     int m_insideListItem; // Number of open <text:list-item>/<text:list-header> elements.
     bool m_writeComment;
     bool m_insideComment;
@@ -99,7 +114,20 @@ private:
     int m_noteSpanBase = 0;
     KoOdfStyleProperties *m_currentParagraphTextProperties;
     QString m_currentParagraphParent;
-    QStack<int> m_listStack; //!< w:numId of every open <text:list>
+    /// State of one open <text:list>.  The ODF level of a list can either be
+    /// implicit (nesting depth) or explicit (the style defines a single level,
+    /// as produced by the DOCX importer), so both are tracked.
+    struct ListState {
+        int numId = 1; //!< w:numId used by paragraphs in this list
+        int ilvl = 0; //!< 0-based w:ilvl used by paragraphs in this list
+        bool absoluteLevel = false; //!< style already encodes the absolute level
+    };
+    QStack<ListState> m_listStack;
+    /// Style names of the open <text:section> elements (innermost on top).
+    QStack<QString> m_sectionStyles;
+    /// xml:id -> numbering state, so text:continue-list can reuse the numId
+    /// of an earlier <text:list> instead of restarting at 1.
+    QHash<QString, ListState> m_listContinuationStates;
     QStack<bool> m_linkStack;
     QStack<bool> m_cellParagraphStack;
     QStack<TableState> m_tables;

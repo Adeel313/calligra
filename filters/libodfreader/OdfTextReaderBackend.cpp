@@ -56,6 +56,9 @@ IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, DcDate)
 IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextH)
 IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextP)
 IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextList)
+IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextSection)
+IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextTableOfContent)
+IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextIndexBody)
 
 IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TableTable)
 IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TableTableColumnGroup)
@@ -90,6 +93,15 @@ IMPLEMENT_BACKEND_FUNCTION(OdfTextReader, TextListItem)
 
 // ----------------------------------------------------------------
 // Some special functions
+
+void OdfTextReaderBackend::elementTextField(const QString &tagName, const KoXmlStreamAttributes &attributes,
+                                            const QString &text, OdfReaderContext *context)
+{
+    Q_UNUSED(tagName);
+    Q_UNUSED(attributes);
+    Q_UNUSED(text);
+    Q_UNUSED(context);
+}
 
 void OdfTextReaderBackend::characterData(KoXmlStreamReader &reader, OdfReaderContext *context)
 {

@@ -59,6 +59,8 @@ private:
     bool m_masterMode;
     /// the page which was active before entering the master mode
     KoPAPage *m_savedPage;
+    QPointF m_mousePressPoint;
+    bool m_placeholderClick = false;
 };
 
 #endif /* KOPAVIEWMODENORMAL_H */

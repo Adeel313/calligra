@@ -7,6 +7,17 @@
 */
 
 #include "KPrAnimationTool.h"
+#include <KoMainWindow.h>
+#include <KoRibbonLayout.h>
+#include <KActionCollection>
+#include <QDockWidget>
+#include <QHBoxLayout>
+#include <QMenu>
+#include <QToolButton>
+#include <QVBoxLayout>
+#include <QWidgetAction>
+#include "KPrView.h"
+
 
 // Qt Headers
 #include <QLabel>
@@ -47,6 +58,66 @@ KPrAnimationTool::KPrAnimationTool(KoCanvasBase *canvas)
     , m_initializeTool(true)
     , m_shapeAnimationWidget(nullptr)
 {
+}
+
+void KPrAnimationTool::configureRibbon(QWidget *transitions, QWidget *animations, QWidget *insert)
+{
+    if (property("ribbonConfigured").toBool()) {
+        return;
+    }
+    setProperty("ribbonConfigured", true);
+    auto *view = dynamic_cast<KPrView *>(static_cast<KoPACanvas *>(canvas())->koPAView());
+    if (!view || !view->mainWindow()) {
+        return;
+    }
+    auto *window = view->mainWindow();
+    for (QWidget *widget : optionWidgets()) {
+        if (!widget) {
+            continue;
+        }
+        widget->setProperty("ribbonManagedExternally", true);
+        if (auto *effects = qobject_cast<KPrPageEffectDocker *>(widget)) {
+            effects->configureRibbon();
+            auto *layout = new QHBoxLayout(transitions);
+            layout->setContentsMargins(0, 0, 0, 0);
+            layout->addWidget(effects, 0, Qt::AlignLeft | Qt::AlignTop);
+        } else if (auto *shapeAnimations = qobject_cast<KPrShapeAnimationDocker *>(widget)) {
+            auto *pane = new QDockWidget(i18n("Animation Pane"), window);
+            pane->setObjectName(QStringLiteral("stageAnimationPane"));
+            pane->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+            pane->setWidget(shapeAnimations);
+            pane->setMinimumWidth(280);
+            window->addDockWidget(Qt::RightDockWidgetArea, pane);
+            pane->hide();
+            QObject::connect(view, &QObject::destroyed, pane, &QObject::deleteLater);
+            view->actionCollection()->addAction(QStringLiteral("stage_animation_pane"), pane->toggleViewAction());
+            auto *layout = new QHBoxLayout(animations);
+            layout->setContentsMargins(0, 0, 0, 0);
+            layout->addWidget(shapeAnimations->createRibbonControls(pane), 0, Qt::AlignLeft | Qt::AlignTop);
+        } else if (qobject_cast<KPrClickActionDocker *>(widget)) {
+            auto *group = new QWidget(insert);
+            group->setProperty("ribbonRoutedGroup", true);
+            auto *layout = new QVBoxLayout(group);
+            auto *button = new QToolButton(group);
+            button->setText(i18n("Action"));
+            button->setIcon(QIcon::fromTheme(QStringLiteral("system-run")));
+            KoRibbonLayout::configureButton(button, Qt::ToolButtonTextUnderIcon);
+            auto *menu = new QMenu(button);
+            auto *action = new QWidgetAction(menu);
+            widget->setMinimumWidth(280);
+            action->setDefaultWidget(widget);
+            menu->addAction(action);
+            button->setMenu(menu);
+            button->setPopupMode(QToolButton::InstantPopup);
+            layout->addWidget(button);
+            layout->addStretch();
+            auto *label = new QLabel(i18n("Links"), group);
+            label->setAlignment(Qt::AlignCenter);
+            label->setProperty("ribbonGroupTitle", true);
+            layout->addWidget(label);
+            insert->layout()->addWidget(group);
+        }
+    }
 }
 
 KPrAnimationTool::~KPrAnimationTool()

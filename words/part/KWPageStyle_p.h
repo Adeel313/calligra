@@ -40,6 +40,7 @@ public:
     // See parag 16.2 for all the ODF features.
     KoText::Direction direction;
     QSharedPointer<KoShapeBackground> fullPageBackground;
+    QString numberFormat = QStringLiteral("1");
     QString nextStyleName;
 
     // called from the command
@@ -64,6 +65,7 @@ public:
         direction = other->direction;
         fullPageBackground = other->fullPageBackground;
         nextStyleName = other->nextStyleName;
+        numberFormat = other->numberFormat;
     }
 };
 

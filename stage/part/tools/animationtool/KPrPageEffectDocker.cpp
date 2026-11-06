@@ -13,9 +13,11 @@
 #include <QEvent>
 #include <QGridLayout>
 #include <QLabel>
+#include <QListWidget>
 #include <QPainter>
 #include <QPushButton>
 #include <QTimer>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 #include <KLocalizedString>
@@ -31,6 +33,8 @@
 #include <KoPACanvas.h>
 #include <KoPADocument.h>
 #include <KoPAViewBase.h>
+#include <KoRibbonLayout.h>
+#include <kundo2stack.h>
 
 #include <algorithm>
 
@@ -115,6 +119,109 @@ KPrPageEffectDocker::KPrPageEffectDocker(QWidget *parent, Qt::WindowFlags flags)
     layout->addWidget(specialSpacer);
 
     setLayout(layout);
+}
+
+void KPrPageEffectDocker::configureRibbon()
+{
+    if (property("ribbonConfigured").toBool()) {
+        return;
+    }
+    setProperty("ribbonConfigured", true);
+    if (m_view) {
+        connect(m_view->kopaDocument()->undoStack(), &KUndo2QStack::indexChanged, this, &KPrPageEffectDocker::slotActivePageChanged);
+    }
+    m_effectCombo->setItemText(0, i18n("None"));
+    for (QLabel *label : findChildren<QLabel *>(QString(), Qt::FindDirectChildrenOnly)) {
+        label->hide();
+    }
+    if (QWidget *spacer = findChild<QWidget *>(QStringLiteral("SpecialSpacer"))) {
+        spacer->hide();
+    }
+    delete layout();
+    auto *row = new QHBoxLayout(this);
+    row->setContentsMargins(4, 2, 4, 2);
+    row->setSpacing(0);
+    const auto group = [this, row](const QString &title) {
+        auto *widget = new QWidget(this);
+        widget->setProperty("ribbonRoutedGroup", true);
+        auto *box = new QVBoxLayout(widget);
+        box->setContentsMargins(10, 0, 10, 0);
+        auto *content = new QGridLayout;
+        box->addLayout(content);
+        box->addStretch();
+        auto *caption = new QLabel(title, widget);
+        caption->setProperty("ribbonGroupTitle", true);
+        caption->setAlignment(Qt::AlignCenter);
+        box->addWidget(caption);
+        widget->setMinimumHeight(110);
+        row->addWidget(widget);
+        return content;
+    };
+    auto *preview = new QToolButton(this);
+    preview->setText(i18n("Preview"));
+    preview->setIcon(QIcon::fromTheme(QStringLiteral("media-playback-start")));
+    KoRibbonLayout::configureButton(preview, Qt::ToolButtonTextUnderIcon);
+    connect(preview, &QToolButton::clicked, this, &KPrPageEffectDocker::setEffectPreview);
+    group(i18n("Preview"))->addWidget(preview, 0, 0);
+
+    auto *gallery = new QListWidget(this);
+    gallery->setObjectName(QStringLiteral("stageTransitionGallery"));
+    gallery->setAccessibleName(i18n("Transition to This Slide"));
+    gallery->setViewMode(QListView::IconMode);
+    gallery->setFlow(QListView::LeftToRight);
+    gallery->setWrapping(false);
+    gallery->setMovement(QListView::Static);
+    gallery->setIconSize(QSize(48, 32));
+    gallery->setGridSize(QSize(92, 70));
+    gallery->setFixedSize(390, 82);
+    gallery->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    for (int index = 0; index < m_effectCombo->count(); ++index) {
+        QPixmap icon(48, 32);
+        icon.fill(Qt::transparent);
+        QPainter painter(&icon);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(QColor(QStringLiteral("#9aa5b1")));
+        painter.setBrush(QColor(QStringLiteral("#f4f5f7")));
+        painter.drawRoundedRect(QRectF(1, 1, 46, 30), 3, 3);
+        if (index > 0) {
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(QColor(QStringLiteral("#c43e1c")));
+            painter.drawRect(QRect(5, 5, 12 + index % 4 * 6, 22));
+        }
+        painter.end();
+        auto *item = new QListWidgetItem(QIcon(icon), m_effectCombo->itemText(index), gallery);
+        item->setToolTip(m_effectCombo->itemText(index));
+        item->setData(Qt::UserRole, index);
+    }
+    gallery->setCurrentRow(m_effectCombo->currentIndex());
+    connect(gallery, &QListWidget::itemClicked, this, [this](QListWidgetItem *item) {
+        const int index = item->data(Qt::UserRole).toInt();
+        m_effectCombo->setCurrentIndex(index);
+        slotEffectChanged(index);
+    });
+    connect(m_effectCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), gallery, [gallery](int index) {
+        gallery->setCurrentRow(index);
+        gallery->scrollToItem(gallery->currentItem());
+    });
+    m_effectCombo->hide();
+    group(i18n("Transition to This Slide"))->addWidget(gallery, 0, 0);
+
+    m_subTypeCombo->setMinimumWidth(160);
+    m_subTypeCombo->setAccessibleName(i18n("Effect Options"));
+    group(i18n("Effect Options"))->addWidget(m_subTypeCombo, 0, 0);
+    auto *timing = group(i18n("Timing"));
+    m_durationSpinBox->setObjectName(QStringLiteral("stageTransitionDuration"));
+    timing->addWidget(new QLabel(i18n("Duration:"), this), 0, 0);
+    timing->addWidget(m_durationSpinBox, 0, 1);
+    m_applyToAllSlidesButton->setText(i18n("Apply to All"));
+    timing->addWidget(m_applyToAllSlidesButton, 1, 0, 1, 2);
+    auto *advance = group(i18n("Advance Slide"));
+    m_transitionType->setAccessibleName(i18n("Advance Slide"));
+    m_transitionTime->setAccessibleName(i18n("Advance After"));
+    m_transitionTime->setSuffix(i18n(" sec"));
+    advance->addWidget(m_transitionType, 0, 0);
+    advance->addWidget(new QLabel(i18n("After:"), this), 1, 0);
+    advance->addWidget(m_transitionTime, 1, 1);
 }
 
 void KPrPageEffectDocker::updateSubTypes(const KPrPageEffectFactory *factory)

@@ -11,10 +11,46 @@
 #include <KoOdfLoadingContext.h>
 #include <KoOdfStylesReader.h>
 #include <KoPathShapeFactory.h>
+#include <KoPathShape.h>
 #include <KoShape.h>
 #include <KoShapeFactoryBase.h>
 #include <KoShapeLoadingContext.h>
 #include <KoXmlNS.h>
+
+namespace {
+class RejectedShape : public KoPathShape
+{
+public:
+    bool loadOdf(const KoXmlElement &, KoShapeLoadingContext &context) override
+    {
+        context.addShapeId(this, QStringLiteral("rejected"));
+        context.addShapeSubItemId(this, QVariant(1), QStringLiteral("rejected-text"));
+        auto *child = new KoPathShape();
+        addShape(child);
+        context.addShapeId(child, QStringLiteral("rejected-child"));
+        return false;
+    }
+};
+class RejectedFactory : public KoShapeFactoryBase
+{
+public:
+    RejectedFactory() : KoShapeFactoryBase(QStringLiteral("rejected"), QStringLiteral("Rejected shape")) {}
+    KoShape *createDefaultShape(KoDocumentResourceManager *) const override { return new RejectedShape(); }
+    bool supports(const KoXmlElement &, KoShapeLoadingContext &) const override { return true; }
+};
+}
+
+void TestKoShapeFactory::testRejectedLoaderRemovesShapeReferences()
+{
+    KoOdfStylesReader styles;
+    KoOdfLoadingContext odf(styles, nullptr);
+    KoShapeLoadingContext context(odf, nullptr);
+    RejectedFactory factory;
+    QVERIFY(factory.createShapeFromOdf(KoXmlElement(), context) == nullptr);
+    QVERIFY(context.shapeById(QStringLiteral("rejected")) == nullptr);
+    QVERIFY(context.shapeById(QStringLiteral("rejected-child")) == nullptr);
+    QVERIFY(context.shapeSubItemById(QStringLiteral("rejected-text")).first == nullptr);
+}
 
 void TestKoShapeFactory::testCreateFactory()
 {

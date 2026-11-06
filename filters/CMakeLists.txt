@@ -18,6 +18,11 @@ if(SHOULD_BUILD_LIB_KOMSOOXML)
     add_subdirectory( libmsooxml )
 endif()
 
+if(TARGET komain)
+    # Reference conversion tools are built explicitly by compatibility tests.
+    add_subdirectory(libreoffice EXCLUDE_FROM_ALL)
+endif()
+
 add_subdirectory(words)
 add_subdirectory(stage)
 add_subdirectory(sheets)

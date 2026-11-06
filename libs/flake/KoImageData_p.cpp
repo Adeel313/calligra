@@ -15,6 +15,7 @@
 #include <QBuffer>
 #include <QCryptographicHash>
 #include <QFileInfo>
+#include <QImageReader>
 #include <QImageWriter>
 #include <QTemporaryFile>
 
@@ -79,6 +80,13 @@ bool KoImageDataPrivate::saveData(QIODevice &device)
         return true;
     case KoImageDataPrivate::StateImageLoaded:
     case KoImageDataPrivate::StateImageOnly: {
+        // Reuse the encoded bytes when we still have them and they are in the
+        // format the caller expects. This avoids a needless decode/encode
+        // cycle on export and preserves the exact source pixels (and formats
+        // Qt cannot write, such as GIF).
+        if (!rawData.isEmpty() && !suffix.isEmpty() && rawDataFormat == suffix.toLatin1().toLower()) {
+            return device.write(rawData) == rawData.size();
+        }
         // save image
         QBuffer buffer;
         QImageWriter writer(&buffer, suffix.toLatin1());
@@ -140,6 +148,8 @@ void KoImageDataPrivate::clear()
     imageSize = QSizeF();
     key = 0;
     image = QImage();
+    rawData.clear();
+    rawDataFormat.clear();
     pixmap = QPixmap();
 }
 

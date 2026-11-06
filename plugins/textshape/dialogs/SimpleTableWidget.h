@@ -22,6 +22,7 @@ class SimpleTableWidget : public QWidget
 {
     Q_OBJECT
 public:
+    QList<QWidget *> configureRibbon();
     explicit SimpleTableWidget(TextTool *tool, QWidget *parent = nullptr);
 
 public Q_SLOTS:

@@ -13,8 +13,10 @@
 // inside a function in this file.
 
 #include "PredefinedShapeHelper.h"
+#include "NormalizeShapeGeometry.h"
 
 PredefinedShapeHelper::PredefinedShapeHelper()
 {
 #include "generated/generatedShapes.h"
+    normalizeShapeGeometry(attributes, equations, textareas);
 }

@@ -378,6 +378,12 @@ int KWPage::visiblePageNumber(PageSelection select, int adjustment) const
     return pageNumber;
 }
 
+bool KWPage::hasSamePageLayout(const QString &masterPageName) const
+{
+    const KWPageStyle other = priv->pageStyles.value(masterPageName);
+    return other.isValid() && other.pageLayout() == pageStyle().pageLayout();
+}
+
 QString KWPage::masterPageName() const
 {
     KWPageStyle pagestyle = pageStyle();

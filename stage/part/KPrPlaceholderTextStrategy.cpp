@@ -67,27 +67,9 @@ KoShape *KPrPlaceholderTextStrategy::createShape(KoDocumentResourceManager *docu
 
 void KPrPlaceholderTextStrategy::paint(QPainter &painter, const KoViewConverter &converter, const QRectF &rect, KoShapePaintingContext &paintcontext)
 {
-    if (m_textShape) {
-        painter.save();
-        m_textShape->setSize(rect.size());
-        // this code is needed to make sure the text of the textshape is layouted before it is painted
-        KoTextShapeData *shapeData = qobject_cast<KoTextShapeData *>(m_textShape->userData());
-        QTextDocument *document = shapeData->document();
-        KoTextDocumentLayout *lay = qobject_cast<KoTextDocumentLayout *>(document->documentLayout());
-        if (lay) {
-            lay->layout();
-        }
-        m_textShape->paint(painter, converter, paintcontext);
-
-        KoShape::applyConversion(painter, converter);
-        QPen pen(Qt::gray, 0);
-        // pen.setStyle( Qt::DashLine ); // endless loop
-        painter.setPen(pen);
-        painter.drawRect(rect);
-        painter.restore();
-    } else {
-        KPrPlaceholderStrategy::paint(painter, converter, rect, paintcontext);
-    }
+    // Prompt styling is an editor affordance. Keep the template's text styles
+    // in m_textShape for the actual text created when the placeholder is used.
+    KPrPlaceholderStrategy::paint(painter, converter, rect, paintcontext);
 }
 
 void KPrPlaceholderTextStrategy::saveOdf(KoShapeSavingContext &context)

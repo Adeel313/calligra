@@ -372,6 +372,13 @@ public:
      */
     KoListStyle *outlineStyle() const;
 
+    /**
+     * Returns true if @p style defines the default outline (chapter) numbering,
+     * i.e. it is equivalent to defaultOutlineStyle().  Style ids do not survive
+     * an ODF round-trip, so the level content is compared as well.
+     */
+    bool isDefaultOutlineNumbering(KoListStyle *style) const;
+
     /// return all the characterStyles registered.
     QList<KoCharacterStyle *> characterStyles() const;
 

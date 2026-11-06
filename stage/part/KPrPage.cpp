@@ -65,6 +65,7 @@ public:
     KPrNotes *pageNotes;
     QHash<KPrDeclarations::Type, QString> usedDeclaration;
     KPrDeclarations *declarations;
+    bool hidden = false;
 };
 
 KPrPage::KPrPage(KoPAMasterPage *masterPage, KPrDocument *document)
@@ -212,6 +213,7 @@ void KPrPage::saveOdfPageContent(KoPASavingContext &paContext) const
 void KPrPage::saveOdfPageStyleData(KoGenStyle &style, KoPASavingContext &paContext) const
 {
     KoPAPage::saveOdfPageStyleData(style, paContext);
+    if (d->hidden) style.addProperty("presentation:visibility", "hidden");
     style.addProperty("presentation:background-visible", (m_pageProperties & DisplayMasterBackground) == DisplayMasterBackground);
     style.addProperty("presentation:background-objects-visible", (m_pageProperties & DisplayMasterShapes) == DisplayMasterShapes);
     style.addProperty("presentation:display-date-time", (m_pageProperties & DisplayDateTime) == DisplayDateTime);
@@ -234,6 +236,7 @@ void KPrPage::loadOdfPageTag(const KoXmlElement &element, KoPALoadingContext &lo
     KoPAPage::loadOdfPageTag(element, loadingContext);
 
     KoStyleStack &styleStack = loadingContext.odfLoadingContext().styleStack();
+    d->hidden = styleStack.property(KoXmlNS::presentation, "visibility") == QLatin1String("hidden");
 
     int pageProperties = m_pageProperties & UseMasterBackground;
     if (styleStack.property(KoXmlNS::presentation, "background-objects-visible") == "true") {
@@ -256,11 +259,7 @@ void KPrPage::loadOdfPageTag(const KoXmlElement &element, KoPALoadingContext &lo
     }
     m_pageProperties = pageProperties;
 
-#ifndef KOXML_USE_QDOM
-    KoXmlNode node = element.namedItemNS(KoXmlNS::presentation, "notes");
-#else
-    KoXmlNode node; // XXX!!!
-#endif
+    const KoXmlElement node = KoXml::namedItemNS(element, KoXmlNS::presentation, "notes");
     if (node.isElement()) {
         d->pageNotes->loadOdf(node.toElement(), loadingContext);
     }
@@ -345,6 +344,11 @@ KoPageApp::PageType KPrPage::pageType() const
 QString KPrPage::declaration(KPrDeclarations::Type type) const
 {
     return d->declarations->declaration(type, d->usedDeclaration.value(type));
+}
+
+bool KPrPage::isHidden() const
+{
+    return d->hidden;
 }
 
 bool KPrPage::displayShape(KoShape *shape) const

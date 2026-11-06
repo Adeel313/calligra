@@ -6,6 +6,7 @@
 #include "TestNumberStyle.h"
 
 #include <KoOdfNumberStyles.h>
+#include <KoXmlReader.h>
 #include <QLoggingCategory>
 #include <QTest>
 
@@ -58,6 +59,23 @@ void TestNumberStyle::testNumber()
     f.precision = 1;
     f.formatStr = "test1 00.00 test2";
     QCOMPARE(KoOdfNumberStyles::format("12345.6789", f), QString("test1 12345.70 test2"));
+}
+
+void TestNumberStyle::testLoadNumberPrecision()
+{
+    for (int precision : {0, 1, 4}) {
+        KoXmlDocument document;
+        const QString xml = QStringLiteral(
+            "<number:number-style xmlns:number=\"urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0\">"
+            "<number:number number:min-integer-digits=\"1\" number:decimal-places=\"%1\"/>"
+            "</number:number-style>").arg(precision);
+        QVERIFY(document.setContent(xml, true));
+        const auto format = KoOdfNumberStyles::loadOdfNumberStyle(document.documentElement()).second;
+        QCOMPARE(format.precision, precision);
+        const QString expected = precision == 0 ? QStringLiteral("0")
+            : QStringLiteral("0.") + QString(precision, QLatin1Char('0'));
+        QCOMPARE(format.formatStr, expected);
+    }
 }
 
 void TestNumberStyle::testDate()

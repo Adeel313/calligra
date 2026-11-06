@@ -12,6 +12,7 @@
 #include "DocxExport.h"
 
 #include <QFile>
+#include <QRegularExpression>
 
 // KF5
 #include <KPluginFactory>
@@ -38,6 +39,9 @@
 // Calligra
 #include <KoUnit.h>
 #include <KoXmlStreamReader.h>
+#include <KoOdfStyle.h>
+#include <KoOdfStyleManager.h>
+#include <KoOdfStyleProperties.h>
 
 K_PLUGIN_FACTORY_WITH_JSON(DocxExportFactory, "calligra_filter_odt2docx.json", registerPlugin<DocxExport>();)
 
@@ -57,11 +61,50 @@ struct PageGeometry {    bool valid = false;
     qreal headerMinHeight = 0.0;
     qreal footerMinHeight = 0.0;
     bool landscape = false;
+    QString numberFormat;
+    QString sectionType = QStringLiteral("nextPage");
+    int columns = 1;
+    qreal columnGap = 0;
 };
 
 int toTwips(qreal points)
 {
     return qRound(points * 20.0);
+}
+
+void resolveFontFamilies(OdfReaderDocxContext &context)
+{
+    QHash<QString, QString> families;
+    KoStore *store = context.odfStore();
+    for (const QString &part : {QStringLiteral("styles.xml"), QStringLiteral("content.xml")}) {
+        if (!store->open(part)) continue;
+        KoXmlStreamReader reader;
+        prepareForOdf(reader);
+        reader.setDevice(store->device());
+        while (!reader.atEnd()) {
+            reader.readNext();
+            if (!reader.isStartElement() || reader.qualifiedName() != QLatin1StringView("style:font-face")) continue;
+            const QString name = reader.attributes().value(QStringLiteral("style:name")).toString();
+            QString family = reader.attributes().value(QStringLiteral("svg:font-family")).toString().section(QLatin1Char(','), 0, 0).trimmed();
+            if (family.size() >= 2 && ((family.front() == QLatin1Char('\'') && family.back() == QLatin1Char('\''))
+                || (family.front() == QLatin1Char('"') && family.back() == QLatin1Char('"'))))
+                family = family.mid(1, family.size() - 2);
+            if (!name.isEmpty() && !family.isEmpty()) families.insert(name, family);
+        }
+        store->close();
+    }
+    auto styles = context.styleManager()->styles();
+    styles.append(context.styleManager()->defaultStyles());
+    for (KoOdfStyle *style : styles) {
+        auto *properties = style->properties("style:text-properties");
+        if (!properties) continue;
+        for (const QString &name : {QStringLiteral("style:font-name"), QStringLiteral("style:font-name-asian"), QStringLiteral("style:font-name-complex")}) {
+            const QString alias = properties->attribute(name);
+            if (families.contains(alias)) properties->setAttribute(name, families.value(alias));
+        }
+        if (properties->attribute("style:font-name").isEmpty() && !properties->attribute("fo:font-family").isEmpty())
+            properties->setAttribute("style:font-name", properties->attribute("fo:font-family"));
+    }
 }
 
 // Wraps a sequence of Word body-level elements into a complete header or
@@ -81,94 +124,45 @@ QByteArray wrapHeaderFooterPart(const QByteArray &content, const char *rootEleme
     return result;
 }
 
-// Traverses styles.xml to export the first paragraph's selected master page's
-// <style:header> and <style:footer> as word/header1.xml / word/footer1.xml and to collect the
-// page geometry of the referenced page layout.  The resulting section
-// properties (<w:sectPr>: header/footer references plus page size and
-// margins) are stored in the context, where OdtReaderDocxBackend appends
-// them when office:body is closed.
-//
-// Must run before readContent(): the sectPr is needed while the document
-// body is written.
-void exportHeaderAndFooter(OdfReaderDocxContext &context, OdfTextReader &textReader, DocxFile &docxFile)
+// Collect each master page's geometry and header/footer parts before writing
+// the body. Paragraph master-page changes then select the matching section.
+void exportMasterPageSections(OdfReaderDocxContext &context, OdfTextReader &textReader, DocxFile &docxFile,
+                          const QString &selectedMaster = QString(), int partNumber = 1)
 {
+    if (!context.odfStore()) return;
+    if (selectedMaster.isNull()) {
+        QStringList masters;
+        if (context.odfStore()->open(QStringLiteral("styles.xml"))) {
+            KoXmlStreamReader scan;
+            prepareForOdf(scan);
+            scan.setDevice(context.odfStore()->device());
+            while (!scan.atEnd()) {
+                scan.readNext();
+                if (scan.isStartElement() && scan.qualifiedName() == QLatin1StringView("style:master-page")) {
+                    masters.append(scan.attributes().value(QStringLiteral("style:name")).toString());
+                }
+            }
+            context.odfStore()->close();
+        }
+        for (int i = 0; i < masters.size(); ++i) {
+            exportMasterPageSections(context, textReader, docxFile, masters[i], i + 1);
+        }
+        if (!masters.isEmpty()) {
+            context.activeMasterPage = masters.first();
+            context.setSectPrContent(context.masterPageSections.value(masters.first()));
+        }
+        return;
+    }
     KoStore *store = context.odfStore();
     if (!store) {
         return;
     }
 
+    const QString headerFile = QStringLiteral("header%1.xml").arg(partNumber);
+    const QString footerFile = QStringLiteral("footer%1.xml").arg(partNumber);
     QHash<QString, PageGeometry> pageLayouts;
     QString pageLayoutName;
-    QString masterPageName;
-    QString firstParagraphStyle;
-    if (store->open(QStringLiteral("content.xml"))) {
-        KoXmlStreamReader contentReader;
-        prepareForOdf(contentReader);
-        contentReader.setDevice(store->device());
-        while (!contentReader.atEnd()) {
-            contentReader.readNext();
-            if (!contentReader.isStartElement()) {
-                continue;
-            }
-            contentReader.qualifiedName(); // validate prefixes for attribute lookup
-            if (contentReader.qualifiedName() != QLatin1StringView("text:p")) {
-                continue;
-            }
-
-            firstParagraphStyle = contentReader.attributes().value(QStringLiteral("text:style-name")).toString();
-            break;
-        }
-        store->close();
-    }
-
-    // Automatic paragraph styles in content.xml may directly select a master
-    // page; resolve the first paragraph's style in that same package part.
-    if (!firstParagraphStyle.isEmpty() && store->open(QStringLiteral("content.xml"))) {
-        KoXmlStreamReader contentStylesReader;
-        prepareForOdf(contentStylesReader);
-        contentStylesReader.setDevice(store->device());
-        while (!contentStylesReader.atEnd()) {
-            contentStylesReader.readNext();
-            if (contentStylesReader.isStartElement() && contentStylesReader.qualifiedName() == QLatin1StringView("office:document-content")) {
-                break;
-            }
-        }
-        while (contentStylesReader.readNextStartElement()) {
-            if (contentStylesReader.qualifiedName() != QLatin1StringView("office:automatic-styles")) {
-                contentStylesReader.skipCurrentElement();
-                continue;
-            }
-            while (contentStylesReader.readNextStartElement()) {
-                if (contentStylesReader.qualifiedName() == QLatin1StringView("style:style")
-                    && contentStylesReader.attributes().value(QStringLiteral("style:name")) == firstParagraphStyle) {
-                    masterPageName = contentStylesReader.attributes().value(QStringLiteral("style:master-page-name")).toString();
-                    if (masterPageName.isEmpty()) {
-                        const QString parentStyleName = contentStylesReader.attributes().value(QStringLiteral("style:parent-style-name")).toString();
-                        contentStylesReader.skipCurrentElement();
-                        while (contentStylesReader.readNextStartElement()) {
-                            if (contentStylesReader.qualifiedName() != QLatin1StringView("office:styles")) {
-                                contentStylesReader.skipCurrentElement();
-                                continue;
-                            }
-                            while (contentStylesReader.readNextStartElement()) {
-                                if (contentStylesReader.qualifiedName() == QLatin1StringView("style:style")
-                                    && contentStylesReader.attributes().value(QStringLiteral("style:name")) == parentStyleName) {
-                                    masterPageName = contentStylesReader.attributes().value(QStringLiteral("style:master-page-name")).toString();
-                                    break;
-                                }
-                                contentStylesReader.skipCurrentElement();
-                            }
-                            break;
-                        }
-                    }
-                    break;
-                }
-                contentStylesReader.skipCurrentElement();
-            }
-            break;
-        }
-        store->close();
-    }
+    const QString masterPageName = selectedMaster;
 
     if (!store->open(QStringLiteral("styles.xml"))) {
         return;
@@ -207,6 +201,9 @@ void exportHeaderAndFooter(OdfReaderDocxContext &context, OdfTextReader &textRea
                     }
                     const QString layoutName = reader.attributes().value(QStringLiteral("style:name")).toString();
                     PageGeometry geometry;
+                    const QString usage = reader.attributes().value(QStringLiteral("style:page-usage")).toString();
+                    if (usage == QLatin1String("left")) geometry.sectionType = QStringLiteral("evenPage");
+                    if (usage == QLatin1String("right")) geometry.sectionType = QStringLiteral("oddPage");
                     while (reader.readNextStartElement()) {
                         const QString childName = reader.qualifiedName().toString();
                         if (childName == QLatin1StringView("style:page-layout-properties")) {
@@ -214,11 +211,27 @@ void exportHeaderAndFooter(OdfReaderDocxContext &context, OdfTextReader &textRea
                             geometry.valid = true;
                             geometry.pageWidth = KoUnit::parseValue(attrs.value(QStringLiteral("fo:page-width")).toString());
                             geometry.pageHeight = KoUnit::parseValue(attrs.value(QStringLiteral("fo:page-height")).toString());
-                            geometry.marginTop = KoUnit::parseValue(attrs.value(QStringLiteral("fo:margin-top")).toString());
-                            geometry.marginRight = KoUnit::parseValue(attrs.value(QStringLiteral("fo:margin-right")).toString());
-                            geometry.marginBottom = KoUnit::parseValue(attrs.value(QStringLiteral("fo:margin-bottom")).toString());
-                            geometry.marginLeft = KoUnit::parseValue(attrs.value(QStringLiteral("fo:margin-left")).toString());
+                            // Words uses fo:margin when all four page margins
+                            // are equal. Individual sides override that value.
+                            const qreal margin = KoUnit::parseValue(attrs.value(QStringLiteral("fo:margin")).toString());
+                            const auto pageMargin = [&attrs, margin](const QString &name) {
+                                const QString value = attrs.value(name).toString();
+                                return value.isEmpty() ? margin : KoUnit::parseValue(value);
+                            };
+                            geometry.marginTop = pageMargin(QStringLiteral("fo:margin-top"));
+                            geometry.marginRight = pageMargin(QStringLiteral("fo:margin-right"));
+                            geometry.marginBottom = pageMargin(QStringLiteral("fo:margin-bottom"));
+                            geometry.marginLeft = pageMargin(QStringLiteral("fo:margin-left"));
+                            geometry.numberFormat = attrs.value(QStringLiteral("style:num-format")).toString();
                             geometry.landscape = attrs.value(QStringLiteral("style:print-orientation")) == QLatin1StringView("landscape");
+                            while (reader.readNextStartElement()) {
+                                if (reader.qualifiedName() == QLatin1StringView("style:columns")) {
+                                    geometry.columns = qMax(1, reader.attributes().value(QStringLiteral("fo:column-count")).toInt());
+                                    geometry.columnGap = KoUnit::parseValue(reader.attributes().value(QStringLiteral("fo:column-gap")).toString());
+                                }
+                                reader.skipCurrentElement();
+                            }
+                            continue;
                         } else if (childName == QLatin1StringView("style:header-style") || childName == QLatin1StringView("style:footer-style")) {
                             const bool isHeaderStyle = childName == QLatin1StringView("style:header-style");
                             while (reader.readNextStartElement()) {
@@ -270,7 +283,7 @@ void exportHeaderAndFooter(OdfReaderDocxContext &context, OdfTextReader &textRea
                         KoXmlWriter partWriter(&buffer);
                         KoXmlWriter *previousWriter = context.setDocumentWriter(&partWriter);
                         const QString previousPart = context.outputPart();
-                        context.setOutputPart(isHeader ? QStringLiteral("word/header1.xml") : QStringLiteral("word/footer1.xml"));
+                        context.setOutputPart(isHeader ? QStringLiteral("word/") + headerFile : QStringLiteral("word/") + footerFile);
 
                         while (reader.readNextStartElement()) {
                             textReader.readTextLevelElement(reader);
@@ -286,21 +299,6 @@ void exportHeaderAndFooter(OdfReaderDocxContext &context, OdfTextReader &textRea
                         }
                     }
                 }
-            } else if (tagName == QLatin1StringView("office:styles")) {
-                // A named paragraph style may select a master page for the
-                // document's initial text. Choose the first explicit selection;
-                // otherwise use the first master-page definition as default.
-                while (reader.readNextStartElement()) {
-                    if (reader.qualifiedName() == QLatin1StringView("style:style")
-                        && reader.attributes().value(QStringLiteral("style:family")) == QLatin1StringView("paragraph")) {
-                        const QString candidate = reader.attributes().value(QStringLiteral("style:master-page-name")).toString();
-                        if (!candidate.isEmpty()) {
-                            masterPageName = candidate;
-                            break;
-                        }
-                    }
-                    reader.skipCurrentElement();
-                }
             } else {
                 reader.skipCurrentElement();
             }
@@ -314,9 +312,9 @@ void exportHeaderAndFooter(OdfReaderDocxContext &context, OdfTextReader &textRea
     if (!headerContent.isEmpty()) {
         headerRelId = docxFile.addRelationship(QStringLiteral("word/document.xml"),
                                                QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/header"),
-                                               QStringLiteral("header1.xml"));
+                                               headerFile);
         docxFile.addContentFile(QString(),
-                                QStringLiteral("/word/header1.xml"),
+                                QStringLiteral("/word/") + headerFile,
                                 QByteArrayLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"),
                                 wrapHeaderFooterPart(headerContent, "w:hdr"));
     }
@@ -325,9 +323,9 @@ void exportHeaderAndFooter(OdfReaderDocxContext &context, OdfTextReader &textRea
     if (!footerContent.isEmpty()) {
         footerRelId = docxFile.addRelationship(QStringLiteral("word/document.xml"),
                                                QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer"),
-                                               QStringLiteral("footer1.xml"));
+                                               footerFile);
         docxFile.addContentFile(QString(),
-                                QStringLiteral("/word/footer1.xml"),
+                                QStringLiteral("/word/") + footerFile,
                                 QByteArrayLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"),
                                 wrapHeaderFooterPart(footerContent, "w:ftr"));
     }
@@ -357,7 +355,7 @@ void exportHeaderAndFooter(OdfReaderDocxContext &context, OdfTextReader &textRea
         writer.endElement(); // w:footerReference
     }
     writer.startElement("w:type");
-    writer.addAttribute("w:val", "nextPage");
+    writer.addAttribute("w:val", geometry.sectionType);
     writer.endElement(); // w:type
     if (geometry.valid) {
         writer.startElement("w:pgSz");
@@ -368,22 +366,38 @@ void exportHeaderAndFooter(OdfReaderDocxContext &context, OdfTextReader &textRea
         }
         writer.endElement(); // w:pgSz
 
-        // Reserve room for the header/footer content on top of the body
-        // margins, the same way LibreOffice maps these values.
-        const qreal headerReserve = headerRelId.isEmpty() ? 0.0 : geometry.headerMinHeight;
-        const qreal footerReserve = footerRelId.isEmpty() ? 0.0 : geometry.footerMinHeight;
+        // ODF margins locate the header/footer frames; Word's top/bottom
+        // margins locate the body text. Include the space reserved by an
+        // active header/footer, keeping its distance from the paper edge
+        // separately in w:header/w:footer.
         writer.startElement("w:pgMar");
-        writer.addAttribute("w:top", toTwips(geometry.marginTop + headerReserve));
+        writer.addAttribute("w:top", toTwips(geometry.marginTop + (headerRelId.isEmpty() ? 0 : geometry.headerMinHeight)));
         writer.addAttribute("w:right", toTwips(geometry.marginRight));
-        writer.addAttribute("w:bottom", toTwips(geometry.marginBottom + footerReserve));
+        writer.addAttribute("w:bottom", toTwips(geometry.marginBottom + (footerRelId.isEmpty() ? 0 : geometry.footerMinHeight)));
         writer.addAttribute("w:left", toTwips(geometry.marginLeft));
         writer.addAttribute("w:header", toTwips(geometry.marginTop));
         writer.addAttribute("w:footer", toTwips(geometry.marginBottom));
         writer.addAttribute("w:gutter", 0);
         writer.endElement(); // w:pgMar
     }
+    if (!geometry.numberFormat.isEmpty()) {
+        const QHash<QString, QString> formats = {{QStringLiteral("i"), QStringLiteral("lowerRoman")},
+                                                {QStringLiteral("I"), QStringLiteral("upperRoman")},
+                                                {QStringLiteral("a"), QStringLiteral("lowerLetter")},
+                                                {QStringLiteral("A"), QStringLiteral("upperLetter")}};
+        writer.startElement("w:pgNumType");
+        writer.addAttribute("w:fmt", formats.value(geometry.numberFormat, QStringLiteral("decimal")));
+        writer.endElement();
+    }
+    if (geometry.columns > 1) {
+        writer.startElement("w:cols");
+        writer.addAttribute("w:num", geometry.columns);
+        writer.addAttribute("w:space", toTwips(geometry.columnGap));
+        writer.endElement();
+    }
     writer.endElement(); // w:sectPr
 
+    context.masterPageSections.insert(selectedMaster, sectPr);
     context.setSectPrContent(sectPr);
 }
 
@@ -449,21 +463,36 @@ void readListLevelStyle(KoXmlStreamReader &reader, NumberingLevel *level)
         level->format = wordNumFormat(format);
         level->start = start > 0 ? start : 1;
 
-        // text:display-levels says how many levels of the number are shown
-        // (e.g. "1.2.3" for level 3); %1..%N reference the level counters.
-        int displayLevels = attributes.value(QStringLiteral("text:display-levels")).toInt();
-        if (displayLevels < 1) {
-            displayLevels = 1;
-        }
-        displayLevels = qMin(displayLevels, level->level);
-        QString number;
-        for (int i = 1; i <= displayLevels; ++i) {
-            if (i > 1) {
-                number += QLatin1Char('.');
+        // LibreOffice records the exact label in loext:num-list-format using
+        // %1% style placeholders.  It is authoritative and also covers
+        // formats that cannot be reconstructed from text:display-levels
+        // (for example "1.a." for a nested level).
+        const QString loFormat = attributes.value(QStringLiteral("loext:num-list-format")).toString();
+        if (!loFormat.isEmpty()) {
+            // loext:num-list-format already contains the prefix and suffix
+            // ("%1%."), so do not append style:num-prefix/suffix again.
+            QString number = loFormat;
+            number.replace(QRegularExpression(QStringLiteral("%(\\d+)%")), QStringLiteral("%\\1"));
+            level->text = number;
+        } else {
+            // text:display-levels says how many levels of the number are shown
+            // (e.g. "1.2.3" for level 3).  When it is absent only the current
+            // level is shown, so a level-2 style must produce "%2", not "%1".
+            int displayLevels = attributes.value(QStringLiteral("text:display-levels")).toInt();
+            if (displayLevels < 1) {
+                displayLevels = 1;
             }
-            number += QLatin1Char('%') + QString::number(i);
+            displayLevels = qMin(displayLevels, level->level);
+            const int firstLevel = level->level - displayLevels + 1;
+            QString number;
+            for (int i = firstLevel; i <= level->level; ++i) {
+                if (i > firstLevel) {
+                    number += QLatin1Char('.');
+                }
+                number += QLatin1Char('%') + QString::number(i);
+            }
+            level->text = prefix + number + suffix;
         }
-        level->text = prefix + number + suffix;
         if (level->format == QLatin1String("none")) {
             level->text.clear();
         }
@@ -477,6 +506,12 @@ void readListLevelStyle(KoXmlStreamReader &reader, NumberingLevel *level)
                 // private use area and would show up as empty boxes in Word.
                 bullet = QStringLiteral("\u2022");
             }
+        }
+        // A zero width space is the importer's marker for "the source had a
+        // bullet, but its glyph could not be represented".  Exporting it
+        // verbatim makes the bullet invisible, so use the normal bullet.
+        if (bullet == QString(QChar(0x200B))) {
+            bullet = QStringLiteral("\u2022");
         }
         if (bullet.isEmpty() || qname == QLatin1StringView("text:list-level-style-image")) {
             bullet = QStringLiteral("\u2022");
@@ -730,6 +765,7 @@ KoFilter::ConversionStatus DocxExport::convert(const QByteArray &from, const QBy
     // backend needs both while it generates the document (and the header and
     // footer parts, which are written below).
     collectStyleExtras(docxBackendContext);
+    resolveFontFamilies(docxBackendContext);
 
     DocxStyleWriter styleWriter(&docxBackendContext);
     styleWriter.read();
@@ -743,7 +779,7 @@ KoFilter::ConversionStatus DocxExport::convert(const QByteArray &from, const QBy
     // office:body is closed.  The text reader needs its context set here
     // already because readContent() would only set it later.
     odfTextReader.setContext(&docxBackendContext);
-    exportHeaderAndFooter(docxBackendContext, odfTextReader, docxFile);
+    exportMasterPageSections(docxBackendContext, odfTextReader, docxFile);
 
     if (!odtReader.readContent(&docxBackend, &docxBackendContext)) {
         return KoFilter::ParsingError;
@@ -823,5 +859,8 @@ KoFilter::ConversionStatus DocxExport::convert(const QByteArray &from, const QBy
                             docxBackendContext.documentContent());
 
     // Write the output file.
+    if (docxDrawBackend.hasDrawingError()) {
+        return KoFilter::NotImplemented;
+    }
     return docxFile.writeDocx(m_chain->outputFile(), to, docxBackendContext, commentsExist);
 }

@@ -5,6 +5,10 @@
 */
 
 #include "KPrShapeAnimationDocker.h"
+#include <QDockWidget>
+#include <QEvent>
+#include <QPointer>
+#include <KoRibbonLayout.h>
 
 // Stage Headers
 #include "KPrAnimationGroupProxyModel.h"
@@ -56,6 +60,41 @@ QSize DialogMenu::sizeHint() const
 {
     return layout()->sizeHint();
 }
+
+// Mirror native buttons without transferring their ownership out of the
+// animation editor. Its callbacks can safely use them while views close.
+class AnimationRibbonButton : public QToolButton
+{
+public:
+    AnimationRibbonButton(QToolButton *source, QWidget *parent)
+        : QToolButton(parent), m_source(source)
+    {
+        setText(source->text());
+        setIcon(source->icon());
+        setToolTip(source->toolTip());
+        setEnabled(source->isEnabled());
+        if (source->menu()) {
+            setMenu(source->menu());
+            setPopupMode(QToolButton::InstantPopup);
+        } else {
+            connect(this, &QToolButton::clicked, source, &QToolButton::click);
+        }
+        source->installEventFilter(this);
+        connect(source, &QObject::destroyed, this, [this] { setEnabled(false); setMenu(nullptr); });
+    }
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        if (watched == m_source && event->type() == QEvent::EnabledChange) {
+            setEnabled(m_source->isEnabled());
+        }
+        return QToolButton::eventFilter(watched, event);
+    }
+
+private:
+    QPointer<QToolButton> m_source;
+};
 
 KPrShapeAnimationDocker::KPrShapeAnimationDocker(QWidget *parent)
     : QWidget(parent)
@@ -155,6 +194,54 @@ KPrShapeAnimationDocker::KPrShapeAnimationDocker(QWidget *parent)
     connect(m_addDialog, &KPrAnimationSelectorWidget::previousStateChanged, this, &KPrShapeAnimationDocker::previousStateChanged);
     connect(m_editAnimationsPanel, &KPrEditAnimationsWidget::previousStateChanged, this, &KPrShapeAnimationDocker::previousStateChanged);
     QTimer::singleShot(500, this, &KPrShapeAnimationDocker::initializeView);
+}
+
+QWidget *KPrShapeAnimationDocker::createRibbonControls(QDockWidget *animationPane)
+{
+    auto *ribbon = new QWidget;
+    auto *row = new QHBoxLayout(ribbon);
+    row->setContentsMargins(4, 2, 4, 2);
+    row->setSpacing(0);
+    const auto proxy = [ribbon](QToolButton *button) { return new AnimationRibbonButton(button, ribbon); };
+    const auto group = [row, ribbon](const QString &title, const QList<QToolButton *> &buttons, bool large) {
+        auto *widget = new QWidget(ribbon);
+        widget->setProperty("ribbonRoutedGroup", true);
+        auto *vertical = new QVBoxLayout(widget);
+        vertical->setContentsMargins(10, 0, 10, 0);
+        auto *grid = new QGridLayout;
+        for (int index = 0; index < buttons.size(); ++index) {
+            QToolButton *button = buttons[index];
+            button->setParent(widget);
+            KoRibbonLayout::configureButton(button, large ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonTextBesideIcon);
+            grid->addWidget(button, large ? 0 : index % 3, large ? index : index / 3, large ? 3 : 1, 1);
+        }
+        vertical->addLayout(grid);
+        vertical->addStretch();
+        auto *caption = new QLabel(title, widget);
+        caption->setProperty("ribbonGroupTitle", true);
+        caption->setAlignment(Qt::AlignCenter);
+        vertical->addWidget(caption);
+        widget->setMinimumHeight(110);
+        row->addWidget(widget);
+    };
+    m_buttonPreviewAnimation->setText(i18n("Preview"));
+    group(i18n("Preview"), {proxy(m_buttonPreviewAnimation)}, true);
+    m_buttonAddAnimation->setText(i18n("Add Animation"));
+    m_editAnimation->setText(i18n("Effect Options"));
+    auto *add = proxy(m_buttonAddAnimation);
+    add->setObjectName(QStringLiteral("stageAddAnimation"));
+    group(i18n("Animation"), {add, proxy(m_editAnimation)}, true);
+    auto *pane = new QToolButton(ribbon);
+    pane->setDefaultAction(animationPane->toggleViewAction());
+    pane->setText(i18n("Animation Pane"));
+    pane->setIcon(QIcon::fromTheme(QStringLiteral("view-list-details")));
+    pane->setObjectName(QStringLiteral("stageShowAnimationPane"));
+    m_buttonRemoveAnimation->setText(i18n("Remove Animation"));
+    group(i18n("Advanced Animation"), {pane, proxy(m_buttonRemoveAnimation)}, false);
+    m_buttonAnimationOrderUp->setText(i18n("Move Earlier"));
+    m_buttonAnimationOrderDown->setText(i18n("Move Later"));
+    group(i18n("Reorder Animation"), {proxy(m_buttonAnimationOrderUp), proxy(m_buttonAnimationOrderDown)}, false);
+    return ribbon;
 }
 
 KPrShapeAnimationDocker::~KPrShapeAnimationDocker()

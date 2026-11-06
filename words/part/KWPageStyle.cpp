@@ -204,6 +204,7 @@ KoGenStyle KWPageStyle::saveOdf() const
 {
     KoGenStyle pageLayout = d->pageLayout.saveOdf();
     pageLayout.setAutoStyleInStylesDotXml(true);
+    pageLayout.addProperty("style:num-format", d->numberFormat);
 
     switch (d->pageUsage) {
     case LeftPages:
@@ -286,6 +287,7 @@ void KWPageStyle::loadOdf(KoOdfLoadingContext &context, const KoXmlElement &mast
     KoXmlElement props = KoXml::namedItemNS(style, KoXmlNS::style, "page-layout-properties");
     if (props.isNull())
         return;
+    d->numberFormat = props.attributeNS(KoXmlNS::style, "num-format", "1");
     QString direction = props.attributeNS(KoXmlNS::style, "writing-mode", "lr-tb");
     d->direction = KoText::directionFromString(direction);
 

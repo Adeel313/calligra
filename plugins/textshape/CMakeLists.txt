@@ -197,3 +197,11 @@ if( SHOULD_BUILD_FEATURE_RDF )
 endif()
 
 install(TARGETS calligra_shape_text DESTINATION ${KDE_INSTALL_PLUGINDIR}/calligra/shapes)
+
+add_executable(TestTextFit EXCLUDE_FROM_ALL tests/TestTextFit.cpp TextShape.cpp SimpleRootAreaProvider.cpp ShrinkToFitShapeContainer.cpp)
+target_include_directories(TestTextFit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(TestTextFit PRIVATE kotext kotextlayout komain)
+if(BUILD_TESTING)
+    add_test(NAME textshape-TextFit COMMAND TestTextFit)
+    set_tests_properties(textshape-TextFit PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()

@@ -9,6 +9,7 @@
 #include "StyleStorage.h"
 
 #include <QTime>
+#include <QHash>
 #ifdef CALLIGRA_SHEETS_MT
 #include <QMutex>
 #include <QMutexLocker>
@@ -34,11 +35,11 @@ public:
     RTree<SharedSubStyle> tree;
     QMap<Style::Key, QList<SharedSubStyle>> subStyles;
     QMap<int, QPair<QRectF, SharedSubStyle>> possibleGarbage;
+    mutable QHash<QByteArray, Style> composedStyles;
     StyleStorageLoaderJob *loader;
 
     bool m_storingUndo;
     QVector<QPair<QRectF, SharedSubStyle>> m_undoData;
-
     void ensureLoaded();
 };
 
@@ -133,6 +134,9 @@ StyleStorage::StyleStorage(Map *map)
 {
     d->map = map;
     d->loader = nullptr;
+    connect(styleManager(), &StyleManager::styleListChanged, this, [this]() {
+        d->composedStyles.clear();
+    });
 }
 
 StyleStorage::StyleStorage(const StyleStorage &other)
@@ -147,6 +151,9 @@ StyleStorage::StyleStorage(const StyleStorage &other)
     } else {
         d->loader = nullptr;
     }
+    connect(styleManager(), &StyleManager::styleListChanged, this, [this]() {
+        d->composedStyles.clear();
+    });
     // the other member variables are temporary stuff
 }
 
@@ -217,18 +224,22 @@ void StyleStorage::saveCreateDefaultStyles(int &maxCols, int &maxRows, QMap<int,
 {
     d->ensureLoaded();
 
-    QRect used = usedArea();
-    maxCols = used.right();
-    maxRows = used.bottom();
+    // Only materialize column defaults through the content extent supplied by
+    // the ODF writer. A whole-sheet style rectangle can otherwise expand this
+    // to all 16,384 columns on every save, even for a small table.
+    const int styleMaxCol = qMin(KS_colMax, maxCols);
 
     const QRect sheetRect(QPoint(1, 1), QPoint(KS_colMax, KS_rowMax));
     const QList<QPair<QRectF, SharedSubStyle>> pairs = d->tree.intersectingPairs(sheetRect).values();
     for (int i = 0; i < pairs.count(); ++i) {
         const QRect rect = pairs[i].first.toRect();
+        const bool fullColumn = rect.top() <= 1 && rect.bottom() >= KS_rowMax;
+        const bool fullRow = rect.left() <= 1 && rect.right() >= KS_colMax;
         // column default cell styles
         // Columns have no content. Prefer them over rows for the default cell styles.
-        if (rect.top() == 1 && rect.bottom() == maxRows) {
-            for (int col = rect.left(); col <= rect.right(); ++col) {
+        if (fullColumn) {
+            const int lastColumn = qMin(rect.right(), styleMaxCol);
+            for (int col = qMax(1, rect.left()); col <= lastColumn; ++col) {
                 if (pairs[i].second.data()->type() == Style::DefaultStyleKey)
                     columnDefaultStyles.remove(col);
                 else
@@ -236,8 +247,9 @@ void StyleStorage::saveCreateDefaultStyles(int &maxCols, int &maxRows, QMap<int,
             }
         }
         // row default cell styles
-        else if (rect.left() == 1 && rect.right() == maxCols) {
-            for (int row = rect.top(); row <= rect.bottom(); ++row) {
+        else if (fullRow) {
+            const int lastRow = qMin(rect.bottom(), maxRows);
+            for (int row = qMax(1, rect.top()); row <= lastRow; ++row) {
                 if (pairs[i].second.data()->type() == Style::DefaultStyleKey)
                     rowDefaultStyles.remove(row);
                 else
@@ -245,6 +257,8 @@ void StyleStorage::saveCreateDefaultStyles(int &maxCols, int &maxRows, QMap<int,
             }
         }
     }
+    if (!columnDefaultStyles.isEmpty())
+        maxCols = qMax(maxCols, columnDefaultStyles.lastKey());
 }
 
 int StyleStorage::firstColumnIndexInRow(int row) const
@@ -264,6 +278,7 @@ int StyleStorage::nextColumnIndexInRow(int column, int row) const
 void StyleStorage::insert(const QRect &rect, const SharedSubStyle &subStyle, bool markRegionChanged)
 {
     d->ensureLoaded();
+    d->composedStyles.clear();
 
     if (m_storingUndo) {
         auto data = currentData(Region(rect));
@@ -335,6 +350,7 @@ void StyleStorage::load(const QList<QPair<Region, Style>> &styles)
 void StyleStorage::insertRows(int position, int number)
 {
     d->ensureLoaded();
+    d->composedStyles.clear();
     // process the tree
     QVector<QPair<QRectF, SharedSubStyle>> undoData;
     undoData << d->tree.insertRows(position, number);
@@ -345,6 +361,7 @@ void StyleStorage::insertRows(int position, int number)
 void StyleStorage::insertColumns(int position, int number)
 {
     d->ensureLoaded();
+    d->composedStyles.clear();
     // process the tree
     QVector<QPair<QRectF, SharedSubStyle>> undoData;
     undoData << d->tree.insertColumns(position, number);
@@ -355,6 +372,7 @@ void StyleStorage::insertColumns(int position, int number)
 void StyleStorage::removeRows(int position, int number)
 {
     d->ensureLoaded();
+    d->composedStyles.clear();
     // process the tree
     QVector<QPair<QRectF, SharedSubStyle>> undoData;
     undoData << d->tree.removeRows(position, number);
@@ -365,6 +383,7 @@ void StyleStorage::removeRows(int position, int number)
 void StyleStorage::removeColumns(int position, int number)
 {
     d->ensureLoaded();
+    d->composedStyles.clear();
     // process the tree
     QVector<QPair<QRectF, SharedSubStyle>> undoData;
     undoData << d->tree.removeColumns(position, number);
@@ -375,6 +394,7 @@ void StyleStorage::removeColumns(int position, int number)
 void StyleStorage::insertShiftRight(const QRect &rect)
 {
     d->ensureLoaded();
+    d->composedStyles.clear();
     const QRect invalidRect(rect.topLeft(), QPoint(KS_colMax, rect.bottom()));
     QVector<QPair<QRectF, SharedSubStyle>> undoData;
     undoData << d->tree.insertShiftRight(rect);
@@ -386,6 +406,7 @@ void StyleStorage::insertShiftRight(const QRect &rect)
 void StyleStorage::insertShiftDown(const QRect &rect)
 {
     d->ensureLoaded();
+    d->composedStyles.clear();
     const QRect invalidRect(rect.topLeft(), QPoint(rect.right(), KS_rowMax));
     QVector<QPair<QRectF, SharedSubStyle>> undoData;
     undoData << d->tree.insertShiftDown(rect);
@@ -397,6 +418,7 @@ void StyleStorage::insertShiftDown(const QRect &rect)
 void StyleStorage::removeShiftLeft(const QRect &rect)
 {
     d->ensureLoaded();
+    d->composedStyles.clear();
     const QRect invalidRect(rect.topLeft(), QPoint(KS_colMax, rect.bottom()));
     QVector<QPair<QRectF, SharedSubStyle>> undoData;
     undoData << d->tree.removeShiftLeft(rect);
@@ -408,6 +430,7 @@ void StyleStorage::removeShiftLeft(const QRect &rect)
 void StyleStorage::removeShiftUp(const QRect &rect)
 {
     d->ensureLoaded();
+    d->composedStyles.clear();
     const QRect invalidRect(rect.topLeft(), QPoint(rect.right(), KS_rowMax));
     QVector<QPair<QRectF, SharedSubStyle>> undoData;
     undoData << d->tree.removeShiftUp(rect);
@@ -550,6 +573,16 @@ Style StyleStorage::composeStyle(const QList<SharedSubStyle> &subStyles) const
         //         debugSheetsStyle <<"StyleStorage:" << "nothing to merge, return the default style";
         return *styleManager()->defaultStyle();
     }
+
+    QByteArray cacheKey;
+    cacheKey.reserve(subStyles.size() * int(sizeof(quintptr)));
+    for (const SharedSubStyle &subStyle : subStyles) {
+        const quintptr identity = reinterpret_cast<quintptr>(subStyle.data());
+        cacheKey.append(reinterpret_cast<const char *>(&identity), sizeof(identity));
+    }
+    const auto cachedStyle = d->composedStyles.constFind(cacheKey);
+    if (cachedStyle != d->composedStyles.constEnd())
+        return cachedStyle.value();
     // From OpenDocument-v1.2-os-part1 16.2<style:style>
     //
     // The <style:style> element represents styles.
@@ -582,8 +615,6 @@ Style StyleStorage::composeStyle(const QList<SharedSubStyle> &subStyles) const
         if (subStyles[i]->type() == Style::NamedStyleKey) {
             namedStyle = styleManager()->style(static_cast<const NamedStyle *>(subStyles[i].data())->name);
             if (namedStyle) {
-                debugSheetsStyle << "Compose found namedstyle:" << static_cast<const NamedStyle *>(subStyles[i].data())->name << namedStyle->parentName();
-                namedStyle->dump();
                 break;
             }
         }
@@ -592,40 +623,40 @@ Style StyleStorage::composeStyle(const QList<SharedSubStyle> &subStyles) const
     Style style;
     // get attributes from parent styles
     if (namedStyle) {
-        // first, load the attributes of the parent style(s)
-        QList<CustomStyle *> parentStyles;
-        CustomStyle *parentStyle = styleManager()->style(namedStyle->parentName());
-        debugSheetsStyle << "StyleStorage:" << namedStyle->name() << "'s parent =" << namedStyle->parentName();
-        while (parentStyle) {
-            if (namedStyle->name() == parentStyle->name()) {
-                // FIXME: This should not happen
-                // Afaics sometimes break because LO saves default style explicitly
-                errorSheetsStyle << "StyleStorage:"
-                                 << "Style" << namedStyle->name() << "has itself as parent";
-                parentStyle = nullptr;
-                break;
+        if (namedStyle->parentName() == namedStyle->name()) {
+            // LibreOffice can serialize a default style with itself as parent.
+            // It has no inherited parent properties, so use it directly and
+            // avoid rebuilding the same merged style for every cell.
+            style = *namedStyle;
+            style.clearAttribute(Style::DefaultStyleKey);
+            style.setParentName(namedStyle->name());
+        } else {
+            // first, load the attributes of the parent style(s)
+            QList<CustomStyle *> parentStyles;
+            CustomStyle *parentStyle = styleManager()->style(namedStyle->parentName());
+            while (parentStyle) {
+                // debugSheetsStyle <<"StyleStorage:" << parentStyle->name() <<"'s parent =" << parentStyle->parentName();
+                parentStyles.prepend(parentStyle);
+                parentStyle = styleManager()->style(parentStyle->parentName());
             }
-            // debugSheetsStyle <<"StyleStorage:" << parentStyle->name() <<"'s parent =" << parentStyle->parentName();
-            parentStyles.prepend(parentStyle);
-            parentStyle = styleManager()->style(parentStyle->parentName());
-        }
-        Style tmpStyle;
-        for (int i = 0; i < parentStyles.count(); ++i) {
-            // debugSheetsStyle <<"StyleStorage: merging" << parentStyles[i]->name() <<" in.";
-            tmpStyle = *parentStyles[i];
+            Style tmpStyle;
+            for (int i = 0; i < parentStyles.count(); ++i) {
+                // debugSheetsStyle <<"StyleStorage: merging" << parentStyles[i]->name() <<" in.";
+                tmpStyle = *parentStyles[i];
+                tmpStyle.merge(style); // insert/replace substyles in tmpStyle with substyles from style
+                style = tmpStyle;
+            }
+            // second, merge the other attributes in
+            // debugSheetsStyle <<"StyleStorage: merging" << namedStyle->name() <<" in.";
+            tmpStyle = *namedStyle;
             tmpStyle.merge(style); // insert/replace substyles in tmpStyle with substyles from style
             style = tmpStyle;
+            // not the default anymore
+            style.clearAttribute(Style::DefaultStyleKey);
+            // reset the parent name
+            style.setParentName(namedStyle->name());
+            //                 debugSheetsStyle <<"StyleStorage: merging done";
         }
-        // second, merge the other attributes in
-        // debugSheetsStyle <<"StyleStorage: merging" << namedStyle->name() <<" in.";
-        tmpStyle = *namedStyle;
-        tmpStyle.merge(style); // insert/replace substyles in tmpStyle with substyles from style
-        style = tmpStyle;
-        // not the default anymore
-        style.clearAttribute(Style::DefaultStyleKey);
-        // reset the parent name
-        style.setParentName(namedStyle->name());
-        //                 debugSheetsStyle <<"StyleStorage: merging done";
     }
     for (int i = 0; i < subStyles.count(); ++i) {
         if (subStyles[i]->type() == Style::DefaultStyleKey) {
@@ -649,6 +680,9 @@ Style StyleStorage::composeStyle(const QList<SharedSubStyle> &subStyles) const
         tmpStyle.merge(style); // insert/replace substyles in tmpStyle with substyles from style
         style = tmpStyle;
     }
+    if (d->composedStyles.size() >= 4096)
+        d->composedStyles.clear();
+    d->composedStyles.insert(cacheKey, style);
     return style;
 }
 

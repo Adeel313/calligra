@@ -8,6 +8,24 @@ include_directories(
 
 ########### next target ###############
 
+if(TARGET kopageapp)
+    add_executable(stage_pptx_roundtrip EXCLUDE_FROM_ALL tests/StagePptxRoundTrip.cpp)
+    target_include_directories(stage_pptx_roundtrip PRIVATE ${KOPAGEAPP_INCLUDES})
+    target_link_libraries(stage_pptx_roundtrip komain kopageapp KF6::I18n KF6::CoreAddons)
+endif()
+
+if(SHOULD_BUILD_FILTER_ODP_TO_PPTX)
+    include_directories(${CMAKE_SOURCE_DIR}/plugins/chartshape)
+    include_directories(${CMAKE_SOURCE_DIR}/stage/part)
+    add_library(calligra_filter_odp2pptx MODULE PptxExport.cpp)
+    target_link_libraries(calligra_filter_odp2pptx komain kopageapp calligrastageprivate chartshapecore)
+    install(TARGETS calligra_filter_odp2pptx DESTINATION ${KDE_INSTALL_PLUGINDIR}/calligra/formatfilters)
+endif()
+
+if(SHOULD_BUILD_FILTER_PPTX_TO_ODP)
+add_executable(test_native_pptx_preparation EXCLUDE_FROM_ALL tests/TestNativePptxPreparation.cpp)
+target_link_libraries(test_native_pptx_preparation KF6::Archive Qt6::Xml)
+
 set(pptx2odp_PART_SRCS
     PptxDebug.cpp
     PptxImport.cpp
@@ -23,6 +41,8 @@ add_library(calligra_filter_pptx2odp MODULE ${pptx2odp_PART_SRCS})
 
 target_link_libraries(
     calligra_filter_pptx2odp
+    KF6::Archive
+    Qt6::Xml
     komsooxml
     mso
     koodf2
@@ -31,6 +51,7 @@ target_link_libraries(
 )
 
 install(TARGETS calligra_filter_pptx2odp DESTINATION ${KDE_INSTALL_PLUGINDIR}/calligra/formatfilters)
+endif()
 
 ########### install files ###############
 

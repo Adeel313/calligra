@@ -31,7 +31,7 @@ public:
     /// Adds a new parameter to the command
     void addParameter(EnhancedPathParameter *parameter);
     /// Returns a string representation of the command
-    QString toString() const;
+    QString toString(bool useExtensions = false) const;
 
 private:
     /// Returns a list of points, created from the parameter list
@@ -50,6 +50,7 @@ private:
     QChar m_command; ///< the actual command
     QList<EnhancedPathParameter *> m_parameters; ///< the commands parameters
     EnhancedPathShape *m_parent; ///< the enhanced path owning the command
+    QString m_odfArcPath; ///< standard ODF representation of an extension arc
 };
 
 #endif // KOENHANCEDPATHCOMMAND_H

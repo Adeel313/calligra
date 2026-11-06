@@ -32,6 +32,7 @@
 
 #include <KoBookmark.h>
 #include <KoBookmarkManager.h>
+#include <KoRibbonLayout.h>
 #include <KoCanvasBase.h>
 #include <KoCanvasController.h>
 #include <KoCanvasResourceManager.h>
@@ -214,6 +215,44 @@ void TextTool::createActions()
 
     m_actionPasteAsText = new QAction(koIcon("edit-paste"), i18n("Paste As Text"), this);
     addAction("edit_paste_text", m_actionPasteAsText);
+
+    m_actionFormatPainter = new QAction(QIcon::fromTheme(QStringLiteral("draw-brush")), i18n("Format Painter"), this);
+    m_actionFormatPainter->setCheckable(true);
+    m_actionFormatPainter->setToolTip(i18n("Copy text formatting, then select the text to format. Press Escape to cancel."));
+    addAction("format_painter", m_actionFormatPainter);
+    connect(m_actionFormatPainter, &QAction::toggled, this, [this](bool active) {
+        if (!active) {
+            useCursor(Qt::IBeamCursor);
+            return;
+        }
+        if (!m_textEditor || m_textEditor->isEditProtected()) {
+            m_actionFormatPainter->setChecked(false);
+            return;
+        }
+        const QTextCharFormat source = m_textEditor->charFormat();
+        // Copy appearance only. Links, inline objects and change-tracking IDs
+        // belong to the destination text and must never be cloned.
+        m_painterFormat = QTextCharFormat();
+        m_painterFormat.setFont(source.font());
+        m_painterFormat.setForeground(source.foreground());
+        m_painterFormat.setBackground(source.background());
+        m_painterFormat.setVerticalAlignment(source.verticalAlignment());
+        m_painterFormat.setUnderlineColor(source.underlineColor());
+        for (int property = KoCharacterStyle::StrikeOutStyle; property <= KoCharacterStyle::UnderlineMode; ++property) {
+            if (source.hasProperty(property)) {
+                m_painterFormat.setProperty(property, source.property(property));
+            }
+        }
+        // Explicitly reset these when painting plain text over decorated text.
+        for (int property : {KoCharacterStyle::StrikeOutStyle, KoCharacterStyle::StrikeOutType,
+                             KoCharacterStyle::OverlineStyle, KoCharacterStyle::OverlineType,
+                             KoCharacterStyle::UnderlineStyle, KoCharacterStyle::UnderlineType}) {
+            m_painterFormat.setProperty(property, source.intProperty(property));
+        }
+        useTableBorderCursor(); // Shared paintbrush cursor for formatting tools.
+        returnFocusToCanvas();
+    });
+
     m_actionPasteAsText->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_V);
     connect(m_actionPasteAsText, &QAction::triggered, this, &TextTool::pasteAsText);
 
@@ -868,6 +907,23 @@ void TextTool::mousePressEvent(KoPointerEvent *event)
     if (m_textEditor.isNull())
         return;
 
+    // Annotation comments are separate shapes, not editable body text. Select
+    // the comment as an object and avoid routing its header/body through the
+    // regular text cursor hit testing path.
+    if (event->button() == Qt::LeftButton) {
+        KoShape *clickedShape = canvas()->shapeManager()->shapeAt(event->point);
+        if (dynamic_cast<AnnotationTextShape *>(clickedShape)) {
+            KoSelection *selection = canvas()->shapeManager()->selection();
+            selection->deselectAll();
+            selection->select(clickedShape);
+            if (m_textShape && selection->isSelected(m_textShape)) {
+                selection->deselect(m_textShape);
+            }
+            event->accept();
+            return;
+        }
+    }
+
     { // DRAGDBG temporary instrumentation
         KoShape *s = canvas()->shapeManager()->shapeAt(event->point);
         qWarning() << "[DRAGDBG] TextTool press shapeAt=" << (s ? s->shapeId() : QString("none")) << "buttons=" << event->buttons();
@@ -1340,6 +1396,10 @@ void TextTool::mouseMoveEvent(KoPointerEvent *event)
     KoPointedAt pointedAt = hitTest(event->point);
 
     if (event->buttons() == Qt::NoButton) {
+        if (m_actionFormatPainter->isChecked()) {
+            useTableBorderCursor();
+            return;
+        }
         // Give feedback when hovering a picture: the pointer changes so the user
         // can see the image can be clicked (to select it) and dragged.
         KoShape *hoveredShape = canvas()->shapeManager()->shapeAt(event->point);
@@ -1508,7 +1568,11 @@ void TextTool::mouseMoveEvent(KoPointerEvent *event)
                 }
             }
         } else {
-            useCursor(Qt::IBeamCursor);
+            if (m_actionFormatPainter->isChecked()) {
+                useTableBorderCursor();
+            } else {
+                useCursor(Qt::IBeamCursor);
+            }
             if (pointedAt.position == m_textEditor.data()->position())
                 return;
             if (pointedAt.position >= 0) {
@@ -1595,6 +1659,15 @@ void TextTool::mouseReleaseEvent(KoPointerEvent *event)
             runUrl(event, pointedAt.externalHRef);
         }
     }
+    if (event->button() == Qt::LeftButton && m_actionFormatPainter->isChecked()
+        && m_textEditor && m_textEditor->hasSelection() && !m_textEditor->isEditProtected()) {
+        m_actionFormatPainter->setChecked(false);
+        m_textEditor->beginEditBlock(kundo2_i18n("Paint Text Formatting"));
+        m_textEditor->mergeAutoStyle(m_painterFormat);
+        m_textEditor->endEditBlock();
+        updateActions();
+        event->accept();
+    }
 }
 
 void TextTool::shortcutOverrideEvent(QKeyEvent *event)
@@ -1607,6 +1680,11 @@ void TextTool::shortcutOverrideEvent(QKeyEvent *event)
 
 void TextTool::keyPressEvent(QKeyEvent *event)
 {
+    if (event->key() == Qt::Key_Escape && m_actionFormatPainter->isChecked()) {
+        m_actionFormatPainter->setChecked(false);
+        event->accept();
+        return;
+    }
     int destinationPosition = -1; // for those cases where the moveOperation is not relevant;
     QTextCursor::MoveOperation moveOperation = QTextCursor::NoMove;
     KoTextEditor *textEditor = m_textEditor.data();
@@ -1650,6 +1728,20 @@ void TextTool::keyPressEvent(QKeyEvent *event)
         textEditor->addCommand(cll);
         editingPluginEvents();
     } else if (event->key() == Qt::Key_Delete) {
+        // Comments are separate annotation shapes. When one is selected in
+        // the text tool, Delete should remove that shape instead of deleting
+        // the character at its editing cursor.
+        QList<KoShape *> selectedAnnotations;
+        for (KoShape *shape : canvas()->shapeManager()->selection()->selectedShapes()) {
+            if (dynamic_cast<AnnotationTextShape *>(shape)) {
+                selectedAnnotations.append(shape);
+            }
+        }
+        if (!selectedAnnotations.isEmpty()) {
+            canvas()->addCommand(canvas()->shapeController()->removeShapes(selectedAnnotations));
+            event->accept();
+            return;
+        }
         if (!textEditor->hasSelection() && event->modifiers() & Qt::ControlModifier) { // delete next word.
             textEditor->movePosition(QTextCursor::NextWord, QTextCursor::KeepAnchor);
         }
@@ -1903,6 +1995,7 @@ void TextTool::updateActions()
         return;
     }
     m_allowActions = false;
+    m_actionFormatPainter->setEnabled(!textEditor->isEditProtected());
 
     // Update the characterStyle related GUI elements
     QTextCharFormat cf = textEditor->charFormat();
@@ -2081,6 +2174,7 @@ void TextTool::activate(ToolActivation toolActivation, const QSet<KoShape *> &sh
 
 void TextTool::deactivate()
 {
+    m_actionFormatPainter->setChecked(false);
     m_caretTimer.stop();
     m_caretTimerState = false;
     repaintCaret();
@@ -2261,17 +2355,65 @@ QList<QPointer<QWidget>> TextTool::createOptionWidgets()
     if (m_textShape) {
         updateActions();
     }
+    // Ribbon group labels and order, matching the Microsoft Office Home tab:
+    // Edit, Character, Paragraph, Styles, Search and Selection.
     scw->setWindowTitle(i18n("Character"));
+    scw->setProperty("ribbonGroupOrder", 20);
     widgets.append(scw);
     spw->setWindowTitle(i18n("Paragraph"));
+    spw->setProperty("ribbonGroupOrder", 30);
     widgets.append(spw);
+    const bool wordsRibbon = qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive);
+    const bool stageRibbon = qApp->applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive);
+    if (stageRibbon) {
+        scw->setWindowTitle(i18n("Font"));
+        scw->setProperty("ribbonGroupOrder", 30);
+        spw->setProperty("ribbonGroupOrder", 40);
+    }
+    const bool officeRibbon = wordsRibbon
+        || stageRibbon
+        || qApp->applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive);
+    if (officeRibbon) {
+        scw->configureRibbon();
+        QWidget *styles = spw->configureRibbon();
+        if (stageRibbon)
+            styles->setProperty("ribbonTargetPage", QStringLiteral("stageShapeFormatPage"));
+        widgets.append(styles);
+    }
 
     bool useAdvancedText =
         !(canvas()->resourceManager()->intResource(KoCanvasResourceManager::ApplicationSpeciality) & KoCanvasResourceManager::NoAdvancedText);
     if (useAdvancedText) {
-        stw->setWindowTitle(i18n("Table"));
+        stw->setWindowTitle(i18n("Table Design"));
+        stw->setProperty("ribbonGroupOrder", 60);
+        if (wordsRibbon || stageRibbon) {
+            stw->setProperty("ribbonTargetPage", stageRibbon ? QStringLiteral("stageTableFormatPage") : QStringLiteral("tableRibbonPage"));
+        }
         widgets.append(stw);
-        siw->setWindowTitle(i18n("Insert"));
+        if (officeRibbon) {
+            for (QWidget *group : stw->configureRibbon()) {
+                if (!wordsRibbon) {
+                    group->setProperty("ribbonTargetPage", qApp->applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)
+                                                               ? QVariant(QStringLiteral("stageTableFormatPage")) : QVariant());
+                }
+                widgets.append(group);
+            }
+        }
+        siw->setWindowTitle(i18n("Quick Insert"));
+        siw->setProperty("ribbonGroupOrder", 70);
+        if (wordsRibbon) {
+            siw->setWindowTitle(i18n("Text"));
+            siw->setProperty("ribbonTargetPage", QStringLiteral("insertRibbonPage"));
+            const auto button = [siw](const char *name) { return siw->findChild<QToolButton *>(QLatin1String(name)); };
+            // The Pages group owns the ribbon's Page Break command and
+            // follows the active tool. Avoid a second, tool-bound copy here.
+            button("insertPageBreak")->hide();
+            KoRibbonLayout::arrange(siw, {button("insertVariable")},
+                                   {button("quickTable"), button("insertSpecialChar"),
+                                    button("insertSection"), button("configureSection"), button("splitSections")});
+        }
+        if (stageRibbon)
+            siw->setProperty("ribbonTargetPage", QStringLiteral("stageInsertPage"));
         widgets.append(siw);
     }
     return widgets;
@@ -2790,7 +2932,10 @@ void TextTool::shapeAddedToCanvas()
     if (m_textShape) {
         KoSelection *selection = canvas()->shapeManager()->selection();
         KoShape *shape = selection->firstSelectedShape();
-        if (shape != m_textShape && canvas()->shapeManager()->shapes().contains(m_textShape)) {
+        if (dynamic_cast<AnnotationTextShape *>(shape)) {
+            return;
+        }
+        if (shape && shape != m_textShape && canvas()->shapeManager()->shapes().contains(m_textShape)) {
             // this situation applies when someone, not us, changed the selection by selecting another
             // text shape. Possibly by adding one.
             // Deselect the new shape again, so we can keep editing what we were already editing

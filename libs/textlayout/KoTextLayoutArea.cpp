@@ -17,6 +17,9 @@
 
 #include "KoTextLayoutArea.h"
 #include "KoTextLayoutArea_p.h"
+#include "KoTextLayoutRootArea.h"
+#include <KoShape.h>
+#include <KoTextShapeDataBase.h>
 
 #include "FrameIterator.h"
 #include "KoCharAreaInfo.h"
@@ -33,6 +36,7 @@
 #include <KoInlineTextObjectManager.h>
 #include <KoListStyle.h>
 #include <KoParagraphStyle.h>
+#include <KoTextPage.h>
 #include <KoStyleManager.h>
 #include <KoTableStyle.h>
 #include <KoText.h>
@@ -537,14 +541,20 @@ bool KoTextLayoutArea::layout(FrameIterator *cursor)
         QTextFrame *subFrame = cursor->it.currentFrame();
         if (table) {
             QString masterPageName = table->frameFormat().property(KoTableStyle::MasterPageName).toString();
-            bool masterPageNameChanged = !masterPageName.isEmpty();
-            if (masterPageNameChanged) {
+            bool masterPageNameChanged = !masterPageName.isEmpty() && masterPageName != cursor->masterPageName;
+            if (!masterPageName.isEmpty()) {
                 cursor->masterPageName = masterPageName;
             }
 
             if (!virginPage()) {
                 int breaktype = table->frameFormat().intProperty(KoTableStyle::BreakBefore);
-                if ((acceptsPageBreak() && (masterPageNameChanged || (breaktype == KoText::PageBreak)))
+                bool samePageLayout = false;
+                const QList<KoTextLayoutRootArea *> areas = d->documentLayout->rootAreas();
+                if (!masterPageName.isEmpty() && !areas.isEmpty() && areas.last()->page()) {
+                    samePageLayout = areas.last()->page()->hasSamePageLayout(masterPageName);
+                }
+                const bool forcePageBreak = breaktype == KoText::PageBreak || (masterPageNameChanged && !samePageLayout);
+                if ((acceptsPageBreak() && forcePageBreak)
                     || (acceptsColumnBreak() && (breaktype == KoText::ColumnBreak))) {
                     d->endOfArea = new FrameIterator(cursor);
                     setBottom(d->y + d->footNotesHeight);
@@ -662,14 +672,20 @@ bool KoTextLayoutArea::layout(FrameIterator *cursor)
                 // FIXME this doesn't work for cells inside tables. We probably should make it more
                 // generic to handle such cases too.
                 QString masterPageName = block.blockFormat().property(KoParagraphStyle::MasterPageName).toString();
-                bool masterPageNameChanged = !masterPageName.isEmpty();
-                if (masterPageNameChanged) {
+                bool masterPageNameChanged = !masterPageName.isEmpty() && masterPageName != cursor->masterPageName;
+                if (!masterPageName.isEmpty()) {
                     cursor->masterPageName = masterPageName;
                 }
 
                 if (!virginPage()) {
                     int breaktype = block.blockFormat().intProperty(KoParagraphStyle::BreakBefore);
-                    if ((acceptsPageBreak() && (masterPageNameChanged || (breaktype == KoText::PageBreak)))
+                    bool samePageLayout = false;
+                    const QList<KoTextLayoutRootArea *> areas = d->documentLayout->rootAreas();
+                    if (!masterPageName.isEmpty() && !areas.isEmpty() && areas.last()->page()) {
+                        samePageLayout = areas.last()->page()->hasSamePageLayout(masterPageName);
+                    }
+                    const bool forcePageBreak = breaktype == KoText::PageBreak || (masterPageNameChanged && !samePageLayout);
+                    if ((acceptsPageBreak() && forcePageBreak)
                         || (acceptsColumnBreak() && (breaktype == KoText::ColumnBreak))) {
                         d->endOfArea = new FrameIterator(cursor);
                         setBottom(d->y + d->footNotesHeight);
@@ -1208,7 +1224,12 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
     }
     regularSpacedTabPos += tabOffset * qt_defaultDpiY() / 72.0;
 
-    while (regularSpacedTabPos < MaximumTabPos) {
+    // Tabs beyond the right edge of the text area can never be reached by a
+    // line, so generating them for every block is wasted work.  This used to
+    // create roughly 150 tabs per paragraph (up to MaximumTabPos) and made
+    // layouting large documents very slow.
+    const qreal maximumTabPosition = qMax<qreal>(0.0, right() - left()) * qt_defaultDpiY() / 72.0;
+    while (regularSpacedTabPos < maximumTabPosition) {
         QTextOption::Tab tab;
         tab.position = regularSpacedTabPos;
         qTabs.append(tab);
@@ -1217,8 +1238,8 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
 
     option.setTabs(qTabs);
 
-    // conversion here is required because Qt thinks in device units and we don't
-    option.setTabStopDistance(tabStopDistance * qt_defaultDpiY() / 72.);
+    // tabStopDistance was converted to Qt units above; do not scale it twice.
+    option.setTabStopDistance(tabStopDistance);
 
     layout->setTextOption(option);
 
@@ -1751,6 +1772,8 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
         height = 12; // default size for uninitialized styles.
     }
 
+    const qreal naturalHeight = height;
+
     // Calculate adjustment to the height due to line height calculated by qt which shouldn't be
     // there in reality. We will just move the line
     qreal lineAdjust = 0.0;
@@ -1777,7 +1800,7 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
                 if (percent != 0) {
                     height *= percent / 100.0;
                 }
-                height *= 1.16; // default
+                if (!useFontProperties) height *= 1.16; // default word-processing leading
             }
             height += lineSpacing;
         }
@@ -1790,6 +1813,20 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
         // for drop caps we just work with a basic linespacing for the dropped characters
         height *= 1.16;
     }
+    const KoTextLayoutArea *root = this;
+    while (root->d->parent) root = root->d->parent;
+    if (const auto *area = dynamic_cast<const KoTextLayoutRootArea *>(root)) {
+        const auto *shape = area->associatedShape();
+        const auto *data = shape ? dynamic_cast<const KoTextShapeDataBase *>(shape->userData()) : nullptr;
+        if (data && data->autofitLineSpacingReduction() > 0)
+            height *= 1.0 - qBound(0, data->autofitLineSpacingReduction(), 80000) / 100000.0;
+    }
+    // A presentation's proportional line box has half of its leading above
+    // the glyph baseline and half below. Compressing it without moving the
+    // baseline pushes all text down, especially in centered title frames.
+    if (useFontProperties && style.value(KoParagraphStyle::FixedLineHeight).toDouble() == 0)
+        lineAdjust += (height - naturalHeight) / 2;
+
     // rounding problems due to Qt-scribe internally using ints.
     // also used when line was moved down because of intersections with other shapes
     if (qAbs(d->y - line.y()) >= 0.126) {

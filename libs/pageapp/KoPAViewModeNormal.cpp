@@ -7,6 +7,7 @@
 #include "KoPAViewModeNormal.h"
 
 #include <QKeyEvent>
+#include <QApplication>
 #include <QPainter>
 
 #include "KoPACanvasBase.h"
@@ -16,8 +17,12 @@
 #include "KoPAViewBase.h"
 #include "commands/KoPAChangePageLayoutCommand.h"
 #include <KoGridData.h>
+#include <KoInteractionTool.h>
 #include <KoGuidesData.h>
 #include <KoShapeManager.h>
+#include <KoSelection.h>
+#include <KoToolManager.h>
+#include <KoToolRegistry.h>
 #include <KoShapePaintingContext.h>
 #include <KoToolProxy.h>
 
@@ -87,6 +92,38 @@ void KoPAViewModeNormal::tabletEvent(QTabletEvent *event, const QPointF &point)
 
 void KoPAViewModeNormal::mousePressEvent(QMouseEvent *event, const QPointF &point)
 {
+    // Leave a shape editor before forwarding the press, so this same gesture
+    // can select and drag another object instead of only changing tools on release.
+    if (event->button() == Qt::LeftButton) {
+        KoToolManager *tools = KoToolManager::instance();
+        KoToolFactoryBase *factory = KoToolRegistry::instance()->value(tools->activeToolId());
+        if (factory && factory->toolType().split(QLatin1Char(',')).contains(KoToolFactoryBase::dynamicToolType())) {
+            KoShape *shape = m_canvas->shapeManager()->shapeAt(point);
+            KoSelection *selection = m_canvas->shapeManager()->selection();
+            bool editingInterior = shape && selection->isSelected(shape);
+            if (editingInterior) {
+                const QPointF margin = m_canvas->viewConverter()->viewToDocument(QPointF(8, 8));
+                const QPointF localPoint = shape->absoluteTransformation(nullptr).inverted().map(point);
+                editingInterior = shape->outlineRect().adjusted(margin.x(), margin.y(), -margin.x(), -margin.y()).contains(localPoint);
+            }
+            if (!editingInterior) {
+                tools->switchToolRequested(KoInteractionTool_ID);
+            }
+        }
+    }
+    m_mousePressPoint = event->position();
+    m_placeholderClick = false;
+    if (!m_masterMode && event->button() == Qt::LeftButton && event->modifiers() == Qt::NoModifier) {
+        KoShape *shape = m_canvas->shapeManager()->shapeAt(point);
+        if (shape && shape->shapeId() == QLatin1String("KPrPlaceholderShapeId")) {
+            const QString type = shape->additionalAttribute("presentation:class");
+            const QPointF margin = m_canvas->viewConverter()->viewToDocument(QPointF(8, 8));
+            m_placeholderClick = (type == QLatin1String("title") || type == QLatin1String("outline")
+                                  || type == QLatin1String("subtitle") || type == QLatin1String("text")
+                                  || type == QLatin1String("notes"))
+                && shape->boundingRect().adjusted(margin.x(), margin.y(), -margin.x(), -margin.y()).contains(point);
+        }
+    }
     m_toolProxy->mousePressEvent(event, point);
 }
 
@@ -97,12 +134,27 @@ void KoPAViewModeNormal::mouseDoubleClickEvent(QMouseEvent *event, const QPointF
 
 void KoPAViewModeNormal::mouseMoveEvent(QMouseEvent *event, const QPointF &point)
 {
+    if ((event->position() - m_mousePressPoint).manhattanLength() >= QApplication::startDragDistance())
+        m_placeholderClick = false;
     m_toolProxy->mouseMoveEvent(event, point);
 }
 
 void KoPAViewModeNormal::mouseReleaseEvent(QMouseEvent *event, const QPointF &point)
 {
+    const bool activatePlaceholder = m_placeholderClick && event->button() == Qt::LeftButton
+        && event->modifiers() == Qt::NoModifier
+        && (event->position() - m_mousePressPoint).manhattanLength() < QApplication::startDragDistance();
+    m_placeholderClick = false;
     m_toolProxy->mouseReleaseEvent(event, point);
+    if (activatePlaceholder) {
+        KoShape *shape = m_canvas->shapeManager()->shapeAt(point);
+        if (shape && shape->shapeId() == QLatin1String("KPrPlaceholderShapeId") && shape->isEditable()) {
+            KoSelection *selection = m_canvas->shapeManager()->selection();
+            selection->deselectAll();
+            selection->select(shape);
+            KoToolManager::instance()->switchToolRequested(KoToolManager::instance()->preferredToolForSelection({shape}));
+        }
+    }
 }
 
 void KoPAViewModeNormal::shortcutOverrideEvent(QKeyEvent *event)

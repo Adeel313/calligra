@@ -42,9 +42,20 @@ public:
      *  paragraph still shows a marker instead of silently losing the list. */
     int numIdForStyle(const QString &styleName);
 
+    /** Allocate a new w:numId with a fresh copy of a style's levels.  A new
+     *  <text:list> instance must restart numbering, while Word continues the
+     *  counter when several paragraphs share one numId. */
+    int newListInstance(const QString &styleName);
+
+    /** Number of levels the named style defines (0 when unknown). */
+    int levelCountForStyle(const QString &styleName) const;
+
+    /** Lowest 1-based level the named style defines (1 when unknown). */
+    int firstLevelForStyle(const QString &styleName) const;
+
     bool isEmpty() const
     {
-        return m_numIds.isEmpty();
+        return m_numLevels.isEmpty();
     }
 
     /** Serialize the collected definitions as word/numbering.xml content. */
@@ -53,6 +64,7 @@ public:
 private:
     QHash<QString, QVector<NumberingLevel>> m_levels;
     QHash<QString, int> m_numIds;
+    QHash<int, QVector<NumberingLevel>> m_numLevels; //!< levels per allocated w:numId
     int m_nextNumId = 1;
 };
 

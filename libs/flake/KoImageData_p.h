@@ -69,6 +69,11 @@ public:
     DataStoreState dataStoreState;
     QUrl imageLocation;
     QImage image;
+    /// Original encoded image bytes, kept so lossless formats can be saved
+    /// without decoding and re-encoding them.
+    QByteArray rawData;
+    /// Format of rawData (e.g. "png"), as reported by QImageReader.
+    QByteArray rawDataFormat;
     /// screen optimized cached version.
     QPixmap pixmap;
 

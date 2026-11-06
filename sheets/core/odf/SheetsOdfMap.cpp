@@ -22,6 +22,7 @@
 #include "SheetsOdfPrivate.h"
 
 #include "engine/CalculationSettings.h"
+#include "engine/CellBase.h"
 #include "engine/NamedAreaManager.h"
 
 #include "CellStorage.h"
@@ -410,10 +411,27 @@ void Odf::saveNamedAreas(const NamedAreaManager *manager, KoXmlWriter &xmlWriter
     for (int i = 0; i < areas.count(); ++i) {
         QString name = areas[i];
         region = manager->namedArea(name);
+        // Named ranges require absolute sheet and cell coordinates. Calc
+        // otherwise drops the name on XLSX export. Quote the sheet name
+        // explicitly, including escaped apostrophes, for each endpoint.
+        const auto address = [](SheetBase *sheet, int column, int row) -> QString {
+            QString sheetName = sheet->sheetName();
+            sheetName.replace(QLatin1Char('\''), QStringLiteral("''"));
+            return QStringLiteral("$'") + sheetName + QStringLiteral("'.$")
+                + CellBase::columnName(column) + QLatin1Char('$') + QString::number(row);
+        };
+        QStringList addresses;
+        for (Region::ConstIterator it = region.constBegin(); it != region.constEnd(); ++it) {
+            const QRect rect = (*it)->rect();
+            QString range = address((*it)->sheet(), rect.left(), rect.top());
+            if (rect.width() > 1 || rect.height() > 1)
+                range += QLatin1Char(':') + address((*it)->sheet(), rect.right(), rect.bottom());
+            addresses.append(range);
+        }
         xmlWriter.startElement("table:named-range");
         xmlWriter.addAttribute("table:name", name);
-        xmlWriter.addAttribute("table:base-cell-address", Odf::saveRegion(Region(1, 1, manager->sheet(name)).name()));
-        xmlWriter.addAttribute("table:cell-range-address", Odf::saveRegion(&region));
+        xmlWriter.addAttribute("table:base-cell-address", address(manager->sheet(name), 1, 1));
+        xmlWriter.addAttribute("table:cell-range-address", addresses.join(QLatin1Char(' ')));
         xmlWriter.endElement();
     }
     xmlWriter.endElement();

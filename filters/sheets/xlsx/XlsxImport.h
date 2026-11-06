@@ -24,6 +24,7 @@ class XlsxImport : public MSOOXML::MsooXmlImport
 public:
     XlsxImport(QObject *parent, const QVariantList &);
     ~XlsxImport() override;
+    KoFilter::ConversionStatus convert(const QByteArray &from, const QByteArray &to) override;
 
 protected:
     bool acceptsSourceMimeType(const QByteArray &mime) const override;

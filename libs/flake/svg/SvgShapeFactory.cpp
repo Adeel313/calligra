@@ -15,9 +15,29 @@
 #include <KoStore.h>
 #include <KoStoreDevice.h>
 #include <KoStyleStack.h>
+#include <KoUnit.h>
 #include <KoXmlNS.h>
 
 #define SVGSHAPEFACTORYID "SvgShapeFactory"
+
+namespace {
+class SvgFrameGroup : public KoShapeGroup
+{
+public:
+    QTransform framePlacement(const KoXmlElement &frame, KoShapeLoadingContext &context)
+    {
+        QTransform placement;
+        placement.translate(KoUnit::parseValue(frame.attributeNS(KoXmlNS::svg, "x")),
+                            KoUnit::parseValue(frame.attributeNS(KoXmlNS::svg, "y")));
+        return placement * parseOdfTransform(frame.attributeNS(KoXmlNS::draw, "transform"), context);
+    }
+
+    void loadFrame(const KoXmlElement &frame, KoShapeLoadingContext &context)
+    {
+        loadOdfAttributes(frame, context, OdfMandatories | OdfAdditionalAttributes | OdfCommonChildElements);
+    }
+};
+}
 
 SvgShapeFactory::SvgShapeFactory()
     : KoShapeFactoryBase(SVGSHAPEFACTORYID, i18n("Embedded svg shape"))
@@ -102,7 +122,8 @@ KoShape *SvgShapeFactory::createShapeFromOdf(const KoXmlElement &element, KoShap
 
         SvgParser parser(context.documentResourceManager());
 
-        QList<KoShape *> shapes = parser.parseSvg(xmlDoc.documentElement());
+        QSizeF viewport;
+        QList<KoShape *> shapes = parser.parseSvg(xmlDoc.documentElement(), &viewport);
         if (shapes.isEmpty())
             return nullptr;
 
@@ -113,25 +134,30 @@ KoShape *SvgShapeFactory::createShapeFromOdf(const KoXmlElement &element, KoShap
             zIndex = context.zIndex();
         }
 
-        if (shapes.count() == 1) {
-            KoShape *shape = shapes.first();
-            shape->setZIndex(zIndex);
-
-            // TODO: This needs to be reviewed, in case more than one shape
-            context.odfLoadingContext().styleStack().save();
-            bool loaded = shape->loadOdf(element, context);
-            context.odfLoadingContext().styleStack().restore();
-            if (!loaded) {
-                errorFlake << "Failed to load svg shape: " << shape->shapeId();
-                delete shape;
-                return nullptr;
-            }
-            return shape;
+        // Embedded SVG coordinates belong to the SVG viewport, not to the
+        // slide. Fit the entire fragment, including its margins, to its frame.
+        // Reloading a single parsed path from draw:frame also loses its SVG data.
+        auto *svgGroup = new SvgFrameGroup;
+        const QSizeF frameSize(KoUnit::parseValue(element.attributeNS(KoXmlNS::svg, "width")),
+                               KoUnit::parseValue(element.attributeNS(KoXmlNS::svg, "height")));
+        QTransform fit;
+        if (viewport.width() > 0 && viewport.height() > 0 && frameSize.width() > 0 && frameSize.height() > 0) {
+            fit.scale(frameSize.width() / viewport.width(), frameSize.height() / viewport.height());
         }
-        // FIXME: should this not be created form the draw:g element?
-        KoShapeGroup *svgGroup = new KoShapeGroup;
+        fit *= svgGroup->framePlacement(element, context);
+        // Ordinary shape groups do not propagate scale/rotation to children.
+        // Transform the parsed leaves before grouping them in slide coordinates.
+        const auto place = [&](const auto &self, KoShape *shape) -> void {
+            if (auto *group = dynamic_cast<KoShapeGroup *>(shape)) {
+                for (KoShape *child : group->shapes()) self(self, child);
+            } else {
+                shape->applyAbsoluteTransformation(fit);
+            }
+        };
+        for (KoShape *shape : shapes) place(place, shape);
         KoShapeGroupCommand cmd(svgGroup, shapes);
         cmd.redo();
+        svgGroup->loadFrame(element, context);
         svgGroup->setZIndex(zIndex);
 
         return svgGroup;

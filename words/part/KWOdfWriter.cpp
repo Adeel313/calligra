@@ -124,7 +124,7 @@ void KWOdfWriter::saveHeaderFooter(KoShapeSavingContext &context)
         if (!pageStyle.nextStyleName().isEmpty())
             masterStyle.addProperty("style:next-style-name", pageStyle.nextStyleName());
         masterStyle.addProperty("style:page-layout-name", context.mainStyles().insert(layoutStyle, "pm"));
-        QString name = context.mainStyles().insert(masterStyle, pageStyle.name(), KoGenStyles::DontAddNumberToName);
+        QString name = context.mainStyles().insert(masterStyle, pageStyle.name(), KoGenStyles::DontAddNumberToName | KoGenStyles::AllowDuplicates);
         m_masterPages.insert(pageStyle, name);
     }
 
@@ -164,7 +164,7 @@ void KWOdfWriter::saveHeaderFooter(KoShapeSavingContext &context)
             masterStyle.addChildElement(QString::number(++index), QString::fromUtf8(content));
         }
         // append the headerfooter-style to the main-style
-        QString name = context.mainStyles().insert(masterStyle, pageStyle.name(), KoGenStyles::DontAddNumberToName);
+        QString name = context.mainStyles().insert(masterStyle, pageStyle.name(), KoGenStyles::DontAddNumberToName | KoGenStyles::AllowDuplicates);
         m_masterPages.insert(pageStyle, name);
     }
 

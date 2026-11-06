@@ -242,6 +242,7 @@ KoShape *KoShapeRegistry::createShapeFromOdf(const KoXmlElement &e, KoShapeLoadi
         if (loaded) {
             shape = group;
         } else {
+            context.removeShapeReferences(group);
             delete group;
         }
     } else {
@@ -249,6 +250,11 @@ KoShape *KoShapeRegistry::createShapeFromOdf(const KoXmlElement &e, KoShapeLoadi
     }
 
     if (shape) {
+        // A failed factory may have registered a preview which it then deleted.
+        // Resolve the frame ID to the final live shape (including fallbacks).
+        QString id = e.attributeNS(KoXmlNS::xml, "id");
+        if (id.isEmpty()) id = e.attributeNS(KoXmlNS::draw, "id");
+        if (!id.isEmpty()) context.addShapeId(shape, id);
         context.shapeLoaded(shape);
     }
 

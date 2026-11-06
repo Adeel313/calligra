@@ -1,5 +1,5 @@
 <!DOCTYPE gui SYSTEM "kpartgui.dtd">
-<gui name="stage" version="127" translationDomain="calligrastage">
+<gui name="stage" version="128" translationDomain="calligrastage">
     <MenuBar>
         <Menu name="file">
             <Action name="file_export_html" />
@@ -47,6 +47,9 @@
             <Action name="view_fullscreen"/>
         </Menu>
         <Menu name="insert"><text>&amp;Insert</text>
+            <Action name="insert_picture"/>
+            <Action name="add_shape"/>
+            <Action name="insert_chart"/>
             <Action name="insert_variable"/> <!-- menu -->
 	        <Action name="import_document"/>
 	        <Action name="insert_pictures"/>

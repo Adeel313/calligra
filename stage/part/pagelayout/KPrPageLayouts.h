@@ -52,6 +52,9 @@ public:
 
     const QList<KPrPageLayout *> layouts() const;
 
+    /// The document's Title and Content layout, with a built-in fallback.
+    KPrPageLayout *defaultContentLayout();
+
 private:
     // this is a simulation of a std::set<KPrPageLayout, compareByKPrPageLayout>()
     QMap<KPrPageLayoutWrapper, KPrPageLayout *> m_pageLayouts;

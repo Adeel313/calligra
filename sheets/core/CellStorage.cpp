@@ -581,7 +581,8 @@ int CellStorage::columns(bool includeStyles) const
     QReadLocker rl(&bigUglyLock);
 #endif
     int max = CellBaseStorage::columns(includeStyles);
-    max = qMax(max, d->conditionsStorage->usedArea().right());
+    if (includeStyles)
+        max = qMax(max, d->conditionsStorage->usedArea().right());
     max = qMax(max, d->fusionStorage->usedArea().right());
     if (includeStyles)
         max = qMax(max, d->styleStorage->usedArea().right());
@@ -599,7 +600,8 @@ int CellStorage::rows(bool includeStyles) const
     QReadLocker rl(&bigUglyLock);
 #endif
     int max = CellBaseStorage::rows(includeStyles);
-    max = qMax(max, d->conditionsStorage->usedArea().bottom());
+    if (includeStyles)
+        max = qMax(max, d->conditionsStorage->usedArea().bottom());
     max = qMax(max, d->fusionStorage->usedArea().bottom());
     if (includeStyles)
         max = qMax(max, d->styleStorage->usedArea().bottom());

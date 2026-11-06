@@ -279,6 +279,7 @@ void KPrDocument::initEmpty()
         KoPADocument::initEmpty();
     }
     resetURL();
+    setOutputMimeType("application/vnd.openxmlformats-officedocument.presentationml.presentation");
 }
 
 KPrShapeAnimations &KPrDocument::animationsByPage(KoPAPageBase *page)
@@ -325,7 +326,12 @@ QList<KoPAPageBase *> KPrDocument::slideShow() const
         return m_customSlideShows->getByName(m_activeCustomSlideShow);
     }
 
-    return pages();
+    QList<KoPAPageBase *> visiblePages;
+    for (KoPAPageBase *page : pages()) {
+        const auto *slide = dynamic_cast<KPrPage *>(page);
+        if (!slide || !slide->isHidden()) visiblePages.append(page);
+    }
+    return visiblePages;
 }
 
 QString KPrDocument::activeCustomSlideShow() const

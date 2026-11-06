@@ -8,6 +8,11 @@
 #include "ShrinkToFitShapeContainer.h"
 
 #include <KoShapeSavingContext.h>
+#include <QTextBlock>
+#include <KoParagraphStyle.h>
+#include <QTextLayout>
+#include <QTextFrame>
+#include <QtMath>
 #include <KoTextLayoutRootArea.h>
 
 ShrinkToFitShapeContainer::ShrinkToFitShapeContainer(KoShape *childShape, KoDocumentResourceManager *documentResources)
@@ -113,7 +118,10 @@ ShrinkToFitShapeContainerModel::ShrinkToFitShapeContainerModel(ShrinkToFitShapeC
     : q(q)
     , d(d)
     , m_scale(1.0)
-    , m_dirty(10)
+    , m_minScale(0.0)
+    , m_maxScale(1.0)
+    , m_dirty(14)
+    , m_documentRevision(-1)
     , m_maybeUpdate(false)
 {
 }
@@ -137,26 +145,117 @@ void ShrinkToFitShapeContainerModel::containerChanged(KoShapeContainer *containe
 
         QSizeF shapeSize = q->size();
         QSizeF documentSize = rootArea->boundingRect().size();
-        if (m_maybeUpdate && shapeSize == m_shapeSize && documentSize == m_documentSize) {
-            m_dirty = 0;
-            return; // nothing to update
-        }
-
-        m_shapeSize = shapeSize;
-        m_documentSize = documentSize;
-
-        if (documentSize.width() > 0.0 && documentSize.height() > 0.0) {
-            if (m_dirty || !m_maybeUpdate) {
-                qreal scaleX = qMin<qreal>(1.0, shapeSize.width() / documentSize.width());
-                qreal scaleY = qMin<qreal>(1.0, shapeSize.height() / documentSize.height());
-                m_scale = (scaleX + scaleY) / 2.0 * 0.95;
-                if (m_maybeUpdate && m_dirty)
-                    --m_dirty;
+        // Empty editing paragraphs at the end do not contribute visible ink.
+        // Counting them can shrink a short slide caption to a fraction of its
+        // intended size. Keep the paragraphs, but fit to the last visible line.
+        if (data->document()->rootFrame()->childFrames().isEmpty()) {
+            auto last = data->document()->lastBlock();
+            const auto end = last;
+            while (last.isValid() && last.text().trimmed().isEmpty() && !last.textList()) {
+                last = last.previous();
             }
-        } else {
-            m_scale = 1.0;
-            m_dirty = 1;
+            if (last.isValid() && last != end && last.layout()->lineCount() > 0) {
+                const qreal bottom = last.layout()->position().y() + last.layout()->boundingRect().bottom();
+                documentSize.setHeight(qMin(documentSize.height(), qMax(qreal(0), bottom - rootArea->boundingRect().top())));
+            }
         }
+
+        if (shapeSize != m_shapeSize || !m_maybeUpdate || data->document()->revision() != m_documentRevision) {
+            m_documentRevision = data->document()->revision();
+            m_minScale = 0;
+            m_maxScale = 1;
+            m_dirty = 14;
+            m_shapeSize = shapeSize;
+            if (m_scale != 1) {
+                m_scale = 1;
+                d->childShape->setSize(shapeSize);
+                d->childShape->setTransformation(QTransform());
+                return; // Refit after layout at the new unscaled size.
+            }
+        }
+        const qreal authoredScale = data->autofitFontScale() > 0
+            ? qBound(0.001, data->autofitFontScale() / 100000.0, 1.0) : 1.0;
+        m_maxScale = qMin(m_maxScale, authoredScale);
+        if (m_scale > authoredScale) {
+            m_scale = authoredScale;
+            d->childShape->setSize(QSizeF(shapeSize.width() / m_scale, shapeSize.height() / m_scale));
+            QTransform transform;
+            transform.scale(m_scale, m_scale);
+            d->childShape->setTransformation(transform);
+            return;
+        }
+        if (!m_maybeUpdate || m_dirty == 0) return;
+        auto lastVisible = data->document()->lastBlock();
+        while (lastVisible.isValid() && lastVisible.text().trimmed().isEmpty() && !lastVisible.textList())
+            lastVisible = lastVisible.previous();
+        qreal maximumFont = 0;
+        if (data->document()->rootFrame()->childFrames().isEmpty()) {
+            for (auto block = data->document()->begin(); block.isValid() && block.position() <= lastVisible.position(); block = block.next()) {
+                for (int i = 0; i < block.layout()->lineCount(); ++i) {
+                    const auto line = block.layout()->lineAt(i);
+                    documentSize.setHeight(qMax(documentSize.height(), block.layout()->position().y() + line.rect().bottom() - rootArea->top()));
+                }
+                for (auto fragment = block.begin(); !fragment.atEnd(); ++fragment)
+                    maximumFont = qMax(maximumFont, fragment.fragment().charFormat().fontPointSize());
+            }
+        }
+        const QSizeF padding(data->leftPadding() + data->rightPadding(), data->topPadding() + data->bottomPadding());
+        const QSizeF actualSize = documentSize + padding;
+        const bool actualFits = actualSize.width() * m_scale <= shapeSize.width() + 0.1
+            && actualSize.height() * m_scale <= shapeSize.height() + 0.1;
+        if (m_dirty == -1) {
+            m_dirty = 0;
+            if (actualFits) return;
+            m_scale = qMax(qreal(0.001), m_minScale);
+            d->childShape->setSize(QSizeF(shapeSize.width() / m_scale, shapeSize.height() / m_scale));
+            QTransform transform;
+            transform.scale(m_scale, m_scale);
+            d->childShape->setTransformation(transform);
+            return;
+        }
+        if (data->autofitFontScale() > 0 && m_scale == authoredScale && actualFits) {
+            m_dirty = 0;
+            return; // Reuse a valid authored fit, including full last-line ink.
+        }
+        // Select font size using natural leading, then honor the authored
+        // line compression when rendering. Otherwise applying compression
+        // feeds back into the fitter and enlarges the font on the next pass.
+        const qreal reduction = qBound(0, data->autofitLineSpacingReduction(), 80000) / 100000.0;
+        if (reduction > 0) {
+            auto last = data->document()->lastBlock();
+            while (last.isValid() && last.text().trimmed().isEmpty() && !last.textList()) last = last.previous();
+            for (auto block = data->document()->begin(); block.isValid() && block.position() <= last.position(); block = block.next()) {
+                const auto format = block.blockFormat();
+                const qreal fixed = format.property(KoParagraphStyle::FixedLineHeight).toDouble();
+                const qreal percent = format.property(KoParagraphStyle::PercentLineHeight).toDouble();
+                for (int i = 0; i < block.layout()->lineCount(); ++i) {
+                    const auto line = block.layout()->lineAt(i);
+                    const qreal natural = fixed > 0 ? fixed : (line.ascent() + line.descent()) * (percent > 0 ? percent / 100 : 1);
+                    documentSize.rheight() += natural * reduction;
+                }
+            }
+        }
+        m_documentSize = documentSize;
+        const QSizeF contentSize = documentSize
+            + QSizeF(data->leftPadding() + data->rightPadding(), data->topPadding() + data->bottomPadding());
+        const bool fits = contentSize.width() * m_scale <= shapeSize.width() + 0.1
+            && contentSize.height() * m_scale <= shapeSize.height() + 0.1;
+        if (fits) m_minScale = m_scale;
+        else m_maxScale = m_scale;
+        if (fits && m_scale == authoredScale) { m_dirty = 0; return; }
+        // Wrapping changes the required height as the scale changes. Bracket
+        // the largest fitting scale instead of averaging width/height ratios,
+        // which can stop with the last lines still outside the frame.
+        --m_dirty;
+        qreal nextScale = m_dirty > 0 ? (m_minScale + m_maxScale) / 2 : qMax(qreal(0.001), m_minScale);
+        if (m_dirty == 0 && reduction > 0 && maximumFont > 0) {
+            // Condensed lines can leave room for a more legible whole-point
+            // font. Try that size and accept it only after checking real ink.
+            const qreal rounded = qMin(authoredScale, qCeil(maximumFont * nextScale - 0.0001) / maximumFont);
+            if (rounded > nextScale + 0.00001) { nextScale = rounded; m_dirty = -1; }
+        }
+        if (qAbs(nextScale - m_scale) < 0.00001) { m_dirty = 0; return; }
+        m_scale = nextScale;
 
         QSizeF newSize(shapeSize.width() / m_scale, shapeSize.height() / m_scale);
         d->childShape->setSize(newSize);

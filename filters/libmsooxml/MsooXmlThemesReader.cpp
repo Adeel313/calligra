@@ -28,6 +28,8 @@
 
 #include <math.h>
 #include <memory>
+#include <algorithm>
+#include <cmath>
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626
@@ -40,14 +42,43 @@ DrawingMLGradientFill::DrawingMLGradientFill(const QVector<qreal> &shadeModifier
                                              const QVector<qreal> &satModifier,
                                              const QVector<int> &alphaModifier,
                                              const QVector<int> &gradPositions,
-                                             const QString &gradAngle)
-    : m_shadeModifier(shadeModifier)
+                                             const QString &gradAngle,
+                                             const QVector<qreal> &luminanceModifier)
+    : m_luminanceModifier(luminanceModifier)
+    , m_shadeModifier(shadeModifier)
     , m_tintModifier(tintModifier)
     , m_satModifier(satModifier)
     , m_alphaModifier(alphaModifier)
     , m_gradPosition(gradPositions)
     , m_gradAngle(gradAngle)
 {
+}
+
+QColor DrawingMLGradientFill::representativeColor(const QColor &color) const
+{
+    // Table cells support a solid background. Use the first interior stop
+    // when available, matching the representative-color rule used by Impress.
+    if (m_gradPosition.isEmpty()) return color;
+    QList<int> order;
+    for (int i = 0; i < m_gradPosition.size(); ++i) order.append(i);
+    std::stable_sort(order.begin(), order.end(), [&](int a, int b) { return m_gradPosition[a] < m_gradPosition[b]; });
+    const int index = order.at(order.size() > 2 ? 1 : 0);
+    const qreal hue = color.hslHueF();
+    const qreal saturation = color.hslSaturationF();
+    const qreal lightness = color.lightnessF();
+    const QColor adjusted = QColor::fromHslF(hue,
+        qBound(0.0, saturation * (m_satModifier.value(index) > 0 ? m_satModifier[index] : 1.0), 1.0),
+        qBound(0.0, lightness * m_luminanceModifier.value(index, 1.0), 1.0));
+    const qreal tint = m_tintModifier.value(index);
+    const qreal shade = m_shadeModifier.value(index);
+    const auto channel = [&](int component) {
+        // DrawingML tint/shade act on linear components, not display RGB.
+        qreal linear = std::pow(component / 255.0, 2.3);
+        if (tint > 0) linear = 1.0 - (1.0 - linear) * tint;
+        if (shade > 0) linear *= shade;
+        return qBound(0, qRound(std::pow(linear, 1.0 / 2.3) * 255), 255);
+    };
+    return QColor(channel(adjusted.red()), channel(adjusted.green()), channel(adjusted.blue()));
 }
 
 void DrawingMLGradientFill::writeStyles(KoGenStyles &styles, KoGenStyle *graphicStyle, const QColor &color)
@@ -897,6 +928,7 @@ KoFilter::ConversionStatus MsooXmlThemesReader::fillStyleReadHelper(int &index)
     if (isStartElement()) {
         QString element = qualifiedName().toString();
         if (element == "a:gradFill") {
+            QVector<qreal> luminanceModifiers;
             QVector<qreal> shadeModifiers;
             QVector<qreal> tintModifiers;
             QVector<qreal> satModifiers;
@@ -920,6 +952,7 @@ KoFilter::ConversionStatus MsooXmlThemesReader::fillStyleReadHelper(int &index)
                             attrs = attributes();
                             TRY_READ_ATTR_WITHOUT_NS(pos)
                             int gradPosition = pos.toInt() / 1000;
+                            qreal luminanceModifier = 1;
                             qreal shadeModifier = 0;
                             qreal tintModifier = 0;
                             qreal satModifier = 0;
@@ -942,6 +975,8 @@ KoFilter::ConversionStatus MsooXmlThemesReader::fillStyleReadHelper(int &index)
                                                 shadeModifier = val.toInt() / 100000.0;
                                             } else if (qualifiedName() == QLatin1StringView("a:satMod")) {
                                                 satModifier = val.toDouble() / 100000.0;
+                                            } else if (qualifiedName() == QLatin1StringView("a:lumMod")) {
+                                                luminanceModifier = val.toDouble() / 100000.0;
                                             } else if (qualifiedName() == QLatin1StringView("a:alpha")) {
                                                 alphaModifier = val.toInt() / 1000;
                                             }
@@ -951,6 +986,7 @@ KoFilter::ConversionStatus MsooXmlThemesReader::fillStyleReadHelper(int &index)
                             }
                             gradPositions.push_back(gradPosition);
                             tintModifiers.push_back(tintModifier);
+                            luminanceModifiers.push_back(luminanceModifier);
                             shadeModifiers.push_back(shadeModifier);
                             satModifiers.push_back(satModifier), alphaModifiers.push_back(alphaModifier);
                         }
@@ -958,7 +994,7 @@ KoFilter::ConversionStatus MsooXmlThemesReader::fillStyleReadHelper(int &index)
                 }
             }
             m_context->theme->formatScheme.fillStyles[index] =
-                new DrawingMLGradientFill(shadeModifiers, tintModifiers, satModifiers, alphaModifiers, gradPositions, gradAngle);
+                new DrawingMLGradientFill(shadeModifiers, tintModifiers, satModifiers, alphaModifiers, gradPositions, gradAngle, luminanceModifiers);
         }
         // Commented out for now, until there's a nice implementation for duotone effect
         /*else if (element == "a:blipFill") {

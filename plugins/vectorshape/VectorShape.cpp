@@ -318,7 +318,7 @@ bool VectorShape::loadOdfFrameElement(const KoXmlElement &element, KoShapeLoadin
     QMutexLocker locker(&m_mutex);
 
     // Get the reference to the vector file.  If there is no href, then just return.
-    const QString href = element.attribute("href");
+    const QString href = element.attributeNS(KoXmlNS::xlink, "href");
     if (href.isEmpty())
         return false;
 

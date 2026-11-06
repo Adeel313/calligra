@@ -27,6 +27,44 @@
 
 // #include <MsooXmlCommonReaderImpl.h> // this adds w:pPr, etc.
 
+namespace
+{
+//! Merges a repeated w:style definition into the style already registered.
+//! WordprocessingML requires style ids to be unique, but templates merged
+//! from several sources often contain the same id twice (once with only run
+//! properties and once with the full definition).  Keeping the first and
+//! appending a number to the second makes paragraph references resolve to
+//! the incomplete definition, losing e.g. w:outlineLvl and paragraph
+//! spacing.  Merge the later definition over the earlier one instead, which
+//! matches how LibreOffice and Word present such files.
+void mergeRepeatedStyle(const KoGenStyle &source, KoGenStyle &target)
+{
+    for (int type = KoGenStyle::TextType; type <= KoGenStyle::LastPropertyType; ++type) {
+        KoGenStyle::copyPropertiesFromStyle(source, target, static_cast<KoGenStyle::PropertyType>(type));
+    }
+
+    static const char *const attributes[] = {
+        "style:display-name",
+        "style:class",
+        "style:default-outline-level",
+        "style:master-page-name",
+        "style:list-style-name",
+        "style:next-style-name",
+        "style:page-number",
+        "style:page-number-format",
+    };
+    for (const char *attribute : attributes) {
+        const QString value = source.attribute(QString::fromLatin1(attribute));
+        if (!value.isEmpty()) {
+            target.addAttribute(attribute, value);
+        }
+    }
+    if (!source.parentName().isEmpty()) {
+        target.setParentName(source.parentName());
+    }
+}
+}
+
 DocxXmlStylesReader::DocxXmlStylesReader(KoOdfWriters *writers)
     : DocxXmlDocumentReader(writers)
 {
@@ -488,11 +526,39 @@ KoFilter::ConversionStatus DocxXmlStylesReader::read_style()
     // ! chapter
     if (type == "character") {
         m_currentTextStyle.addAttribute("style:class", "text");
-        styleName = mainStyles->insert(m_currentTextStyle, styleName, insertionFlags);
+        if (KoGenStyle *existing = mainStyles->styleForModification(styleName, "text")) {
+            mergeRepeatedStyle(m_currentTextStyle, *existing);
+        } else {
+            styleName = mainStyles->insert(m_currentTextStyle, styleName, insertionFlags);
+        }
     } else if (type == "paragraph") {
         m_currentParagraphStyle.addAttribute("style:class", "text");
         KoGenStyle::copyPropertiesFromStyle(m_currentTextStyle, m_currentParagraphStyle, KoGenStyle::TextType);
-        styleName = mainStyles->insert(m_currentParagraphStyle, styleName, insertionFlags);
+
+        // Word inherits these pagination properties through basedOn, but
+        // LibreOffice only applies them when they are present on the style
+        // used by the paragraph itself (e.g. w:keepNext on Heading, used by
+        // Heading1). Copy inherited values down so headings are not left
+        // orphaned at the bottom of a page.
+        const QString parentName(m_currentParagraphStyle.parentName());
+        if (!parentName.isEmpty()) {
+            if (const KoGenStyle *parentStyle = mainStyles->style(parentName, "paragraph")) {
+                for (const QString &property: {QStringLiteral("fo:keep-with-next"), QStringLiteral("fo:keep-together")}) {
+                    if (m_currentParagraphStyle.property(property, KoGenStyle::ParagraphType).isEmpty()) {
+                        const QString value(parentStyle->property(property, KoGenStyle::ParagraphType));
+                        if (!value.isEmpty()) {
+                            m_currentParagraphStyle.addProperty(property, value, KoGenStyle::ParagraphType);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (KoGenStyle *existing = mainStyles->styleForModification(styleName, "paragraph")) {
+            mergeRepeatedStyle(m_currentParagraphStyle, *existing);
+        } else {
+            styleName = mainStyles->insert(m_currentParagraphStyle, styleName, insertionFlags);
+        }
     } else if (type == "table") {
         m_context->m_tableStyles.insert(styleName, m_currentStyle);
     }

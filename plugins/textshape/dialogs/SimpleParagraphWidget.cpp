@@ -10,6 +10,7 @@
 #include "FormattingButton.h"
 #include "TextTool.h"
 #include <KoStyleThumbnailer.h>
+#include <KoRibbonLayout.h>
 #include <ListItemsHelper.h>
 
 #include "DockerStylesComboModel.h"
@@ -47,10 +48,16 @@
 #include <QBuffer>
 #include <QFlags>
 #include <QMenu>
+#include <QLocale>
+#include <QScrollBar>
 #include <QTextLayout>
 #include <QWidgetAction>
+#include <QListView>
+#include <QPainter>
+#include <QStyleOptionViewItem>
 
 #include <QDebug>
+#include <functional>
 
 SimpleParagraphWidget::SimpleParagraphWidget(TextTool *tool, QWidget *parent)
     : QWidget(parent)
@@ -132,6 +139,220 @@ SimpleParagraphWidget::~SimpleParagraphWidget()
 
     // the style model is set on the comboBox who takes over ownership
     delete m_thumbnailer;
+}
+
+namespace
+{
+class RibbonStyleDelegate : public QStyledItemDelegate
+{
+public:
+    explicit RibbonStyleDelegate(StylesModel *model, std::function<KoStyleManager *()> manager, QObject *parent)
+        : QStyledItemDelegate(parent), m_model(model), m_manager(manager) {}
+
+    QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &) const override
+    {
+        return QSize(qMax(112, option.fontMetrics.horizontalAdvance(QStringLiteral("AaBbCcDd")) + 24),
+                     qMax(68, option.fontMetrics.lineSpacing() * 3 + 16));
+    }
+
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override
+    {
+        painter->save();
+        const QRect card = option.rect.adjusted(2, 2, -2, -2);
+        painter->fillRect(card, Qt::white);
+        const int labelHeight = option.fontMetrics.lineSpacing() + 8;
+        const QSize previewSize(qMax(1, card.width() - 8), qMax(1, card.height() - labelHeight - 8));
+        const QImage preview = m_model->stylePreview(index.row(), previewSize);
+        painter->drawImage(card.topLeft() + QPoint(4, 4), preview);
+        auto *style = m_manager() ? m_manager()->paragraphStyle(index.internalId()) : nullptr;
+        if (style) {
+            painter->setFont(option.font);
+            painter->setPen(Qt::black);
+            const QRect label(card.left() + 4, card.bottom() - labelHeight, card.width() - 8, labelHeight);
+            painter->drawText(label, Qt::AlignCenter,
+                              option.fontMetrics.elidedText(style->name(), Qt::ElideRight, label.width()));
+        }
+        const bool active = option.state & (QStyle::State_Selected | QStyle::State_HasFocus);
+        painter->setPen(QPen(option.palette.color(active ? QPalette::Highlight : QPalette::Midlight), active ? 2 : 1));
+        painter->drawRect(card.adjusted(1, 1, -1, -1));
+        painter->restore();
+    }
+private:
+    StylesModel *m_model;
+    std::function<KoStyleManager *()> m_manager;
+};
+}
+
+QWidget *SimpleParagraphWidget::configureRibbon()
+{
+    setObjectName(QStringLiteral("ribbonParagraphGroup"));
+    while (QLayoutItem *item = widget.gridLayout->takeAt(0)) {
+        delete item;
+    }
+    widget.gridLayout->setSpacing(2);
+    auto *numbering = new FormattingButton(this);
+    numbering->setObjectName(QStringLiteral("ribbonNumbering"));
+    numbering->setIcon(QIcon::fromTheme(QStringLiteral("format-list-ordered")));
+    numbering->setToolTip(i18n("Numbering"));
+    numbering->setAccessibleName(i18n("Numbering"));
+    numbering->setAutoRaise(true);
+    ItemChooserAction *numberFormats = numbering->addItemChooser(1);
+    for (int i = 0; i < m_levelLibrary.size(); ++i) {
+        if (KoListStyle::isNumberingStyle(m_levelLibrary[i].labelType())) {
+            numbering->addItem(numberFormats, generateListLevelPixmap(m_levelLibrary[i]), i + 1000);
+        }
+    }
+    connect(numbering, &FormattingButton::itemTriggered, this, &SimpleParagraphWidget::listStyleChanged);
+    const QList<QToolButton *> topRow = {widget.bulletListButton, numbering, widget.decreaseIndent, widget.increaseIndent, widget.changeTextDirection};
+    const QList<QToolButton *> bottomRow = {widget.alignLeft, widget.alignCenter, widget.alignRight, widget.alignBlock};
+    for (int i = 0; i < topRow.size(); ++i) {
+        KoRibbonLayout::configureButton(topRow[i], Qt::ToolButtonIconOnly);
+        widget.gridLayout->addWidget(topRow[i], 0, i);
+    }
+    for (int i = 0; i < bottomRow.size(); ++i) {
+        KoRibbonLayout::configureButton(bottomRow[i], Qt::ToolButtonIconOnly);
+        widget.gridLayout->addWidget(bottomRow[i], 1, i);
+    }
+    auto *lineSpacing = new QToolButton(this);
+    lineSpacing->setObjectName(QStringLiteral("ribbonLineSpacing"));
+    lineSpacing->setText(i18n("Line Spacing"));
+    lineSpacing->setToolTip(i18n("Change spacing between lines in the selected paragraphs"));
+    lineSpacing->setAccessibleName(i18n("Line Spacing"));
+    lineSpacing->setIcon(QIcon::fromTheme(QStringLiteral("format-line-spacing-normal")));
+    lineSpacing->setPopupMode(QToolButton::InstantPopup);
+    auto *spacingMenu = new QMenu(lineSpacing);
+    lineSpacing->setMenu(spacingMenu);
+    for (int percent : {100, 115, 150, 200, 250, 300}) {
+        auto *preset = spacingMenu->addAction(QLocale().toString(percent / 100.0, 'f', percent == 115 ? 2 : 1));
+        connect(preset, &QAction::triggered, this, [this, percent] {
+            KoTextEditor *editor = m_tool->textEditor();
+            if (!editor) {
+                return;
+            }
+            // Clear competing absolute/minimum heights just as the paragraph
+            // dialog does, then merge only the spacing properties.
+            KoParagraphStyle spacing;
+            spacing.setLineHeightAbsolute(0);
+            spacing.setMinimumLineHeight(QTextLength(QTextLength::FixedLength, 0));
+            spacing.setLineSpacing(0);
+            spacing.setLineHeightPercent(percent);
+            spacing.setLineSpacingFromFont(true);
+            QTextBlockFormat format;
+            spacing.applyStyle(format);
+            editor->mergeBlockFormat(format);
+            Q_EMIT doneWithFocus();
+        });
+    }
+    spacingMenu->addSeparator();
+    auto *options = spacingMenu->addAction(i18n("Line Spacing Options…"));
+    QAction *paragraphAction = m_tool->action("format_paragraph");
+    connect(options, &QAction::triggered, paragraphAction, &QAction::trigger);
+    const auto updateSpacingEnabled = [lineSpacing, paragraphAction] {
+        lineSpacing->setEnabled(paragraphAction->isEnabled());
+    };
+    connect(paragraphAction, &QAction::changed, lineSpacing, updateSpacingEnabled);
+    updateSpacingEnabled();
+    KoRibbonLayout::configureButton(lineSpacing, Qt::ToolButtonIconOnly);
+    widget.gridLayout->addWidget(lineSpacing, 1, 4);
+    widget.moreOptions->setText(QStringLiteral("↘"));
+    widget.moreOptions->setAccessibleName(i18n("Paragraph dialog"));
+    widget.gridLayout->addWidget(widget.moreOptions, 1, 5);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+
+    auto *styles = new QWidget;
+    styles->setObjectName(QStringLiteral("ribbonStylesGroup"));
+    styles->setWindowTitle(i18n("Styles"));
+    styles->setProperty("ribbonGroupOrder", 40);
+    auto *layout = new QHBoxLayout(styles);
+    layout->setContentsMargins(2, 0, 2, 0);
+    layout->setSpacing(2);
+    widget.paragraphStyleCombo->hide();
+    m_ribbonGallery = new QListView(styles);
+    m_ribbonGallery->setObjectName(QStringLiteral("ribbonStyleGallery"));
+    m_ribbonGallery->setAccessibleName(i18n("Quick Styles"));
+    m_ribbonGallery->setModel(m_stylesModel);
+    m_ribbonGallery->setItemDelegate(new RibbonStyleDelegate(m_stylesModel, [this] { return m_styleManager; }, m_ribbonGallery));
+    m_ribbonGallery->setFlow(QListView::LeftToRight);
+    m_ribbonGallery->setWrapping(false);
+    m_ribbonGallery->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    m_ribbonGallery->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_ribbonGallery->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_ribbonGallery->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    QStyleOptionViewItem galleryOption;
+    galleryOption.initFrom(m_ribbonGallery);
+    const QSize card = m_ribbonGallery->itemDelegate()->sizeHint(galleryOption, QModelIndex());
+    m_ribbonGallery->setFixedSize(card.width() * 3 + 4, card.height() + 4);
+    connect(m_ribbonGallery, &QListView::clicked, this, QOverload<const QModelIndex &>::of(&SimpleParagraphWidget::styleSelected));
+    connect(m_ribbonGallery, &QListView::activated, this, QOverload<const QModelIndex &>::of(&SimpleParagraphWidget::styleSelected));
+    layout->addWidget(m_ribbonGallery);
+
+    auto *controls = new QVBoxLayout;
+    controls->setSpacing(0);
+    for (bool forward : {false, true}) {
+        auto *scroll = new QToolButton(styles);
+        scroll->setArrowType(forward ? Qt::DownArrow : Qt::UpArrow);
+        scroll->setAccessibleName(forward ? i18n("Next styles") : i18n("Previous styles"));
+        scroll->setToolTip(scroll->accessibleName());
+        connect(scroll, &QToolButton::clicked, this, [this, forward] {
+            QScrollBar *bar = m_ribbonGallery->horizontalScrollBar();
+            bar->setValue(bar->value() + (forward ? 1 : -1) * m_ribbonGallery->viewport()->width());
+        });
+        controls->addWidget(scroll);
+    }
+    auto *more = new QToolButton(styles);
+    more->setObjectName(QStringLiteral("ribbonMoreStyles"));
+    more->setArrowType(Qt::DownArrow);
+    more->setAccessibleName(i18n("More Styles"));
+    more->setToolTip(i18n("More Styles"));
+    more->setPopupMode(QToolButton::InstantPopup);
+    auto *menu = new QMenu(more);
+    auto *popup = new QListView(menu);
+    popup->setAccessibleName(i18n("All paragraph styles"));
+    popup->setModel(m_stylesModel);
+    // Bibliography styles are generated for bibliography entries; omit them
+    // from both Home style galleries without removing document styles.
+    const auto hideBibliographyStyles = [this, popup] {
+        for (int row = 0; row < m_stylesModel->rowCount(QModelIndex()); ++row) {
+            const QModelIndex index = m_stylesModel->index(row);
+            const KoParagraphStyle *style = m_styleManager ? m_styleManager->paragraphStyle(index.internalId()) : nullptr;
+            const bool hidden = style && style->name().trimmed().startsWith(QLatin1String("Bibliography"), Qt::CaseInsensitive);
+            m_ribbonGallery->setRowHidden(row, hidden);
+            popup->setRowHidden(row, hidden);
+        }
+    };
+    connect(m_stylesModel, &QAbstractItemModel::modelReset, popup, hideBibliographyStyles);
+    connect(m_stylesModel, &QAbstractItemModel::rowsInserted, popup, hideBibliographyStyles);
+    connect(m_stylesModel, &QAbstractItemModel::rowsRemoved, popup, hideBibliographyStyles);
+    connect(m_stylesModel, &QAbstractItemModel::rowsMoved, popup, hideBibliographyStyles);
+    connect(m_stylesModel, &QAbstractItemModel::dataChanged, popup, hideBibliographyStyles);
+    connect(m_stylesModel, &QAbstractItemModel::layoutChanged, popup, hideBibliographyStyles);
+    hideBibliographyStyles();
+    popup->setItemDelegate(new RibbonStyleDelegate(m_stylesModel, [this] { return m_styleManager; }, popup));
+    popup->setFlow(QListView::LeftToRight);
+    popup->setWrapping(true);
+    popup->setResizeMode(QListView::Adjust);
+    popup->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    popup->setFixedSize(card.width() * 3 + 24, card.height() * 3 + 4);
+    auto *galleryAction = new QWidgetAction(menu);
+    galleryAction->setDefaultWidget(popup);
+    menu->addAction(galleryAction);
+    const auto chooseStyle = [this, menu](const QModelIndex &index) {
+        menu->close();
+        styleSelected(index);
+    };
+    connect(popup, &QListView::clicked, this, chooseStyle);
+    connect(popup, &QListView::activated, this, chooseStyle);
+    connect(menu, &QMenu::aboutToShow, popup, [this, popup] {
+        popup->setCurrentIndex(m_ribbonGallery->currentIndex());
+        popup->scrollTo(popup->currentIndex());
+        popup->setFocus();
+    });
+    menu->addSeparator();
+    menu->addAction(m_tool->action("format_stylist"));
+    more->setMenu(menu);
+    controls->addWidget(more);
+    layout->addLayout(controls);
+    return styles;
 }
 
 QPixmap SimpleParagraphWidget::generateListLevelPixmap(const KoListLevelProperties &llp)
@@ -394,6 +615,10 @@ void SimpleParagraphWidget::setCurrentFormat(const QTextBlockFormat &format)
 
     int id = m_currentBlockFormat.intProperty(KoParagraphStyle::StyleId);
     KoParagraphStyle *style(m_styleManager->paragraphStyle(id));
+    if (m_ribbonGallery && style) {
+        m_ribbonGallery->setCurrentIndex(m_stylesModel->indexOf(style));
+        m_ribbonGallery->scrollTo(m_ribbonGallery->currentIndex());
+    }
     if (style) {
         bool unchanged = true;
 

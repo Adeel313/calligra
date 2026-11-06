@@ -485,6 +485,23 @@ void KWRootAreaProvider::doPostLayout(KoTextLayoutRootArea *rootArea, bool isNew
                           border->borderWidth(KoBorder::TopBorder) + border->borderWidth(KoBorder::BottomBorder));
     }
 
+    if (isHeaderFooter) {
+        // Fields and shared header/footer shapes can produce different line
+        // heights on successive passes. Do not repeatedly shrink and grow an
+        // unchanged header: resizing it also invalidates the main text frame.
+        // A content/format edit or a width change permits shrinking again.
+        const int revision = frameSet()->document()->revision();
+        const qreal contentWidth = rootArea->right() - rootArea->left();
+        const qreal contentHeight = rootArea->bottom() - rootArea->top();
+        if (m_headerFooterRevision != revision || !qFuzzyCompare(m_headerFooterWidth, contentWidth)) {
+            m_headerFooterHeight = 0;
+            m_headerFooterRevision = revision;
+            m_headerFooterWidth = contentWidth;
+        }
+        m_headerFooterHeight = qMax(m_headerFooterHeight, contentHeight);
+        newSize.rheight() += m_headerFooterHeight - contentHeight;
+    }
+
     if (newSize != rootArea->associatedShape()->size()) {
         rootArea->associatedShape()->setSize(newSize);
 

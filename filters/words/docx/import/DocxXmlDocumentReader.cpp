@@ -14,6 +14,7 @@
 
 #include "DocxDebug.h"
 #include "DocxImport.h"
+#include "DocxMathMLWriter.h"
 #include "DocxXmlFooterReader.h"
 #include "DocxXmlHeaderReader.h"
 
@@ -25,7 +26,9 @@
 #include <Charting.h>
 #include <KoGenStyles.h>
 #include <KoOdfChartWriter.h>
+#include <KoUnit.h>
 #include <KoOdfGraphicStyles.h>
+#include <KoStore.h>
 #include <KoXmlWriter.h>
 #include <XlsxXmlChartReader.h>
 
@@ -48,6 +51,8 @@
 #include <KoRow.h>
 #include <KoTable.h>
 
+#include <KoFontFace.h>
+#include <QSizeF>
 #include <QTime>
 
 static QMap<QString, KoBorder::BorderStyle> borderMap = {
@@ -141,11 +146,15 @@ void DocxXmlDocumentReader::init()
     m_insideParagraph = false;
     m_createSectionStyle = false;
     m_createSectionToNext = false;
+    m_sectionBreakPending = false;
+    m_sectionPageNumberStart = 0;
     m_differentFirstPage = false;
     m_currentVMLProperties.insideGroup = false;
     m_outputFrames = true;
     m_currentNumId.clear();
     m_prevListLevel = 0;
+    m_previousParagraphBottomMargin = 0;
+    m_widowControl = true;
 }
 
 KoFilter::ConversionStatus DocxXmlDocumentReader::read(MSOOXML::MsooXmlReaderContext *context)
@@ -352,12 +361,19 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     m_pageBorderStyles.clear();
     m_pageBorderPaddings.clear();
     m_pageBorderOffsetFrom = "text";
+    m_sectionPageNumberFormat.clear();
+    m_sectionPageNumberStart = 0;
+
+    // Section type: w:type is absent for the default "nextPage".  A
+    // continuous section must not introduce a page break.
+    bool sectionContinuous = false;
 
     while (!atEnd()) {
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             TRY_READ_IF(pgSz)
+            ELSE_TRY_READ_IF(pgNumType)
             ELSE_TRY_READ_IF(pgMar)
             ELSE_TRY_READ_IF(pgBorders)
             ELSE_TRY_READ_IF(textDirection)
@@ -375,6 +391,15 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
             {
                 m_currentPageStyle.addProperty("style:writing-mode", "rl-tb");
             }
+            else if (name() == QLatin1StringView("type"))
+            {
+                const QString sectionType = attributes().value("w:val").toString();
+                sectionContinuous = sectionType == QLatin1String("continuous");
+                if (sectionType == QLatin1String("oddPage") || sectionType == QLatin1String("evenPage")) {
+                    m_currentPageStyle.addAttribute("style:page-usage", sectionType == QLatin1String("oddPage") ? "right" : "left");
+                }
+                skipCurrentElement();
+            }
             SKIP_UNKNOWN
         }
     }
@@ -385,6 +410,14 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     if (m_context->import->documentSettings().contains("evenAndOddHeaders")) {
         QString val = m_context->import->documentSettings()["evenAndOddHeaders"].toString();
         useEvenAndOddHeaders = (val != "off" && val != "0" && val != "false");
+    }
+    // Footer references precede pgNumType in OOXML. Apply the section's
+    // display format only after all its properties have been read.
+    if (!m_sectionPageNumberFormat.isEmpty()) {
+        const QRegularExpression pageField(QStringLiteral("<text:page-number(?![^>]*style:num-format)"));
+        const QString formatted = QStringLiteral("<text:page-number style:num-format=\"%1\"").arg(m_sectionPageNumberFormat);
+        for (auto it = m_headers.begin(); it != m_headers.end(); ++it) it.value().replace(pageField, formatted);
+        for (auto it = m_footers.begin(); it != m_footers.end(); ++it) it.value().replace(pageField, formatted);
     }
     // the numbering in addChildElement is needed to correctly sort the element when writing out the values.
     if (!m_headers.isEmpty()) {
@@ -418,16 +451,25 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     //! @todo style:display-name
     //    masterStyle->addAttribute("style:display-name", masterStyleName);
     m_masterPageStyle.addAttribute("style:page-layout-name", pageLayoutStyleName);
-    QString currentMasterPageName = mainStyles->insert(m_masterPageStyle, masterStyleName);
+    QString currentMasterPageName = mainStyles->insert(m_masterPageStyle, masterStyleName, KoGenStyles::AllowDuplicates);
 
     // Because sectPr is always in the last bit of a section, it means that next paragraph/whatever
     // Needs to have a style which is modified by next sectPr
     m_createSectionToNext = true;
 
+    // A section break already starts the following paragraph on a new page.
+    // A keep-with-next inherited from a heading style must not drag the last
+    // paragraph of this section onto that page as well.
+    m_currentParagraphStyle.addProperty("fo:keep-with-next", "auto");
+
     KoGenStyle *sectionStyle = mainStyles->styleForModification(m_currentSectionStyleName, m_currentSectionStyleFamily);
     // There might not be a style to modify if the document is completely empty
     if (sectionStyle) {
         sectionStyle->addAttribute("style:master-page-name", currentMasterPageName);
+        sectionStyle->addProperty("fo:break-before", sectionContinuous ? "auto" : "page");
+        if (m_sectionPageNumberStart > 0) {
+            sectionStyle->addProperty("style:page-number", QString::number(m_sectionPageNumberStart));
+        }
     }
 
     // The header/footer flags only describe this section: while its
@@ -475,6 +517,51 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pgSz()
     TRY_READ_ATTR(orient)
     if (!orient.isEmpty()) {
         m_currentPageStyle.addProperty("style:print-orientation", orient);
+    }
+
+    readNext();
+    READ_EPILOGUE
+}
+
+#undef CURRENT_EL
+#define CURRENT_EL pgNumType
+//! w:pgNumType handler (Page Numbering Settings) ECMA-376, 17.6.12.
+/*!
+ Parent elements:
+ - [done] sectPr (§17.6.17)
+ - [done] sectPr (§17.6.18)
+ - [done] sectPr (§17.6.19)
+
+ No child elements.
+*/
+KoFilter::ConversionStatus DocxXmlDocumentReader::read_pgNumType()
+{
+    READ_PROLOGUE
+    const QXmlStreamAttributes attrs(attributes());
+
+    const QString format(attrs.value(QStringLiteral("w:fmt")).toString());
+    QString odfFormat;
+    if (format == QLatin1String("decimal")) {
+        odfFormat = QStringLiteral("1");
+    } else if (format == QLatin1String("lowerRoman")) {
+        odfFormat = QStringLiteral("i");
+    } else if (format == QLatin1String("upperRoman")) {
+        odfFormat = QStringLiteral("I");
+    } else if (format == QLatin1String("lowerLetter")) {
+        odfFormat = QStringLiteral("a");
+    } else if (format == QLatin1String("upperLetter")) {
+        odfFormat = QStringLiteral("A");
+    }
+
+    if (!odfFormat.isEmpty()) {
+        m_currentPageStyle.addProperty("style:num-format", odfFormat);
+        m_sectionPageNumberFormat = odfFormat;
+    }
+
+    bool hasStart(false);
+    const int start(attrs.value(QStringLiteral("w:start")).toInt(&hasStart));
+    if (hasStart) {
+        m_sectionPageNumberStart = start;
     }
 
     readNext();
@@ -1626,10 +1713,24 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_fldChar()
 
     if (!fldCharType.isEmpty()) {
         if (fldCharType == "begin") {
+            ++m_fieldDepth;
             m_complexCharStatus = InstrAllowed;
         } else if (fldCharType == "separate") {
             m_complexCharStatus = InstrExecute;
+            const QString command = m_complexCharValue.trimmed().section(QLatin1Char(' '), 0, 0);
+            if (command == QLatin1String("PAGE") || command == QLatin1String("NUMPAGES")) {
+                body->startElement(command == QLatin1String("PAGE") ? "text:page-number" : "text:page-count");
+                if (command == QLatin1String("PAGE")) body->addAttribute("text:select-page", "current");
+                body->addTextNode(QStringLiteral("1"));
+                body->endElement();
+                m_complexCharValue.clear();
+                m_complexCharStatus = NoneAllowed;
+                m_skipPageFieldResult = true;
+            }
         } else if (fldCharType == "end") {
+            if (m_fieldDepth == m_tocDepth) { m_endToc = true; m_tocDepth = -1; }
+            m_fieldDepth = qMax(0, m_fieldDepth - 1);
+            m_skipPageFieldResult = false;
             m_complexCharStatus = NoneAllowed;
             m_complexCharType = NoComplexFieldCharType;
             m_complexCharValue.clear();
@@ -1659,10 +1760,12 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_br()
 
     TRY_READ_ATTR(type)
 
-    if (type == "column") {
-        m_currentParagraphStyle.addProperty("fo:break-before", "column");
-    } else if (type == "page") {
-        m_currentParagraphStyle.addProperty("fo:break-before", "page");
+    if (type == "column" || type == "page") {
+        // Split the buffered paragraph at this exact position. A paragraph
+        // break-after loses the position when text follows the break.
+        body->startElement("calligra:hard-break");
+        body->addAttribute("type", type);
+        body->endElement();
     } else {
         body->startElement("text:line-break");
         body->endElement();
@@ -1709,7 +1812,13 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_instrText()
         if (m_complexCharStatus == InstrAllowed) {
             QString instruction = text().toString().trimmed();
 
-            if (instruction.startsWith(QLatin1String("HYPERLINK"))) {
+            if (instruction.startsWith(QLatin1String("TOC"))) {
+                m_startToc = true;
+                m_tocDepth = m_fieldDepth;
+                const auto levels = QRegularExpression(QStringLiteral("[1-9]-([1-9])")).match(instruction);
+                m_tocLevels = levels.hasMatch() ? levels.captured(1).toInt() : 3;
+                m_complexCharValue.clear();
+            } else if (instruction.startsWith(QLatin1String("HYPERLINK"))) {
                 // Removes hyperlink, spaces and extra " chars
                 instruction.remove(0, 11);
                 instruction.truncate(instruction.size() - 1);
@@ -1845,6 +1954,18 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_hyperlink()
             body->addAttribute("xlink:href", QString("#%1").arg(anchor));
         } else {
             body->addAttribute("xlink:href", QUrl(link_target).toEncoded());
+        }
+
+        // Without an explicit character style the ODF consumer renders the
+        // link with the application's default link formatting (blue and
+        // underlined). Word's field/index links use their own character style
+        // (for example IndexLink), so carry it over to the hyperlink itself.
+        if (!m_currentTextStyle.isEmpty() || !m_currentTextStyle.parentName().isEmpty()) {
+            const QString linkStyleName(mainStyles->insert(m_currentTextStyle));
+            if (!linkStyleName.isEmpty()) {
+                body->addAttribute("text:style-name", linkStyleName);
+                body->addAttribute("text:visited-style-name", linkStyleName);
+            }
         }
     }
 
@@ -2175,6 +2296,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
     READ_PROLOGUE
     m_insideParagraph = true;
     m_paragraphStyleNameWritten = false;
+    m_paragraphHasText = false;
+    m_widowControl = true;
     m_currentStyleName.clear();
     m_listFound = false;
     m_closeHyperlink = false;
@@ -2291,6 +2414,14 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
         }
     }
 
+    collapseParagraphSpacing();
+    // Word defaults to widow/orphan control; ODF does not inherit a minimum
+    // from WordprocessingML, so make it explicit.  Without it a paragraph can
+    // leave one line at the bottom of a page and every page then holds a
+    // little more text than the Word layout does.
+    m_currentParagraphStyle.addProperty("fo:widows", m_widowControl ? "2" : "1");
+    m_currentParagraphStyle.addProperty("fo:orphans", m_widowControl ? "2" : "1");
+
     // take outline level from style's default-outline-level,
     // there is no text:outline-level equivalent in OOXML
     QString outlineLevelAttribute;
@@ -2340,8 +2471,11 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
             body = textPBuf.releaseWriter();
         } else {
             body = textPBuf.originalWriter();
-            // In ooxml it seems that nothing should be created if sectPr was present
-            if (!m_createSectionToNext) {
+            // A paragraph carrying sectPr normally only marks the end of the
+            // section, but it may also contain visible text (for example a
+            // cover-page line followed by the section break). Keep that text
+            // and only skip truly empty section markers.
+            if (!m_createSectionToNext || !textPBuf.isEmpty()) {
                 if (m_listFound) {
                     // update the size of a bullet picture
                     if ((m_currentBulletProperties.m_type == MSOOXML::Utils::ParagraphBulletProperties::PictureType)
@@ -2455,6 +2589,28 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
                     m_currentParagraphStyle.addAttribute("style:list-style-name", listStyleName);
                 }
 
+                if (m_startToc) {
+                    m_startToc = false;
+                    body->startElement("text:table-of-content");
+                    body->addAttribute("text:name", "Table of Contents");
+                    body->startElement("text:table-of-content-source");
+                    body->addAttribute("text:outline-level", m_tocLevels);
+                    body->addAttribute("text:use-outline-level", "true");
+                    for (int level = 1; level <= m_tocLevels; ++level) {
+                        KoGenStyle entryStyle(KoGenStyle::ParagraphStyle, "paragraph");
+                        const QString entryName = mainStyles->insert(entryStyle, QStringLiteral("Contents%1").arg(level));
+                        body->startElement("text:table-of-content-entry-template");
+                        body->addAttribute("text:outline-level", level);
+                        body->addAttribute("text:style-name", entryName);
+                        body->startElement("text:index-entry-text"); body->endElement();
+                        body->startElement("text:index-entry-tab-stop");
+                        body->addAttribute("style:type", "right"); body->addAttribute("style:leader-char", "."); body->endElement();
+                        body->startElement("text:index-entry-page-number"); body->endElement();
+                        body->endElement();
+                    }
+                    body->endElement();
+                    body->startElement("text:index-body");
+                }
                 body->startElement((outlineLevel > 0) ? "text:h" : "text:p", false);
                 if (outlineLevel > 0) {
                     body->addAttribute("text:outline-level", outlineLevel);
@@ -2484,8 +2640,55 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
                     m_floatingTable.clear();
                 }
 
-                (void)textPBuf.releaseWriter();
+                QString paragraphXml;
+                (void)textPBuf.releaseWriter(paragraphXml);
+                if (!paragraphXml.contains(QLatin1String("calligra:hard-break"))) {
+                    body->addCompleteElement(paragraphXml.toUtf8());
+                } else {
+                    QXmlStreamReader fragment(QStringLiteral("<root>") + paragraphXml + QStringLiteral("</root>"));
+                    fragment.setNamespaceProcessing(false);
+                    struct InlineElement { QByteArray name; QXmlStreamAttributes attributes; };
+                    QList<InlineElement> open;
+                    while (!fragment.atEnd()) {
+                        fragment.readNext();
+                        if (fragment.name() == QLatin1StringView("root")) continue;
+                        if (fragment.isStartElement()) {
+                            if (fragment.qualifiedName() == QLatin1StringView("calligra:hard-break")) {
+                                const QString type = fragment.attributes().value(QStringLiteral("type")).toString();
+                                for (int i = open.size() - 1; i >= 0; --i) body->endElement();
+                                body->endElement();
+                                KoGenStyle continuation = m_currentParagraphStyle;
+                                continuation.removeAttribute(QStringLiteral("style:master-page-name"));
+                                continuation.addProperty("fo:break-before", type);
+                                const QString continuationName = mainStyles->insert(continuation);
+                                body->startElement(outlineLevel > 0 ? "text:h" : "text:p", false);
+                                body->addAttribute("text:style-name", continuationName);
+                                if (outlineLevel > 0) body->addAttribute("text:outline-level", outlineLevel);
+                                for (const auto &element : std::as_const(open)) {
+                                    body->startElement(element.name.constData(), false);
+                                    for (const auto &attribute : element.attributes) body->addAttribute(attribute.qualifiedName().toLatin1().constData(), attribute.value().toString());
+                                }
+                                fragment.skipCurrentElement();
+                            } else {
+                                InlineElement element{fragment.qualifiedName().toLatin1(), fragment.attributes()};
+                                body->startElement(element.name.constData(), false);
+                                for (const auto &attribute : element.attributes) body->addAttribute(attribute.qualifiedName().toLatin1().constData(), attribute.value().toString());
+                                open.append(element);
+                            }
+                        } else if (fragment.isEndElement() && !open.isEmpty()) {
+                            body->endElement(); open.removeLast();
+                        } else if (fragment.isCharacters()
+                                   && !(fragment.isWhitespace() && fragment.text().contains(QLatin1Char('\n')))) {
+                            body->addTextNode(fragment.text().toString());
+                        }
+                    }
+                }
                 body->endElement(); // text:p or text:h
+                if (m_endToc) {
+                    body->endElement(); // text:index-body
+                    body->endElement(); // text:table-of-content
+                    m_endToc = false;
+                }
 
                 if (m_listFound) {
                     for (int i = 0; i <= m_currentListLevel; ++i) {
@@ -2697,6 +2900,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_r()
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             TRY_READ_IF(rPr)
+            else if (name() == QLatin1StringView("t") && m_skipPageFieldResult) {
+                skipCurrentElement();
+            }
             ELSE_TRY_READ_IF(t)
             ELSE_TRY_READ_IF(ptab)
             ELSE_TRY_READ_IF(delText)
@@ -3023,9 +3229,17 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pPr()
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             if (name() == QLatin1StringView("rPr")) {
+                // The paragraph mark's run properties are only a scratch style
+                // that is merged into the paragraph style.  Keep whatever text
+                // style the caller is building (a named style, the docDefaults
+                // default text style, ...) intact: replacing it with an auto
+                // style made the default text style invalid and aborted when
+                // the document declared <w:pPr><w:rPr/></w:pPr> in docDefaults.
+                const KoGenStyle savedTextStyle = m_currentTextStyle;
                 m_currentTextStyle = KoGenStyle(KoGenStyle::TextAutoStyle, "text");
                 TRY_READ(rPr)
                 KoGenStyle::copyPropertiesFromStyle(m_currentTextStyle, m_currentParagraphStyle, KoGenStyle::TextType);
+                m_currentTextStyle = savedTextStyle;
             }
             ELSE_TRY_READ_IF_IN_CONTEXT(shd)
             ELSE_TRY_READ_IF_IN_CONTEXT(jc)
@@ -3037,6 +3251,29 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pPr()
             ELSE_TRY_READ_IF(framePr)
             ELSE_TRY_READ_IF(ind)
             ELSE_TRY_READ_IF(suppressLineNumbers)
+            else if (name() == QLatin1StringView("keepNext")) {
+                const QString val(attributes().value(QLatin1StringView("w:val")).toString());
+                const bool enabled = val.isEmpty() || val == QLatin1String("1") || val == QLatin1String("true") || val == QLatin1String("on");
+                m_currentParagraphStyle.addProperty("fo:keep-with-next", enabled ? "always" : "auto");
+                skipCurrentElement();
+            }
+            else if (name() == QLatin1StringView("widowControl")) {
+                const QString val(attributes().value(QLatin1StringView("w:val")).toString());
+                m_widowControl = val.isEmpty() || val == QLatin1String("1") || val == QLatin1String("true") || val == QLatin1String("on");
+                skipCurrentElement();
+            }
+            else if (name() == QLatin1StringView("keepLines")) {
+                const QString val(attributes().value(QLatin1StringView("w:val")).toString());
+                const bool enabled = val.isEmpty() || val == QLatin1String("1") || val == QLatin1String("true") || val == QLatin1String("on");
+                m_currentParagraphStyle.addProperty("fo:keep-together", enabled ? "always" : "auto");
+                skipCurrentElement();
+            }
+            else if (name() == QLatin1StringView("pageBreakBefore")) {
+                const QString value = attributes().value(QLatin1StringView("w:val")).toString();
+                const bool enabled = value.isEmpty() || value == QLatin1String("1") || value == QLatin1String("true") || value == QLatin1String("on");
+                m_currentParagraphStyle.addProperty("fo:break-before", enabled ? "page" : "auto");
+                skipCurrentElement();
+            }
             ELSE_TRY_READ_IF(sectPr)
             ELSE_TRY_READ_IF(outlineLvl)
             SKIP_UNKNOWN
@@ -3424,6 +3661,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_drawing()
 
     m_drawing_anchor = false;
     m_drawing_inline = false;
+    m_nativeWordShape = false;
 
     MSOOXML::Utils::XmlWriteBuffer buffer;
     body = buffer.setWriter(body);
@@ -3449,7 +3687,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_drawing()
     if (m_context->graphicObjectIsGroup) {
         body->startElement("draw:g");
     } else {
-        body->startElement("draw:frame");
+        body->startElement(m_nativeWordShape ? "draw:custom-shape" : "draw:frame");
         body->addAttribute("draw:layer", "layout");
 
         if (m_hasPosOffsetH) {
@@ -3676,7 +3914,11 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_ind()
 {
     READ_PROLOGUE
     const QXmlStreamAttributes attrs(attributes());
-    TRY_READ_ATTR(left)
+    QString left(attrs.value(QStringLiteral("w:left")).toString());
+    if (left.isEmpty()) {
+        // Word 2010 and newer use w:start instead of w:left.
+        left = attrs.value(QStringLiteral("w:start")).toString();
+    }
     bool ok = false;
     const qreal leftInd = qreal(TWIP_TO_POINT(left.toDouble(&ok)));
     if (ok) {
@@ -3702,7 +3944,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_ind()
         }
     }
 
-    TRY_READ_ATTR(right)
+    QString right(attrs.value(QStringLiteral("w:right")).toString());
+    if (right.isEmpty()) {
+        right = attrs.value(QStringLiteral("w:end")).toString();
+    }
     const int rightInd = qreal(TWIP_TO_POINT(right.toDouble(&ok)));
     if (ok) {
         m_currentParagraphStyle.addPropertyPt("fo:margin-right", rightInd);
@@ -3896,6 +4141,46 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_jc(jcCaller caller)
 
  @todo support all elements
 */
+qreal DocxXmlDocumentReader::paragraphMargin(const QString &property) const
+{
+    QString value = m_currentParagraphStyle.property(property, KoGenStyle::ParagraphType);
+    QString parentName = m_currentParagraphStyle.parentName();
+
+    // Named paragraph styles are inserted while styles.xml is read, so the
+    // basedOn chain can be followed here.  A direct property on the paragraph
+    // always wins, as it does in Word.
+    for (int depth = 0; value.isEmpty() && !parentName.isEmpty() && depth < 20; ++depth) {
+        const KoGenStyle *parent = mainStyles->style(parentName, QByteArrayLiteral("paragraph"));
+        if (!parent) {
+            break;
+        }
+        value = parent->property(property, KoGenStyle::ParagraphType);
+        parentName = parent->parentName();
+    }
+
+    return value.isEmpty() ? 0.0 : KoUnit::parseValue(value);
+}
+
+void DocxXmlDocumentReader::collapseParagraphSpacing()
+{
+    // Header and footer paragraphs are laid out in their own frame; do not
+    // let a body paragraph's bottom margin change their spacing.
+    if (m_headerActive || m_footerActive) {
+        return;
+    }
+
+    const qreal marginTop = paragraphMargin(QStringLiteral("fo:margin-top"));
+    if (marginTop > 0.0 && m_previousParagraphBottomMargin > 0.0) {
+        // Word uses max(after, before) between adjacent paragraphs, while ODF
+        // adds the two margins.  Keep only the part of the top margin that
+        // exceeds the previous paragraph's bottom margin.
+        m_currentParagraphStyle.addPropertyPt("fo:margin-top",
+                                             qMax<qreal>(0.0, marginTop - m_previousParagraphBottomMargin));
+    }
+
+    m_previousParagraphBottomMargin = paragraphMargin(QStringLiteral("fo:margin-bottom"));
+}
+
 KoFilter::ConversionStatus DocxXmlDocumentReader::read_spacing()
 {
     // TODO: afterLines, beforeLines are critical.
@@ -4043,9 +4328,18 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
 {
     READ_PROLOGUE
     const QXmlStreamAttributes attrs(attributes());
+    // A DOCX font table is optional and may also be empty. Every font-name
+    // reference emitted into ODF still needs a matching face declaration.
+    const auto ensureFontFace = [this](const QString &family) {
+        if (!family.isEmpty() && mainStyles->fontFace(family).isNull()) {
+            KoFontFace face; face.setName(family); face.setFamily(family);
+            mainStyles->insertFontFace(face);
+        }
+    };
     // CASE #1153
     TRY_READ_ATTR(ascii)
     if (!ascii.isEmpty()) {
+        ensureFontFace(ascii);
         m_currentTextStyle.addProperty("style:font-name", ascii, KoGenStyle::TextType);
     }
     // CASE #1152
@@ -4058,12 +4352,14 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
             } else if (font.startsWith(QLatin1String("minor"))) {
                 font = m_context->themes->fontScheme.minorFonts.latinTypeface;
             }
+            ensureFontFace(font);
             m_currentTextStyle.addProperty("style:font-name", font);
         }
     }
     // CASE #1155
     TRY_READ_ATTR(cs)
     if (!cs.isEmpty()) {
+        ensureFontFace(cs);
         m_currentTextStyle.addProperty("style:font-name-complex", cs, KoGenStyle::TextType);
     }
     // CASE #1154
@@ -4076,6 +4372,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
     // CASE #1157
     TRY_READ_ATTR(eastAsia)
     if (!eastAsia.isEmpty()) {
+        ensureFontFace(eastAsia);
         m_currentTextStyle.addProperty("style:font-name-asian", eastAsia, KoGenStyle::TextType);
     }
     // CASE #1156
@@ -4453,9 +4750,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tblStyle()
 
     m_currentTableStyleName = val;
 
-    // Inheriting values from the defined style
+    // Inheriting values from the defined style (the style may be referenced
+    // without being defined in styles.xml, e.g. the built-in TableGrid style)
     MSOOXML::DrawingTableStyle *tableStyle = m_context->m_tableStyles.value(m_currentTableStyleName);
-    Q_ASSERT(tableStyle);
     if (tableStyle) {
         m_tableMainStyle->setHorizontalAlign(tableStyle->mainStyle->horizontalAlign());
     }
@@ -4792,6 +5089,15 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tab()
         }
     }
     if (!text.isNull()) {
+        // LibreOffice only draws the leader when leader-style is present as
+        // well, so emit both the style and the repeated character.
+        if (leader == "dot" || leader == "middleDot") {
+            body->addAttribute("style:leader-style", "dotted");
+        } else if (leader == "hyphen") {
+            body->addAttribute("style:leader-style", "dash");
+        } else if (leader == "underscore" || leader == "heavy") {
+            body->addAttribute("style:leader-style", "solid");
+        }
         body->addAttribute("style:leader-text", text);
     }
     body->endElement(); // style:tab-stop
@@ -5324,6 +5630,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_background()
 KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
 {
     m_table = KoTable::create();
+    // Paragraph spacing does not collapse across a table boundary.
+    m_previousParagraphBottomMargin = 0;
 
     READ_PROLOGUE
 
@@ -5397,7 +5705,6 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     if (m_currentTableStyleName.isEmpty() && m_context->m_namedDefaultStyles.contains("table")) {
         m_currentTableStyleName = m_context->m_namedDefaultStyles.value("table");
         MSOOXML::DrawingTableStyle *tableStyle = m_context->m_tableStyles.value(m_currentTableStyleName);
-        Q_ASSERT(tableStyle);
         if (tableStyle) {
             m_tableMainStyle->setHorizontalAlign(tableStyle->mainStyle->horizontalAlign());
         }
@@ -5447,6 +5754,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
 
     // restore previous state of lists processing
     restoreState();
+    // The first paragraph after the table starts a new spacing context.
+    m_previousParagraphBottomMargin = 0;
 
     READ_EPILOGUE
 }
@@ -5630,6 +5939,12 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tblGrid()
             SKIP_UNKNOWN
             //! @todo add ELSE_WRONG_FORMAT
         }
+    }
+
+    // Use the grid width as the table width. Without it the style keeps the
+    // default rel-width of 0%, which makes LibreOffice collapse the table.
+    if (m_svgWidth > 0) {
+        m_tableMainStyle->setWidth(TWIP_TO_POINT(m_svgWidth));
     }
 
     READ_EPILOGUE
@@ -5938,6 +6253,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_trHeight()
 //! @todo support all child elements
 KoFilter::ConversionStatus DocxXmlDocumentReader::read_tc()
 {
+    // Spacing does not collapse across table cell boundaries either.
+    m_previousParagraphBottomMargin = 0;
+
     READ_PROLOGUE
 
     while (!atEnd()) {
@@ -6021,6 +6339,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tc()
     }
 
     m_currentTableColumnNumber++;
+    m_previousParagraphBottomMargin = 0;
 
     return KoFilter::OK;
 }
@@ -7099,24 +7418,88 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_oMathParaPr()
 #undef CURRENT_EL
 #define CURRENT_EL oMath
 //! oMath handler
-// @todo implement...
+/*!
+  Converts the Office Math (OMML) subtree to MathML and embeds it as an ODF
+  formula object, so that Words shows a real formula instead of flattened text.
+*/
 KoFilter::ConversionStatus DocxXmlDocumentReader::read_oMath()
 {
     READ_PROLOGUE
 
-    while (!atEnd()) {
-        readNext();
-        BREAK_IF_END_OF(CURRENT_EL)
-        if (isStartElement()) {
-            if (qualifiedName() == QLatin1StringView("m:r")) {
-                TRY_READ(r_m)
-            }
-            ELSE_TRY_READ_IF(del)
-            ELSE_TRY_READ_IF(ins)
-            SKIP_UNKNOWN
+    const QByteArray mathml = DocxMathMLWriter::readMathML(*this);
+    if (!mathml.isEmpty()) {
+        writeInlineFormula(mathml);
+    }
+
+    READ_EPILOGUE
+}
+
+namespace
+{
+// Estimates a frame size for a formula from the amount of text and the number
+// of stacked constructs in its MathML.  The formula shape recomputes its own
+// layout when it is loaded; the frame size only decides how much room the
+// inline object takes in the surrounding text.
+QSizeF estimateFormulaSize(const QByteArray &mathml)
+{
+    int textCharacters = 0;
+    int stacked = 0;
+    bool inTag = false;
+    for (const char character : mathml) {
+        if (character == '<') {
+            inTag = true;
+        } else if (character == '>') {
+            inTag = false;
+        } else if (!inTag) {
+            ++textCharacters;
         }
     }
-    READ_EPILOGUE
+    for (const char *tag : {"<mfrac", "<munder", "<mover", "<mroot", "<msqrt", "<mtable"}) {
+        stacked += mathml.count(QByteArray(tag));
+    }
+    const qreal width = qBound<qreal>(0.4, 0.23 * qMax(1, textCharacters), 40.0);
+    const qreal height = 0.55 + 0.3 * qMin(3, stacked);
+    return QSizeF(width, height);
+}
+}
+
+void DocxXmlDocumentReader::writeInlineFormula(const QByteArray &mathml)
+{
+    KoStore *store = m_context->import->outputStore();
+    if (!store) {
+        return;
+    }
+
+    const QString objectName = QStringLiteral("Object %1").arg(++m_formulaObjectIndex);
+    const QString contentName = objectName + QStringLiteral("/content.xml");
+    if (!store->open(contentName)) {
+        warnDocx << "Cannot store embedded formula" << contentName;
+        return;
+    }
+    const qint64 written = store->write(mathml);
+    store->close();
+    if (written != mathml.size()) {
+        warnDocx << "Cannot write embedded formula" << contentName;
+        return;
+    }
+
+    if (manifest) {
+        manifest->addManifestEntry(objectName + QLatin1Char('/'), QStringLiteral("application/vnd.oasis.opendocument.formula"));
+        manifest->addManifestEntry(contentName, QStringLiteral("text/xml"));
+    }
+
+    const QSizeF size = estimateFormulaSize(mathml);
+    body->startElement("draw:frame");
+    body->addAttribute("text:anchor-type", "as-char");
+    body->addAttribute("svg:width", QString::number(size.width(), 'f', 3) + QStringLiteral("cm"));
+    body->addAttribute("svg:height", QString::number(size.height(), 'f', 3) + QStringLiteral("cm"));
+    body->startElement("draw:object");
+    body->addAttribute("xlink:href", QStringLiteral("./") + objectName);
+    body->addAttribute("xlink:type", "simple");
+    body->addAttribute("xlink:show", "embed");
+    body->addAttribute("xlink:actuate", "onLoad");
+    body->endElement(); // draw:object
+    body->endElement(); // draw:frame
 }
 
 #undef CURRENT_EL
@@ -7239,3 +7622,69 @@ void DocxXmlDocumentReader::restoreState()
 
 #include <MsooXmlCommonReaderDrawingMLImpl.h> // this adds pic:pic, etc.
 #include <MsooXmlVmlReaderImpl.h> // this adds w:pict, etc.
+
+
+// Word 2010+ preset shapes. Their properties use DrawingML while their text
+// uses WordprocessingML, unlike pictures and PresentationML shapes.
+KoFilter::ConversionStatus DocxXmlDocumentReader::read_wsp()
+{
+    const qint64 outerX = m_svgX;
+    const qint64 outerY = m_svgY;
+    const qint64 outerWidth = m_svgWidth;
+    const qint64 outerHeight = m_svgHeight;
+    preReadSp();
+    pushCurrentDrawStyle(new KoGenStyle(KoGenStyle::GraphicAutoStyle, "graphic"));
+    QString text;
+    while (!atEnd()) {
+        readNext();
+        if (isEndElement() && name() == QLatin1String("wsp")) { break; }
+        if (!isStartElement()) { continue; }
+        if (name() == QLatin1String("spPr")) {
+            const KoFilter::ConversionStatus status = read_spPr();
+            if (status != KoFilter::OK) { popCurrentDrawStyle(); return status; }
+        } else if (name() == QLatin1String("txbx")) {
+            while (!atEnd()) {
+                readNext();
+                if (isEndElement() && name() == QLatin1String("txbx")) { break; }
+                if (isStartElement() && namespaceUri() == QLatin1String("http://schemas.openxmlformats.org/wordprocessingml/2006/main") && name() == QLatin1String("t")) {
+                    text += readElementText();
+                } else if (isEndElement() && namespaceUri() == QLatin1String("http://schemas.openxmlformats.org/wordprocessingml/2006/main") && name() == QLatin1String("p")) {
+                    text += QLatin1Char('\n');
+                }
+            }
+        } else { skipCurrentElement(); }
+    }
+    const QString preset = m_contentType;
+    if (!m_context->import->m_shapeHelper.attributes.contains(preset)) {
+        popCurrentDrawStyle();
+        return KoFilter::OK;
+    }
+    m_svgX = outerX;
+    m_svgY = outerY;
+    if (outerWidth > 0) { m_svgWidth = outerWidth; }
+    if (outerHeight > 0) { m_svgHeight = outerHeight; }
+    // read_drawing supplies the positioned custom-shape container. Buffer
+    // only its children here, avoiding an invalid shape-inside-frame wrapper.
+    m_nativeWordShape = true;
+    if (text.endsWith(QLatin1Char('\n'))) { text.chop(1); }
+    if (!text.isEmpty()) {
+        for (const QString &paragraph : text.split(QLatin1Char('\n'))) {
+            body->startElement("text:p");
+            body->addTextNode(paragraph);
+            body->endElement();
+        }
+    }
+    body->startElement("draw:enhanced-geometry");
+    body->addAttribute("draw:type", QStringLiteral("ooxml-") + preset);
+    body->addAttribute("svg:viewBox", QStringLiteral("0 0 %1 %2").arg(m_svgWidth).arg(m_svgHeight));
+    body->addAttribute("draw:enhanced-path", m_context->import->m_shapeHelper.attributes.value(preset));
+    body->addAttribute("draw:text-areas", m_context->import->m_shapeHelper.textareas.value(preset));
+    if (m_flipH) { body->addAttribute("draw:mirror-horizontal", "true"); }
+    if (m_flipV) { body->addAttribute("draw:mirror-vertical", "true"); }
+    body->addCompleteElement(m_context->import->m_shapeHelper.equations.value(preset).toUtf8());
+    body->endElement();
+    const KoGenStyle shapeStyle = *m_currentDrawStyle;
+    popCurrentDrawStyle();
+    KoGenStyle::copyPropertiesFromStyle(shapeStyle, *m_currentDrawStyle, KoGenStyle::GraphicType);
+    return KoFilter::OK;
+}

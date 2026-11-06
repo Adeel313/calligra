@@ -101,8 +101,11 @@ private:
     ShrinkToFitShapeContainer *q;
     ShrinkToFitShapeContainerPrivate *d;
     qreal m_scale;
+    qreal m_minScale;
+    qreal m_maxScale;
     QSizeF m_shapeSize, m_documentSize;
     int m_dirty;
+    int m_documentRevision;
     bool m_maybeUpdate;
 };
 

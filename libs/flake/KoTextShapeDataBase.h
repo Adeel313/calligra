@@ -118,6 +118,22 @@ public:
      */
     ResizeMethod resizeMethod() const;
 
+    /**
+     * Returns the PowerPoint autofit font scale, in OOXML units where 100000
+     * means 100%. Zero means the value is unknown / not set.
+     */
+    int autofitFontScale() const;
+    /// Sets the PowerPoint autofit font scale (OOXML units, 100000 = 100%).
+    void setAutofitFontScale(int scale);
+
+    /**
+     * Returns the PowerPoint autofit line spacing reduction, in OOXML units
+     * where 1000 means 1%. Zero means the value is unknown / not set.
+     */
+    int autofitLineSpacingReduction() const;
+    /// Sets the PowerPoint autofit line spacing reduction (OOXML units, 1000 = 1%).
+    void setAutofitLineSpacingReduction(int reduction);
+
 protected:
     /// constructor
     KoTextShapeDataBase(KoTextShapeDataBasePrivate &);

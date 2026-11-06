@@ -13,11 +13,13 @@
 
 #include <KoFrameShape.h>
 #include <KoShape.h>
+#include <KoMediaShape.h>
 #include <QMap>
+#include <QImage>
 
 #define PLUGINSHAPEID "PluginShape"
 
-class PluginShape : public KoShape, public KoFrameShape
+class PluginShape : public KoShape, public KoFrameShape, public KoMediaShape
 {
 public:
     PluginShape();
@@ -30,6 +32,11 @@ public:
     // reimplemented
     bool loadOdf(const KoXmlElement &element, KoShapeLoadingContext &context) override;
 
+    QByteArray mediaData() const override { return m_embeddedData; }
+    QString mediaFileName() const override { return m_xlinkhref; }
+    QString mediaMimeType() const override { return m_mimetype; }
+    QImage mediaPreview() const override { return m_preview; }
+
 protected:
     bool loadOdfFrameElement(const KoXmlElement &element, KoShapeLoadingContext &context) override;
 
@@ -41,6 +48,8 @@ private:
     QString m_xlinkhref;
     QString m_xlinkshow;
     QString m_xlinktype;
+    QByteArray m_embeddedData;
+    QImage m_preview;
 };
 
 #endif

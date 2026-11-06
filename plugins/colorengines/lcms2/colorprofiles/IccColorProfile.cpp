@@ -316,8 +316,18 @@ void IccColorProfile::calculateFloatUIMinMax(void)
     unsigned int num_channels = cmsChannelsOf(color_space_sig);
     unsigned int color_space_mask = _cmsLCMScolorSpace(color_space_sig);
 
-    Q_ASSERT(num_channels >= 1 && num_channels <= 4); // num_channels==1 is for grayscale, we need to handle it
-    Q_ASSERT(color_space_mask);
+    if (num_channels < 1 || num_channels > 4 || color_space_mask == 0) {
+        // Named-colour and otherwise untransformable profiles (some system
+        // ICC packages ship an "Extended Named Color" example) have no
+        // meaningful float UI range.  Default to [0..1] per channel instead
+        // of asserting while Words enumerates the installed profiles.
+        ret.resize(static_cast<int>(qBound(1u, num_channels, 4u)));
+        for (KoChannelInfo::DoubleRange &range : ret) {
+            range.minVal = 0;
+            range.maxVal = 1;
+        }
+        return;
+    }
 
     // to try to find the max range of float/doubles for this profile,
     // pass in min/max int and make the profile convert that

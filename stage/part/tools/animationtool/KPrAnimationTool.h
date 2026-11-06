@@ -31,6 +31,7 @@ public:
      */
     explicit KPrAnimationTool(KoCanvasBase *canvas);
     ~KPrAnimationTool() override;
+    Q_INVOKABLE void configureRibbon(QWidget *transitions, QWidget *animations, QWidget *insert);
 
     void paint(QPainter &painter, const KoViewConverter &converter) override;
 

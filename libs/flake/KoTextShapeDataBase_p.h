@@ -22,6 +22,8 @@ public:
     KoInsets margins;
     Qt::Alignment textAlignment;
     KoTextShapeDataBase::ResizeMethod resizeMethod;
+    int autofitFontScale;
+    int autofitLineSpacingReduction;
 };
 
 #endif

@@ -219,6 +219,7 @@ KoShape *KoShapeFactoryBase::createShapeFromOdf(const KoXmlElement &element, KoS
     context.odfLoadingContext().styleStack().restore();
 
     if (!loaded) {
+        context.removeShapeReferences(shape);
         delete shape;
         return nullptr;
     }

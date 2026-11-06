@@ -16,6 +16,7 @@
 #include <QRunnable>
 
 #include <KoFrameShape.h>
+#include <KoImageShape.h>
 #include <KoTosContainer.h>
 #include <SvgShape.h>
 
@@ -78,7 +79,7 @@ private:
 QPainterPath generateOutline(const QImage &imageIn, int threshold = 20);
 }
 
-class PictureShape : public KoTosContainer, public KoFrameShape, public SvgShape
+class PictureShape : public KoTosContainer, public KoFrameShape, public SvgShape, public KoImageShape
 {
     friend class _Private::PixmapScaler;
     friend class _Private::PictureShapeProxy;
@@ -127,7 +128,7 @@ public:
     KoImageData *imageData() const;
     QFlags<MirrorMode> mirrorMode() const;
     ColorMode colorMode() const;
-    QRectF cropRect() const;
+    QRectF cropRect() const override;
     bool isPictureInProportion() const;
 
     void setImageCollection(KoImageCollection *collection)

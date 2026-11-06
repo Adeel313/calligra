@@ -1904,6 +1904,11 @@ void DataSet::saveOdf(KoShapeSavingContext &context) const
             bodyWriter.endElement();
         }
     }
+    if (chartType() == KoChart::ScatterChartType && !xDataRegion().toString().isEmpty()) {
+        bodyWriter.startElement("chart:domain");
+        bodyWriter.addAttribute("table:cell-range-address", xDataRegion().toString());
+        bodyWriter.endElement();
+    }
     if (chartType() == KoChart::BubbleChartType) {
         // Custom data shall contain bubble size
         QString values = customDataRegion().toString();

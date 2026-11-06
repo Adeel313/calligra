@@ -10,6 +10,7 @@
 #include <QDate>
 #include <QStringList>
 #include <QUrl>
+#include <type_traits>
 
 class Duration
 {
@@ -86,6 +87,16 @@ public:
             }
             xml = nullptr;
         }
+    }
+    // Boolean ODF attributes are xsd:boolean, so they must be serialized as
+    // "true"/"false". Without this overload, a bool argument binds to the
+    // quint64 overload below and is written as "1", which ODF readers reject.
+    // Restrict it to bool so integer arguments stay unambiguous.
+    template<typename T, std::enable_if_t<std::is_same_v<T, bool>, int> = 0>
+    void addAttribute(const char *name, T value)
+    {
+        Q_ASSERT(!child);
+        xml->addAttribute(name, value ? "true" : "false");
     }
     void addTextNode(const QString &str)
     {

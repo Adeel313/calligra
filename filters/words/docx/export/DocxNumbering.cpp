@@ -55,10 +55,32 @@ int DocxNumbering::numIdForStyle(const QString &styleName)
 
     const int numId = m_nextNumId++;
     m_numIds.insert(key, numId);
-    if (!m_levels.contains(key)) {
-        m_levels.insert(key, defaultLevels());
-    }
+    m_numLevels.insert(numId, m_levels.value(key, defaultLevels()));
     return numId;
+}
+
+int DocxNumbering::newListInstance(const QString &styleName)
+{
+    const int numId = m_nextNumId++;
+    m_numLevels.insert(numId, m_levels.value(styleName, defaultLevels()));
+    return numId;
+}
+
+int DocxNumbering::levelCountForStyle(const QString &styleName) const
+{
+    return m_levels.value(styleName).size();
+}
+
+int DocxNumbering::firstLevelForStyle(const QString &styleName) const
+{
+    const QVector<NumberingLevel> levels = m_levels.value(styleName);
+    int first = 0;
+    for (const NumberingLevel &level : levels) {
+        if (first == 0 || level.level < first) {
+            first = level.level;
+        }
+    }
+    return first > 0 ? first : 1;
 }
 
 QByteArray DocxNumbering::toXml() const
@@ -72,17 +94,13 @@ QByteArray DocxNumbering::toXml() const
     writer.addAttribute("xmlns:r", "http://schemas.openxmlformats.org/officeDocument/2006/relationships");
     writer.addAttribute("xmlns:w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main");
 
-    // One abstractNum per allocated list style, in numId order so the output
+    // One abstractNum per allocated numId, in numId order so the output
     // stays stable across runs.
-    QList<QPair<int, QString>> allocated;
-    for (auto it = m_numIds.constBegin(); it != m_numIds.constEnd(); ++it) {
-        allocated.append(qMakePair(it.value(), it.key()));
-    }
+    QList<int> allocated = m_numLevels.keys();
     std::sort(allocated.begin(), allocated.end());
 
-    for (const auto &entry : allocated) {
-        const int numId = entry.first;
-        const QVector<NumberingLevel> levels = m_levels.value(entry.second);
+    for (const int numId : allocated) {
+        const QVector<NumberingLevel> levels = m_numLevels.value(numId);
 
         writer.startElement("w:abstractNum");
         writer.addAttribute("w:abstractNumId", numId - 1);
@@ -122,11 +140,11 @@ QByteArray DocxNumbering::toXml() const
         writer.endElement(); // w:abstractNum
     }
 
-    for (const auto &entry : allocated) {
+    for (const int numId : allocated) {
         writer.startElement("w:num");
-        writer.addAttribute("w:numId", entry.first);
+        writer.addAttribute("w:numId", numId);
         writer.startElement("w:abstractNumId");
-        writer.addAttribute("w:val", entry.first - 1);
+        writer.addAttribute("w:val", numId - 1);
         writer.endElement(); // w:abstractNumId
         writer.endElement(); // w:num
     }

@@ -9,6 +9,8 @@
 */
 
 #include "KoShape.h"
+#include <QtMath>
+#include <cmath>
 #include "KoClipPath.h"
 #include "KoColorBackground.h"
 #include "KoEventAction.h"
@@ -465,6 +467,12 @@ KoShape::ChildZOrderPolicy KoShape::childZOrderPolicy()
 
 bool KoShape::compareShapeZIndex(KoShape *s1, KoShape *s2)
 {
+    // Sorting requires a strict ordering, including when comparing a pivot
+    // with itself. The ancestor check below otherwise reports s1 < s1.
+    if (s1 == s2) {
+        return false;
+    }
+
     // First sort according to runThrough which is sort of a master level
     KoShape *parentShapeS1 = s1->parent();
     KoShape *parentShapeS2 = s2->parent();
@@ -1492,6 +1500,32 @@ void KoShape::loadStyle(const KoXmlElement &element, KoShapeLoadingContext &cont
         d->shadow = nullptr;
     }
     setBackground(loadOdfFill(context));
+    // ODF opacity angles use the page axis. On cardinally rotated frames a
+    // constant-color ramp must cancel the frame rotation before Qt applies it.
+    const auto &stack = context.odfLoadingContext().styleStack();
+    auto *gradientBackground = dynamic_cast<KoGradientBackground *>(background().data());
+    const QTransform odfTransform = parseOdfTransform(element.attributeNS(KoXmlNS::draw, "transform"), context);
+    const qreal frameRotation = qRadiansToDegrees(std::atan2(odfTransform.m12(), odfTransform.m11()));
+    if (gradientBackground && !stack.property(KoXmlNS::draw, "opacity-name").isEmpty()
+        && !qFuzzyIsNull(frameRotation) && qAbs(frameRotation / 90 - qRound(frameRotation / 90)) < 1e-6) {
+        const QGradient *gradient = gradientBackground->gradient();
+        if (gradient && gradient->type() == QGradient::LinearGradient) {
+            const auto stops = gradient->stops();
+            bool constantColor = !stops.isEmpty();
+            for (const auto &stop : stops) constantColor = constantColor && stop.second.rgb() == stops.first().second.rgb();
+            if (constantColor) {
+                auto corrected = *static_cast<const QLinearGradient *>(gradient);
+                QTransform inverseRotation;
+                inverseRotation.translate(0.5, 0.5);
+                inverseRotation.rotate(-frameRotation);
+                inverseRotation.translate(-0.5, -0.5);
+                corrected.setStart(inverseRotation.map(corrected.start()));
+                corrected.setFinalStop(inverseRotation.map(corrected.finalStop()));
+                gradientBackground->setGradient(corrected);
+            }
+        }
+    }
+
     setStroke(loadOdfStroke(element, context));
     setShadow(d->loadOdfShadow(context));
     setBorder(d->loadOdfBorder(context));

@@ -19,7 +19,8 @@ ReferencesToolFactory::ReferencesToolFactory()
     setToolTip(i18n("References"));
     setToolType("calligrawords,calligraauthor");
     setIconName(koIconName("tool_references"));
-    // Keep References after Review in the Words tool tab order.
+    // The generic tool order keeps References after Review. The Words ribbon
+    // applies its own Office-style tab order.
     setPriority(31);
     setActivationShapeId(TextShape_SHAPEID);
 }

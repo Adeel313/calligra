@@ -28,6 +28,7 @@
 #include <KoTextDocumentLayout.h>
 #include <KoTextEditor.h>
 #include <KoTextLayoutRootArea.h>
+#include <KoRibbonLayout.h>
 #include <QMessageBox>
 
 #include <QAction>
@@ -227,17 +228,36 @@ QList<QPointer<QWidget>> ReferencesTool::createOptionWidgets()
 
     connect(m_slw, &SimpleLinksWidget::doneWithFocus, this, &ReferencesTool::returnFocusToCanvas);
 
-    m_stocw->setWindowTitle(i18nc("as in table of contents, list of pictures, index", "Tables, Lists & Indexes"));
+    m_stocw->setWindowTitle(i18n("Table of Contents"));
+    m_stocw->setProperty("ribbonGroupOrder", 10);
     widgets.append(m_stocw);
 
-    m_sfenw->setWindowTitle(i18n("Footnotes and Endnotes"));
+    m_sfenw->setWindowTitle(i18n("Footnotes"));
+    m_sfenw->setProperty("ribbonGroupOrder", 20);
     widgets.append(m_sfenw);
 
-    m_scbw->setWindowTitle(i18n("Citations and Bibliography"));
+    m_scbw->setWindowTitle(i18n("Citations & Bibliography"));
+    m_scbw->setProperty("ribbonGroupOrder", 30);
     widgets.append(m_scbw);
 
-    m_slw->setWindowTitle(i18n("Links and Bookmarks"));
+    m_slw->setWindowTitle(i18n("Links"));
+    m_slw->setProperty("ribbonGroupOrder", 40);
     widgets.append(m_slw);
+    if (qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        KoRibbonLayout::arrange(m_stocw, {m_stocw->findChild<QToolButton *>(QStringLiteral("addToC"))}, {});
+        KoRibbonLayout::arrange(m_sfenw,
+                               {m_sfenw->findChild<QToolButton *>(QStringLiteral("addFootnote"))},
+                               {m_sfenw->findChild<QToolButton *>(QStringLiteral("addEndnote"))});
+        KoRibbonLayout::arrange(m_scbw,
+                               {m_scbw->findChild<QToolButton *>(QStringLiteral("addCitation"))},
+                               {m_scbw->findChild<QToolButton *>(QStringLiteral("configureBibliography")),
+                                m_scbw->findChild<QToolButton *>(QStringLiteral("addBibliography"))});
+        // Links belong to Insert; keep the same bookmark and link menus.
+        m_slw->setProperty("ribbonTargetPage", QStringLiteral("insertRibbonPage"));
+        KoRibbonLayout::arrange(m_slw,
+                               {m_slw->findChild<QToolButton *>(QStringLiteral("insertLink"))},
+                               {m_slw->findChild<QToolButton *>(QStringLiteral("invokeBookmarkHandler"))});
+    }
     // widgets.insert(i18n("Captions"), scapw);
     connect(textEditor(), &KoTextEditor::cursorPositionChanged, this, &ReferencesTool::updateButtons);
     return widgets;

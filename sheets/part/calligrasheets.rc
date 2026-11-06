@@ -1,5 +1,5 @@
 <!DOCTYPE gui SYSTEM "kpartgui.dtd">
-<gui name="Calligra Sheets" version="45" translationDomain="calligrasheets">
+<gui name="Calligra Sheets" version="46" translationDomain="calligrasheets">
 <MenuBar>
 <!-- <<<<<<<<<<<<<<<<<<<<<>>>>><   File Menu   >>>>>>>>>>>>>>>>>>>>>>>>>>>> -->
  <Menu name="file"><text>&amp;File</text>
@@ -87,6 +87,8 @@
   <Action name="insertSheet"/>
   <Separator />
   <Action name="add_shape"/>
+  <Action name="insert_chart"/>
+  <Action name="insert_picture"/>
   <Separator/>
   <Menu name="ExternalData"><text>&amp;External Data</text>
     <Action name="insertFromClipboard"/>

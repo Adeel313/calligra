@@ -26,12 +26,22 @@ class KoCanvasControllerWidget;
 class KoCanvasController;
 class KoCanvasBase;
 class KoShapeLayer;
+class QWheelEvent;
 
 class ScrollArea : public QScrollArea
 {
     Q_OBJECT
+public:
+    ScrollArea()
+    {
+        // The ribbon should not look like a sunken dock panel.
+        setFrameShape(QFrame::NoFrame);
+        setFrameShadow(QFrame::Plain);
+    }
+
 protected:
     void showEvent(QShowEvent *) override;
+    void wheelEvent(QWheelEvent *) override;
 };
 
 /**
@@ -57,6 +67,9 @@ public:
     };
 
 public Q_SLOTS:
+    /** Populate a passive ribbon page with an existing tool's live controls. */
+    void primeToolOptions(const QString &toolId);
+    void showRibbonPage(const QString &objectName);
     /**
      * Using the buttongroup id passed in addButton() you can set the new active tool.
      * If the id does not resolve to a visible heading, this call is ignored.
@@ -92,8 +105,20 @@ public Q_SLOTS:
      * Add a page that is not bound to a tool, shown as its own tab after the
      * tool tabs, for instance a ribbon style View tab.
      * The mode box takes ownership of @p page.
+     *
+     * When neither @p beforeToolTabs nor @p afterToolTabs is set, the page is
+     * placed after the tool tab identified by @p afterToolId (or after the
+     * Home tab of Words when @p afterToolId is empty, for compatibility).
+     * A page with the dynamic property "ribbonContextActive" is shown only
+     * while that property is true; changing it preserves the page's controls.
      */
-    void addCustomPage(const QString &title, const QIcon &icon, const QString &toolTip, QWidget *page, bool beforeToolTabs = false);
+    void addCustomPage(const QString &title,
+                       const QIcon &icon,
+                       const QString &toolTip,
+                       QWidget *page,
+                       bool beforeToolTabs = false,
+                       bool afterToolTabs = false,
+                       const QString &afterToolId = QString());
 
     /// Add a widget to a tool's page, preserving it when tool pages are rebuilt.
     void addWidgetToToolTab(const QString &toolId, QWidget *widget);
@@ -101,6 +126,15 @@ public Q_SLOTS:
     /// Place quick access controls before and after the tab bar.
     void setLeadingWidget(QWidget *widget);
     void setTrailingWidget(QWidget *widget);
+
+    /// Place the document header above the ribbon tabs.
+    void setTitleWidget(QWidget *widget);
+
+    /// Keep the tabs visible while hiding the command groups.
+    void setRibbonCollapsed(bool collapsed);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 
 
@@ -136,6 +170,7 @@ public:
     static QString applicationName;
 
 private:
+    void routeOfficeOptions(const QString &toolId, const QList<QPointer<QWidget>> &widgets);
     enum IconMode {
         IconAndText,
         IconOnly
@@ -147,7 +182,10 @@ private:
     void setIconSize() const;
 
     /// re-create the tabs and pages of all pages added with addCustomPage()
-    void appendCustomPages(bool beforeToolTabs);
+    void appendCustomPages(bool beforeToolTabs, bool afterToolTabs = false, const QString &afterToolId = QString());
+
+    /// append anchored custom pages whose tool tab never appeared, so they are not lost
+    void appendLeftoverCustomPages();
 
 private:
     class Private;

@@ -23,6 +23,9 @@
 #include <QVBoxLayout>
 #include <QTextBlockFormat>
 #include <QTextCharFormat>
+#include <QMenu>
+#include <QTimer>
+#include <QPainter>
 
 // calligra includes
 #include <KoCanvasBase.h>
@@ -33,6 +36,45 @@
 #include <KoCharacterStyle.h>
 #include <KoOdfLineNumberingConfiguration.h>
 #include <KoUnit.h>
+
+namespace
+{
+QIcon pageSetupIcon(int type)
+{
+    QPixmap pixmap(64, 64);
+    pixmap.setDevicePixelRatio(2);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(QPen(QColor("#596575"), 1.2));
+    painter.setBrush(Qt::white);
+    const QRectF page = type == 1 ? QRectF(2, 7, 28, 19) : QRectF(6, 2, 20, 28);
+    painter.drawRoundedRect(page, 1, 1);
+    painter.setPen(QPen(QColor("#185abd"), 1.3));
+    if (type == 0) {
+        painter.setPen(QPen(QColor("#185abd"), 1, Qt::DashLine));
+        painter.drawRect(page.adjusted(4, 5, -4, -5));
+    } else if (type == 2) {
+        painter.drawLine(QPointF(10, 7), QPointF(22, 7));
+        painter.drawLine(QPointF(10, 7), QPointF(13, 5));
+        painter.drawLine(QPointF(22, 7), QPointF(19, 5));
+        painter.drawLine(QPointF(16, 12), QPointF(16, 25));
+        painter.drawLine(QPointF(16, 12), QPointF(14, 15));
+        painter.drawLine(QPointF(16, 25), QPointF(14, 22));
+    } else {
+        for (int y = type == 1 ? 12 : 7; y < (type == 1 ? 23 : 27); y += 4) {
+            if (type == 3) {
+                painter.drawLine(9, y, 14, y);
+                painter.drawLine(18, y, 23, y);
+            } else {
+                painter.drawLine(7, y, 25, y);
+            }
+        }
+    }
+    painter.end();
+    return QIcon(pixmap);
+}
+}
 
 KWPageTool::KWPageTool(KoCanvasBase *canvas)
     : KoToolBase(canvas)
@@ -89,77 +131,140 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
 {
     QList<QPointer<QWidget>> widgets;
 
-    const auto addGroup = [this, &widgets](const QString &title, const QList<QPair<QString, QString>> &actions) {
-        auto *group = new QWidget;
-        group->setWindowTitle(title);
-        auto *layout = new QGridLayout(group);
-        layout->setContentsMargins(2, 1, 2, 1);
-        layout->setHorizontalSpacing(4);
-        layout->setVerticalSpacing(1);
-        layout->setSizeConstraint(QLayout::SetFixedSize);
+    // Microsoft Office style "Page Setup" group: margins, orientation, size,
+    // columns, breaks, line numbering and hyphenation.
+    auto *pageSetupGroup = new QWidget;
+    pageSetupGroup->setWindowTitle(i18n("Page Setup"));
+    pageSetupGroup->setProperty("ribbonGroupOrder", 10);
+    auto *pageSetupLayout = new QGridLayout(pageSetupGroup);
+    pageSetupLayout->setContentsMargins(2, 1, 2, 1);
+    pageSetupLayout->setHorizontalSpacing(4);
+    pageSetupLayout->setVerticalSpacing(1);
+    pageSetupLayout->setSizeConstraint(QLayout::SetFixedSize);
 
-        QList<QPair<QAction *, QString>> availableActions;
-        for (const auto &[name, label] : actions) {
-            if (QAction *action = m_canvas->view()->action(name)) {
-                availableActions.append({action, label});
-            }
+    int buttonIndex = 0;
+    const auto placeButton = [pageSetupLayout, &buttonIndex](QToolButton *button) {
+        const bool large = buttonIndex < 4;
+        button->setToolButtonStyle(large ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonTextBesideIcon);
+        button->setIconSize(large ? QSize(32, 32) : QSize(16, 16));
+        if (large) {
+            button->setMinimumSize(64, 72);
+            pageSetupLayout->addWidget(button, 0, buttonIndex, 3, 1, Qt::AlignTop);
+        } else {
+            pageSetupLayout->addWidget(button, (buttonIndex - 4) % 3, 4 + (buttonIndex - 4) / 3, Qt::AlignLeft);
         }
-        const int columns = qMax(1, (availableActions.size() + 1) / 2);
-        for (int i = 0; i < availableActions.size(); ++i) {
-            QAction *action = availableActions.at(i).first;
-            auto *button = new QToolButton(group);
-            button->setDefaultAction(action);
-            if (!availableActions.at(i).second.isEmpty()) {
-                button->setText(availableActions.at(i).second);
+        ++buttonIndex;
+    };
+    const auto addPageSetupAction = [this, pageSetupGroup, &placeButton, &buttonIndex](const QString &actionName, const QString &label) {
+        auto *button = new QToolButton(pageSetupGroup);
+        button->setObjectName(QStringLiteral("layout%1Button").arg(label));
+        button->setText(label);
+        const QIcon icon = pageSetupIcon(buttonIndex);
+        button->setIcon(icon);
+        // KWGui builds the ribbon before KWView registers its actions.
+        QTimer::singleShot(0, button, [this, button, actionName, label, icon] {
+            QAction *action = m_canvas->view()->action(actionName);
+            if (!action) {
+                button->setEnabled(false);
+                return;
             }
-            button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-            button->setIconSize(QSize(28, 28));
-            button->setAutoRaise(true);
+            button->setDefaultAction(action);
+            button->setText(label);
+            button->setIcon(icon);
+            connect(action, &QAction::changed, button, [button, label, icon] {
+                button->setText(label);
+                button->setIcon(icon);
+            });
             if (action->menu()) {
                 button->setPopupMode(QToolButton::MenuButtonPopup);
             }
-            layout->addWidget(button, i / columns, i % columns, Qt::AlignLeft | Qt::AlignTop);
-        }
-        widgets.append(group);
+        });
+        button->setAutoRaise(true);
+        placeButton(button);
     };
 
-    addGroup(i18n("Page"), {{QStringLiteral("format_page"), i18n("Page Size")},
-                             {QStringLiteral("format_page"), i18n("Orientation")},
-                             {QStringLiteral("format_page"), i18n("Page Margins")},
-                             {QStringLiteral("format_page"), i18n("Page Columns")}});
-    auto *breaksGroup = new QWidget;
-    breaksGroup->setWindowTitle(i18n("Breaks"));
-    auto *breaksLayout = new QGridLayout(breaksGroup);
-    breaksLayout->setContentsMargins(2, 1, 2, 1);
-    breaksLayout->setHorizontalSpacing(4);
-    breaksLayout->setVerticalSpacing(1);
-    breaksLayout->setSizeConstraint(QLayout::SetFixedSize);
-    if (QAction *pageBreakAction = m_canvas->view()->action(QStringLiteral("insert_framebreak"))) {
-        auto *pageBreak = new QToolButton(breaksGroup);
-        pageBreak->setDefaultAction(pageBreakAction);
-        pageBreak->setText(i18n("Page Break"));
-        pageBreak->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-        pageBreak->setIconSize(QSize(24, 24));
-        pageBreak->setAutoRaise(true);
-        breaksLayout->addWidget(pageBreak, 0, 0);
-    }
-    auto *manualBreak = new QToolButton(breaksGroup);
-    manualBreak->setText(i18n("Manual Break"));
-    manualBreak->setIcon(QIcon::fromTheme(QStringLiteral("insert-text")));
-    manualBreak->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    manualBreak->setIconSize(QSize(24, 24));
+    addPageSetupAction(QStringLiteral("format_page"), i18n("Margins"));
+    addPageSetupAction(QStringLiteral("format_page"), i18n("Orientation"));
+    addPageSetupAction(QStringLiteral("format_page"), i18n("Size"));
+    addPageSetupAction(QStringLiteral("format_page"), i18n("Columns"));
+    auto *manualBreak = new QToolButton(pageSetupGroup);
+    manualBreak->setObjectName(QStringLiteral("layoutBreaksButton"));
+    manualBreak->setText(i18n("Breaks"));
+    manualBreak->setIcon(QIcon::fromTheme(QStringLiteral("insert-page-break")));
     manualBreak->setAutoRaise(true);
-    manualBreak->setToolTip(i18n("Insert a line break at the cursor"));
-    connect(manualBreak, &QToolButton::clicked, this, [this] {
+    auto *breaksMenu = new QMenu(manualBreak);
+    const auto populateBreaksMenu = [this, breaksMenu] {
+        breaksMenu->clear();
+        // These actions are replaced when the active text tool changes.
+        for (const QString &name : {QStringLiteral("insert_framebreak"), QStringLiteral("insert_section"), QStringLiteral("line_break")}) {
+            if (QAction *action = m_canvas->view()->action(name)) {
+                breaksMenu->addAction(action);
+            }
+        }
+    };
+    connect(breaksMenu, &QMenu::aboutToShow, this, populateBreaksMenu);
+    QTimer::singleShot(0, breaksMenu, populateBreaksMenu);
+    manualBreak->setMenu(breaksMenu);
+    manualBreak->setPopupMode(QToolButton::InstantPopup);
+    placeButton(manualBreak);
+
+    auto *lineNumbers = new QToolButton(pageSetupGroup);
+    lineNumbers->setText(i18n("Line Numbering"));
+    lineNumbers->setIcon(QIcon::fromTheme(QStringLiteral("format-list-ordered")));
+    lineNumbers->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+    lineNumbers->setIconSize(QSize(28, 28));
+    lineNumbers->setCheckable(true);
+    lineNumbers->setAutoRaise(true);
+    if (m_document->mainFrameSet()) {
+        KoTextDocument textDocument(m_document->mainFrameSet()->document());
+        if (KoOdfLineNumberingConfiguration *configuration = textDocument.lineNumberingConfiguration()) {
+            lineNumbers->setChecked(configuration->enabled());
+        }
+    }
+    connect(lineNumbers, &QToolButton::toggled, this, [this](bool enabled) {
+        if (!m_document->mainFrameSet()) {
+            return;
+        }
+        QTextDocument *text = m_document->mainFrameSet()->document();
+        KoTextDocument textDocument(text);
+        auto *configuration = textDocument.lineNumberingConfiguration();
+        if (!configuration) {
+            configuration = new KoOdfLineNumberingConfiguration;
+            textDocument.setLineNumberingConfiguration(configuration);
+        }
+        configuration->setEnabled(enabled);
+        text->markContentsDirty(0, text->characterCount());
+        m_document->setModified(true);
+        m_document->relayout();
+        m_canvas->update();
+    });
+    placeButton(lineNumbers);
+
+    auto *hyphenation = new QToolButton(pageSetupGroup);
+    hyphenation->setText(i18n("Hyphenation"));
+    hyphenation->setIcon(QIcon::fromTheme(QStringLiteral("format-text-italic")));
+    hyphenation->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+    hyphenation->setIconSize(QSize(28, 28));
+    hyphenation->setCheckable(true);
+    hyphenation->setAutoRaise(true);
+    hyphenation->setToolTip(i18n("Allow hyphenation for the current text selection"));
+    if (KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(m_canvas)) {
+        hyphenation->setChecked(editor->charFormat().property(KoCharacterStyle::HasHyphenation).toBool());
+    }
+    connect(hyphenation, &QToolButton::toggled, this, [this](bool enabled) {
         if (KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(m_canvas)) {
-            editor->insertText(QString(QChar::LineSeparator));
+            QTextCharFormat format = editor->charFormat();
+            format.setProperty(KoCharacterStyle::HasHyphenation, enabled);
+            editor->setCharFormat(format);
         }
     });
-    breaksLayout->addWidget(manualBreak, 0, 1);
-    widgets.append(breaksGroup);
+    placeButton(hyphenation);
+
+    widgets.append(pageSetupGroup);
 
     auto *paragraphGroup = new QWidget;
     paragraphGroup->setWindowTitle(i18n("Paragraph"));
+    paragraphGroup->setProperty("ribbonGroupOrder", 20);
     auto *paragraphLayout = new QGridLayout(paragraphGroup);
     paragraphLayout->setContentsMargins(2, 1, 2, 1);
     paragraphLayout->setHorizontalSpacing(4);
@@ -167,6 +272,10 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
     paragraphLayout->setSizeConstraint(QLayout::SetFixedSize);
     const KoUnit unit = m_document->unit();
     const QStringList paragraphLabels = {i18n("Before"), i18n("After"), i18n("Left"), i18n("Right")};
+    auto *indentTitle = new QLabel(i18n("Indent"), paragraphGroup);
+    auto *spacingTitle = new QLabel(i18n("Spacing"), paragraphGroup);
+    paragraphLayout->addWidget(indentTitle, 0, 0, 1, 2);
+    paragraphLayout->addWidget(spacingTitle, 0, 2, 1, 2);
     for (int i = 0; i < paragraphLabels.size(); ++i) {
         auto *field = new QDoubleSpinBox(paragraphGroup);
         field->setObjectName(QStringLiteral("layoutParagraph%1").arg(i));
@@ -197,8 +306,12 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
         }
         auto *label = new QLabel(paragraphLabels.at(i), paragraphGroup);
         label->setBuddy(field);
-        paragraphLayout->addWidget(label, i / 2, (i % 2) * 2);
-        paragraphLayout->addWidget(field, i / 2, (i % 2) * 2 + 1);
+        // Indentation on the left, spacing on the right; each is a
+        // labelled pair of vertically stacked fields, as in Word.
+        const int column = i < 2 ? 2 : 0;
+        const int row = 1 + i % 2;
+        paragraphLayout->addWidget(label, row, column);
+        paragraphLayout->addWidget(field, row, column + 1);
         connect(field, &QDoubleSpinBox::valueChanged, this, [this, unit, i](double value) {
             KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(m_canvas);
             if (!editor) {
@@ -226,82 +339,6 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
         });
     }
     widgets.append(paragraphGroup);
-
-    auto *toolsGroup = new QWidget;
-    toolsGroup->setWindowTitle(i18n("Tools"));
-    auto *toolsLayout = new QGridLayout(toolsGroup);
-    toolsLayout->setContentsMargins(2, 1, 2, 1);
-    toolsLayout->setHorizontalSpacing(4);
-    toolsLayout->setVerticalSpacing(1);
-    toolsLayout->setSizeConstraint(QLayout::SetFixedSize);
-    const auto addActionButton = [this, toolsGroup, toolsLayout](const QString &actionName, const QString &label, int column) {
-        if (QAction *action = m_canvas->view()->action(actionName)) {
-            auto *button = new QToolButton(toolsGroup);
-            button->setDefaultAction(action);
-            button->setText(label);
-            button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-            button->setIconSize(QSize(24, 24));
-            button->setAutoRaise(true);
-            if (action->menu()) {
-                button->setPopupMode(QToolButton::MenuButtonPopup);
-            }
-            toolsLayout->addWidget(button, 0, column);
-        }
-    };
-    addActionButton(QStringLiteral("insert_variable"), i18n("Page Number"), 0);
-    addActionButton(QStringLiteral("insert_header"), i18n("Header"), 1);
-    addActionButton(QStringLiteral("insert_footer"), i18n("Footer"), 2);
-
-    auto *lineNumbers = new QToolButton(toolsGroup);
-    lineNumbers->setText(i18n("Line Numbering"));
-    lineNumbers->setIcon(QIcon::fromTheme(QStringLiteral("format-list-ordered")));
-    lineNumbers->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    lineNumbers->setCheckable(true);
-    lineNumbers->setAutoRaise(true);
-    if (m_document->mainFrameSet()) {
-        KoTextDocument textDocument(m_document->mainFrameSet()->document());
-        if (KoOdfLineNumberingConfiguration *configuration = textDocument.lineNumberingConfiguration()) {
-            lineNumbers->setChecked(configuration->enabled());
-        }
-    }
-    connect(lineNumbers, &QToolButton::toggled, this, [this](bool enabled) {
-        if (!m_document->mainFrameSet()) {
-            return;
-        }
-        QTextDocument *text = m_document->mainFrameSet()->document();
-        KoTextDocument textDocument(text);
-        auto *configuration = textDocument.lineNumberingConfiguration();
-        if (!configuration) {
-            configuration = new KoOdfLineNumberingConfiguration;
-            textDocument.setLineNumberingConfiguration(configuration);
-        }
-        configuration->setEnabled(enabled);
-        text->markContentsDirty(0, text->characterCount());
-        m_document->setModified(true);
-        m_document->relayout();
-        m_canvas->update();
-    });
-    toolsLayout->addWidget(lineNumbers, 0, 3);
-
-    auto *hyphenation = new QToolButton(toolsGroup);
-    hyphenation->setText(i18n("Hyphenation"));
-    hyphenation->setIcon(QIcon::fromTheme(QStringLiteral("format-text-italic")));
-    hyphenation->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    hyphenation->setCheckable(true);
-    hyphenation->setAutoRaise(true);
-    hyphenation->setToolTip(i18n("Allow hyphenation for the current text selection"));
-    if (KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(m_canvas)) {
-        hyphenation->setChecked(editor->charFormat().property(KoCharacterStyle::HasHyphenation).toBool());
-    }
-    connect(hyphenation, &QToolButton::toggled, this, [this](bool enabled) {
-        if (KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(m_canvas)) {
-            QTextCharFormat format = editor->charFormat();
-            format.setProperty(KoCharacterStyle::HasHyphenation, enabled);
-            editor->setCharFormat(format);
-        }
-    });
-    toolsLayout->addWidget(hyphenation, 0, 4);
-    widgets.append(toolsGroup);
 
     return widgets;
 }

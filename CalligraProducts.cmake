@@ -136,6 +136,7 @@ calligra_define_product(PLUGIN_THREEDSHAPE "3D shape plugin"  STAGING  REQUIRES 
 
 # Sheets filters
 calligra_define_product(FILTER_XLSX_TO_ODS "XLSX to ODS filter"  REQUIRES LIB_KOMSOOXML PART_SHEETS)
+calligra_define_product(FILTER_ODS_TO_XLSX "ODS to XLSX filter" REQUIRES LIB_KOMAIN)
 calligra_define_product(FILTER_XLS_TO_SHEETS "Sheets XLS import filter"  REQUIRES LIB_MSO LIB_KOMSOOXML PART_SHEETS)
 calligra_define_product(FILTER_SHEETS_TO_XLS "Sheets XLS export filter"  REQUIRES LIB_MSO LIB_KOMSOOXML PART_SHEETS)
 calligra_define_product(FILTER_CSV_TO_SHEETS "Sheets CSV import filter"  REQUIRES PART_SHEETS)
@@ -160,6 +161,7 @@ calligra_define_product(FILTER_KEY_TO_ODP "Apple Keynote to ODP filter"  REQUIRE
 calligra_define_product(FILTER_KPR_TO_ODP "KPresenter to ODP filter"  REQUIRES LIB_KOMAIN)
 calligra_define_product(FILTER_PPT_TO_ODP "PPT to OPD filter"  REQUIRES LIB_MSO LIB_KOMAIN)
 calligra_define_product(FILTER_PPTX_TO_ODP "PPTX to ODP filter"  REQUIRES LIB_KOMSOOXML LIB_KOODF2 LIB_KOMAIN)
+calligra_define_product(FILTER_ODP_TO_PPTX "ODP to PPTX filter" REQUIRES LIB_KOMAIN)
 
 # Words filters
 calligra_define_product(FILTER_DOC_TO_ODT "DOC to ODT filter"  REQUIRES LIB_MSO LIB_KOMSOOXML LIB_KOMAIN)
@@ -229,6 +231,7 @@ calligra_define_productset(FILTERS_SHEETS_IMPORT "All Sheets import filters"
 )
 calligra_define_productset(FILTERS_SHEETS_EXPORT "All Sheets export filters"
     OPTIONAL
+        FILTER_ODS_TO_XLSX
         FILTER_SHEETS_TO_XLS
         FILTER_SHEETS_TO_CSV
         FILTER_SHEETS_TO_GNUMERIC
@@ -259,11 +262,11 @@ calligra_define_productset(FILTERS_STAGE_IMPORT "All Stage import filters"
         FILTER_PPT_TO_ODP
         FILTER_PPTX_TO_ODP
 )
-#calligra_define_productset(FILTERS_STAGE_EXPORT "All Stage export filters"  OPTIONAL ) none currently
+calligra_define_productset(FILTERS_STAGE_EXPORT "All Stage export filters" OPTIONAL FILTER_ODP_TO_PPTX)
 calligra_define_productset(FILTERS_STAGE "All Stage filters"
     OPTIONAL
         FILTERS_STAGE_IMPORT
-#         FILTERS_STAGE_EXPORT
+        FILTERS_STAGE_EXPORT
 )
 calligra_define_productset(FILTERS_WORDS_IMPORT "All Words import filters"
     OPTIONAL

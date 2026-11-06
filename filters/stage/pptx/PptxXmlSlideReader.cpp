@@ -10,6 +10,9 @@
  */
 
 #include "PptxXmlSlideReader.h"
+#include <QMimeDatabase>
+#include <QCryptographicHash>
+#include <QDomDocument>
 
 #include "PptxDebug.h"
 #include "PptxImport.h"
@@ -211,6 +214,7 @@ public:
     QString qualifiedNameOfMainElement;
     QString phType; //!< set by read_ph()
     QString phIdx; //!< set by read_ph()
+    bool isSubtitlePlaceholder = false;
 
     //! set by read_t as true whenever some characters are copied to a textbox,
     //! used to figure out if a shape is a placeholder or not
@@ -523,6 +527,25 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_sldInternal()
                 } else {
                     skipCurrentElement();
                 }
+            } else if (QUALIFIED_NAME_IS(transition) && m_context->type == Slide && !m_context->firstReadingRound) {
+                const auto transitionAttributes = attributes();
+                const QString advance = transitionAttributes.value(QLatin1String("advTm")).toString();
+                const bool click = transitionAttributes.value(QLatin1String("advClick")) != QLatin1String("0");
+                if (!advance.isEmpty()) {
+                    m_currentDrawStyle->addProperty("presentation:transition-type", click ? "semi-automatic" : "automatic");
+                    m_currentDrawStyle->addProperty("presentation:duration", QStringLiteral("PT%1S").arg(advance.toDouble()/1000.0));
+                }
+                const QString speed = transitionAttributes.value(QLatin1String("spd")).toString();
+                while (readNextStartElement()) {
+                    if (name() == QLatin1String("fade")) {
+                        m_currentDrawStyle->addProperty("smil:type", "fade");
+                        m_currentDrawStyle->addProperty("smil:subtype", "crossfade");
+                        m_currentDrawStyle->addProperty("smil:dur", speed == QLatin1String("slow") ? "PT1S" : speed == QLatin1String("med") ? "PT0.75S" : "PT0.5S");
+                    }
+                    skipCurrentElement();
+                }
+            } else if (QUALIFIED_NAME_IS(timing) && m_context->type == Slide && !m_context->firstReadingRound) {
+                TRY_READ(timing)
             } else if (m_context->type == NotesMaster && QUALIFIED_NAME_IS(notesStyles)) {
                 if (m_context->firstReadingRound) {
                     TRY_READ(notesStyle)
@@ -618,7 +641,7 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_sldInternal()
                 PptxXmlSlideReaderContext context(*m_context->import,
                                                   notesPath,
                                                   notesFile,
-                                                  0,
+                                                  m_context->slideNumber,
                                                   &m_context->notesMasterProperties->theme,
                                                   PptxXmlSlideReader::Notes,
                                                   nullptr,
@@ -930,11 +953,16 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_oleObj()
     if(!imgH.isEmpty()) m_svgHeight = imgH.toInt();
     */
 
+    QString preview;
     while (!atEnd()) {
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
-            //! @todo add ELSE_WRONG_FORMAT
+            if (qualifiedName() == QLatin1String("a:blip")) {
+                RETURN_IF_ERROR(read_blip())
+                preview = m_xlinkHref;
+                m_xlinkHref.clear();
+            }
         }
     }
 
@@ -960,7 +988,7 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_oleObj()
         body->addAttribute("xlink:type", "simple");
         body->addAttribute("xlink:show", "embed");
         body->addAttribute("xlink:actuate", "onLoad");
-        body->addAttribute("xlink:href", m_context->vmlReader.content().value(spid));
+        body->addAttribute("xlink:href", preview.isEmpty() ? m_context->vmlReader.content().value(spid) : preview);
         body->endElement(); // draw:image
     }
 
@@ -1325,7 +1353,7 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_bgPr()
                     m_currentDrawStyle->addProperty("draw:fill", QLatin1String("solid"));
                     m_currentDrawStyle->addProperty("draw:fill-color", m_currentColor.name());
                 }
-                if (m_currentAlpha > 0) {
+                if (m_currentAlpha >= 0) {
                     m_currentDrawStyle->addProperty("draw:opacity", QString("%1%").arg(m_currentAlpha));
                 }
             } else if (qualifiedName() == QLatin1String("a:effectLst")) {
@@ -1350,6 +1378,8 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_bgPr()
                 m_currentDrawStyle->addProperty("draw:fill", "gradient");
                 const QString gradName = mainStyles->insert(m_currentGradientStyle);
                 m_currentDrawStyle->addProperty("draw:fill-gradient-name", gradName);
+                if (!m_gradientOpacityName.isEmpty())
+                    m_currentDrawStyle->addProperty("draw:opacity-name", m_gradientOpacityName);
             }
 
             /*            else if (qualifiedName() == QLatin1String("a:tile")) {
@@ -1512,6 +1542,7 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_ph()
     // Specifies what content type a placeholder is intended to contain.
     // The possible values for this attribute are defined by the ST_PlaceholderType simple type (§19.7.10), p.2988.
     TRY_READ_ATTR_WITHOUT_NS_INTO(type, d->phType)
+    d->isSubtitlePlaceholder = d->phType == QLatin1String("subTitle");
     debugPptx << "type:" << d->phType;
     // There is a hardcoded behaviour in MSoffice that ctrTitle refers also to
     // "title".
@@ -1565,6 +1596,7 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_txBody()
     READ_PROLOGUE
     debugPptx << "m_context->type:" << m_context->type;
 
+    m_textParagraphIndex = 0;
     m_prevListLevel = 0;
     m_currentListLevel = 0;
     m_pPr_lvl = 0;
@@ -1685,6 +1717,12 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_graphicFrame()
 
     popCurrentDrawStyle();
 
+    if (m_context->type == Slide || m_context->type == Notes) {
+        const QString id = QStringLiteral("%1%2item%3")
+            .arg(m_context->type == Notes ? QStringLiteral("notes") : QStringLiteral("slide"))
+            .arg(m_context->slideNumber).arg(m_cNvPrId);
+        body->addAttribute("xml:id", id); body->addAttribute("draw:id", id);
+    }
     body->addAttribute("draw:name", m_cNvPrName);
     body->addAttribute("svg:y", EMU_TO_CM_STRING(m_svgY));
     if (!m_context->graphicObjectIsGroup) {
@@ -1770,12 +1808,28 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_nvPr()
     d->phRead = false;
     d->phType.clear();
     d->phIdx.clear();
+    d->isSubtitlePlaceholder = false;
     while (!atEnd()) {
         readNext();
         debugPptx << *this;
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             TRY_READ_IF(ph)
+            else if (name() == QLatin1String("videoFile") && namespaceUri() == QLatin1String("http://schemas.openxmlformats.org/drawingml/2006/main")) {
+                const QString relation = attributes().value(QLatin1String("http://schemas.openxmlformats.org/officeDocument/2006/relationships"), QLatin1String("link")).toString();
+                const QString source = m_context->relationships->target(m_context->path, m_context->file, relation);
+                if (!source.isEmpty()) {
+                    m_mediaMimeType = QMimeDatabase().mimeTypeForFile(QUrl(source).path(), QMimeDatabase::MatchExtension).name();
+                    if (source.contains(QLatin1String("://"))) {
+                        m_mediaHref = source;
+                    } else {
+                        m_mediaHref = QStringLiteral("Media/") + QString::fromLatin1(QCryptographicHash::hash(source.toUtf8(), QCryptographicHash::Sha256).toHex().left(12)) + QLatin1Char('_') + source.mid(source.lastIndexOf('/')+1);
+                        RETURN_IF_ERROR(m_context->import->copyFile(source, m_mediaHref, false))
+                        addManifestEntryForFile(m_mediaHref);
+                    }
+                }
+                skipCurrentElement();
+            }
             SKIP_UNKNOWN
             //! @todo add ELSE_WRONG_FORMAT
         }
@@ -2877,3 +2931,66 @@ qreal PptxXmlSlideReader::processParagraphSpacing(const qreal margin, const qrea
 
 #include <MsooXmlCommonReaderDrawingMLImpl.h> // this adds p:pic, etc.
 #include <MsooXmlDrawingReaderTableImpl.h> //this adds a:tbl
+
+#undef MSOOXML_CURRENT_NS
+#define MSOOXML_CURRENT_NS "p"
+#undef CURRENT_EL
+#define CURRENT_EL timing
+KoFilter::ConversionStatus PptxXmlSlideReader::read_timing()
+{
+    READ_PROLOGUE
+    QDomDocument document;
+    const auto copy = [&](const auto &self) -> QDomElement {
+        auto element = document.createElementNS(namespaceUri().toString(), qualifiedName().toString());
+        for (const auto &attribute : attributes())
+            element.setAttributeNS(attribute.namespaceUri().toString(), attribute.qualifiedName().toString(), attribute.value().toString());
+        while (!atEnd()) {
+            readNext();
+            if (isEndElement()) break;
+            if (isStartElement()) element.appendChild(self(self));
+            else if (isCharacters()) element.appendChild(document.createTextNode(text().toString()));
+        }
+        return element;
+    };
+    document.appendChild(copy(copy));
+    const QString ns = QStringLiteral("http://schemas.openxmlformats.org/presentationml/2006/main");
+    const auto nodes = document.elementsByTagNameNS(ns, QStringLiteral("cTn"));
+    bool started = false;
+    for (int i = 0; i < nodes.size(); ++i) {
+        const auto effect = nodes.at(i).toElement();
+        const bool entrance = effect.attribute(QStringLiteral("presetClass")) == QLatin1String("entr");
+        const bool exit = effect.attribute(QStringLiteral("presetClass")) == QLatin1String("exit");
+        if (effect.attribute(QStringLiteral("presetID")) != QLatin1String("1") || (!entrance && !exit)) continue;
+        const auto targets = effect.elementsByTagNameNS(ns, QStringLiteral("spTgt"));
+        const auto sets = effect.elementsByTagNameNS(ns, QStringLiteral("set"));
+        if (targets.isEmpty() || sets.isEmpty()) continue;
+        const auto target = targets.at(0).toElement();
+        const auto ranges = target.elementsByTagNameNS(ns, QStringLiteral("pRg"));
+        QString id = QStringLiteral("slide%1item%2").arg(m_context->slideNumber).arg(target.attribute(QStringLiteral("spid")));
+        const bool firstEffect = !started;
+        if (!started) {
+            body->startElement("anim:par"); body->addAttribute("presentation:node-type", "timing-root");
+            body->startElement("anim:seq"); body->addAttribute("presentation:node-type", "main-sequence");
+            body->startElement("anim:par"); body->startElement("anim:par");
+            started = true;
+        }
+        const auto range = ranges.isEmpty() ? QDomElement() : ranges.at(0).toElement();
+        const int begin = range.isNull() ? -1 : range.attribute(QStringLiteral("st")).toInt();
+        const int end = range.isNull() ? -1 : qMin(begin + 10000, range.attribute(QStringLiteral("end"),QString::number(begin)).toInt());
+        for (int paragraph = begin; paragraph <= end; ++paragraph) {
+            body->startElement("anim:par");
+            const QString nodeType = effect.attribute(QStringLiteral("nodeType"));
+            body->addAttribute("presentation:node-type", firstEffect || nodeType == QLatin1String("clickEffect") ? "on-click" : nodeType == QLatin1String("afterEffect") ? "after-previous" : "with-previous");
+            body->addAttribute("presentation:preset-class", entrance ? "entrance" : "exit");
+            body->addAttribute("presentation:preset-id", entrance ? "ooo-entrance-appear" : "ooo-exit-disappear");
+            body->startElement("anim:set");
+            body->addAttribute("smil:targetElement", paragraph < 0 ? id : id + QStringLiteral("p%1").arg(paragraph));
+            if (paragraph >= 0) body->addAttribute("anim:sub-item", "text");
+            body->addAttribute("smil:attributeName", "visibility"); body->addAttribute("smil:to", entrance ? "visible" : "hidden");
+            body->addAttribute("smil:begin", "0s"); body->addAttribute("smil:dur", "0.001s"); body->addAttribute("smil:fill", "hold");
+            body->endElement(); body->endElement();
+        }
+    }
+    if (started) { body->endElement(); body->endElement(); body->endElement(); body->endElement(); }
+    READ_EPILOGUE
+}

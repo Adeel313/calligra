@@ -79,6 +79,11 @@ XlsxImport::XlsxImport(QObject *parent, const QVariantList &)
 {
 }
 
+KoFilter::ConversionStatus XlsxImport::convert(const QByteArray &from, const QByteArray &to)
+{
+    return MSOOXML::MsooXmlImport::convert(from, to);
+}
+
 XlsxImport::~XlsxImport()
 {
     delete d;

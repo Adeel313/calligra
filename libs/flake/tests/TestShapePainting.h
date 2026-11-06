@@ -18,6 +18,8 @@ private Q_SLOTS:
     void testPaintShape();
     void testPaintHiddenShape();
     void testPaintOrder();
+    void testZOrderIsIrreflexive();
+    void testSortRepeatedShapes();
 };
 
 #endif

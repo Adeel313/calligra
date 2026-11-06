@@ -454,7 +454,8 @@ void KoTextWriter::Private::saveParagraph(const QTextBlock &block, int from, int
     QTextBlock currentBlock = block;
     KoTextBlockData blockData(currentBlock);
     if (blockData.saveXmlID()) {
-        xmlid = context.xmlid(&blockData);
+        // The wrapper is stack-local; identify the persistent paragraph data.
+        xmlid = context.xmlid(currentBlock.userData());
         xmlid.saveOdf(writer, KoElementReference::TextId);
     }
     // Write the fragments and their formats

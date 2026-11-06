@@ -35,6 +35,7 @@
 #include <KoTextDocument.h>
 #include <KoTextEditor.h>
 #include <KoTextRangeManager.h>
+#include <KoVariable.h>
 #include <kundo2stack.h>
 
 #include "TextDebug.h"
@@ -229,6 +230,59 @@ void TestKoTextEditor::testUniqueCommandOwnership()
         QCOMPARE(redoCount, 2);
     }
     QCOMPARE(destroyed, 1);
+}
+
+void TestKoTextEditor::testFormatAfterInlineVariable_data()
+{
+    QTest::addColumn<bool>("replaceSelection");
+    QTest::newRow("empty-paragraph") << false;
+    QTest::newRow("replace-selection") << true;
+}
+
+void TestKoTextEditor::testFormatAfterInlineVariable()
+{
+    QFETCH(bool, replaceSelection);
+    class TestVariable final : public KoVariable
+    {
+    public:
+        TestVariable() { setValue(QStringLiteral("02/11/26")); }
+        void saveOdf(KoShapeSavingContext &) override {}
+        bool loadOdf(const KoXmlElement &, KoShapeLoadingContext &) override { return false; }
+    };
+
+    TestDocument doc;
+    KoTextEditor *editor = doc.textEditor();
+    KUndo2QStack *stack = KoTextDocument(doc.m_document).undoStack();
+    const QString originalText = replaceSelection ? QStringLiteral("replace me") : QString();
+    if (replaceSelection) {
+        editor->insertText(originalText);
+        editor->setPosition(0);
+        editor->setPosition(originalText.size(), QTextCursor::KeepAnchor);
+    }
+    const int initialCommands = stack->count();
+    auto *variable = new TestVariable;
+    editor->insertInlineObject(variable);
+    const QString field(QChar::ObjectReplacementCharacter);
+    QCOMPARE(doc.m_document->toPlainText(), field);
+    QCOMPARE(stack->count(), initialCommands + 1);
+    QCOMPARE(doc.m_inlineObjectManager.inlineTextObject(variable->id()), variable);
+
+    editor->setHorizontalTextAlignment(Qt::AlignRight | Qt::AlignAbsolute);
+    QVERIFY(editor->blockFormat().alignment().testFlag(Qt::AlignRight));
+    QCOMPARE(stack->count(), initialCommands + 2);
+
+    stack->undo();
+    QVERIFY(!editor->blockFormat().alignment().testFlag(Qt::AlignRight));
+    QCOMPARE(doc.m_document->toPlainText(), field);
+    stack->undo();
+    QCOMPARE(doc.m_document->toPlainText(), originalText);
+    QVERIFY(!doc.m_inlineObjectManager.inlineTextObject(variable->id()));
+
+    stack->redo();
+    QCOMPARE(doc.m_document->toPlainText(), field);
+    QCOMPARE(doc.m_inlineObjectManager.inlineTextObject(variable->id()), variable);
+    stack->redo();
+    QVERIFY(editor->blockFormat().alignment().testFlag(Qt::AlignRight));
 }
 
 void TestKoTextEditor::testRenameSectionAnnihilation()

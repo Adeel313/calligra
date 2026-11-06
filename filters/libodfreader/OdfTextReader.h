@@ -64,7 +64,14 @@ public:
     DECLARE_READER_FUNCTION(TextP);
     DECLARE_READER_FUNCTION(TextList);
     DECLARE_READER_FUNCTION(TextNumberedParagraph);
+    DECLARE_READER_FUNCTION(TextSection);
+    DECLARE_READER_FUNCTION(TextTableOfContent);
     DECLARE_READER_FUNCTION(TextA);
+
+    //! Reads a field element (text:page-number, text:date, ...) and passes its
+    //! cached text to the backend.  Fields can contain other inline elements,
+    //! so the whole subtree is consumed here.
+    void readElementTextField(KoXmlStreamReader &reader);
 
     DECLARE_READER_FUNCTION(TableTableColumnGroup);
     DECLARE_READER_FUNCTION(TableTableColumn);

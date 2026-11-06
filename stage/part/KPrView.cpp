@@ -12,6 +12,14 @@
 #include <QFileDialog>
 #include <QStatusBar>
 #include <QUrl>
+#include <QDockWidget>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QMenu>
+#include <QTimer>
+#include <QToolButton>
+#include <QVBoxLayout>
+#include <QWidgetAction>
 
 #include <KActionCollection>
 #include <KActionMenu>
@@ -29,6 +37,8 @@
 #include <KoShapeLayer.h>
 #include <KoShapeManager.h>
 #include <KoToolManager.h>
+#include <KoToolBase.h>
+#include <KoRibbonLayout.h>
 #include <KoZoomController.h>
 #include <tools/backgroundTool/KoPABackgroundTool.h>
 
@@ -37,6 +47,8 @@
 #include "KPrPage.h"
 #include "KPrPageApplicationData.h"
 #include "KPrPart.h"
+#include "KPresenter.h"
+#include "pagelayout/KPrPageLayouts.h"
 
 #ifdef WITH_QTDBUS
 #include "KPrViewAdaptor.h"
@@ -60,6 +72,44 @@
 #include "KPrPdfPrintJob.h"
 #include "gemini/ViewModeSwitchEvent.h"
 
+namespace
+{
+void configurePowerPointPanels(KPrView *view, int attempts = 30)
+{
+    if (!view->mainWindow() || !view->activePage()) {
+        if (attempts > 0) {
+            QTimer::singleShot(100, view, [view, attempts] { configurePowerPointPanels(view, attempts - 1); });
+        }
+        return;
+    }
+    auto *window = view->mainWindow();
+    if (!window->property("stageModernScrollbars").toBool()) {
+        window->setProperty("stageModernScrollbars", true);
+        window->setStyleSheet(window->styleSheet() + QStringLiteral(
+            "QScrollBar:vertical { background: palette(window); width: 12px; margin: 2px; border: none; }"
+            "QScrollBar:horizontal { background: palette(window); height: 12px; margin: 2px; border: none; }"
+            "QScrollBar::handle { background: palette(mid); border: none; border-radius: 4px; }"
+            "QScrollBar::handle:vertical { min-height: 32px; }"
+            "QScrollBar::handle:horizontal { min-width: 32px; }"
+            "QScrollBar::handle:hover { background: palette(dark); }"
+            "QScrollBar::handle:pressed { background: palette(highlight); }"
+            "QScrollBar::handle:disabled { background: palette(midlight); }"
+            "QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; border: none; background: transparent; }"
+            "QScrollBar::add-page, QScrollBar::sub-page { background: transparent; border: none; }"
+            "QAbstractScrollArea::corner { background: palette(window); border: none; }"));
+    }
+    auto *transitions = window->findChild<QWidget *>(QStringLiteral("stageTransitionsPage"));
+    auto *animations = window->findChild<QWidget *>(QStringLiteral("stageAnimationsPage"));
+    auto *insert = window->findChild<QWidget *>(QStringLiteral("stageInsertPage"));
+    KoToolBase *tool = KoToolManager::instance()->toolById(view->kopaCanvas(), QStringLiteral("Animation Tool"));
+    if (!transitions || !animations || !insert || !tool) {
+        return;
+    }
+    QMetaObject::invokeMethod(tool, "configureRibbon", Qt::DirectConnection,
+                              Q_ARG(QWidget *, transitions), Q_ARG(QWidget *, animations), Q_ARG(QWidget *, insert));
+}
+}
+
 KPrView::KPrView(KPrPart *part, KPrDocument *document, QWidget *parent)
     : KoPAView(part, document, KoPAView::ModeBox, parent)
     , m_part(part)
@@ -79,6 +129,7 @@ KPrView::KPrView(KPrPart *part, KPrDocument *document, QWidget *parent)
     actionCollection()->action("view_masterpages")->setText(i18n("Show Master Slides"));
     actionCollection()->action("import_document")->setText(i18n("Import Slideshow..."));
     actionCollection()->action("page_insertpage")->setText(i18n("Insert Slide"));
+    actionCollection()->action("page_insertpage")->setIconText(i18n("New Slide"));
     actionCollection()->action("page_insertpage")->setToolTip(i18n("Insert a new slide after the current one"));
     actionCollection()->action("page_insertpage")->setWhatsThis(i18n("Insert a new slide after the current one"));
     actionCollection()->action("page_copypage")->setText(i18n("Copy Slide"));
@@ -107,6 +158,7 @@ KPrView::KPrView(KPrPart *part, KPrDocument *document, QWidget *parent)
     connect(zoomController(), &KoZoomController::zoomChanged, this, &KPrView::zoomChanged);
 
     setAcceptDrops(true);
+    QTimer::singleShot(0, this, [this] { configurePowerPointPanels(this); });
 }
 
 KPrView::~KPrView()
@@ -172,6 +224,23 @@ void KPrView::blackPresentation()
     }
 }
 
+void KPrView::insertPage()
+{
+    if (viewMode()->masterMode()) {
+        KoPAView::insertPage();
+        return;
+    }
+    auto *layouts = kopaDocument()->resourceManager()->resource(KPresenter::PageLayouts).value<KPrPageLayouts *>();
+    KPrPageLayout *layout = layouts ? layouts->defaultContentLayout() : nullptr;
+    // Keep insertion and placeholder creation together: one Undo removes the
+    // complete slide, and Redo restores its editable title/content areas.
+    kopaDocument()->beginMacro(kundo2_i18n("Insert Slide"));
+    KoPAView::insertPage();
+    if (auto *page = dynamic_cast<KPrPage *>(activePage()); page && layout)
+        page->setLayout(layout, kopaDocument());
+    kopaDocument()->endMacro();
+}
+
 void KPrView::showStatusBar(bool toggled)
 {
     statusBar()->setVisible(toggled);
@@ -191,6 +260,9 @@ void KPrView::initGUI()
     if (designTool) {
         KPrPageLayoutWidget *plw = new KPrPageLayoutWidget();
         plw->setView(this);
+        plw->setProperty("ribbonTargetPage", QStringLiteral("stageHomePage"));
+        plw->setProperty("ribbonGroupOrder", 25);
+        plw->setWindowTitle(i18n("Layout"));
         designTool->addOptionWidget(plw);
     }
     KConfigGroup group(KSharedConfig::openConfig(), "stage");
@@ -282,10 +354,14 @@ void KPrView::initActions()
     actionCollection()->addAction("slideshow_start", actionStartPresentation);
     connect(actionStartPresentation, &QAction::triggered, this, &KPrView::startPresentation); // for the toolbar button
     QAction *action = new QAction(i18n("From Current Slide"), this);
+    action->setIcon(koIcon("view-presentation"));
+    actionCollection()->addAction("slideshow_start_from_current", action);
     action->setShortcut(QKeySequence("Shift+F5"));
     actionStartPresentation->addAction(action);
     connect(action, &QAction::triggered, this, &KPrView::startPresentation);
     action = new QAction(i18n("From First Slide"), this);
+    action->setIcon(koIcon("view-presentation"));
+    actionCollection()->addAction("slideshow_start_from_beginning", action);
     action->setShortcut(QKeySequence("F5"));
     actionStartPresentation->addAction(action);
     connect(action, &QAction::triggered, this, &KPrView::startPresentationFromBeginning);

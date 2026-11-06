@@ -15,7 +15,7 @@ class KoShapeCollectionMenu : public QMenu
     Q_OBJECT
 
 public:
-    explicit KoShapeCollectionMenu(QWidget *parent = nullptr);
+    explicit KoShapeCollectionMenu(QWidget *parent = nullptr, bool chartsOnly = false);
     virtual ~KoShapeCollectionMenu();
 
     QSize sizeHint() const override;

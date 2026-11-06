@@ -402,7 +402,11 @@ void KoStyleManager::saveOdf(KoShapeSavingContext &context)
         context.mainStyles().insertRawOdfStyles(KoGenStyles::DocumentStyles, xmlBufferBib.data());
     }
 
-    if (d->outlineStyle) {
+    if (d->outlineStyle && !isDefaultOutlineNumbering(d->outlineStyle)) {
+        // Only persist real chapter numbering.  The default outline numbering
+        // must not be saved: on reload it would lose its "default" marker and
+        // silently turn heading numbering back on (MS Word does not number
+        // headings by default).
         QString name(QString(QUrl::toPercentEncoding(d->outlineStyle->name(), "", " ")).replace('%', '_'));
         if (name.isEmpty())
             name = 'O';
@@ -1014,6 +1018,26 @@ void KoStyleManager::setOutlineStyle(KoListStyle *listStyle)
 KoListStyle *KoStyleManager::outlineStyle() const
 {
     return d->outlineStyle;
+}
+
+bool KoStyleManager::isDefaultOutlineNumbering(KoListStyle *style) const
+{
+    if (!style) {
+        return true;
+    }
+    if (style->styleId() == defaultOutlineStyle()->styleId()) {
+        return true;
+    }
+    // Style ids are not stable across ODF round-trips; compare the level
+    // definitions with the ids normalized away.
+    KoListStyle *candidate = style->clone();
+    KoListStyle *reference = d->defaultOutlineStyle->clone();
+    candidate->setStyleId(0);
+    reference->setStyleId(0);
+    const bool equal = (*candidate == *reference);
+    delete candidate;
+    delete reference;
+    return equal;
 }
 
 QList<KoCharacterStyle *> KoStyleManager::characterStyles() const

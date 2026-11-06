@@ -9,6 +9,7 @@
  */
 
 #include "KoPart.h"
+#include "KoOoxmlDefaults_p.h"
 
 #include "KoApplication.h"
 #include "KoDocument.h"
@@ -244,6 +245,7 @@ void KoPart::openTemplate(const QUrl &url)
         // in case this is a open document template remove the -template from the end
         mimeType.remove(QRegularExpression("-template$"));
         d->document->setMimeTypeAfterLoading(mimeType);
+        d->document->setOutputMimeType(koDefaultSaveMimeType(d->document->nativeFormatMimeType()));
         deleteOpenPane();
         d->document->resetURL();
         d->document->setEmpty();

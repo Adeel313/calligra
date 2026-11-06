@@ -40,8 +40,11 @@ protected:
     read_p_args m_read_p_args;
 
     KoGenStyle *m_currentDrawStyle; //! used by all classes that need a graphics style.
+    bool m_shapeUsesBackgroundFill = false;
     QList<KoGenStyle *> m_drawStyleStack;
     KoGenStyle m_currentGradientStyle;
+    QList<QPair<int, QColor>> m_gradientStops;
+    QString m_gradientOpacityName;
     void pushCurrentDrawStyle(KoGenStyle *newStyle);
     void popCurrentDrawStyle();
 
@@ -76,6 +79,10 @@ protected:
     uint m_pPr_lvl;
 
     bool m_paragraphStyleNameWritten; //!< set by setupParagraphStyle()
+
+    //! Set when text has been emitted in the current paragraph. Used to decide
+    //! whether an explicit page/column break applies before or after it.
+    bool m_paragraphHasText = false;
 
     bool m_addManifestEntryForPicturesDirExecuted;
 

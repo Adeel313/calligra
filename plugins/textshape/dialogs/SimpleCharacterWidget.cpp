@@ -7,12 +7,14 @@
  */
 
 #include "SimpleCharacterWidget.h"
+#include <QCoreApplication>
 #include "../commands/ChangeListCommand.h"
 #include "DockerStylesComboModel.h"
 #include "StylesDelegate.h"
 #include "StylesModel.h"
 #include "TextTool.h"
 #include <KoStyleThumbnailer.h>
+#include <KoRibbonLayout.h>
 
 #include <KoCharacterStyle.h>
 #include <KoInlineTextObjectManager.h>
@@ -101,6 +103,62 @@ SimpleCharacterWidget::~SimpleCharacterWidget()
 {
     // the model is set on the comboBox which takes ownership
     delete m_thumbnailer;
+}
+
+void SimpleCharacterWidget::configureRibbon()
+{
+    setObjectName(QStringLiteral("ribbonFontGroup"));
+    if (QCoreApplication::applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)) {
+        widget.characterStyleCombo->hide();
+    }
+    widget.SpecialSpacer->hide();
+    // Keep font family and size on top; grow/shrink follow the lower icon row.
+    int growColumn = 8;
+    for (const auto &entry : {qMakePair(QStringLiteral("fontsizeup"), QStringLiteral("A+")),
+                              qMakePair(QStringLiteral("fontsizedown"), QStringLiteral("A−"))}) {
+        auto *button = new QToolButton(this);
+        QAction *action = m_tool->action(entry.first);
+        button->setDefaultAction(action);
+        button->setText(entry.second);
+        button->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        button->setMinimumWidth(button->fontMetrics().horizontalAdvance(entry.second) + 16);
+        const QString compactText = entry.second;
+        connect(action, &QAction::changed, button, [button, compactText] { button->setText(compactText); });
+        button->setAutoRaise(true);
+        widget.gridLayout->addWidget(button, 2, growColumn++);
+        connect(button, &QToolButton::clicked, this, &SimpleCharacterWidget::doneWithFocus);
+    }
+    if (auto *family = qobject_cast<QComboBox *>(widget.fontsFrame->itemAtPosition(0, 0)->widget())) {
+        family->setMinimumWidth(220);
+        family->setMaximumWidth(320);
+    }
+    if (auto *size = qobject_cast<QComboBox *>(widget.fontsFrame->itemAtPosition(0, 1)->widget())) {
+        size->setMinimumWidth(qMax(64, size->minimumSizeHint().width()));
+    }
+    // Word's second row: emphasis, script, highlighting, then font color.
+    const QList<QToolButton *> buttons = {widget.bold, widget.italic, widget.underline, widget.strikeOut,
+                                         widget.subscript, widget.superscript, widget.textColor, widget.backgroundColor};
+    for (QToolButton *button : buttons) {
+        widget.gridLayout->removeWidget(button);
+    }
+    for (int i = 0; i < buttons.size(); ++i) {
+        KoRibbonLayout::configureButton(buttons[i], Qt::ToolButtonIconOnly);
+        widget.gridLayout->addWidget(buttons[i], 2, i);
+    }
+    widget.moreOptions->setText(QStringLiteral("↘"));
+    widget.moreOptions->setAccessibleName(i18n("Font dialog"));
+    setMinimumWidth(260);
+    if (QCoreApplication::applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)) {
+        // A widget container prevents the fixed-width icon columns below
+        // from compressing the font family's nested layout.
+        widget.gridLayout->removeItem(widget.fontsFrame);
+        widget.fontsFrame->setParent(nullptr);
+        auto *fields = new QWidget(this);
+        fields->setLayout(widget.fontsFrame);
+        widget.fontsFrame->setContentsMargins(0, 0, 0, 0);
+        fields->setMinimumSize(widget.fontsFrame->minimumSize());
+        widget.gridLayout->addWidget(fields, 0, 0, 1, 11);
+    }
 }
 
 void SimpleCharacterWidget::setStyleManager(KoStyleManager *sm)

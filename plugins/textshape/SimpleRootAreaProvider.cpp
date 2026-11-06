@@ -96,6 +96,10 @@ void SimpleRootAreaProvider::doPostLayout(KoTextLayoutRootArea *rootArea, bool i
         }
     }
 
+    // Alignment may have changed since a previous layout (for example while
+    // loading a text-on-shape style). Top alignment must clear an old center
+    // or bottom offset instead of keeping text above the frame.
+    rootArea->setVerticalAlignOffset(0);
     qreal newBottom = rootArea->top() + newSize.height();
     KoFlake::Position sizeAnchor = KoFlake::TopLeftCorner;
 

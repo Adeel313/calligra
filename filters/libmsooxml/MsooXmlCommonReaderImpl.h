@@ -67,7 +67,22 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_t()
         readNext();
         // debugMsooXml << *this;
         if (isCharacters()) {
+            m_paragraphHasText = true;
+#ifdef PPTXXMLSLIDEREADER_CPP
+            QString value = text().toString();
+            value.replace(QLatin1String("\r\n"), QLatin1String("\n"));
+            value.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+            const auto lines = value.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+            for (int i = 0; i < lines.size(); ++i) {
+                if (i) {
+                    body->startElement("text:line-break");
+                    body->endElement();
+                }
+                body->addTextSpan(lines.at(i));
+            }
+#else
             body->addTextSpan(text().toString());
+#endif
 #ifdef PPTXXMLSLIDEREADER_CPP
             d->textBoxHasContent = true;
 #endif
@@ -141,15 +156,56 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_Choice()
     TRY_READ_ATTR_WITHOUT_NS(Requires)
 
     // 'Requires="v"' means that the contents of the Choice part
-    // is VML, which we support (or something else we do support,
-    // Lassi is not sure).  For all other alternatives we
-    // don't dare try to interpret it, but instead we use the
-    // AlternateContent which is what MSO 2007 would have given us.
+    // is VML. For other namespaces, accept only standard PresentationML
+    // drawing elements that this reader already understands. This keeps
+    // ordinary shapes and their text when a producer wraps them in an
+    // extension choice (and supplies an empty fallback), while unknown
+    // extension-only alternatives still use the fallback below.
     if (Requires != "v") {
-        skipCurrentElement();
+        bool parsedPresentationShape = false;
+        while (!atEnd()) {
+            readNext();
+            if (isEndElement() && name() == QLatin1StringView("Choice")) {
+                break;
+            }
+            if (!isStartElement()) {
+                continue;
+            }
+#ifdef PPTXXMLSLIDEREADER_CPP
+            if (qualifiedName() == QLatin1StringView("p:sp")) {
+                TRY_READ_IF_NS(p, sp)
+                parsedPresentationShape = true;
+            } else if (qualifiedName() == QLatin1StringView("p:grpSp")) {
+                TRY_READ_IF_NS(p, grpSp)
+                parsedPresentationShape = true;
+            } else if (qualifiedName() == QLatin1StringView("p:pic")) {
+                TRY_READ_IF_NS(p, pic)
+                parsedPresentationShape = true;
+            } else if (qualifiedName() == QLatin1StringView("p:cxnSp")) {
+                TRY_READ_IF_NS(p, cxnSp)
+                parsedPresentationShape = true;
+            } else if (qualifiedName() == QLatin1StringView("p:graphicFrame")) {
+                TRY_READ_IF_NS(p, graphicFrame)
+                parsedPresentationShape = true;
+            } else {
+                skipCurrentElement();
+            }
+#else
+            skipCurrentElement();
+#endif
+        }
+        if (parsedPresentationShape) {
+            m_choiceAccepted = true;
+        }
         return KoFilter::OK;
     }
 
+#ifdef PPTXXMLSLIDEREADER_CPP
+    // VML is not supported by this reader. In particular, OLE choices
+    // omit the picture supplied by their PresentationML fallback.
+    skipCurrentElement();
+    return KoFilter::OK;
+#endif
     m_choiceAccepted = true;
     while (!atEnd()) {
         readNext();
@@ -179,6 +235,9 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_Fallback()
         if (isStartElement()) {
 #ifdef PPTXXMLSLIDEREADER_CPP
             TRY_READ_IF_NS(p, sp)
+            ELSE_TRY_READ_IF_NS(p, oleObj)
+            ELSE_TRY_READ_IF_NS(p, pic)
+            ELSE_TRY_READ_IF_NS(p, graphicFrame)
 #endif
 #ifdef DOCXXMLDOCUMENTREADER_H
             TRY_READ_IF_NS(w, pict)

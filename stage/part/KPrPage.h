@@ -92,6 +92,9 @@ public:
     /// reimplemented
     bool displayShape(KoShape *shape) const override;
 
+    /// Hidden slides remain editable but are omitted from the default show.
+    bool isHidden() const;
+
 protected:
     /// reimplemented
     void saveOdfPageContent(KoPASavingContext &paContext) const override;

@@ -24,6 +24,7 @@ class DocxImport : public MSOOXML::MsooXmlImport
 public:
     DocxImport(QObject *parent, const QVariantList &);
     ~DocxImport() override;
+    KoFilter::ConversionStatus convert(const QByteArray &from, const QByteArray &to) override;
 
     /// Access the content defined within the words/settings.xml configuration-file.
     QMap<QString, QVariant> documentSettings() const;

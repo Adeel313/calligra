@@ -80,18 +80,23 @@ void MsooXmlImport::writeConfigurationSettings(KoXmlWriter *settings) const
 
 KoFilter::ConversionStatus MsooXmlImport::createDocument(KoStore *outputStore, KoOdfWriters *writers)
 {
+    return createDocumentFromFile(outputStore, writers, m_chain->inputFile());
+}
+
+KoFilter::ConversionStatus MsooXmlImport::createDocumentFromFile(KoStore *outputStore, KoOdfWriters *writers, const QString &inputFile)
+{
     debugMsooXml << "######################## start ####################";
     KoFilter::ConversionStatus status = OK;
     //! @todo show this message in error details in the GUI:
     QString errorMessage;
 
-    KZip *zip = new KZip(m_chain->inputFile());
+    KZip *zip = new KZip(inputFile);
     debugMsooXml << "Store created";
 
     QTemporaryFile *tempFile = nullptr;
 
     if (!zip->open(QIODevice::ReadOnly)) {
-        errorMessage = i18n("Could not open the requested file %1", m_chain->inputFile());
+        errorMessage = i18n("Could not open the requested file %1", inputFile);
         //! @todo transmit the error to the GUI...
         debugMsooXml << errorMessage;
         delete zip;
@@ -99,7 +104,7 @@ KoFilter::ConversionStatus MsooXmlImport::createDocument(KoStore *outputStore, K
         // If the file can't be opened by the zip, it may be a
         // password protected file.  In OOXML, this is stored as a
         // standard OLE file with some special streams.
-        QString inputFilename = m_chain->inputFile();
+        QString inputFilename = inputFile;
         if (isPasswordProtectedFile(inputFilename)) {
             if ((tempFile = tryDecryptFile(inputFilename))) {
                 zip = new KZip(tempFile->fileName());
@@ -114,7 +119,7 @@ KoFilter::ConversionStatus MsooXmlImport::createDocument(KoStore *outputStore, K
     }
 
     if (!zip->directory()) {
-        errorMessage = i18n("Could not read ZIP directory of the requested file %1", m_chain->inputFile());
+        errorMessage = i18n("Could not read ZIP directory of the requested file %1", inputFile);
         //! @todo transmit the error to the GUI...
         debugMsooXml << errorMessage;
         delete zip;

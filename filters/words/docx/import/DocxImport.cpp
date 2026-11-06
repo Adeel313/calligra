@@ -78,6 +78,11 @@ DocxImport::DocxImport(QObject *parent, const QVariantList &)
 {
 }
 
+KoFilter::ConversionStatus DocxImport::convert(const QByteArray &from, const QByteArray &to)
+{
+    return MSOOXML::MsooXmlImport::convert(from, to);
+}
+
 DocxImport::~DocxImport()
 {
     delete d;

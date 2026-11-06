@@ -31,11 +31,11 @@ public:
     const char *m_shapeId;
     const char *m_xmlElement;
     const KLazyLocalizedString m_text;
-} placeholderData[] = {{"title", "TextShapeID", "<draw:text-box/>", kli18n("Double click to add a title")},
-                       {"outline", "TextShapeID", "<draw:text-box/>", kli18n("Double click to add an outline")},
-                       {"subtitle", "TextShapeID", "<draw:text-box/>", kli18n("Double click to add a text")},
-                       {"text", "TextShapeID", "<draw:text-box/>", kli18n("Double click to add a text")},
-                       {"notes", "TextShapeID", "<draw:text-box/>", kli18n("Double click to add notes")},
+} placeholderData[] = {{"title", "TextShapeID", "<draw:text-box/>", kli18n("Click to add a title")},
+                       {"outline", "TextShapeID", "<draw:text-box/>", kli18n("Click to add content")},
+                       {"subtitle", "TextShapeID", "<draw:text-box/>", kli18n("Click to add a subtitle")},
+                       {"text", "TextShapeID", "<draw:text-box/>", kli18n("Click to add text")},
+                       {"notes", "TextShapeID", "<draw:text-box/>", kli18n("Click to add notes")},
                        /*
                        { "date-time", "TextShapeID", "<draw:text-box/>", kli18n( "Double click to add data/time" ) },
                        { "footer", "TextShapeID", "<draw:text-box/>", kli18n( "Double click to add footer" ) },
@@ -119,20 +119,31 @@ KoShape *KPrPlaceholderStrategy::createShape(KoDocumentResourceManager *rm)
 
 void KPrPlaceholderStrategy::paint(QPainter &painter, const KoViewConverter &converter, const QRectF &rect, KoShapePaintingContext & /*paintcontext*/)
 {
+    painter.save();
     KoShape::applyConversion(painter, converter);
-    QPen penText(Qt::black);
-    painter.setPen(penText);
-    // painter.setFont()
+    QFont font = painter.font();
+    const int promptSize = qstrcmp(m_placeholderData->m_presentationClass, "title") == 0 ? 48 : 36;
+    font.setPixelSize(qMax(14, qMin(promptSize, qRound(rect.height() * 0.65))));
+    font.setBold(true);
+    painter.setFont(font);
     QTextOption options(Qt::AlignCenter);
     options.setWrapMode(QTextOption::WordWrap);
-    painter.drawText(rect, text(), options);
+    const QRectF textRect = rect.adjusted(8, 4, -8, -4);
+    painter.setPen(QColor(0, 0, 0, 200));
+    painter.drawText(textRect.translated(1.5, 1.5), text(), options);
+    painter.setPen(Qt::white);
+    painter.drawText(textRect, text(), options);
 
-    QPen pen(Qt::gray, 0);
-    // pen.setStyle( Qt::DashLine ); // endless loop
-    // pen.setStyle( Qt::DotLine ); // endless loop
-    // pen.setStyle( Qt::DashDotLine ); // endless loop
-    painter.setPen(pen);
+    // Cosmetic widths keep the outline legible at every slide zoom level.
+    QPen edge(QColor(0, 0, 0, 180), 4);
+    edge.setCosmetic(true);
+    painter.setPen(edge);
     painter.drawRect(rect);
+    QPen outline(Qt::white, 2);
+    outline.setCosmetic(true);
+    painter.setPen(outline);
+    painter.drawRect(rect);
+    painter.restore();
 }
 
 void KPrPlaceholderStrategy::saveOdf(KoShapeSavingContext &context)

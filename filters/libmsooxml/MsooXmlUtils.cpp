@@ -28,6 +28,7 @@
  *
  */
 
+#include <cmath>
 #include "MsooXmlUtils.h"
 #include "MsooXmlContentTypes.h"
 #include "MsooXmlDebug.h"
@@ -602,56 +603,20 @@ QColor Utils::colorForLuminance(const QColor &color, const DoubleModifier &modul
 
 KOMSOOXML_EXPORT void Utils::modifyColor(QColor &color, qreal tint, qreal shade, qreal satMod)
 {
-    int red = color.red();
-    int green = color.green();
-    int blue = color.blue();
-
-    if (tint > 0) {
-        red = tint * red + (1 - tint) * 255;
-        green = tint * green + (1 - tint) * 255;
-        blue = tint * blue + (1 - tint) * 255;
-    }
-    if (shade > 0) {
-        red = shade * red;
-        green = shade * green;
-        blue = shade * blue;
-    }
-
-    // FIXME: This calculation for sure is incorrect,
-    // According to MS forums, RGB should first be converted to linear RGB
-    // Then to HSL and then multiply saturation value by satMod
-    // SatMod can be for example 3.5 so converting RGB -> HSL is not an option
-    // ADD INFO: MS document does not say that when calculating TINT and SHADE
-    // That whether one should use normal RGB or linear RGB, check it!
-
-    // This method is used temporarily, it seems to produce visually better results than the lower one.
+    if (!color.isValid()) return;
+    // Modulation belongs in HSL; tint/shade use linear-light components.
+    // Applying tint to display RGB makes pale SmartArt fills too saturated.
     if (satMod > 0) {
-        QColor temp = QColor(red, green, blue);
-        qreal saturationFromFull = 1.0 - temp.saturationF();
-        temp = QColor::fromHsvF(temp.hueF(), temp.saturationF() + saturationFromFull / 10 * satMod, temp.valueF());
-        red = temp.red();
-        green = temp.green();
-        blue = temp.blue();
+        color = QColor::fromHslF(color.hslHueF(), qBound(0.0, color.hslSaturationF() * satMod, 1.0),
+                                color.lightnessF(), color.alphaF());
     }
-
-    /*
-    if (satMod > 0) {
-        red = red * satMod;
-        green = green * satMod;
-        blue = blue * satMod;
-        if (red > 255) {
-            red = 255;
-        }
-        if (green > 255) {
-            green = 255;
-        }
-        if (blue > 255) {
-            blue = 255;
-        }
-    }
-    */
-
-    color = QColor(red, green, blue);
+    const auto transform = [&](int component) {
+        qreal linear = std::pow(component / 255.0, 2.3);
+        if (tint > 0) linear = 1.0 - (1.0 - linear) * tint;
+        if (shade > 0) linear *= shade;
+        return qBound(0, qRound(std::pow(linear, 1.0 / 2.3) * 255), 255);
+    };
+    color = QColor(transform(color.red()), transform(color.green()), transform(color.blue()), color.alpha());
 }
 
 class ST_PlaceholderType_to_ODFMapping : public QHash<QByteArray, QByteArray>

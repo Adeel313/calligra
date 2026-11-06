@@ -30,6 +30,7 @@ public:
     ~SimpleCharacterWidget() override;
 
     void setInitialUsedStyles(QVector<int> list);
+    void configureRibbon();
 
 public Q_SLOTS:
     void setStyleManager(KoStyleManager *sm);

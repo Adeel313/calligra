@@ -171,7 +171,9 @@ public:
                           const QVector<qreal> &satModifier,
                           const QVector<int> &alphaModifier,
                           const QVector<int> &gradPositions,
-                          const QString &gradAngle);
+                          const QString &gradAngle,
+                          const QVector<qreal> &luminanceModifier = {});
+    QColor representativeColor(const QColor &color) const;
     void writeStyles(KoGenStyles &styles, KoGenStyle *graphicStyle, const QColor &color) override;
 
     DrawingMLGradientFill *clone() const override
@@ -180,6 +182,7 @@ public:
     }
 
 private:
+    QVector<qreal> m_luminanceModifier;
     QVector<qreal> m_shadeModifier;
     QVector<qreal> m_tintModifier;
     QVector<qreal> m_satModifier;

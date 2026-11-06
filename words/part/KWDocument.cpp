@@ -540,35 +540,52 @@ void KWDocument::initEmpty()
         styleManagerVariant.setValue(styleManager);
         resourceManager()->setResource(KoText::StyleManager, styleManagerVariant);
     }
+    // Microsoft Office style built-in paragraph styles.  The heading styles
+    // carry their outline level so they behave like Word's built-in Heading
+    // styles and sort like the Office styles gallery (Normal, Heading 1,
+    // Heading 2, ... Title, Subtitle).
     KoParagraphStyle *parag = new KoParagraphStyle();
-    parag->setName(i18n("Standard"));
+    parag->setName(i18n("Normal"));
     parag->setFontPointSize(12);
     parag->setFontWeight(QFont::Normal);
     styleManager->add(parag);
 
     parag = new KoParagraphStyle();
-    parag->setName(i18n("Document Title"));
-    parag->setFontPointSize(24);
-    parag->setFontWeight(QFont::Bold);
-    parag->setAlignment(Qt::AlignCenter);
-    styleManager->add(parag);
-
-    parag = new KoParagraphStyle();
-    parag->setName(i18n("Head 1"));
-    parag->setFontPointSize(20);
-    parag->setFontWeight(QFont::Bold);
-    styleManager->add(parag);
-
-    parag = new KoParagraphStyle();
-    parag->setName(i18n("Head 2"));
+    parag->setName(i18n("Heading 1"));
     parag->setFontPointSize(16);
     parag->setFontWeight(QFont::Bold);
+    parag->setForeground(QBrush(QColor(QStringLiteral("#2F5496"))));
+    parag->setOutlineLevel(1);
     styleManager->add(parag);
 
     parag = new KoParagraphStyle();
-    parag->setName(i18n("Head 3"));
+    parag->setName(i18n("Heading 2"));
+    parag->setFontPointSize(13);
+    parag->setFontWeight(QFont::Bold);
+    parag->setForeground(QBrush(QColor(QStringLiteral("#2F5496"))));
+    parag->setOutlineLevel(2);
+    styleManager->add(parag);
+
+    parag = new KoParagraphStyle();
+    parag->setName(i18n("Heading 3"));
     parag->setFontPointSize(12);
     parag->setFontWeight(QFont::Bold);
+    parag->setForeground(QBrush(QColor(QStringLiteral("#1F3763"))));
+    parag->setOutlineLevel(3);
+    styleManager->add(parag);
+
+    parag = new KoParagraphStyle();
+    parag->setName(i18n("Title"));
+    parag->setFontPointSize(28);
+    parag->setFontWeight(QFont::Normal);
+    parag->setForeground(QBrush(QColor(QStringLiteral("#0F4C81"))));
+    styleManager->add(parag);
+
+    parag = new KoParagraphStyle();
+    parag->setName(i18n("Subtitle"));
+    parag->setFontPointSize(14);
+    parag->setFontWeight(QFont::Normal);
+    parag->setForeground(QBrush(QColor(QStringLiteral("#595959"))));
     styleManager->add(parag);
 
     parag = new KoParagraphStyle();

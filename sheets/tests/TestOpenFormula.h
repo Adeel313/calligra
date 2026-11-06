@@ -23,6 +23,7 @@ private Q_SLOTS:
     void initTestCase();
     void testEvaluation();
     //    void testFormulaConversion();
+    void testOfficeRanges();
     void testReferenceLoading();
     void testReferenceSaving();
 

@@ -1,0 +1,9 @@
+{
+    "KPlugin": {
+        "Name": "Excel XLSX Export Filter",
+        "ServiceTypes": ["Calligra/Filter"]
+    },
+    "X-KDE-Import": "application/vnd.oasis.opendocument.spreadsheet",
+    "X-KDE-Export": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "X-KDE-Weight": 1
+}

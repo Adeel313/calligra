@@ -31,6 +31,8 @@ public:
     explicit KPrPageEffectDocker(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
 
     void setView(KoPAViewBase *view);
+    /** Present the existing transition controls in a horizontal ribbon. */
+    void configureRibbon();
 
 public Q_SLOTS:
     void slotActivePageChanged();

@@ -36,3 +36,6 @@ BROWSE
 
 plugins/textediting/autocorrection/libs/autotests/data/custom-fr-generated.xml
 plugins/textediting/autocorrection/libs/autotests/data/empty-generated.xml
+
+# Extracted optional ONLYOFFICE runtime
+/onlyoffice-runtime/

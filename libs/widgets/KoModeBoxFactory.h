@@ -37,8 +37,18 @@ public:
     /**
      * Add a page which is shown as its own tab in the mode box, after the
      * tool tabs. Ownership of @p page passes to the mode box.
+     *
+     * When neither @p beforeToolTabs nor @p afterToolTabs is set, the page is
+     * placed after the tool tab identified by @p afterToolId (or after the
+     * Home tab of Words when @p afterToolId is empty, for compatibility).
      */
-    void addCustomPage(const QString &title, const QIcon &icon, const QString &toolTip, QWidget *page, bool beforeToolTabs = false);
+    void addCustomPage(const QString &title,
+                       const QIcon &icon,
+                       const QString &toolTip,
+                       QWidget *page,
+                       bool beforeToolTabs = false,
+                       bool afterToolTabs = false,
+                       const QString &afterToolId = QString());
 
     /** Add a widget to an existing tool tab, such as a ribbon toolbar. */
     void addWidgetToToolTab(const QString &toolId, QWidget *widget);
@@ -46,6 +56,8 @@ public:
     /** Place quick access controls before and after the tab bar. */
     void setLeadingWidget(QWidget *widget);
     void setTrailingWidget(QWidget *widget);
+
+    void setTitleWidget(QWidget *widget);
 
 
     bool isCollapsable() const override

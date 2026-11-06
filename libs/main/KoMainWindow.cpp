@@ -8,6 +8,7 @@
 */
 
 #include "KoMainWindow.h"
+#include "KoOoxmlDefaults_p.h"
 
 #include "KoApplication.h"
 #include "KoComponentData.h"
@@ -929,13 +930,14 @@ bool KoMainWindow::saveDocument(bool saveas, bool silent, int specialOutputFlag)
         if (suggestedURL.isEmpty()) {
             suggestedURL = d->rootDocument->defaultUrl();
         }
-        const bool preferDocx = _native_format == "application/vnd.oasis.opendocument.text";
-        if (preferDocx && d->rootDocument->url().isEmpty()) {
+        const QByteArray defaultFormat = koDefaultSaveMimeType(_native_format);
+        const bool preferOfficeFormat = defaultFormat != _native_format && mimeFilter.contains(QString::fromLatin1(defaultFormat));
+        if (preferOfficeFormat && d->rootDocument->url().isEmpty()) {
             QString suggestedFilename = suggestedURL.fileName();
             const int extensionPosition = suggestedFilename.lastIndexOf('.');
             if (extensionPosition > 0)
                 suggestedFilename = suggestedFilename.left(extensionPosition);
-            suggestedFilename += QStringLiteral(".docx");
+            suggestedFilename += QLatin1Char('.') + QMimeDatabase().mimeTypeForName(QString::fromLatin1(defaultFormat)).preferredSuffix();
             suggestedURL = suggestedURL.adjusted(QUrl::RemoveFilename);
             suggestedURL.setPath(suggestedURL.path() + suggestedFilename);
         }
@@ -944,8 +946,8 @@ bool KoMainWindow::saveDocument(bool saveas, bool silent, int specialOutputFlag)
         KoFileDialog dialog(this, KoFileDialog::SaveFile, "SaveDocument");
         dialog.setCaption(i18n("untitled"));
         dialog.setDefaultDir(localfile, overrideDefaultDir);
-        dialog.setMimeTypeFilters(mimeFilter, preferDocx
-            ? QStringLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        dialog.setMimeTypeFilters(mimeFilter, preferOfficeFormat
+            ? QString::fromLatin1(defaultFormat)
             : QString());
         QUrl newURL = QUrl::fromUserInput(dialog.filename());
         debugMain << newURL;

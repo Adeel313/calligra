@@ -16,6 +16,7 @@ private Q_SLOTS:
     void testEmpty();
     void testText();
     void testNumber();
+    void testLoadNumberPrecision();
     void testDate();
     void testTime();
     void testBoolean();

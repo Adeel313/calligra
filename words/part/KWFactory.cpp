@@ -27,7 +27,10 @@
 
 #include "dockers/KWNavigationDockerFactory.h"
 #include "dockers/KWStatisticsDocker.h"
+#include "mailmerge/KWMailMergeFieldFactory.h"
 #include "pagetool/KWPageToolFactory.h"
+
+#include <KoInlineObjectRegistry.h>
 
 #ifndef NDEBUG
 #include "dockers/KWDebugDockerFactory.h"
@@ -57,6 +60,13 @@ QObject *KWFactory::create(const char * /*iface*/, QWidget * /*parentWidget*/, Q
     KWDocument *doc = new KWDocument(part);
     part->setDocument(doc);
     KoToolRegistry::instance()->add(new KWPageToolFactory());
+    // The mail merge field factory is needed to load text:database-display
+    // elements; register it only once.
+    static bool mailMergeFactoryRegistered = false;
+    if (!mailMergeFactoryRegistered) {
+        mailMergeFactoryRegistered = true;
+        KoInlineObjectRegistry::instance()->add(new KWMailMergeFieldFactory());
+    }
     return part;
 }
 

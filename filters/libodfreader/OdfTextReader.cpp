@@ -184,6 +184,10 @@ void OdfTextReader::readTextLevelElement(KoXmlStreamReader &reader)
         readElementTextP(reader);
     } else if (tagName == "text:list") {
         readElementTextList(reader);
+    } else if (tagName == "text:section") {
+        readElementTextSection(reader);
+    } else if (tagName == "text:table-of-content") {
+        readElementTextTableOfContent(reader);
     } else if (tagName == "text:numbered-paragraph") {
         readElementTextNumberedParagraph(reader);
     } else if (tagName == "table:table") {
@@ -258,6 +262,93 @@ void OdfTextReader::readElementTextList(KoXmlStreamReader &reader)
     m_context->setIsInsideParagraph(false);
 
     m_backend->elementTextList(reader, m_context);
+    DEBUGEND();
+}
+
+void OdfTextReader::readElementTextSection(KoXmlStreamReader &reader)
+{
+    DEBUGSTART();
+    m_backend->elementTextSection(reader, m_context);
+
+    while (reader.readNextStartElement()) {
+        readTextLevelElement(reader);
+    }
+
+    m_backend->elementTextSection(reader, m_context);
+    DEBUGEND();
+}
+
+void OdfTextReader::readElementTextTableOfContent(KoXmlStreamReader &reader)
+{
+    DEBUGSTART();
+    m_backend->elementTextTableOfContent(reader, m_context);
+
+    // The generated entries live in <text:index-body>; the title before it
+    // belongs outside the Word TOC field.  Only the body is wrapped.
+    while (reader.readNextStartElement()) {
+        if (reader.qualifiedName() == QLatin1StringView("text:table-of-content-source")) {
+            // Forward the source settings before the cached entries, so the
+            // backend can retain the requested outline depth of the field.
+            m_backend->elementTextTableOfContent(reader, m_context);
+            reader.skipCurrentElement();
+        } else if (reader.qualifiedName() == QLatin1StringView("text:index-body")) {
+            m_backend->elementTextIndexBody(reader, m_context);
+            while (reader.readNextStartElement()) {
+                readTextLevelElement(reader);
+            }
+            m_backend->elementTextIndexBody(reader, m_context);
+        } else {
+            readTextLevelElement(reader);
+        }
+    }
+
+    m_backend->elementTextTableOfContent(reader, m_context);
+    DEBUGEND();
+}
+
+namespace
+{
+// Collects the cached display text of a field element.  Field content is
+// mostly character data, but it can contain text:s, text:tab and spans.
+QString collectFieldText(KoXmlStreamReader &reader)
+{
+    QString text;
+    while (!reader.atEnd()) {
+        reader.readNext();
+        if (reader.isEndElement()) {
+            break;
+        }
+        if (reader.isStartElement()) {
+            const QString tagName = reader.qualifiedName().toString();
+            if (tagName == QLatin1StringView("text:s")) {
+                int count = reader.attributes().value(QStringLiteral("text:c")).toInt();
+                text += QString(qMax(1, count), QLatin1Char(' '));
+                reader.skipCurrentElement();
+            } else if (tagName == QLatin1StringView("text:tab")) {
+                text += QLatin1Char('\t');
+                reader.skipCurrentElement();
+            } else if (tagName == QLatin1StringView("text:line-break")) {
+                text += QLatin1Char('\n');
+                reader.skipCurrentElement();
+            } else {
+                text += collectFieldText(reader);
+            }
+        } else if (reader.isCharacters()) {
+            text += reader.text().toString();
+        }
+    }
+    return text;
+}
+}
+
+void OdfTextReader::readElementTextField(KoXmlStreamReader &reader)
+{
+    DEBUGSTART();
+    const QString tagName = reader.qualifiedName().toString();
+    const KoXmlStreamAttributes attributes = reader.attributes();
+    const QString text = collectFieldText(reader);
+
+    m_backend->elementTextField(tagName, attributes, text, m_context);
     DEBUGEND();
 }
 
@@ -800,6 +891,41 @@ void OdfTextReader::readParagraphContents(KoXmlStreamReader &reader)
                 readElementTextTab(reader);
             } else if (tagName == "text:soft-page-break") {
                 readElementTextSoftPageBreak(reader);
+            } else if (tagName == "text:page-number"
+                       || tagName == "text:page-count"
+                       || tagName == "text:date"
+                       || tagName == "text:time"
+                       || tagName == "text:title"
+                       || tagName == "text:subject"
+                       || tagName == "text:description"
+                       || tagName == "text:keywords"
+                       || tagName == "text:chapter"
+                       || tagName == "text:file-name"
+                       || tagName == "text:template-name"
+                       || tagName == "text:author-name"
+                       || tagName == "text:author-initials"
+                       || tagName == "text:creator"
+                       || tagName == "text:initial-creator"
+                       || tagName == "text:creation-date"
+                       || tagName == "text:creation-time"
+                       || tagName == "text:modification-date"
+                       || tagName == "text:modification-time"
+                       || tagName == "text:print-date"
+                       || tagName == "text:print-time"
+                       || tagName == "text:printed-by"
+                       || tagName == "text:editing-cycles"
+                       || tagName == "text:editing-duration"
+                       || tagName == "text:word-count"
+                       || tagName == "text:character-count"
+                       || tagName == "text:paragraph-count"
+                       || tagName == "text:table-count"
+                       || tagName == "text:image-count"
+                       || tagName == "text:object-count"
+                       || tagName == "text:conditional-text"
+                       || tagName == "text:variable-get"
+                       || tagName == "text:user-field-get"
+                       || tagName == "text:sequence") {
+                readElementTextField(reader);
             } else {
                 // Unknown text: element
                 readUnknownElement(reader);

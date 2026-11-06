@@ -541,23 +541,23 @@ void KoTextLoader::loadHeading(const KoXmlElement &element, QTextCursor &cursor)
         cursor.mergeBlockFormat(blockFormat);
     }
 
-    // we are defining our default behaviour here
-    // Case 1: If text:outline-style is specified then we use the outline style to determine the numbering style
-    // Case 2: If text:outline-style is not specified then if the <text:h> element is inside a <text:list> then it is numbered
-    //         otherwise it is not
+    // MS Word-like numbering policy for headings:
+    // Case 1: a heading inside an explicit <text:list> keeps the numbering of
+    //         that list;
+    // Case 2: a heading outside a list is never auto-numbered, no matter which
+    //         outline (chapter) style the document defines.
     KoListStyle *outlineStyle = d->styleManager->outlineStyle();
     if (!outlineStyle) {
         outlineStyle = d->styleManager->defaultOutlineStyle()->clone();
         d->styleManager->setOutlineStyle(outlineStyle);
     }
 
-    // if outline style is not specified and this is not inside a list then we do not number it
-    if (outlineStyle->styleId() == d->styleManager->defaultOutlineStyle()->styleId()) {
-        if (d->currentListLevel <= 1) {
-            QTextBlockFormat blockFormat;
-            blockFormat.setProperty(KoParagraphStyle::UnnumberedListItem, true);
-            cursor.mergeBlockFormat(blockFormat);
-        } else { // inside a list then take the numbering from the list style
+    if (d->currentListLevel <= 1) {
+        QTextBlockFormat blockFormat;
+        blockFormat.setProperty(KoParagraphStyle::UnnumberedListItem, true);
+        cursor.mergeBlockFormat(blockFormat);
+    } else { // inside a list then take the numbering from the list style
+        if (outlineStyle->styleId() == d->styleManager->defaultOutlineStyle()->styleId()) {
             int level = d->currentListLevel - 1;
             KoListLevelProperties llp;
             if (!d->currentListStyle->hasLevelProperties(level)) {
@@ -574,6 +574,10 @@ void KoTextLoader::loadHeading(const KoXmlElement &element, QTextCursor &cursor)
             llp.setLevel(level);
             outlineStyle->setLevelProperties(llp);
         }
+        // A heading inside an explicit list keeps the numbering of that list.
+        QTextBlockFormat blockFormat = cursor.blockFormat();
+        blockFormat.clearProperty(KoParagraphStyle::UnnumberedListItem);
+        cursor.setBlockFormat(blockFormat);
     }
 
     KoList *list = KoTextDocument(block.document()).headingList();

@@ -125,140 +125,50 @@ void KoTabBarProxyStyle::drawControl(ControlElement element, const QStyleOption 
         const bool selected = option->state & State_Selected;
         const bool north = tabOption->shape == QTabBar::RoundedNorth || tabOption->shape == QTabBar::TriangularNorth;
         const bool south = tabOption->shape == QTabBar::RoundedSouth || tabOption->shape == QTabBar::TriangularSouth;
-        const bool west = tabOption->shape == QTabBar::RoundedWest || tabOption->shape == QTabBar::TriangularWest;
         const bool east = tabOption->shape == QTabBar::RoundedEast || tabOption->shape == QTabBar::TriangularEast;
-        const QStyleOptionTab::TabPosition &position = tabOption->position;
-        const bool isSingle(position == QStyleOptionTab::OnlyOneTab);
-        bool isFirst(isSingle || position == QStyleOptionTab::Beginning);
-        bool isLast(isSingle || position == QStyleOptionTab::End);
-        bool isLeftOfSelected(tabOption->selectedPosition == QStyleOptionTab::NextIsSelected);
-        bool isRightOfSelected(tabOption->selectedPosition == QStyleOptionTab::PreviousIsSelected);
         const bool verticalTabs(isVerticalTab(tabOption));
-
-        const auto tabBar = qobject_cast<const QTabBar *>(widget);
-        const auto expanding = tabBar && tabBar->expanding();
-
-        isFirst &= !isRightOfSelected;
-        isLast &= !isLeftOfSelected;
-
-        const bool reverseLayout(option->direction == Qt::RightToLeft);
-        if (reverseLayout && !verticalTabs) {
-            qSwap(isFirst, isLast);
-            qSwap(isLeftOfSelected, isRightOfSelected);
-        }
-
-        QRectF frameRect = option->rect;
-        switch (tabOption->shape) {
-        case QTabBar::RoundedNorth:
-        case QTabBar::TriangularNorth:
-            frameRect.adjust(0, 0, 0, 1);
-            break;
-        case QTabBar::RoundedSouth:
-        case QTabBar::TriangularSouth:
-            frameRect.adjust(0, 0, 0, -1);
-            break;
-        case QTabBar::RoundedWest:
-        case QTabBar::TriangularWest:
-            frameRect.adjust(0, 0, 1, 0);
-            break;
-        case QTabBar::RoundedEast:
-        case QTabBar::TriangularEast:
-            frameRect.adjust(0, 0, -1, 0);
-            break;
+        // A little breathing room between tabs makes their rounded shape
+        // visible in both the ribbon's horizontal and tool area's vertical layout.
+        QRectF frameRect(option->rect.adjusted(3, 2, -3, -2));
+        if (frameRect.isEmpty()) {
+            return;
         }
 
         // setup painter
         painter->setRenderHint(QPainter::Antialiasing, true);
-        QColor bgBrush;
-
         const auto palette = option->palette;
-        const auto windowColor = palette.color(QPalette::Base);
-
+        QColor fill(Qt::transparent);
         if (selected) {
-            // overlap border
-            bgBrush = windowColor;
-            QColor penBrush = KColorUtils::mix(bgBrush, palette.color(QPalette::WindowText), Bias_Default);
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(bgBrush);
-            painter->drawRect(frameRect.adjusted(0, 0, 0, east || west ? -1 : 0));
-
-            const auto hover = alphaColor(palette.color(QPalette::Highlight), 0.2);
-            bgBrush = hover;
-
-            penBrush = KColorUtils::mix(bgBrush, palette.color(QPalette::WindowText), Bias_Default);
-            painter->setBrush(bgBrush);
-            painter->setPen(QPen(penBrush, PenWidthFrame));
-            painter->setPen(Qt::NoPen);
-            QRectF highlightRect = frameRect;
-            if (north || south) {
-                highlightRect.setHeight(TabBar_ActiveEffectSize);
-            } else if (west || east) {
-                highlightRect.setWidth(TabBar_ActiveEffectSize);
-            }
-            if (south) {
-                highlightRect.moveBottom(frameRect.bottom());
-            } else if (east) {
-                highlightRect.moveRight(frameRect.right());
-            }
-            painter->drawRect(strokedRect(frameRect));
-            painter->setBrush(palette.color(QPalette::Highlight));
-            painter->setPen(Qt::NoPen);
-            painter->drawRect(highlightRect);
-        } else {
-            bgBrush = windowColor;
-            const auto hover = alphaColor(hoverColor(palette), 0.2);
-            if (enabled && hovered && !selected) {
-                bgBrush = hover;
-            }
-            painter->setBrush(bgBrush);
-            painter->setPen(Qt::NoPen);
-            painter->drawRect(frameRect);
+            // Office's current ribbon treatment uses a quiet accent tint for
+            // the active tab and a stronger brand-colored edge for focus.
+            fill = alphaColor(palette.color(QPalette::Highlight), 0.14);
+        } else if (enabled && hovered) {
+            fill = alphaColor(hoverColor(palette), 0.32);
         }
 
-        if (!isFirst && (north || south)) {
-            auto penColor = KColorUtils::mix(windowColor, palette.color(QPalette::WindowText), 0.20);
-            QRectF lineRect = frameRect;
-            lineRect.setRight(lineRect.x() + 1);
-            lineRect.adjust(0, 0, 0, -1);
+        if (fill.alpha() > 0) {
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(fill);
+            painter->drawRoundedRect(frameRect, 8, 8);
+        }
 
-            // ensure the background it the right color
-            painter->setBrush(bgBrush);
-            painter->drawRect(lineRect);
-
-            // draw separator
-            if (!isRightOfSelected && !selected) {
-                lineRect.adjust(0, 4, 0, -3);
+        if (selected) {
+            const qreal edgeSize = 3;
+            QRectF accentRect(frameRect);
+            if (north || south) {
+                accentRect.setHeight(edgeSize);
+                if (south) {
+                    accentRect.moveBottom(frameRect.bottom());
+                }
+            } else if (verticalTabs) {
+                accentRect.setWidth(edgeSize);
+                if (east) {
+                    accentRect.moveRight(frameRect.right());
+                }
             }
-            painter->setBrush(penColor);
-            painter->drawRect(lineRect);
-
-            if (selected && !expanding) {
-                lineRect.setX(frameRect.x() + frameRect.width() - 1);
-                lineRect.setWidth(1);
-                painter->drawRect(lineRect);
-            }
-        } else if (!isFirst && (east || west)) {
-            auto penColor = KColorUtils::mix(windowColor, palette.color(QPalette::WindowText), 0.20);
-            QRectF lineRect = frameRect;
-            lineRect.setBottom(lineRect.y() - 1);
-            lineRect.adjust(0, 0, -1, 0);
-
-            // ensure the background it the right color
-            painter->setBrush(bgBrush);
-            painter->drawRect(lineRect);
-
-            // draw separator
-            if (!isRightOfSelected && !selected) {
-                lineRect.adjust(4, 0, -3, 0);
-            }
-            painter->setBrush(penColor);
-            painter->drawRect(lineRect);
-
-            if (selected && !expanding) {
-                lineRect.setY(frameRect.y() + frameRect.height() - 1);
-                lineRect.setHeight(1);
-                painter->drawRect(lineRect);
-            }
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(palette.color(QPalette::Highlight));
+            painter->drawRoundedRect(accentRect, 1.5, 1.5);
         }
         return;
     }

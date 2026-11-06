@@ -50,6 +50,9 @@ public:
     void doPostLayout(KoTextLayoutRootArea *rootArea, bool isNewRootArea) override;
 
 private:
+    qreal m_headerFooterHeight = 0;
+    qreal m_headerFooterWidth = -1;
+    int m_headerFooterRevision = -1;
     QList<KWRootAreaPage *> m_pages;
     QHash<KoTextLayoutRootArea *, KWRootAreaPage *> m_pageHash;
     QList<KoTextLayoutRootArea *> m_rootAreaCache;

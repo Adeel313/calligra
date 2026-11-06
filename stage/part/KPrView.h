@@ -101,6 +101,9 @@ public:
      */
     KoZoomMode::Mode zoomMode();
 
+    /// Insert a slide with the standard Title and Content layout.
+    void insertPage() override;
+
 public Q_SLOTS:
     /**
      * Activate the presentation view mode

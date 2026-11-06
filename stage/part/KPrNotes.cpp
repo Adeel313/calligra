@@ -107,7 +107,7 @@ void KPrNotes::saveOdf(KoShapeSavingContext &context) const
 
     KoShapeLayer *layer = static_cast<KoShapeLayer *>(shapes().last());
     foreach (KoShape *shape, layer->shapes()) {
-        if (shape != m_textShape && shape != m_thumbnailShape) {
+        if (shape != m_textShape && shape != m_thumbnailShape && shape != m_textShape->parent()) {
             shape->saveOdf(context);
         }
     }
@@ -134,9 +134,26 @@ bool KPrNotes::loadOdf(const KoXmlElement &element, KoShapeLoadingContext &conte
             m_thumbnailShape->setShapeId(helper->shapeId());
             delete helper;
         } else /* if ( child.tagName() == "frame") */ {
+            // Notes are text frames, not slide placeholders. Load the existing
+            // editable notes shape directly so placeholder factories cannot
+            // replace its text with an empty outline or thumbnail.
+            if (child.attributeNS(KoXmlNS::presentation, "class") == QLatin1String("notes")) {
+                m_textShape->loadOdf(child, context);
+                // OdfLayer resolves through the slide's loading context;
+                // notes must remain children of the notes page, not that slide.
+                // Text loading may wrap autofitted notes in a container. Move
+                // that container intact, so its child cannot also be saved as
+                // a slide shape or twice in this notes page.
+                if (auto *parent = m_textShape->parent(); parent && parent->toolDelegates().contains(m_textShape))
+                    parent->setParent(layer);
+                else
+                    m_textShape->setParent(layer);
+                m_textShape->setAdditionalAttribute("presentation:class", "notes");
+                continue;
+            }
             KoShape *shape = KoShapeRegistry::instance()->createShapeFromOdf(child, context);
             if (shape) {
-                if (shape->shapeId() == "TextShapeID" && child.hasAttributeNS(KoXmlNS::presentation, "class")) {
+                if (shape->shapeId() == "TextShapeID" && child.attributeNS(KoXmlNS::presentation, "class") == "notes") {
                     layer->removeShape(m_textShape);
                     delete m_textShape;
                     m_textShape = shape;

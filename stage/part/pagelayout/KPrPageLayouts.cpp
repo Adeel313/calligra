@@ -27,6 +27,8 @@
 #include <KoPageLayout.h>
 
 #include "KPrPageLayout.h"
+#include "KPrPlaceholder.h"
+#include <KoXmlReader.h>
 #include "KPrPageLayoutSharedSavingData.h"
 
 #include <algorithm>
@@ -170,4 +172,35 @@ KPrPageLayout *KPrPageLayouts::pageLayout(const QString &name, KoPALoadingContex
 const QList<KPrPageLayout *> KPrPageLayouts::layouts() const
 {
     return m_pageLayouts.values();
+}
+
+KPrPageLayout *KPrPageLayouts::defaultContentLayout()
+{
+    for (KPrPageLayout *layout : m_pageLayouts) {
+        if (layout->type() != KPrPageLayout::Page || layout->placeholders().size() != 2)
+            continue;
+        QStringList classes;
+        for (const KPrPlaceholder *placeholder : layout->placeholders())
+            classes.append(placeholder->presentationObject());
+        if (classes.contains(QStringLiteral("title")) && classes.contains(QStringLiteral("outline")))
+            return layout;
+    }
+    // Imported presentations may contain only custom layouts. Keep the usual
+    // new-slide behavior available without changing any of their existing pages.
+    KoXmlDocument xml;
+    if (!xml.setContent(QStringLiteral(
+            "<style:presentation-page-layout xmlns:style=\"urn:oasis:names:tc:opendocument:xmlns:style:1.0\" "
+            "xmlns:presentation=\"urn:oasis:names:tc:opendocument:xmlns:presentation:1.0\" "
+            "xmlns:svg=\"urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0\" style:name=\"TitleAndContent\">"
+            "<presentation:placeholder presentation:object=\"title\" svg:x=\"5%\" svg:y=\"4%\" svg:width=\"90%\" svg:height=\"16%\"/>"
+            "<presentation:placeholder presentation:object=\"outline\" svg:x=\"5%\" svg:y=\"23%\" svg:width=\"90%\" svg:height=\"68%\"/>"
+            "</style:presentation-page-layout>"), true))
+        return nullptr;
+    auto *layout = new KPrPageLayout;
+    if (!layout->loadOdf(xml.documentElement(), QRectF(0, 0, 800, 600))) {
+        delete layout;
+        return nullptr;
+    }
+    m_pageLayouts.insert(KPrPageLayoutWrapper(layout), layout);
+    return layout;
 }

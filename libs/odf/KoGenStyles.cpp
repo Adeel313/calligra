@@ -45,6 +45,7 @@ static const struct {
                  {KoGenStyle::FillImageStyle, "draw:fill-image", nullptr, true},
                  {KoGenStyle::HatchStyle, "draw:hatch", "style:graphic-properties", true},
                  {KoGenStyle::GradientStyle, "draw:gradient", "style:graphic-properties", true},
+                 {KoGenStyle::OpacityStyle, "draw:opacity", nullptr, true},
                  {KoGenStyle::MarkerStyle, "draw:marker", "style:graphic-properties", true},
                  {KoGenStyle::PresentationPageLayoutStyle, "style:presentation-page-layout", nullptr, false},
                  {KoGenStyle::OutlineLevelStyle, "text:outline-style", nullptr, false}};

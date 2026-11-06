@@ -32,6 +32,7 @@
 #include <MsooXmlUtils.h>
 
 #include <KoGenStyles.h>
+#include <KoPageLayout.h>
 #include <KoUnit.h>
 #include <KoXmlWriter.h>
 #include <styles/KoCharacterStyle.h>
@@ -40,6 +41,7 @@
 #include <sheets/engine/CellBase.h>
 #include <sheets/engine/Util.h>
 
+#include <QBuffer>
 #include <QBrush>
 #include <QCache>
 #include <QList>
@@ -459,8 +461,6 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
     body->addAttribute("table:name", m_context->worksheetName);
 
     m_tableStyle = KoGenStyle(KoGenStyle::TableAutoStyle, "table");
-    //! @todo hardcoded master page name
-    m_tableStyle.addAttribute("style:master-page-name", QString("PageStyle_5f_Test_20_sheet_20__5f_%1").arg(m_context->worksheetNumber));
 
     m_tableStyle.addProperty("table:display", m_context->sheet->visible());
 
@@ -482,6 +482,9 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
         }
         if (isStartElement() && !m_context->firstRoundOfReading) {
             TRY_READ_IF(sheetFormatPr)
+            ELSE_TRY_READ_IF(sheetPr)
+            ELSE_TRY_READ_IF(pageMargins)
+            ELSE_TRY_READ_IF(pageSetup)
             ELSE_TRY_READ_IF(cols)
             ELSE_TRY_READ_IF(sheetData) // does fill the m_context->sheet
             ELSE_TRY_READ_IF(mergeCells)
@@ -570,6 +573,39 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
 
         buffer.close();
         m_tableStyle.addChildElement("style:background-image", QString::fromUtf8(buffer.buffer(), buffer.buffer().size()));
+    }
+
+    // Preserve worksheet print setup in the ODF intermediate document. The
+    // old importer attached every sheet to fixed A4/Letter layouts at 100%.
+    if (!m_context->firstRoundOfReading) {
+        const QString masterName = QString("XlsxSheet%1").arg(m_context->worksheetNumber);
+        KoPageLayout layout;
+        layout.format = KoPageFormat::formatFromString(m_pageFormat);
+        layout.orientation = m_orientation == QLatin1String("landscape") ? KoPageFormat::Landscape : KoPageFormat::Portrait;
+        layout.width = MM_TO_POINT(KoPageFormat::width(layout.format, layout.orientation));
+        layout.height = MM_TO_POINT(KoPageFormat::height(layout.format, layout.orientation));
+        layout.leftMargin = MM_TO_POINT(m_marginLeft * 10.0);
+        layout.rightMargin = MM_TO_POINT(m_marginRight * 10.0);
+        layout.topMargin = MM_TO_POINT(m_marginTop * 10.0);
+        layout.bottomMargin = MM_TO_POINT(m_marginBottom * 10.0);
+        KoGenStyle pageLayoutStyle = layout.saveOdf();
+        if (m_fitToPage && (m_fitWidth > 0 || m_fitHeight > 0)) {
+            // Sheets currently models a single page count; Excel commonly leaves
+            // height unconstrained when fitToHeight is zero. Use the nonzero axis.
+            const int pageCount = m_fitWidth > 0 && m_fitHeight > 0 ? m_fitWidth * m_fitHeight : qMax(m_fitWidth, m_fitHeight);
+            pageLayoutStyle.addProperty("style:scale-to-pages", pageCount);
+        } else if (m_scalePercent > 0 && m_scalePercent != 100) {
+            pageLayoutStyle.addProperty("style:scale-to", m_scalePercent);
+        }
+        pageLayoutStyle.setAutoStyleInStylesDotXml(true);
+        // XlsxImport still injects legacy pm1/pm2 layouts; use a distinct
+        // prefix so the per-sheet layout cannot collide with those raw styles.
+        const QString pageLayoutName = mainStyles->insert(pageLayoutStyle, "xlsxpm");
+        mainStyles->insertRawOdfStyles(KoGenStyles::MasterStyles,
+                                       QString("<style:master-page style:name=\"%1\" style:page-layout-name=\"%2\"><style:header style:display=\"false\"/><style:footer style:display=\"false\"/></style:master-page>")
+                                           .arg(masterName, pageLayoutName)
+                                           .toUtf8());
+        m_tableStyle.addAttribute("style:master-page-name", masterName);
     }
 
     const QString currentTableStyleName(mainStyles->insert(m_tableStyle, "ta"));
@@ -904,7 +940,7 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_cfRule()
     READ_PROLOGUE
 
     const QXmlStreamAttributes attrs(attributes());
-    // TRY_READ_ATTR_WITHOUT_NS(type)
+    TRY_READ_ATTR_WITHOUT_NS(type)
     TRY_READ_ATTR_WITHOUT_NS(dxfId)
     TRY_READ_ATTR_WITHOUT_NS(priority)
     QString op = attrs.value("operator").toString();
@@ -924,16 +960,26 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_cfRule()
     }
 
     QMap<QString, QString> odf;
-    // TODO, use attributes to really interpret this
-    // The default one here is valid for type="cellIs" operator="equal"
-    if (op == "equal") {
+    // Map Excel's cell comparison and formula rules into the condition
+    // expressions understood by the ODF style:map importer.
+    if (type == "expression") {
+        if (!formulas.isEmpty()) odf["style:condition"] = QString("is-true-formula(%1)").arg(formulas.first());
+    } else if (op == "equal" && !formulas.isEmpty()) {
         odf["style:condition"] = QString("cell-content()=%1").arg(m_formula);
-    } else if (op == "lessThan") {
+    } else if (op == "notEqual" && !formulas.isEmpty()) {
+        odf["style:condition"] = QString("cell-content()!=%1").arg(m_formula);
+    } else if (op == "lessThan" && !formulas.isEmpty()) {
         odf["style:condition"] = QString("cell-content()<%1").arg(m_formula);
-    } else if (op == "greaterThan") {
+    } else if (op == "lessThanOrEqual" && !formulas.isEmpty()) {
+        odf["style:condition"] = QString("cell-content()<=%1").arg(m_formula);
+    } else if (op == "greaterThan" && !formulas.isEmpty()) {
         odf["style:condition"] = QString("cell-content()>%1").arg(m_formula);
-    } else if (op == "between") {
+    } else if (op == "greaterThanOrEqual" && !formulas.isEmpty()) {
+        odf["style:condition"] = QString("cell-content()>=%1").arg(m_formula);
+    } else if (op == "between" && formulas.size() >= 2) {
         odf["style:condition"] = QString("cell-content-is-between(%1, %2)").arg(formulas.at(0), formulas.at(1));
+    } else if (op == "notBetween" && formulas.size() >= 2) {
+        odf["style:condition"] = QString("cell-content-is-not-between(%1, %2)").arg(formulas.at(0), formulas.at(1));
     }
     odf["style:apply-style-name"] = m_context->styles->conditionalStyle(dxfId.toInt() + 1);
 
@@ -1007,6 +1053,77 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetFormatPr()
     }
 
     readNext();
+    READ_EPILOGUE
+}
+
+#undef CURRENT_EL
+#define CURRENT_EL pageMargins
+KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_pageMargins()
+{
+    READ_PROLOGUE
+    const auto attrs = attributes();
+    auto inches = [&attrs](QLatin1StringView name, qreal fallback) {
+        bool ok = false;
+        const qreal value = attrs.value(name).toDouble(&ok);
+        return ok && value >= 0 ? value * 2.54 : fallback;
+    };
+    m_marginLeft = inches(QLatin1StringView("left"), m_marginLeft);
+    m_marginRight = inches(QLatin1StringView("right"), m_marginRight);
+    m_marginTop = inches(QLatin1StringView("top"), m_marginTop);
+    m_marginBottom = inches(QLatin1StringView("bottom"), m_marginBottom);
+    readNext();
+    READ_EPILOGUE
+}
+
+#undef CURRENT_EL
+#define CURRENT_EL pageSetup
+KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_pageSetup()
+{
+    READ_PROLOGUE
+    const auto attrs = attributes();
+    bool ok = false;
+    int paper = attrs.value(QLatin1StringView("paperSize")).toInt(&ok);
+    if (ok) {
+        // ECMA-376 paper codes used by common XLSX documents.
+        switch (paper) {
+        case 1: m_pageFormat = "Letter"; break;
+        case 5: m_pageFormat = "Legal"; break;
+        case 8: m_pageFormat = "A3"; break;
+        case 9: m_pageFormat = "A4"; break;
+        case 11: m_pageFormat = "A5"; break;
+        case 17: m_pageFormat = "B5"; break;
+        default: break;
+        }
+    }
+    const QString orientation = attrs.value(QLatin1StringView("orientation")).toString();
+    if (orientation == QLatin1String("portrait") || orientation == QLatin1String("landscape"))
+        m_orientation = orientation;
+    const int scale = attrs.value(QLatin1StringView("scale")).toInt(&ok);
+    if (ok && scale > 0)
+        m_scalePercent = scale;
+    m_fitWidth = attrs.value(QLatin1StringView("fitToWidth")).toInt();
+    m_fitHeight = attrs.value(QLatin1StringView("fitToHeight")).toInt();
+    readNext();
+    READ_EPILOGUE
+}
+
+#undef CURRENT_EL
+#define CURRENT_EL sheetPr
+KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetPr()
+{
+    READ_PROLOGUE
+    while (!atEnd()) {
+        readNext();
+        if (isEndElement() && name() == QLatin1StringView("sheetPr"))
+            break;
+        if (isStartElement() && name() == QLatin1StringView("pageSetUpPr")) {
+            const QString value = attributes().value(QLatin1StringView("fitToPage")).toString();
+            m_fitToPage = value == QLatin1String("1") || value == QLatin1String("true");
+            skipCurrentElement();
+        } else if (isStartElement()) {
+            skipCurrentElement();
+        }
+    }
     READ_EPILOGUE
 }
 
@@ -1332,6 +1449,7 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
         if (isStartElement()) {
             TRY_READ_IF(f)
             ELSE_TRY_READ_IF(v)
+            ELSE_TRY_READ_IF(is)
             SKIP_UNKNOWN
         }
     }
@@ -1493,6 +1611,34 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
 
     ++m_currentColumn; // This cell is done now. Select the next cell.
 
+    READ_EPILOGUE
+}
+
+#undef CURRENT_EL
+#define CURRENT_EL is
+
+// Inline strings use the same text content as shared strings, but live in
+// the cell itself. Keep the ODF text escaped, including significant spaces.
+KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_is()
+{
+    READ_PROLOGUE
+    QByteArray data;
+    QBuffer buffer(&data);
+    buffer.open(QIODevice::WriteOnly);
+    KoXmlWriter writer(&buffer, 0);
+    while (!atEnd()) {
+        readNext();
+        BREAK_IF_END_OF(CURRENT_EL)
+        if (isStartElement()) {
+            if (name() == QLatin1String("t")) {
+                writer.addTextSpan(readElementText());
+            } else if (name() != QLatin1String("r")) {
+                // Phonetic annotations are not part of the displayed value.
+                skipCurrentElement();
+            }
+        }
+    }
+    m_value = QString::fromUtf8(data);
     READ_EPILOGUE
 }
 

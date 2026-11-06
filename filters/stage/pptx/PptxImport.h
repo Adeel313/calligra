@@ -24,8 +24,10 @@ class PptxImport : public MSOOXML::MsooXmlImport
 public:
     PptxImport(QObject *parent, const QVariantList &);
     ~PptxImport() override;
+    KoFilter::ConversionStatus convert(const QByteArray &from, const QByteArray &to) override;
 
 protected:
+    KoFilter::ConversionStatus createDocument(KoStore *outputStore, KoOdfWriters *writers) override;
     bool acceptsSourceMimeType(const QByteArray &mime) const override;
 
     bool acceptsDestinationMimeType(const QByteArray &mime) const override;

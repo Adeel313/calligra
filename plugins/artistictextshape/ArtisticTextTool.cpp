@@ -599,6 +599,7 @@ QList<QPointer<QWidget>> ArtisticTextTool::createOptionWidgets()
     ArtisticTextShapeConfigWidget *configWidget = new ArtisticTextShapeConfigWidget(this);
     configWidget->setObjectName("ArtisticTextConfigWidget");
     configWidget->setWindowTitle(i18n("Text Properties"));
+    configWidget->setProperty("ribbonGroupOrder", 30);
     connect(configWidget, &ArtisticTextShapeConfigWidget::fontFamilyChanged, this, &ArtisticTextTool::setFontFamily);
     connect(configWidget, &ArtisticTextShapeConfigWidget::fontSizeChanged, this, &ArtisticTextTool::setFontSize);
     connect(this, &ArtisticTextTool::shapeSelected, configWidget, &ArtisticTextShapeConfigWidget::updateWidget);
@@ -608,6 +609,7 @@ QList<QPointer<QWidget>> ArtisticTextTool::createOptionWidgets()
     ArtisticTextShapeOnPathWidget *pathWidget = new ArtisticTextShapeOnPathWidget(this);
     pathWidget->setObjectName("ArtisticTextPathWidget");
     pathWidget->setWindowTitle(i18n("Text On Path"));
+    pathWidget->setProperty("ribbonGroupOrder", 40);
     connect(pathWidget, &ArtisticTextShapeOnPathWidget::offsetChanged, this, &ArtisticTextTool::setStartOffset);
     connect(this, &ArtisticTextTool::shapeSelected, pathWidget, &ArtisticTextShapeOnPathWidget::updateWidget);
     connect(canvas()->shapeManager(), &KoShapeManager::selectionContentChanged, pathWidget, &ArtisticTextShapeOnPathWidget::updateWidget);

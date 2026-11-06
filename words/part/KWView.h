@@ -37,6 +37,7 @@ typedef QExplicitlySharedDataPointer<KoRdfBasicSemanticItem> hKoRdfBasicSemantic
 #endif
 
 class KToggleAction;
+class KActionMenu;
 /**
  * Words' view class. Following the broad model-view-controller idea this class
  * shows you one view on the document. There can be multiple views of the same document each
@@ -215,6 +216,28 @@ private Q_SLOTS:
     /// Hide status bar and scroll bars after seconds in fullscreen mode.
     void hideUI();
 
+    // Mail merge (Mailings ribbon tab)
+    /// Load recipients from a CSV/TSV file.
+    void mailMergeSelectRecipients();
+    /// Show the recipient list editor.
+    void mailMergeEditRecipients();
+    /// Insert the merge field named by the triggered action's data.
+    void mailMergeInsertField(QAction *action);
+    /// Insert a greeting line built from merge fields.
+    void mailMergeGreetingLine();
+    /// Toggle the Microsoft Office style merge field shading.
+    void mailMergeHighlightFields(bool enabled);
+    /// Toggle the display of recipient values instead of placeholders.
+    void mailMergePreview(bool enabled);
+    void mailMergeFirstRecord();
+    void mailMergePreviousRecord();
+    void mailMergeNextRecord();
+    void mailMergeLastRecord();
+    /// Merge all included recipients into a new document.
+    void mailMergeFinish();
+    /// Enable/disable the mail merge actions and rebuild the field menu.
+    void updateMailMergeActions();
+
 private:
     KWGui *m_gui;
     KWCanvas *m_canvas;
@@ -233,6 +256,17 @@ private:
     QAction *m_actionLowerFrame;
     QAction *m_actionBringToFront;
     QAction *m_actionSendBackward;
+
+    // Mail merge actions
+    KActionMenu *m_mailMergeFieldMenu = nullptr;
+    QAction *m_actionMailMergeGreeting = nullptr;
+    QAction *m_actionMailMergeFirst = nullptr;
+    QAction *m_actionMailMergePrev = nullptr;
+    QAction *m_actionMailMergeNext = nullptr;
+    QAction *m_actionMailMergeLast = nullptr;
+    QAction *m_actionMailMergeFinish = nullptr;
+    KToggleAction *m_actionMailMergeHighlight = nullptr;
+    KToggleAction *m_actionMailMergePreview = nullptr;
     KToggleAction *m_actionFormatBold;
     KToggleAction *m_actionFormatItalic;
     KToggleAction *m_actionFormatUnderline;

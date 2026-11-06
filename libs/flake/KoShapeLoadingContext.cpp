@@ -101,6 +101,19 @@ void KoShapeLoadingContext::addShapeId(KoShape *shape, const QString &id)
     }
 }
 
+void KoShapeLoadingContext::removeShapeReferences(KoShape *shape)
+{
+    if (auto *container = dynamic_cast<KoShapeContainer *>(shape))
+        for (KoShape *child : container->shapes()) removeShapeReferences(child);
+    for (auto it = d->drawIds.begin(); it != d->drawIds.end();)
+        if (it.value() == shape) it = d->drawIds.erase(it); else ++it;
+    for (auto it = d->subIds.begin(); it != d->subIds.end();)
+        if (it.value().first == shape) it = d->subIds.erase(it); else ++it;
+    const auto updaters = d->updaterByShape.values(shape);
+    d->updaterByShape.remove(shape);
+    qDeleteAll(updaters);
+}
+
 KoShape *KoShapeLoadingContext::shapeById(const QString &id)
 {
     return d->drawIds.value(id, 0);

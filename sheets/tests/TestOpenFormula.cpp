@@ -208,3 +208,10 @@ void TestOpenFormula::testReferenceSaving()
 }
 
 QTEST_MAIN(TestOpenFormula)
+
+void TestOpenFormula::testOfficeRanges()
+{
+    QCOMPARE(Odf::convertMSOOXMLFormula(QStringLiteral("SUM(A1:B1)")), QStringLiteral("=SUM(A1:B1)"));
+    QCOMPARE(Odf::convertMSOOXMLFormula(QStringLiteral("SUM($A$1:$B$12)")), QStringLiteral("=SUM($A$1:$B$12)"));
+    QCOMPARE(Odf::convertMSOOXMLFormula(QStringLiteral("SUM(A:B)")), QStringLiteral("=SUM(A$1:B$65536)"));
+}

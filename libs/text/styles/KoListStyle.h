@@ -12,6 +12,7 @@
 
 #include "kotext_export.h"
 
+#include <QPointer>
 #include <QTextFormat>
 #include <QTextListFormat>
 
@@ -226,5 +227,6 @@ private:
 };
 
 Q_DECLARE_METATYPE(KoListStyle *)
+Q_DECLARE_METATYPE(QPointer<KoListStyle>)
 
 #endif

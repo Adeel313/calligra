@@ -12,6 +12,7 @@
  */
 
 #include "PptxImport.h"
+#include <KoFilterChain.h>
 
 #include "PptxDebug.h"
 #include "PptxXmlDocumentReader.h"
@@ -27,6 +28,8 @@
 #include <QFont>
 #include <QImage>
 #include <QPen>
+#include <QTemporaryDir>
+#include "NativePptxPreparation.h"
 
 #include <KPluginFactory>
 
@@ -72,6 +75,25 @@ PptxImport::PptxImport(QObject *parent, const QVariantList &)
     : MSOOXML::MsooXmlImport(QLatin1String("presentation"), parent)
     , d(new Private)
 {
+}
+
+KoFilter::ConversionStatus PptxImport::convert(const QByteArray &from, const QByteArray &to)
+{
+    return MSOOXML::MsooXmlImport::convert(from, to);
+}
+
+KoFilter::ConversionStatus PptxImport::createDocument(KoStore *outputStore, KoOdfWriters *writers)
+{
+    const QString input = m_chain->inputFile();
+    KZip archive(input);
+    if (!archive.open(QIODevice::ReadOnly))
+        return MSOOXML::MsooXmlImport::createDocument(outputStore, writers);
+    archive.close();
+    QTemporaryDir workspace;
+    const QString prepared = workspace.filePath(QStringLiteral("prepared.pptx"));
+    if (!workspace.isValid() || !QFile::copy(input, prepared) || !preparePptxDiagrams(prepared))
+        return KoFilter::CreationError;
+    return createDocumentFromFile(outputStore, writers, prepared);
 }
 
 PptxImport::~PptxImport()

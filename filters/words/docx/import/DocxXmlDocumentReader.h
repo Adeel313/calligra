@@ -65,6 +65,12 @@ protected:
     KoFilter::ConversionStatus read_numId();
     KoFilter::ConversionStatus read_ilvl();
     KoFilter::ConversionStatus read_sectPr();
+    int m_fieldDepth = 0;
+    int m_tocDepth = -1;
+    int m_tocLevels = 2;
+    bool m_startToc = false;
+    bool m_endToc = false;
+    bool m_skipPageFieldResult = false;
     bool m_footerActive = false;
     bool m_headerActive = false;
     //! True while the current wp:anchor contained a wrap element.  When it
@@ -75,6 +81,7 @@ protected:
     KoFilter::ConversionStatus read_headerReference();
     KoFilter::ConversionStatus read_cols();
     KoFilter::ConversionStatus read_pgSz();
+    KoFilter::ConversionStatus read_pgNumType();
     KoFilter::ConversionStatus read_textDirection();
     KoFilter::ConversionStatus read_pgMar();
     KoFilter::ConversionStatus read_pgBorders();
@@ -105,6 +112,8 @@ protected:
     KoFilter::ConversionStatus read_ins();
     KoFilter::ConversionStatus read_delText();
     KoFilter::ConversionStatus read_drawing();
+    KoFilter::ConversionStatus read_wsp();
+    bool m_nativeWordShape = false;
     KoFilter::ConversionStatus read_ptab();
     KoFilter::ConversionStatus read_tabs();
     KoFilter::ConversionStatus read_tab();
@@ -118,6 +127,15 @@ protected:
     };
     KoFilter::ConversionStatus read_jc(jcCaller caller);
     KoFilter::ConversionStatus read_spacing();
+    //! Effective margin of the current paragraph, following its basedOn chain.
+    qreal paragraphMargin(const QString &property) const;
+    //! Word collapses the space after one paragraph with the space before the
+    //! next one; ODF adds them.  Apply the collapsed value as a direct margin.
+    void collapseParagraphSpacing();
+    //! Bottom margin of the last body paragraph, for collapseParagraphSpacing().
+    qreal m_previousParagraphBottomMargin;
+    //! Word's default: do not leave a single line of a paragraph alone on a page.
+    bool m_widowControl;
     KoFilter::ConversionStatus read_trPr();
     KoFilter::ConversionStatus read_cnfStyle();
     KoFilter::ConversionStatus read_trHeight();
@@ -177,6 +195,10 @@ protected:
     KoFilter::ConversionStatus read_r_m();
     KoFilter::ConversionStatus read_t_m();
 
+    //! Writes a MathML formula as an embedded ODF formula object and emits the
+    //! inline draw:frame/draw:object referencing it at the current position.
+    void writeInlineFormula(const QByteArray &mathml);
+
     enum posOffsetCaller {
         posOffset_positionH,
         posOffset_positionV
@@ -209,6 +231,15 @@ protected:
     QString m_currentSectionStyleName;
     QByteArray m_currentSectionStyleFamily;
     bool m_createSectionToNext;
+    //! True when the next section starts on a new page (nextPage/oddPage/
+    //! evenPage).  Master pages are deduplicated, so consecutive sections
+    //! with identical page layout would otherwise merge into one and lose
+    //! the page break between them.
+    bool m_sectionBreakPending;
+    //! Page number format and restart value from w:pgNumType, applied to the
+    //! page layout and first paragraph of the section that follows sectPr.
+    QString m_sectionPageNumberFormat;
+    int m_sectionPageNumberStart;
     KoGenStyle m_currentPageStyle;
     KoGenStyle m_masterPageStyle;
 
@@ -361,6 +392,9 @@ private:
     //!< Width of the object
     QString m_currentObjectWidthCm;
     QString m_currentObjectHeightCm;
+
+    //! Counter used to name embedded formula objects (Object 1, Object 2, ...).
+    int m_formulaObjectIndex = 0;
 
     uint m_currentTableNumber; //!< table counter, from 0
     uint m_currentTableRowNumber; //!< row counter, from 0, initialized in read_tbl()

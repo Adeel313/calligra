@@ -602,13 +602,21 @@ void KoTableCellStyle::loadOdf(const KoXmlElement *element, KoShapeLoadingContex
     QString family = element->attributeNS(KoXmlNS::style, "family", "table-cell");
     context.addStyles(element, family.toLocal8Bit().constData()); // Load all parents - only because we don't support inheritance.
 
-    context.styleStack().setTypeProperties("table-cell");
-    loadOdfProperties(scontext, context.styleStack());
-
-    context.styleStack().setTypeProperties("graphic");
+    // Resolve both property kinds together, so a local graphic fill wins over
+    // a table-cell default inherited from a parent style (and vice versa).
+    context.styleStack().setTypeProperties(QList<QString>{QStringLiteral("table-cell"), QStringLiteral("graphic")});
     loadOdfProperties(scontext, context.styleStack());
 
     context.styleStack().restore();
+    // LibreOffice stores theme-based presentation cell fills and padding in
+    // loext:graphic-properties, while ordinary fills use style:graphic-properties.
+    static const char loext[] = "urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0";
+    if (!element->namedItemNS(loext, "graphic-properties").isNull()) {
+        KoStyleStack extensionStack(loext, KoXmlNS::fo.toUtf8().constData());
+        extensionStack.push(*element);
+        extensionStack.setTypeProperties("graphic");
+        loadOdfProperties(scontext, extensionStack);
+    }
 }
 
 void KoTableCellStyle::loadOdfProperties(KoShapeLoadingContext &context, KoStyleStack &styleStack)

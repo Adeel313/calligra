@@ -285,6 +285,8 @@ install(
     KoGridData.h
     KoImageCollection.h
     KoImageData.h
+    KoImageShape.h
+    KoMediaShape.h
     KoInputDevice.h
     KoInsets.h
     KoMarkerData.h

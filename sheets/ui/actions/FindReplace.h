@@ -13,6 +13,8 @@
 #include "core/Cell.h"
 #include "dialogs/FindDialog.h"
 
+#include <QVector>
+
 class KFind;
 class KReplace;
 class KUndo2Command;
@@ -59,6 +61,8 @@ protected:
     void initFindReplace();
     Cell findNextCell();
     Cell nextFindValidCell(int col, int row);
+    QVector<QPoint> m_findCells;
+    int m_findCellIndex = 0;
     void findPrevious();
 
     Selection *m_selection;

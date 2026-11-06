@@ -4,11 +4,13 @@ include_directories(${KOMAIN_INCLUDES}
                     ${KOODF2_INCLUDES}           # For KoOdfChartWriter
                     ${CMAKE_SOURCE_DIR}/filters/libmso
                     ${CMAKE_SOURCE_DIR}/filters/libmsooxml
+                    ${CMAKE_SOURCE_DIR}/plugins/chartshape
                     ${CMAKE_SOURCE_DIR}/sheets
 )
 
 ########### next target ###############
 
+if(SHOULD_BUILD_FILTER_XLSX_TO_ODS)
 set(xlsx2ods_PART_SRCS
     XlsxImport.cpp
     XlsxXmlCommonReader.cpp
@@ -51,3 +53,11 @@ ecm_add_test( ${TestFormulaParser_SRCS}
     NAME_PREFIX "filter-xlsx2ods-"
     LINK_LIBRARIES komsooxml calligrasheetsui Qt6::Test
 )
+
+endif()
+
+if(SHOULD_BUILD_FILTER_ODS_TO_XLSX)
+    add_library(calligra_filter_ods2xlsx MODULE XlsxExport.cpp)
+    target_link_libraries(calligra_filter_ods2xlsx calligrasheetscore komain chartshapecore)
+    install(TARGETS calligra_filter_ods2xlsx DESTINATION ${KDE_INSTALL_PLUGINDIR}/calligra/formatfilters)
+endif()

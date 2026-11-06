@@ -143,15 +143,13 @@ CellRegion ChartProxyModel::cellRangeAddress() const
 
 void ChartProxyModel::Private::rebuildDataMap()
 {
-    if (manualControl) {
+    if (manualControl || isLoading) {
         return;
     }
     // This was intended to speed up the loading process, by executing this
     // method only once in endLoading(), however the approach is actually
     // incorrect as it would potentially override a data set's regions
     // set by "somebody" else in the meantime.
-    // if (isLoading)
-    //     return;
     q->beginResetModel();
     q->invalidateDataSets();
     dataSets = createDataSetsFromRegion(&removedDataSets);
@@ -538,8 +536,6 @@ bool ChartProxyModel::loadOdf(const KoXmlElement &element, KoShapeLoadingContext
     bool ignoreCellRanges = helper->chartUsesInternalModelOnly;
 #endif
 
-    beginResetModel();
-
     if (element.hasAttributeNS(KoXmlNS::chart, "style-name")) {
         KoStyleStack &styleStack = context.odfLoadingContext().styleStack();
         styleStack.clear();
@@ -667,8 +663,6 @@ bool ChartProxyModel::loadOdf(const KoXmlElement &element, KoShapeLoadingContext
         delete createdDataSets.at(i);
 
     // rebuildDataMap();
-    endResetModel();
-
     return true;
 }
 

@@ -22,6 +22,8 @@
 #include <kfind.h>
 #include <kreplace.h>
 
+#include <algorithm>
+
 using namespace Calligra::Sheets;
 
 FindReplaceAction::FindReplaceAction(Actions *actions)
@@ -37,6 +39,7 @@ FindReplaceAction::FindReplaceAction(Actions *actions)
     m_find = nullptr;
     m_replace = nullptr;
     m_replaceCommand = nullptr;
+    m_selection = nullptr;
 
     m_currentSheet = nullptr;
     m_firstSheet = nullptr;
@@ -99,6 +102,14 @@ void FindReplaceAction::executeReplace(Selection *selection, Sheet *sheet, QWidg
         return;
     }
 
+    // KReplace cannot make progress with an empty needle. Reject it before
+    // replacing the current search state, which otherwise leaves a live
+    // replace dialog with no valid operation behind it.
+    if (dialog->pattern().isEmpty()) {
+        delete dialog;
+        return;
+    }
+
     m_findOptions = dialog->options();
     m_findStrings = dialog->findHistory();
     m_replaceStrings = dialog->replacementHistory();
@@ -143,6 +154,13 @@ void FindReplaceAction::initFindReplace()
         ? m_selection->lastRange()
         : QRect(1, 1, currentSheet->fullCellStorage()->columns(), currentSheet->fullCellStorage()->rows()); // All cells
 
+    // Storage bounds can be wider than the coordinates supported by Sheets (for
+    // example, when formulas refer to entire columns). Keep the scan rectangle
+    // inside the valid cell range before deriving inclusive QRect edges.
+    region = region.normalized().intersected(QRect(QPoint(1, 1), QPoint(KS_colMax, KS_rowMax)));
+    if (region.isEmpty())
+        region = QRect(1, 1, 1, 1);
+
     int colStart = !bck ? region.left() : region.right();
     int colEnd = !bck ? region.right() : region.left();
     int rowStart = !bck ? region.top() : region.bottom();
@@ -156,26 +174,83 @@ void FindReplaceAction::initFindReplace()
     m_findStart = QPoint(colStart, rowStart);
     m_findPos = (m_findOptions & KFind::FromCursor) ? m_selection->cursor() : m_findStart;
     m_findEnd = QPoint(colEnd, rowEnd);
+
+    // Search only cells that actually have input (or comments for note search).
+    // Walking every coordinate in a large used rectangle makes replace appear
+    // hung on sparse spreadsheets.
+    m_findCells.clear();
+    m_findCellIndex = 0;
+    const auto inRegion = [&region](int col, int row) {
+        return col >= region.left() && col <= region.right() && row >= region.top() && row <= region.bottom();
+    };
+    if (m_typeValue == FindOption::Note) {
+        CommentStorage *storage = currentSheet->fullCellStorage()->commentStorage();
+        for (int i = 0; i < storage->count(); ++i) {
+            const int col = storage->col(i);
+            const int row = storage->row(i);
+            if (inRegion(col, row))
+                m_findCells.append(QPoint(col, row));
+        }
+    } else {
+        UserInputStorage *storage = currentSheet->fullCellStorage()->userInputStorage();
+        for (int i = 0; i < storage->count(); ++i) {
+            const int col = storage->col(i);
+            const int row = storage->row(i);
+            if (inRegion(col, row))
+                m_findCells.append(QPoint(col, row));
+        }
+    }
+    const bool rowSearch = m_directionValue == FindOption::Row;
+    std::sort(m_findCells.begin(), m_findCells.end(), [rowSearch](const QPoint &a, const QPoint &b) {
+        if (rowSearch)
+            return a.y() == b.y() ? a.x() < b.x() : a.y() < b.y();
+        return a.x() == b.x() ? a.y() < b.y() : a.x() < b.x();
+    });
+    const bool backwards = m_findOptions & KFind::FindBackwards;
+    if (backwards)
+        std::reverse(m_findCells.begin(), m_findCells.end());
+    const auto beforeCursor = [rowSearch, backwards](const QPoint &point, const QPoint &cursor) {
+        const bool less = rowSearch ? (point.y() < cursor.y() || (point.y() == cursor.y() && point.x() < cursor.x()))
+                                    : (point.x() < cursor.x() || (point.x() == cursor.x() && point.y() < cursor.y()));
+        const bool greater = rowSearch ? (point.y() > cursor.y() || (point.y() == cursor.y() && point.x() > cursor.x()))
+                                       : (point.x() > cursor.x() || (point.x() == cursor.x() && point.y() > cursor.y()));
+        return backwards ? greater : less;
+    };
+    while (m_findCellIndex < m_findCells.size() && beforeCursor(m_findCells.at(m_findCellIndex), m_findPos))
+        ++m_findCellIndex;
     // debugSheets << m_findPos <<" to" << m_findEnd;
     // debugSheets <<"leftcol=" << m_findLeftColumn <<" rightcol=" << m_findRightColumn;
 }
 
 void FindReplaceAction::slotHighlight(const QString & /*text*/, int /*matchingIndex*/, int /*matchedLength*/)
 {
+    if (!m_selection || !m_selection->canvas() || !m_currentSheet) {
+        return;
+    }
     m_selection->initialize(m_findPos);
     QDialog *dialog = nullptr;
     if (m_find)
         dialog = m_find->findNextDialog();
-    else
+    else if (m_replace)
         dialog = m_replace->replaceNextDialog();
+    if (!dialog) {
+        return;
+    }
     debugSheets << " baseDialog :" << dialog;
-    QRect globalRect(m_findPos, m_findEnd);
-    globalRect.moveTopLeft(m_selection->canvas()->canvasWidget()->mapToGlobal(globalRect.topLeft()));
-    KoDialog::avoidArea(dialog, QRect(m_findPos, m_findEnd));
+    QWidget *canvasWidget = m_selection->canvas()->canvasWidget();
+    if (!canvasWidget) {
+        return;
+    }
+    QRect cellRect(m_findPos, m_findPos);
+    cellRect.moveTopLeft(canvasWidget->mapToGlobal(cellRect.topLeft()));
+    KoDialog::avoidArea(dialog, cellRect);
 }
 
 void FindReplaceAction::slotReplace(const QString &newText, int, int, int)
 {
+    if (!m_replaceCommand || !m_currentSheet) {
+        return;
+    }
     if (m_typeValue == FindOption::Value) {
         DataManipulator *command = new DataManipulator(m_replaceCommand);
         command->setParsing(true);
@@ -192,6 +267,8 @@ void FindReplaceAction::slotReplace(const QString &newText, int, int, int)
 
 Cell FindReplaceAction::nextFindValidCell(int col, int row)
 {
+    if (!m_currentSheet || col < 1 || col > KS_colMax || row < 1 || row > KS_rowMax)
+        return Cell();
     Cell cell = Cell(m_currentSheet, col, row);
     if (cell.isDefault() || cell.isPartOfMerged() || cell.isFormula())
         cell = Cell();
@@ -202,67 +279,13 @@ Cell FindReplaceAction::nextFindValidCell(int col, int row)
 
 Cell FindReplaceAction::findNextCell()
 {
-    // cellStorage()->firstInRow / cellStorage()->nextInRow would be faster at doing that,
-    // but it doesn't seem to be easy to combine it with 'start a column m_find.x()'...
-
-    Sheet *sheet = m_currentSheet;
-    Cell cell;
-    bool forw = !(m_findOptions & KFind::FindBackwards);
-    int col = m_findPos.x();
-    int row = m_findPos.y();
-    int maxRow = sheet->fullCellStorage()->rows();
-    //     warnSheets <<"findNextCell starting at" << col << ',' << row <<"   forw=" << forw;
-
-    if (m_directionValue == FindOption::Row) {
-        while (!cell && (row >= m_findTopRow) && (row <= m_findBottomRow) && (forw ? row <= maxRow : row >= 0)) {
-            while (!cell && (forw ? col <= m_findRightColumn : col >= m_findLeftColumn)) {
-                cell = nextFindValidCell(col, row);
-                if (forw)
-                    ++col;
-                else
-                    --col;
-            }
-            if (!cell.isNull())
-                break;
-            // Prepare looking in the next row
-            if (forw) {
-                col = m_findLeftColumn;
-                ++row;
-            } else {
-                col = m_findRightColumn;
-                --row;
-            }
-            // warnSheets <<"next row:" << col << ',' << row;
-        }
-    } else {
-        while (!cell && (forw ? col <= m_findRightColumn : col >= m_findLeftColumn)) {
-            while (!cell && (row >= m_findTopRow) && (row <= m_findBottomRow) && (forw ? row <= maxRow : row >= 0)) {
-                cell = nextFindValidCell(col, row);
-                if (forw)
-                    ++row;
-                else
-                    --row;
-            }
-            if (!cell.isNull())
-                break;
-            // Prepare looking in the next col
-            if (forw) {
-                row = m_findTopRow;
-                ++col;
-            } else {
-                row = m_findBottomRow;
-                --col;
-            }
-            // debugSheets <<"next row:" << col << ',' << row;
-        }
+    while (m_findCellIndex < m_findCells.size()) {
+        const QPoint position = m_findCells.at(m_findCellIndex++);
+        Cell cell = nextFindValidCell(position.x(), position.y());
+        if (!cell.isNull())
+            return cell;
     }
-    // if (!cell)
-    // No more next cell - TODO go to next sheet (if not looking in a selection)
-    // (and make m_findEnd(max, max) in that case...)
-    //    if (cell.isNull()) warnSheets<<"returning null"<<endl;
-    //    else warnSheets <<" returning" << cell;
-
-    return cell;
+    return Cell();
 }
 
 void FindReplaceAction::executeFindNext(Selection *selection, Sheet *sheet, QWidget *canvasWidget)
@@ -292,7 +315,7 @@ void FindReplaceAction::executeFindPrevious(Selection *selection, Sheet *sheet, 
 void FindReplaceAction::findNext()
 {
     KFind *findObj = m_find ? m_find : m_replace;
-    if (!findObj)
+    if (!findObj || !m_selection || !m_currentSheet)
         return;
     KFind::Result res = KFind::NoMatch;
     Cell cell = findNextCell();
@@ -336,13 +359,16 @@ void FindReplaceAction::findNext()
         if (findObj->shouldRestart()) {
             m_findOptions &= ~KFind::FromCursor;
             m_findPos = m_findStart;
+            m_findCellIndex = 0;
             findObj->resetCounts();
             findNext();
         } else { // done, close the 'find next' dialog
             if (m_find)
                 m_find->closeFindNextDialog();
             else {
-                m_selection->canvas()->addCommand(m_replaceCommand);
+                if (m_replaceCommand && m_selection->canvas()) {
+                    m_selection->canvas()->addCommand(m_replaceCommand);
+                }
                 m_replaceCommand = nullptr;
                 m_replace->closeReplaceNextDialog();
             }

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.0-or-later
  */
 #include "SimpleTableWidget.h"
+#include <KoRibbonLayout.h>
 #include "TextTool.h"
 
 #include <KoColor.h>
@@ -62,6 +63,22 @@ SimpleTableWidget::SimpleTableWidget(TextTool *tool, QWidget *parent)
 void SimpleTableWidget::restartPainting()
 {
     emitTableBorderDataUpdated(m_lastStyleEmitted);
+}
+
+QList<QWidget *> SimpleTableWidget::configureRibbon()
+{
+    auto *merge = new QWidget;
+    merge->setWindowTitle(i18n("Merge"));
+    merge->setProperty("ribbonTargetPage", QStringLiteral("tableRibbonPage"));
+    KoRibbonLayout::arrange(merge, {widget.mergeCells, widget.splitCells}, {});
+    auto *borders = new QWidget;
+    borders->setWindowTitle(i18n("Borders"));
+    borders->setProperty("ribbonTargetPage", QStringLiteral("tableRibbonPage"));
+    KoRibbonLayout::arrange(borders, {widget.border}, {});
+    setWindowTitle(i18n("Rows & Columns"));
+    KoRibbonLayout::arrange(this, {widget.addRowAbove, widget.addRowBelow, widget.addColumnLeft, widget.addColumnRight},
+                            {widget.deleteRow, widget.deleteColumn});
+    return {merge, borders};
 }
 
 void SimpleTableWidget::emitTableBorderDataUpdated(int i)

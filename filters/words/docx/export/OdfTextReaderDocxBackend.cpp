@@ -9,6 +9,8 @@
 #include "OdfTextReaderDocxBackend.h"
 
 // Qt
+#include <QRegularExpression>
+#include <QSet>
 #include <QtGlobal>
 #include <QUrl>
 
@@ -30,6 +32,9 @@
 #else
 #define DEBUG_BACKEND() // NOTHING
 #endif
+
+static bool toTwipsValue(const QString &value, qint64 *twips);
+static QByteArray sectionProperties(const QByteArray &base, int columns, int gapTwips);
 
 // ================================================================
 //                 class OdfTextReaderDocxBackend
@@ -125,6 +130,68 @@ void OdfTextReaderDocxBackend::elementTextP(KoXmlStreamReader &reader, OdfReader
 
     KoXmlWriter *writer = currentWriter(docxContext);
     if (reader.isStartElement()) {
+        const QString styleName = reader.attributes().value("text:style-name").toString();
+        KoOdfStyle *paragraphStyle = docxContext->styleManager()->style(styleName, "paragraph");
+        QList<KoOdfStyle *> ancestry;
+        QSet<QString> seen;
+        for (KoOdfStyle *ancestor = paragraphStyle; ancestor && !seen.contains(ancestor->name());
+             ancestor = docxContext->styleManager()->style(ancestor->parent(), "paragraph")) {
+            seen.insert(ancestor->name());
+            ancestry.prepend(ancestor);
+        }
+        KoOdfStyleProperties merged;
+        QString master;
+        for (KoOdfStyle *ancestor : std::as_const(ancestry)) {
+            if (!ancestor->masterPageName().isEmpty()) master = ancestor->masterPageName();
+            if (auto *properties = ancestor->properties("style:paragraph-properties")) {
+                // Merge the pagination and decoration properties inherited by
+                // automatic styles, without discarding explicit overrides.
+                for (const QString &key : {QStringLiteral("fo:break-before"), QStringLiteral("fo:break-after"),
+                     QStringLiteral("style:page-number"), QStringLiteral("fo:keep-with-next"),
+                     QStringLiteral("fo:keep-together"), QStringLiteral("fo:background-color"), QStringLiteral("fo:border"),
+                     QStringLiteral("fo:border-top"), QStringLiteral("fo:border-bottom"),
+                     QStringLiteral("fo:border-left"), QStringLiteral("fo:border-right"),
+                     QStringLiteral("fo:padding"), QStringLiteral("fo:padding-top"), QStringLiteral("fo:padding-bottom"),
+                     QStringLiteral("fo:padding-left"), QStringLiteral("fo:padding-right"),
+                     QStringLiteral("fo:margin-top"), QStringLiteral("fo:margin-bottom"),
+                     QStringLiteral("fo:margin-left"), QStringLiteral("fo:margin-right"),
+                     QStringLiteral("fo:text-indent"), QStringLiteral("fo:line-height"),
+                     QStringLiteral("fo:text-align"), QStringLiteral("style:writing-mode")}) {
+                    const QString value = properties->attribute(key);
+                    if (!value.isEmpty()) merged.setAttribute(key, value);
+                }
+            }
+        }
+        const bool bodyParagraph = docxContext->outputPart() == QLatin1StringView("word/document.xml")
+            && m_tables.isEmpty() && !m_insideFootnote && !m_insideEndnote;
+        const QString sectionBreakBefore = merged.attribute(QStringLiteral("fo:break-before"));
+        if (bodyParagraph && !master.isEmpty() && docxContext->masterPageSections.contains(master)
+            && master != docxContext->activeMasterPage) {
+            if (m_bodyHasContent) {
+                writer->startElement("w:p");
+                writer->startElement("w:pPr");
+                writer->addCompleteElement(docxContext->sectPrContent().constData());
+                writer->endElement();
+                writer->endElement();
+                // The section boundary already supplies the page break.
+                merged.setAttribute(QStringLiteral("fo:break-before"), QStringLiteral("auto"));
+            }
+            docxContext->activeMasterPage = master;
+            QByteArray section = docxContext->masterPageSections.value(master);
+            const QString restart = merged.attribute(QStringLiteral("style:page-number"));
+            if (restart.toInt() > 0) {
+                const QByteArray attribute = " w:start=\"" + restart.toUtf8() + "\"";
+                const QByteArray prefix = QByteArray("<w:pgNumType") + attribute;
+                const QByteArray element = prefix + "/></w:sectPr>";
+                if (section.contains("<w:pgNumType")) section.replace("<w:pgNumType", prefix);
+                else section.replace("</w:sectPr>", element);
+            }
+            if (sectionBreakBefore == QLatin1String("auto")) {
+                section.replace("w:val=\"nextPage\"", "w:val=\"continuous\"");
+            }
+            docxContext->setSectPrContent(section);
+        }
+        m_paragraphBreakAfter.push(merged.attribute(QStringLiteral("fo:break-after")));
         writer->startElement("w:p");
         if (!m_insideFootnote) {
             docxContext->m_insideParagraph = true;
@@ -149,8 +216,9 @@ void OdfTextReaderDocxBackend::elementTextP(KoXmlStreamReader &reader, OdfReader
             const int level = attributes.value("text:level").toInt();
             extras.ilvl = level > 0 ? level - 1 : 0;
         } else if (m_insideListItem > 0 && !m_listStack.isEmpty()) {
-            extras.numId = m_listStack.top();
-            extras.ilvl = m_listStack.size() - 1;
+            const ListState &list = m_listStack.top();
+            extras.numId = list.numId;
+            extras.ilvl = list.ilvl;
         }
 
         if (!textStyle.isEmpty()) {
@@ -160,7 +228,7 @@ void OdfTextReaderDocxBackend::elementTextP(KoXmlStreamReader &reader, OdfReader
         writer->startElement("w:pPr");
         KoOdfStyle *style = textStyle.isEmpty() ? nullptr : docxContext->styleManager()->style(textStyle, "paragraph");
         if (style) {
-            KoOdfStyleProperties *parProperties = style->properties("style:paragraph-properties");
+            KoOdfStyleProperties *parProperties = &merged;
             m_currentParagraphTextProperties = style->properties("style:text-properties");
             m_currentParagraphParent = style->parent();
 
@@ -182,6 +250,10 @@ void OdfTextReaderDocxBackend::elementTextP(KoXmlStreamReader &reader, OdfReader
             DocxStyleHelper::handleParagraphStyles(nullptr, writer, extras);
         }
         writer->endElement(); // w:pPr
+        if (merged.attribute(QStringLiteral("fo:break-before")) == QLatin1String("column")) {
+            writer->startElement("w:r"); writer->startElement("w:br");
+            writer->addAttribute("w:type", "column"); writer->endElement(); writer->endElement();
+        }
         if (m_insideFootnote && m_footnoteNeedsReference) {
             // Word renders the note number from this marker; it belongs at
             // the start of the first paragraph of the note body.
@@ -192,11 +264,158 @@ void OdfTextReaderDocxBackend::elementTextP(KoXmlStreamReader &reader, OdfReader
             m_footnoteNeedsReference = false;
         }
     } else {
+        const QString breakAfter = m_paragraphBreakAfter.isEmpty() ? QString() : m_paragraphBreakAfter.pop();
+        if (breakAfter == QLatin1String("page") || breakAfter == QLatin1String("column")) {
+            writer->startElement("w:r"); writer->startElement("w:br");
+            writer->addAttribute("w:type", breakAfter); writer->endElement(); writer->endElement();
+        }
         writer->endElement(); // w:p
         if (!m_insideFootnote) {
             docxContext->m_insideParagraph = false;
         }
+        if (docxContext->outputPart() == QLatin1StringView("word/document.xml")
+            && !m_insideFootnote && !m_insideEndnote && m_tables.isEmpty()) {
+            m_bodyHasContent = true;
+            m_lastWasSectionBreak = false;
+        }
     }
+}
+
+void OdfTextReaderDocxBackend::elementTextSection(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext) {
+        return;
+    }
+
+    if (reader.isStartElement()) {
+        ++m_insideSection;
+        m_sectionStyles.push(reader.attributes().value("text:style-name").toString());
+
+        // A Word section is delimited by the sectPr of its last paragraph,
+        // so the text before an ODF section has to be terminated by a break
+        // that keeps its own (single column) layout.  Without it that text
+        // would inherit the column layout of the section that follows.
+        if (m_insideSection == 1 && m_bodyHasContent && !m_lastWasSectionBreak
+            && m_tables.isEmpty() && !m_insideFootnote && !m_insideEndnote
+            && docxContext->outputPart() == QLatin1StringView("word/document.xml")) {
+            writeSectionBreak(docxContext, 1, 720);
+        }
+        return;
+    }
+
+    if (m_insideSection > 0) {
+        --m_insideSection;
+    }
+    const QString sectionStyle = m_sectionStyles.isEmpty() ? QString() : m_sectionStyles.pop();
+
+    // Nested sections end with their own break; the outermost one also ends a
+    // Word section.  Word sections cannot live inside tables, footnotes or
+    // headers, so only the body is considered.
+    if (m_insideSection > 0 || !m_tables.isEmpty() || m_insideFootnote || m_insideEndnote) {
+        return;
+    }
+    if (docxContext->outputPart() != QLatin1StringView("word/document.xml")) {
+        return;
+    }
+
+    int columns = 1;
+    int gapTwips = 720;
+    if (!sectionStyle.isEmpty()) {
+        if (KoOdfStyle *style = docxContext->styleManager()->style(sectionStyle, "section")) {
+            if (KoOdfStyleProperties *properties = style->properties("style:section-properties")) {
+                const int count = properties->attribute("fo:column-count").toInt();
+                if (count > 1) {
+                    columns = qMin(count, 45);
+                }
+                qint64 gap = 0;
+                if (toTwipsValue(properties->attribute("fo:column-gap"), &gap) && gap > 0) {
+                    gapTwips = static_cast<int>(qMin<qint64>(gap, 31680));
+                }
+            }
+        }
+    }
+
+    writeSectionBreak(docxContext, columns, gapTwips);
+}
+
+void OdfTextReaderDocxBackend::writeSectionBreak(OdfReaderDocxContext *context, int columns, int gapTwips)
+{
+    KoXmlWriter *writer = currentWriter(context);
+    writer->startElement("w:p");
+    writer->startElement("w:pPr");
+    writer->addCompleteElement(sectionProperties(context->sectPrContent(), columns, gapTwips).constData());
+    writer->endElement(); // w:pPr
+    writer->endElement(); // w:p
+    m_lastWasSectionBreak = true;
+}
+
+void OdfTextReaderDocxBackend::elementTextTableOfContent(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext) return;
+    if (reader.isStartElement()) {
+        if (reader.qualifiedName() == QLatin1StringView("text:table-of-content-source")) {
+            m_tocLevels = qBound(1, reader.attributes().value("text:outline-level").toInt(), 9);
+        } else {
+            m_tocLevels = 3;
+        }
+        return;
+    }
+    if (!m_tocFieldOpen) {
+        return;
+    }
+    m_tocFieldOpen = false;
+    if (docxContext->outputPart() != QLatin1StringView("word/document.xml")) {
+        return;
+    }
+
+    KoXmlWriter *writer = currentWriter(docxContext);
+    writer->startElement("w:p");
+    writer->startElement("w:r");
+    writer->startElement("w:fldChar");
+    writer->addAttribute("w:fldCharType", "end");
+    writer->endElement(); // w:fldChar
+    writer->endElement(); // w:r
+    writer->endElement(); // w:p
+}
+
+void OdfTextReaderDocxBackend::elementTextIndexBody(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext || !reader.isStartElement()) {
+        return;
+    }
+    if (docxContext->outputPart() != QLatin1StringView("word/document.xml")) {
+        return;
+    }
+
+    // A table of contents is a multi-paragraph field.  The cached entry
+    // paragraphs that follow are the field result until the end marker is
+    // written when the enclosing text:table-of-content closes.
+    KoXmlWriter *writer = currentWriter(docxContext);
+    writer->startElement("w:p");
+    writer->startElement("w:r");
+    writer->startElement("w:fldChar");
+    writer->addAttribute("w:fldCharType", "begin");
+    writer->endElement(); // w:fldChar
+    writer->endElement(); // w:r
+    writer->startElement("w:r");
+    writer->startElement("w:instrText");
+    writer->addAttribute("xml:space", "preserve");
+    writer->addTextNode(QStringLiteral(" TOC \\o \"1-%1\" \\h \\z \\u ").arg(m_tocLevels));
+    writer->endElement(); // w:instrText
+    writer->endElement(); // w:r
+    writer->startElement("w:r");
+    writer->startElement("w:fldChar");
+    writer->addAttribute("w:fldCharType", "separate");
+    writer->endElement(); // w:fldChar
+    writer->endElement(); // w:r
+    writer->endElement(); // w:p
+    m_tocFieldOpen = true;
 }
 
 // Converts an ODF length value to twips.
@@ -298,6 +517,132 @@ static qint64 pageTextWidthTwips(const QByteArray &sectPr)
         return 0;
     }
     return pageWidth - leftMargin - rightMargin;
+}
+
+// Maps an ODF text field element to its Word field instruction.  Returns an
+// empty string for fields that have no direct Word equivalent; their cached
+// text is then kept as ordinary text.
+static QString fieldInstruction(const QString &tagName, const QString &text)
+{
+    if (tagName == QLatin1StringView("text:page-number")) {
+        return QStringLiteral(" PAGE ");
+    }
+    if (tagName == QLatin1StringView("text:page-count")) {
+        return QStringLiteral(" NUMPAGES ");
+    }
+    if (tagName == QLatin1StringView("text:date")) {
+        if (text.contains(QLatin1Char(':'))) {
+            return QStringLiteral(" DATE \\@ \"yyyy-MM-dd HH:mm:ss\" ");
+        }
+        if (text.contains(QLatin1Char('-'))) {
+            return QStringLiteral(" DATE \\@ \"yyyy-MM-dd\" ");
+        }
+        if (text.contains(QLatin1Char('/'))) {
+            return QStringLiteral(" DATE \\@ \"M/d/yy\" ");
+        }
+        return QStringLiteral(" DATE ");
+    }
+    if (tagName == QLatin1StringView("text:time")) {
+        return QStringLiteral(" TIME \\@ \"HH:mm:ss\" ");
+    }
+    if (tagName == QLatin1StringView("text:title")) {
+        return QStringLiteral(" TITLE ");
+    }
+    if (tagName == QLatin1StringView("text:subject")) {
+        return QStringLiteral(" SUBJECT ");
+    }
+    if (tagName == QLatin1StringView("text:description")) {
+        return QStringLiteral(" COMMENTS ");
+    }
+    if (tagName == QLatin1StringView("text:keywords")) {
+        return QStringLiteral(" KEYWORDS ");
+    }
+    if (tagName == QLatin1StringView("text:author-name") || tagName == QLatin1StringView("text:creator")
+        || tagName == QLatin1StringView("text:initial-creator")) {
+        return QStringLiteral(" AUTHOR ");
+    }
+    if (tagName == QLatin1StringView("text:author-initials")) {
+        return QStringLiteral(" USERINITIALS ");
+    }
+    if (tagName == QLatin1StringView("text:file-name")) {
+        return QStringLiteral(" FILENAME ");
+    }
+    if (tagName == QLatin1StringView("text:template-name")) {
+        return QStringLiteral(" TEMPLATE ");
+    }
+    if (tagName == QLatin1StringView("text:creation-date")) {
+        return QStringLiteral(" CREATEDATE ");
+    }
+    if (tagName == QLatin1StringView("text:creation-time")) {
+        return QStringLiteral(" CREATETIME ");
+    }
+    if (tagName == QLatin1StringView("text:modification-date")) {
+        return QStringLiteral(" SAVEDATE ");
+    }
+    if (tagName == QLatin1StringView("text:modification-time")) {
+        return QStringLiteral(" SAVEDATETIME ");
+    }
+    if (tagName == QLatin1StringView("text:print-date")) {
+        return QStringLiteral(" PRINTDATE ");
+    }
+    if (tagName == QLatin1StringView("text:print-time")) {
+        return QStringLiteral(" PRINTTIME ");
+    }
+    if (tagName == QLatin1StringView("text:editing-cycles")) {
+        return QStringLiteral(" REVNUM ");
+    }
+    if (tagName == QLatin1StringView("text:editing-duration")) {
+        return QStringLiteral(" EDITTIME ");
+    }
+    if (tagName == QLatin1StringView("text:word-count")) {
+        return QStringLiteral(" NUMWORDS ");
+    }
+    if (tagName == QLatin1StringView("text:character-count")) {
+        return QStringLiteral(" NUMCHARS ");
+    }
+    if (tagName == QLatin1StringView("text:paragraph-count")) {
+        return QStringLiteral(" NUMPARAS ");
+    }
+    return QString();
+}
+
+// Builds the <w:sectPr> that ends an ODF section.  The document's final
+// section properties supply page size, margins and header/footer references;
+// the break type becomes continuous so the section does not start a new page,
+// and the ODF column count is mapped to <w:cols>.
+static QByteArray sectionProperties(const QByteArray &base, int columns, int gapTwips)
+{
+    QString xml = QString::fromUtf8(base);
+    const QString continuous = QStringLiteral("<w:type w:val=\"continuous\"/>");
+    if (xml.isEmpty()) {
+        xml = QStringLiteral("<w:sectPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">"
+                             "<w:type w:val=\"continuous\"/>"
+                             "</w:sectPr>");
+    } else {
+        const QRegularExpression typeExpression(QStringLiteral("<w:type\\b[^>]*/>"));
+        if (xml.contains(typeExpression)) {
+            xml.replace(typeExpression, continuous);
+        } else {
+            int position = xml.indexOf(QStringLiteral("<w:pgSz"));
+            if (position < 0) {
+                position = xml.indexOf(QStringLiteral("</w:sectPr>"));
+            }
+            if (position >= 0) {
+                xml.insert(position, continuous);
+            }
+        }
+    }
+
+    if (columns > 1) {
+        const QString cols = QStringLiteral("<w:cols w:num=\"%1\" w:space=\"%2\" w:equalWidth=\"1\"/>")
+                                 .arg(columns)
+                                 .arg(qMax(0, gapTwips));
+        const int position = xml.lastIndexOf(QStringLiteral("</w:sectPr>"));
+        if (position >= 0) {
+            xml.insert(position, cols);
+        }
+    }
+    return xml.toUtf8();
 }
 
 // ODF stores borders either as one fo:border or as per-edge
@@ -473,6 +818,11 @@ void OdfTextReaderDocxBackend::elementTableTable(KoXmlStreamReader &reader, OdfR
             m_tables.pop();
         }
         writer->endElement(); // w:tbl
+        if (m_tables.isEmpty() && !m_insideFootnote && !m_insideEndnote
+            && docxContext->outputPart() == QLatin1StringView("word/document.xml")) {
+            m_bodyHasContent = true;
+            m_lastWasSectionBreak = false;
+        }
     }
 }
 
@@ -738,10 +1088,10 @@ void OdfTextReaderDocxBackend::elementTextSpan(KoXmlStreamReader &reader, OdfRea
     }
 
     if (reader.isStartElement()) {
-        startRun(reader, docxContext);
+        m_spanStyles.append(reader.attributes().value("text:style-name").toString());
         ++m_insideSpanLevel;
     } else {
-        endRun(docxContext);
+        if (!m_spanStyles.isEmpty()) m_spanStyles.removeLast();
         --m_insideSpanLevel;
     }
 }
@@ -765,17 +1115,12 @@ void OdfTextReaderDocxBackend::elementTextS(KoXmlStreamReader &reader, OdfReader
     count = qMin(count, 32767);
 
     KoXmlWriter *writer = currentWriter(docxContext);
-    const bool ownRun = m_insideFootnote ? m_insideSpanLevel == m_noteSpanBase : m_insideSpanLevel == 0;
-    if (ownRun) {
-        startRun(reader, docxContext);
-    }
+    startRun(reader.attributes(), docxContext);
     writer->startElement("w:t");
     writer->addAttribute("xml:space", "preserve");
     writer->addTextNode(QString(count, QLatin1Char(' ')));
     writer->endElement(); // w:t
-    if (ownRun) {
-        endRun(docxContext);
-    }
+    endRun(docxContext);
 }
 
 void OdfTextReaderDocxBackend::elementTextA(KoXmlStreamReader &reader, OdfReaderContext *context)
@@ -787,13 +1132,8 @@ void OdfTextReaderDocxBackend::elementTextA(KoXmlStreamReader &reader, OdfReader
     }
 
     if (reader.isStartElement()) {
-        // WordprocessingML hyperlinks contain runs, so they cannot be nested
-        // inside the run opened for an enclosing ODF text:span. In that case
-        // preserve the link text and omit only the hyperlink wrapper.
-        if (m_insideSpanLevel > 0) {
-            m_linkStack.push(false);
-            return;
-        }
+        // ODF spans are tracked logically; their text emits flat runs inside
+        // this hyperlink, preserving both the link and nested formatting.
         const QString href = reader.attributes().value("xlink:href").toString();
         if (href.isEmpty()) {
             m_linkStack.push(false);
@@ -844,15 +1184,10 @@ void OdfTextReaderDocxBackend::elementTextLineBreak(KoXmlStreamReader &reader, O
         return;
     }
     KoXmlWriter *writer = currentWriter(docxContext);
-    const bool ownRun = m_insideFootnote ? m_insideSpanLevel == m_noteSpanBase : m_insideSpanLevel == 0;
-    if (ownRun) {
-        startRun(reader, docxContext);
-    }
+    startRun(reader.attributes(), docxContext);
     writer->startElement("w:br");
     writer->endElement(); // w:br
-    if (ownRun) {
-        endRun(docxContext);
-    }
+    endRun(docxContext);
 }
 
 void OdfTextReaderDocxBackend::elementTextTab(KoXmlStreamReader &reader, OdfReaderContext *context)
@@ -866,44 +1201,77 @@ void OdfTextReaderDocxBackend::elementTextTab(KoXmlStreamReader &reader, OdfRead
         return;
     }
     KoXmlWriter *writer = currentWriter(docxContext);
-    const bool ownRun = m_insideFootnote ? m_insideSpanLevel == m_noteSpanBase : m_insideSpanLevel == 0;
-    if (ownRun) {
-        startRun(reader, docxContext);
-    }
+    startRun(reader.attributes(), docxContext);
     writer->startElement("w:tab");
     writer->endElement(); // w:tab
-    if (ownRun) {
-        endRun(docxContext);
+    endRun(docxContext);
+}
+
+void OdfTextReaderDocxBackend::elementTextField(const QString &tagName, const KoXmlStreamAttributes &attributes,
+                                                const QString &text, OdfReaderContext *context)
+{
+    DEBUG_BACKEND();
+    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    if (!docxContext || !docxContext->m_insideParagraph) {
+        return;
     }
+
+    const QString instruction = fieldInstruction(tagName, text);
+    QString cachedText = text;
+    if (cachedText.isEmpty() && !instruction.isEmpty()) {
+        if (tagName == QLatin1StringView("text:page-number") || tagName == QLatin1StringView("text:page-count")) {
+            cachedText = QStringLiteral("1");
+        } else if (tagName == QLatin1StringView("text:date")) {
+            cachedText = attributes.value(QStringLiteral("text:date-value")).toString();
+        } else if (tagName == QLatin1StringView("text:time")) {
+            cachedText = attributes.value(QStringLiteral("text:time-value")).toString();
+        }
+    }
+    if (instruction.isEmpty() && cachedText.isEmpty()) {
+        return;
+    }
+
+    KoXmlWriter *writer = currentWriter(docxContext);
+    startRun(attributes, docxContext);
+
+    if (!instruction.isEmpty()) {
+        // Complex field: begin / instruction / separate / cached result / end.
+        // ODF spans are logical formatting scopes, so the field characters
+        // can share this formatted run without creating nested runs.
+        writer->startElement("w:fldChar");
+        writer->addAttribute("w:fldCharType", "begin");
+        writer->endElement(); // w:fldChar
+        writer->startElement("w:instrText");
+        writer->addAttribute("xml:space", "preserve");
+        writer->addTextNode(instruction);
+        writer->endElement(); // w:instrText
+        writer->startElement("w:fldChar");
+        writer->addAttribute("w:fldCharType", "separate");
+        writer->endElement(); // w:fldChar
+    }
+
+    if (!cachedText.isEmpty()) {
+        writer->startElement("w:t");
+        writer->addAttribute("xml:space", "preserve");
+        writer->addTextNode(cachedText);
+        writer->endElement(); // w:t
+    }
+
+    if (!instruction.isEmpty()) {
+        writer->startElement("w:fldChar");
+        writer->addAttribute("w:fldCharType", "end");
+        writer->endElement(); // w:fldChar
+    }
+
+    endRun(docxContext);
 }
 
 void OdfTextReaderDocxBackend::elementTextSoftPageBreak(KoXmlStreamReader &reader, OdfReaderContext *context)
 {
-    DEBUG_BACKEND();
-    if (!reader.isStartElement()) {
-        return;
-    }
-    OdfReaderDocxContext *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
-    if (!docxContext) {
-        return;
-    }
-    KoXmlWriter *writer = currentWriter(docxContext);
-
-    // A soft page break between two paragraphs is a page break run.  Word
-    // requires every run to live inside a paragraph, so outside a text:p the
-    // break is wrapped in a paragraph of its own.
-    const bool standalone = !docxContext->m_insideParagraph;
-    if (standalone) {
-        writer->startElement("w:p");
-    }
-    writer->startElement("w:r");
-    writer->startElement("w:br");
-    writer->addAttribute("w:type", "page");
-    writer->endElement(); // w:br
-    writer->endElement(); // w:r
-    if (standalone) {
-        writer->endElement(); // w:p
-    }
+    // This is a producer's automatic pagination hint, not an authored break.
+    // Turning it into w:br changes pagination and can split a text paragraph.
+    Q_UNUSED(reader);
+    Q_UNUSED(context);
 }
 
 // ----------------------------------------------------------------
@@ -987,9 +1355,62 @@ void OdfTextReaderDocxBackend::elementTextList(KoXmlStreamReader &reader, OdfRea
         return;
     }
     if (reader.isStartElement()) {
-        const QString styleName = reader.attributes().value("text:style-name").toString();
-        const int numId = docxContext->numbering().numIdForStyle(styleName);
-        m_listStack.push(numId);
+        DocxNumbering &numbering = docxContext->numbering();
+        const KoXmlStreamAttributes attributes = reader.attributes();
+        const QString styleName = attributes.value("text:style-name").toString();
+        const QString listId = attributes.value("xml:id").toString();
+        const QString continueId = attributes.value("text:continue-list").toString();
+
+        ListState state;
+        bool continued = false;
+        if (!continueId.isEmpty()) {
+            const auto previous = m_listContinuationStates.constFind(continueId);
+            if (previous != m_listContinuationStates.constEnd()) {
+                state = previous.value();
+                continued = true;
+            }
+        }
+
+        if (continued) {
+            // Reuse the referenced list's numId so the counter continues.
+        } else if (!styleName.isEmpty()) {
+            const int levelCount = numbering.levelCountForStyle(styleName);
+            const int firstLevel = numbering.firstLevelForStyle(styleName);
+            if (levelCount == 1 && firstLevel > 1) {
+                // The DOCX importer writes one single-level style per source
+                // numbering level (level 2, level 5, ...) and reaches it by
+                // wrapping the item in anonymous lists.  The style therefore
+                // already carries the absolute level; extra nesting must not
+                // increase it again.
+                state.numId = numbering.numIdForStyle(styleName);
+                state.ilvl = qBound(0, firstLevel - 1, 8);
+                state.absoluteLevel = true;
+            } else if (m_listStack.isEmpty()) {
+                // A new top-level list starts at 1, even when the same style
+                // was used for an earlier list.
+                state.numId = numbering.newListInstance(styleName);
+                state.ilvl = 0;
+            } else {
+                state.numId = numbering.numIdForStyle(styleName);
+                state.ilvl = qMin(8, m_listStack.top().ilvl + 1);
+            }
+        } else if (!m_listStack.isEmpty()) {
+            // <text:list> without a style inherits the enclosing list.  This
+            // is how ODF represents a nested level, so keep the parent's
+            // numId and only descend when the level is implicit.
+            state.numId = m_listStack.top().numId;
+            state.ilvl = m_listStack.top().absoluteLevel
+                ? m_listStack.top().ilvl
+                : qMin(8, m_listStack.top().ilvl + 1);
+            state.absoluteLevel = m_listStack.top().absoluteLevel;
+        } else {
+            state.numId = numbering.newListInstance(QString());
+            state.ilvl = 0;
+        }
+        if (!listId.isEmpty()) {
+            m_listContinuationStates.insert(listId, state);
+        }
+        m_listStack.push(state);
     } else if (!m_listStack.isEmpty()) {
         m_listStack.pop();
     }
@@ -1036,9 +1457,7 @@ void OdfTextReaderDocxBackend::elementTextListHeader(KoXmlStreamReader &reader, 
         // can exist also without a text:span surrounding it.
         KoXmlWriter *writer = currentWriter(docxContext);
 
-        if (m_insideFootnote ? m_insideSpanLevel == m_noteSpanBase : m_insideSpanLevel == 0) {
-            startRun(reader, docxContext);
-        }
+        startRun(reader.attributes(), docxContext);
 
         const QString text = reader.text().toString();
         writer->startElement("w:t");
@@ -1048,9 +1467,7 @@ void OdfTextReaderDocxBackend::elementTextListHeader(KoXmlStreamReader &reader, 
         writer->addTextNode(text);
         writer->endElement(); // w:t
 
-        if (m_insideFootnote ? m_insideSpanLevel == m_noteSpanBase : m_insideSpanLevel == 0) {
-            endRun(docxContext);
-        }
+        endRun(docxContext);
     }
 }
 
@@ -1068,7 +1485,7 @@ KoXmlWriter *OdfTextReaderDocxBackend::currentWriter(OdfReaderDocxContext *conte
     return context->m_documentWriter;
 }
 
-void OdfTextReaderDocxBackend::startRun(const KoXmlStreamReader &reader, OdfReaderDocxContext *docxContext)
+void OdfTextReaderDocxBackend::startRun(const KoXmlStreamAttributes &attributes, OdfReaderDocxContext *docxContext)
 {
     KoXmlWriter *writer = currentWriter(docxContext);
 
@@ -1079,7 +1496,6 @@ void OdfTextReaderDocxBackend::startRun(const KoXmlStreamReader &reader, OdfRead
     }
     writer->startElement("w:r");
     writer->startElement("w:rPr");
-    KoXmlStreamAttributes attributes = reader.attributes();
     KoOdfStyleProperties properties;
     if (!m_currentParagraphParent.isEmpty()) {
         DocxStyleHelper::inheritTextStyles(&properties, m_currentParagraphParent, docxContext->styleManager());
@@ -1088,24 +1504,33 @@ void OdfTextReaderDocxBackend::startRun(const KoXmlStreamReader &reader, OdfRead
         properties.copyPropertiesFrom(*m_currentParagraphTextProperties);
     }
 
-    QString textStyle = attributes.value("text:style-name").toString();
-    if (!textStyle.isEmpty()) {
-        KoOdfStyle *style = docxContext->styleManager()->style(textStyle, "text");
-        if (style) {
-            KoOdfStyleProperties *textProperties = style->properties("style:text-properties");
-            if (textProperties != nullptr) {
-                properties.copyPropertiesFrom(*textProperties);
-            }
-            // The emitted style is the style itself when it is named in
-            // styles.xml; an automatic content style can only refer to its
-            // named parent in the DOCX style table.
-            const QString wordStyleId = style->isFromStylesXml() ? style->name() : style->parent();
-            if (!wordStyleId.isEmpty()) {
-                writer->startElement("w:rStyle");
-                writer->addAttribute("w:val", wordStyleId);
-                writer->endElement(); // w:rStyle
-            }
+    QString wordStyleId;
+    const auto applyCharacterStyle = [&](const QString &name) {
+        QVector<KoOdfStyle *> chain;
+        QSet<QString> visited;
+        QString current = name;
+        while (!current.isEmpty() && !visited.contains(current)) {
+            visited.insert(current);
+            KoOdfStyle *style = docxContext->styleManager()->style(current, "text");
+            if (!style) break;
+            chain.prepend(style);
+            current = style->parent();
         }
+        for (KoOdfStyle *style : chain) {
+            if (auto *textProperties = style->properties("style:text-properties"))
+                properties.copyPropertiesFrom(*textProperties);
+            if (style->isFromStylesXml()) wordStyleId = style->name();
+        }
+    };
+    // Text within a note must not inherit the span enclosing its body marker.
+    const int firstSpan = m_insideFootnote ? m_noteSpanBase : 0;
+    for (int i = firstSpan; i < m_spanStyles.size(); ++i)
+        applyCharacterStyle(m_spanStyles.at(i));
+    applyCharacterStyle(attributes.value("text:style-name").toString());
+    if (!wordStyleId.isEmpty()) {
+        writer->startElement("w:rStyle");
+        writer->addAttribute("w:val", wordStyleId);
+        writer->endElement();
     }
     DocxStyleHelper::handleTextStyles(&properties, writer);
 

@@ -24,6 +24,7 @@
 #include <KoXmlWriter.h>
 
 #include <QPainterPath>
+#include <QRegularExpression>
 
 EnhancedPathShape::EnhancedPathShape(const QRect &viewBox)
     : m_viewBox(viewBox)
@@ -451,9 +452,21 @@ void EnhancedPathShape::saveOdf(KoShapeSavingContext &context) const
     }
 }
 
+void EnhancedPathShape::setPresetGeometry(const QString &preset, const QString &path, const QString &textArea, const QMap<QString, QString> &formulae)
+{
+    m_officePreset = QStringLiteral("ooxml-") + preset;
+    for (auto it = formulae.constBegin(); it != formulae.constEnd(); ++it) {
+        addFormula(it.key(), it.value());
+    }
+    m_textArea = textArea.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    if (m_textArea.size() >= 4) { setResizeBehavior(TextFollowsPreferredTextRect); }
+    parsePathData(path);
+}
+
 void EnhancedPathShape::saveEnhancedGeometry(KoShapeSavingContext &context) const
 {
     context.xmlWriter().startElement("draw:enhanced-geometry");
+    if (!m_officePreset.isEmpty()) { context.xmlWriter().addAttribute("draw:type", m_officePreset); }
     context.xmlWriter().addAttribute("svg:viewBox",
                                      QString("%1 %2 %3 %4").arg(m_viewBox.x()).arg(m_viewBox.y()).arg(m_viewBox.width()).arg(m_viewBox.height()));
 
@@ -481,9 +494,16 @@ void EnhancedPathShape::saveEnhancedGeometry(KoShapeSavingContext &context) cons
     }
 
     QString path;
-    foreach (EnhancedPathCommand *c, m_commands)
+    QString extendedPath;
+    foreach (EnhancedPathCommand *c, m_commands) {
         path += c->toString() + ' ';
+        extendedPath += c->toString(true) + ' ';
+    }
     context.xmlWriter().addAttribute("draw:enhanced-path", path.trimmed());
+    if (extendedPath != path) {
+        context.xmlWriter().addAttribute("xmlns:drawooo", "http://openoffice.org/2010/draw");
+        context.xmlWriter().addAttribute("drawooo:enhanced-path", extendedPath.trimmed());
+    }
 
     FormulaStore::const_iterator i = m_formulae.constBegin();
     for (; i != m_formulae.constEnd(); ++i) {
@@ -503,6 +523,34 @@ void EnhancedPathShape::saveEnhancedGeometry(KoShapeSavingContext &context) cons
 
 bool EnhancedPathShape::loadEnhancedGeometry(const KoXmlElement &enhancedGeometry, KoShapeLoadingContext &context)
 {
+    m_viewBox = loadOdfViewbox(enhancedGeometry);
+    // LibreOffice uses a zero viewBox for OOXML custom shapes whose equations
+    // use physical dimensions (hundredths of a millimetre). Materialize that
+    // coordinate system before evaluating the path, then retain it on save.
+    const bool physicalCoordinates = m_viewBox.isEmpty() && enhancedGeometry.hasAttributeNS(KoXmlNS::svg, "viewBox");
+    if (physicalCoordinates) {
+        // Non-preset OOXML paths can retain their own coordinate system in
+        // sub-view-size (often EMUs), rather than hundredths of a millimetre.
+        const QStringList subview = enhancedGeometry.attributeNS(QStringLiteral("http://openoffice.org/2010/draw"), "sub-view-size")
+                                        .split(QRegularExpression(QStringLiteral("\\s+")), Qt::SkipEmptyParts);
+        if (subview.size() >= 2 && subview[0].toInt() > 0 && subview[1].toInt() > 0) {
+            m_viewBox = QRect(0, 0, subview[0].toInt(), subview[1].toInt());
+        } else {
+            const KoXmlElement frame = enhancedGeometry.parentNode().toElement();
+            const qreal width = KoUnit::parseValue(frame.attributeNS(KoXmlNS::svg, "width"));
+            const qreal height = KoUnit::parseValue(frame.attributeNS(KoXmlNS::svg, "height"));
+            m_viewBox = QRect(0, 0, qMax(1, qRound(KoUnit::toMillimeter(width) * 100)),
+                             qMax(1, qRound(KoUnit::toMillimeter(height) * 100)));
+        }
+    }
+    const auto logicalFormula = [physicalCoordinates](QString formula) {
+        if (physicalCoordinates) {
+            formula.replace(QRegularExpression(QStringLiteral("\\blogwidth\\b")), QStringLiteral("width"));
+            formula.replace(QRegularExpression(QStringLiteral("\\blogheight\\b")), QStringLiteral("height"));
+        }
+        return formula;
+    };
+    m_officePreset = enhancedGeometry.attributeNS(KoXmlNS::draw, "type");
     setPathStretchPointX(enhancedGeometry.attributeNS(KoXmlNS::draw, "path-stretchpoint-x", "-1").toDouble());
     setPathStretchPointY(enhancedGeometry.attributeNS(KoXmlNS::draw, "path-stretchpoint-y", "-1").toDouble());
 
@@ -525,7 +573,7 @@ bool EnhancedPathShape::loadEnhancedGeometry(const KoXmlElement &enhancedGeometr
         if (grandChild.localName() == "equation") {
             QString name = grandChild.attributeNS(KoXmlNS::draw, "name");
             QString formula = grandChild.attributeNS(KoXmlNS::draw, "formula");
-            addFormula(name, formula);
+            addFormula(name, logicalFormula(formula));
         } else if (grandChild.localName() == "handle") {
             EnhancedPathHandle *handle = new EnhancedPathHandle(this);
             if (handle->loadOdf(grandChild, context)) {
@@ -542,14 +590,14 @@ bool EnhancedPathShape::loadEnhancedGeometry(const KoXmlElement &enhancedGeometr
 
     // load the enhanced path data
     QString path = enhancedGeometry.attributeNS(KoXmlNS::draw, "enhanced-path", "");
+    const QString extendedPath = enhancedGeometry.attributeNS(QStringLiteral("http://openoffice.org/2010/draw"), "enhanced-path");
+    if (!extendedPath.isEmpty())
+        path = extendedPath;
 #ifndef NWORKAROUND_ODF_BUGS
     KoOdfWorkaround::fixEnhancedPath(path, enhancedGeometry, context);
 #endif
-    // load the viewbox
-    m_viewBox = loadOdfViewbox(enhancedGeometry);
-
     if (!path.isEmpty()) {
-        parsePathData(path);
+        parsePathData(logicalFormula(path));
     }
 
     if (m_viewBox.isEmpty()) {
@@ -601,7 +649,8 @@ void EnhancedPathShape::parsePathData(const QString &data)
         ushort uni_ch = ch.unicode();
         if (separator
             && (uni_ch == 'M' || uni_ch == 'L' || uni_ch == 'C' || uni_ch == 'Z' || uni_ch == 'N' || uni_ch == 'F' || uni_ch == 'S' || uni_ch == 'T'
-                || uni_ch == 'U' || uni_ch == 'A' || uni_ch == 'B' || uni_ch == 'W' || uni_ch == 'V' || uni_ch == 'X' || uni_ch == 'Y' || uni_ch == 'Q')) {
+                || uni_ch == 'U' || uni_ch == 'A' || uni_ch == 'B' || uni_ch == 'W' || uni_ch == 'V' || uni_ch == 'X' || uni_ch == 'Y' || uni_ch == 'Q'
+                || uni_ch == 'G')) {
             if (start != -1) { // process last chars
                 addCommand(data.mid(start, i - start), false);
             }

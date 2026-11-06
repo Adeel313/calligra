@@ -1269,4 +1269,32 @@ void TestBlockLayout::testDropCapsWithNewline()
     QCOMPARE(line.height(), heightNormalLine);
 }
 
+void TestBlockLayout::testTabDistanceUsesDocumentDevice()
+{
+    setupTest(QStringLiteral("A\tB\tC"));
+    m_provider->setSuggestedRect(QRectF(0, 0, 400, 1000));
+    m_paragraphStyle->setTabStopDistance(72);
+    m_paragraphStyle->applyStyle(m_block);
+    m_layout->layout();
+    QCOMPARE(m_block.layout()->lineCount(), 1);
+    const auto line = m_block.layout()->lineAt(0);
+    QVERIFY2(qAbs(line.cursorToX(2) - line.cursorToX(0) - 72) < 0.2, qPrintable(QString::number(line.cursorToX(2) - line.cursorToX(0))));
+    QVERIFY(qAbs(line.cursorToX(4) - line.cursorToX(0) - 144) < 0.2);
+}
+
+void TestBlockLayout::testExplicitTabUsesDocumentDevice()
+{
+    setupTest(QStringLiteral("A\tB"));
+    m_provider->setSuggestedRect(QRectF(0, 0, 400, 1000));
+    KoText::Tab tab;
+    tab.position = 90;
+    tab.type = QTextOption::LeftTab;
+    m_paragraphStyle->setTabPositions({tab});
+    m_paragraphStyle->applyStyle(m_block);
+    m_layout->layout();
+    QCOMPARE(m_block.layout()->lineCount(), 1);
+    const auto line = m_block.layout()->lineAt(0);
+    QVERIFY2(qAbs(line.cursorToX(2) - line.cursorToX(0) - 90) < 0.2, qPrintable(QString::number(line.cursorToX(2) - line.cursorToX(0))));
+}
+
 QTEST_MAIN(TestBlockLayout)

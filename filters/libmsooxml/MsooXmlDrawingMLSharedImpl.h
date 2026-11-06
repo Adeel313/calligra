@@ -603,7 +603,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_prstClr()
     m_currentTint = 0;
     m_currentShadeLevel = 0;
     m_currentSatMod = 0;
-    m_currentAlpha = 0;
+    m_currentAlpha = -1;
 
     // TODO: all the color transformations
     while (!atEnd()) {
@@ -735,7 +735,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_schemeClr()
     m_currentTint = 0;
     m_currentShadeLevel = 0;
     m_currentSatMod = 0;
-    m_currentAlpha = 0;
+    m_currentAlpha = -1;
 
     MSOOXML::DrawingMLColorSchemeItemBase *colorItem = nullptr;
 
@@ -805,7 +805,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_sysClr()
     m_currentTint = 0;
     m_currentShadeLevel = 0;
     m_currentSatMod = 0;
-    m_currentAlpha = 0;
+    m_currentAlpha = -1;
 
     TRY_READ_ATTR_WITHOUT_NS(lastClr)
 
@@ -877,7 +877,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_scrgbClr()
     m_currentTint = 0;
     m_currentShadeLevel = 0;
     m_currentSatMod = 0;
-    m_currentAlpha = 0;
+    m_currentAlpha = -1;
 
     READ_ATTR_WITHOUT_NS(r)
     READ_ATTR_WITHOUT_NS(g)
@@ -954,7 +954,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_srgbClr()
     m_currentTint = 0;
     m_currentShadeLevel = 0;
     m_currentSatMod = 0;
-    m_currentAlpha = 0;
+    m_currentAlpha = -1;
 
     READ_ATTR_WITHOUT_NS(val)
 

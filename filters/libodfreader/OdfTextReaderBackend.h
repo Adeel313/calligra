@@ -52,6 +52,9 @@ public:
     DECLARE_BACKEND_FUNCTION(TextH);
     DECLARE_BACKEND_FUNCTION(TextP);
     DECLARE_BACKEND_FUNCTION(TextList);
+    DECLARE_BACKEND_FUNCTION(TextSection);
+    DECLARE_BACKEND_FUNCTION(TextTableOfContent);
+    DECLARE_BACKEND_FUNCTION(TextIndexBody);
 
     DECLARE_BACKEND_FUNCTION(TableTable);
     DECLARE_BACKEND_FUNCTION(TableTableColumnGroup);
@@ -77,6 +80,15 @@ public:
     DECLARE_BACKEND_FUNCTION(TextSpan);
     DECLARE_BACKEND_FUNCTION(TextS);
     DECLARE_BACKEND_FUNCTION(TextTab);
+
+    /** A field element such as <text:page-number> or <text:date>.
+     *
+     * Called once, while @p reader still points at the start element.  @p text
+     * is the cached display text contained in the element.  The default
+     * implementation ignores the field.
+     */
+    virtual void elementTextField(const QString &tagName, const KoXmlStreamAttributes &attributes,
+                                  const QString &text, OdfReaderContext *context);
 
     // ----------------------------------------------------------------
     // List level functions: list-header and list-item.

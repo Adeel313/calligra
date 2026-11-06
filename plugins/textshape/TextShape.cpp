@@ -47,6 +47,7 @@
 #include <QPainterPath>
 #include <QPen>
 #include <QTextLayout>
+#include <QTextTable>
 
 #include <QDebug>
 
@@ -216,7 +217,24 @@ void TextShape::saveOdf(KoShapeSavingContext &context) const
         saveOdfAttributes(context, OdfAllAttributes);
     }
 
-    writer.startElement("draw:text-box");
+    // ODF presentation tables are direct children of draw:frame. Wrapping
+    // them in draw:text-box makes Impress discard them during PPTX export.
+    QTextTable *standaloneTable = nullptr;
+    if (QCoreApplication::applicationName() == QLatin1String("calligrastage")) {
+        const auto frames = m_textShapeData->document()->rootFrame()->childFrames();
+        if (frames.size() == 1) {
+            standaloneTable = qobject_cast<QTextTable *>(frames.first());
+            if (standaloneTable) {
+                for (auto it = m_textShapeData->document()->rootFrame()->begin(); !it.atEnd(); ++it) {
+                    if (it.currentBlock().isValid() && !it.currentBlock().text().isEmpty()) {
+                        standaloneTable = nullptr;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if (!standaloneTable) writer.startElement("draw:text-box");
     if (!textHeight.isEmpty())
         writer.addAttribute("fo:min-height", textHeight);
     KoTextDocumentLayout *lay = qobject_cast<KoTextDocumentLayout *>(m_textShapeData->document()->documentLayout());
@@ -235,8 +253,14 @@ void TextShape::saveOdf(KoShapeSavingContext &context) const
     }
     const bool saveMyText = index == 0; // only save the text once.
 
-    m_textShapeData->saveOdf(context, nullptr, 0, saveMyText ? -1 : 0);
-    writer.endElement(); // draw:text-box
+    if (standaloneTable && saveMyText) {
+        // Include the hidden paragraph before the table so even a 1x1 table
+        // is serialized as a whole table rather than a cell text selection.
+        m_textShapeData->saveOdf(context, nullptr, standaloneTable->firstPosition() - 1, standaloneTable->lastPosition());
+    } else {
+        m_textShapeData->saveOdf(context, nullptr, 0, saveMyText ? -1 : 0);
+    }
+    if (!standaloneTable) writer.endElement(); // draw:text-box
     saveOdfCommonChildElements(context);
     writer.endElement(); // draw:frame
 }
@@ -257,8 +281,14 @@ QString TextShape::saveStyle(KoGenStyle &style, KoShapeSavingContext &context) c
         style.addProperty("draw:auto-grow-width", "true");
     if (resize != KoTextShapeData::AutoGrowHeight && resize != KoTextShapeData::AutoGrowWidthAndHeight)
         style.addProperty("draw:auto-grow-height", "false");
-    if (resize == KoTextShapeData::ShrinkToFitResize)
-        style.addProperty("draw:fit-to-size", "true");
+    if (resize == KoTextShapeData::ShrinkToFitResize) {
+        style.addProperty("draw:fit-to-size", "false");
+        style.addProperty("style:shrink-to-fit", "true");
+        if (m_textShapeData->autofitFontScale() > 0)
+            style.addProperty("calligra:autofit-font-scale", m_textShapeData->autofitFontScale());
+        if (m_textShapeData->autofitLineSpacingReduction() > 0)
+            style.addProperty("calligra:autofit-line-spacing-reduction", m_textShapeData->autofitLineSpacingReduction());
+    }
 
     m_textShapeData->saveStyle(style, context);
 
@@ -286,7 +316,7 @@ void TextShape::loadStyle(const KoXmlElement &element, KoShapeLoadingContext &co
 
     const QString fitToSize = styleStack.property(KoXmlNS::draw, "fit-to-size");
     KoTextShapeData::ResizeMethod resize = KoTextShapeData::NoResize;
-    if (fitToSize == "true" || fitToSize == "shrink-to-fit") { // second is buggy value from impress
+    if (fitToSize == "true" || fitToSize == "shrink-to-fit" || styleStack.property(KoXmlNS::style, "shrink-to-fit") == "true") {
         resize = KoTextShapeData::ShrinkToFitResize;
     } else {
         // An explicit svg:width or svg:height defined do change the default value (means those value
@@ -313,6 +343,15 @@ void TextShape::loadStyle(const KoXmlElement &element, KoShapeLoadingContext &co
     }
 
     m_textShapeData->setResizeMethod(resize);
+
+    if (resize == KoTextShapeData::ShrinkToFitResize) {
+        const QString autofitFontScale = styleStack.property(KoXmlNS::calligra, "autofit-font-scale");
+        if (!autofitFontScale.isEmpty())
+            m_textShapeData->setAutofitFontScale(autofitFontScale.toInt());
+        const QString autofitLineSpacingReduction = styleStack.property(KoXmlNS::calligra, "autofit-line-spacing-reduction");
+        if (!autofitLineSpacingReduction.isEmpty())
+            m_textShapeData->setAutofitLineSpacingReduction(autofitLineSpacingReduction.toInt());
+    }
 }
 
 bool TextShape::loadOdf(const KoXmlElement &element, KoShapeLoadingContext &context)
@@ -352,6 +391,10 @@ bool TextShape::loadOdfFrame(const KoXmlElement &element, KoShapeLoadingContext 
         if (possibleTableElement.isNull()) {
             return false;
         } else {
+            // Table cells provide their own fill and borders. Graphic defaults
+            // inherited from a presentation theme belong to ordinary shapes.
+            setBackground({});
+            setStroke(nullptr);
             return loadOdfFrameElement(possibleTableElement, context);
         }
     }

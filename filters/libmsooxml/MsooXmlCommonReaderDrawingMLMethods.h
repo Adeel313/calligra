@@ -229,6 +229,8 @@ KoFilter::ConversionStatus read_DrawingML_txBody(txBodyCaller caller);
 // ----------------------------------------
 
 MSOOXML::Utils::autoFitStatus m_normAutofit; // Whether text should be fitted to fit the shape
+int m_normAutofitFontScale; // PowerPoint fontScale (100000 = 100%), 0 if unset
+int m_normAutofitLineSpacingReduction; // PowerPoint lnSpcReduction (1000 = 1%), 0 if unset
 
 bool m_isLockedCanvas;
 
@@ -260,6 +262,7 @@ QString m_shapeTextLeftOff;
 QString m_shapeTextRightOff;
 
 bool m_listStylePropertiesAltered;
+bool m_explicitBulletProperties;
 QString m_prevListStyleName;
 
 int m_prevListLevel; //! set by drawingML_ppr

@@ -11,6 +11,7 @@
 #include <animations/KPrShapeAnimation.h>
 
 class QToolButton;
+class QDockWidget;
 class KoPAViewBase;
 class KPrView;
 class QTreeView;
@@ -35,6 +36,7 @@ public:
     explicit KPrShapeAnimationDocker(QWidget *parent = nullptr);
     ~KPrShapeAnimationDocker() override;
     void setView(KoPAViewBase *view);
+    QWidget *createRibbonControls(QDockWidget *animationPane);
 
     /**
      * Return the Animations data Model

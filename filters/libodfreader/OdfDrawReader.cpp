@@ -204,6 +204,12 @@ void OdfDrawReader::readCommonGraphicsElements(KoXmlStreamReader &reader)
         readElementDrawCircle(reader);
     } else if (tagName == "draw:connector") {
         readElementDrawConnector(reader);
+    } else if (tagName == "draw:custom-shape") {
+        // Preset shapes are paths with enhanced geometry. Keep the existing
+        // backend path callback ABI, and leave geometry/text to that backend.
+        m_backend->elementDrawPath(reader, m_context);
+        while (reader.readNextStartElement()) { reader.skipCurrentElement(); }
+        m_backend->elementDrawPath(reader, m_context);
     } else if (tagName == "draw:ellipse") {
         readElementDrawEllipse(reader);
     } else if (tagName == "draw:frame") {

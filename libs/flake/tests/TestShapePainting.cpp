@@ -245,3 +245,31 @@ void TestShapePainting::testPaintOrder()
 }
 
 QTEST_MAIN(TestShapePainting)
+
+void TestShapePainting::testZOrderIsIrreflexive()
+{
+    MockContainer parent;
+    auto *child = new MockShape;
+    parent.addShape(child);
+    QVERIFY(!KoShape::compareShapeZIndex(&parent, &parent));
+    QVERIFY(!KoShape::compareShapeZIndex(child, child));
+    QVERIFY(KoShape::compareShapeZIndex(&parent, child));
+    QVERIFY(!KoShape::compareShapeZIndex(child, &parent));
+}
+
+void TestShapePainting::testSortRepeatedShapes()
+{
+    MockContainer parent;
+    auto *child = new MockShape;
+    parent.addShape(child);
+    // More than the insertion-sort cutoff exercises std::sort's pivot scan.
+    // The same object can be encountered more than once in rendering lists.
+    QList<KoShape *> shapes;
+    for (int i = 0; i < 64; ++i) {
+        shapes.append(child);
+        shapes.append(&parent);
+    }
+    std::sort(shapes.begin(), shapes.end(), KoShape::compareShapeZIndex);
+    for (int i = 0; i < 64; ++i) QCOMPARE(shapes[i], &parent);
+    for (int i = 64; i < 128; ++i) QCOMPARE(shapes[i], child);
+}

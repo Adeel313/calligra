@@ -48,6 +48,9 @@ protected:
     KoFilter::ConversionStatus read_dialogsheet();
     KoFilter::ConversionStatus read_sheetHelper(const QString &type);
     KoFilter::ConversionStatus read_sheetFormatPr();
+    KoFilter::ConversionStatus read_pageMargins();
+    KoFilter::ConversionStatus read_pageSetup();
+    KoFilter::ConversionStatus read_sheetPr();
     KoFilter::ConversionStatus read_cols();
     KoFilter::ConversionStatus read_col();
     KoFilter::ConversionStatus read_sheetData();
@@ -58,6 +61,7 @@ protected:
     KoFilter::ConversionStatus read_c();
     KoFilter::ConversionStatus read_f();
     KoFilter::ConversionStatus read_v();
+    KoFilter::ConversionStatus read_is();
     KoFilter::ConversionStatus read_mergeCell();
     KoFilter::ConversionStatus read_mergeCells();
     KoFilter::ConversionStatus read_drawing();
@@ -81,6 +85,16 @@ protected:
     XlsxXmlWorksheetReaderContext *m_context;
 
     KoGenStyle m_tableStyle;
+    bool m_fitToPage = false;
+    int m_fitWidth = 0;
+    int m_fitHeight = 0;
+    int m_scalePercent = 100;
+    QString m_orientation = "portrait";
+    QString m_pageFormat = "A4";
+    qreal m_marginLeft = 1.905;
+    qreal m_marginRight = 1.905;
+    qreal m_marginTop = 1.905;
+    qreal m_marginBottom = 1.905;
     //! for table:table-column
     int m_columnCount;
     //! for table:table-row

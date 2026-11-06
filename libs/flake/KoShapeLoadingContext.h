@@ -87,6 +87,8 @@ public:
 
     /// register the id for a specific shape
     void addShapeId(KoShape *shape, const QString &id);
+    /// Remove references registered by a failed shape loader before deleting it.
+    void removeShapeReferences(KoShape *shape);
     /// return the shape formerly registered using addShapeId()
     KoShape *shapeById(const QString &id);
 

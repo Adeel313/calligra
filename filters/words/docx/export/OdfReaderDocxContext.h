@@ -87,6 +87,9 @@ public:
         m_sectPrContent = content;
     }
 
+    QHash<QString, QByteArray> masterPageSections;
+    QString activeMasterPage;
+
     /** Tab stops of a paragraph style, already serialized as a <w:tabs>
      *  element.  Empty when the style (or its ancestors) define none. */
     QByteArray tabStopsForStyle(const QString &styleName) const

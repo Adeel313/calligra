@@ -44,6 +44,7 @@ add_library(calligra_shape_paths MODULE
     enhancedpath/CalloutContainerModel.cpp
     enhancedpath/CalloutToolFactory.cpp
     enhancedpath/CalloutDebug.cpp
+    OfficeShapeFactory.cpp
     PathShapesPlugin.cpp
 )
 

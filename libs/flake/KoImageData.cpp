@@ -20,6 +20,7 @@
 
 #include <QBuffer>
 #include <QCryptographicHash>
+#include <QImageReader>
 #include <QPainter>
 #include <QTemporaryFile>
 
@@ -250,6 +251,11 @@ void KoImageData::setImage(const QString &url, KoStore *store, KoImageCollection
                     if (oldKey != 0 && d->collection) {
                         d->collection->update(oldKey, d->key);
                     }
+                    QBuffer formatBuffer;
+                    formatBuffer.setData(data);
+                    formatBuffer.open(QIODevice::ReadOnly);
+                    d->rawData = data;
+                    d->rawDataFormat = QImageReader::imageFormat(&formatBuffer).toLower();
                     d->dataStoreState = KoImageDataPrivate::StateImageOnly;
                     return;
                 }
@@ -283,6 +289,8 @@ void KoImageData::setImage(const QByteArray &imageData, KoImageCollection *colle
         }
 
         d->suffix = "png"; // good default for non-lossy storage.
+        d->rawData.clear();
+        d->rawDataFormat.clear();
 
         if (imageData.size() <= MAX_MEMORY_IMAGESIZE) {
             QImage image;
@@ -294,10 +302,19 @@ void KoImageData::setImage(const QByteArray &imageData, KoImageCollection *colle
             }
             d->image = image;
             d->dataStoreState = KoImageDataPrivate::StateImageOnly;
+            if (d->errorCode == Success) {
+                QBuffer formatBuffer;
+                formatBuffer.setData(imageData);
+                formatBuffer.open(QIODevice::ReadOnly);
+                d->rawData = imageData;
+                d->rawDataFormat = QImageReader::imageFormat(&formatBuffer).toLower();
+            }
         }
 
         if (imageData.size() > MAX_MEMORY_IMAGESIZE || d->errorCode == OpenFailed) {
             d->image = QImage();
+            d->rawData.clear();
+            d->rawDataFormat.clear();
             // store image data
             QBuffer buffer;
             buffer.setData(imageData);

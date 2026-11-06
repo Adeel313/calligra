@@ -58,6 +58,9 @@ public:
         return m_manager;
     }
 
+    /// Report a conversion error without changing the selected input medium.
+    void setErrorMessage(const QString &message);
+
     /**
      * Starts the filtering process.
      * @return The return status of the conversion. KoFilter::OK

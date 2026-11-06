@@ -62,6 +62,7 @@
 #include <KoIcon.h>
 #include <KoMainWindow.h>
 #include <KoModeBoxFactory.h>
+#include <KoAppRibbon.h>
 #include <KoPart.h>
 #include <KoPluginLoader.h>
 #include <KoSelection.h>
@@ -727,8 +728,11 @@ void View::initView()
     if (mainWindow()) {
         KoToolManager::instance()->addController(d->canvasController);
         KoToolManager::instance()->registerTools(actionCollection(), d->canvasController);
-        KoModeBoxFactory modeBoxFactory(canvasController, qApp->applicationName(), i18n("Tools"));
+        KoModeBoxFactory modeBoxFactory(canvasController, qApp->applicationName(), i18n("Tools"), KoDockFactoryBase::DockTop);
+        KoAppRibbon::configure(modeBoxFactory, this, d->canvas, true);
         QDockWidget *modeBox = mainWindow()->createDockWidget(&modeBoxFactory);
+        modeBox->setAllowedAreas(Qt::TopDockWidgetArea);
+        mainWindow()->addDockWidget(Qt::TopDockWidgetArea, modeBox);
         mainWindow()->dockerManager()->removeToolOptionsDocker();
         dynamic_cast<KoCanvasObserverBase *>(modeBox)->setObservedCanvas(d->canvas);
 

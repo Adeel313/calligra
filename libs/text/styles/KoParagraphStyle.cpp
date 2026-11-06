@@ -257,6 +257,15 @@ void KoParagraphStyle::applyStyle(QTextBlock &block, bool applyListStyle) const
     QTextBlockFormat format = cursor.blockFormat();
     applyStyle(format);
     d->ensureDefaults(format);
+    // Automatic paragraph styles are destroyed after loading, but their list
+    // pointers are copied into persistent block formats. Keep the applied
+    // list owned by the document so later ODF/DOCX saves can still read it.
+    if (KoListStyle *list = format.property(ParagraphListStyleId).value<QPointer<KoListStyle>>().data()) {
+        auto *document = const_cast<QTextDocument *>(block.document());
+        if (list->parent() != document) {
+            format.setProperty(ParagraphListStyleId, QVariant::fromValue(QPointer<KoListStyle>(list->clone(document))));
+        }
+    }
     cursor.setBlockFormat(format);
 
     KoCharacterStyle::applyStyle(block);
@@ -278,10 +287,11 @@ void KoParagraphStyle::applyParagraphListStyle(QTextBlock &block, const QTextBlo
     //                         since we can specify all info required in text:outline-style
     // Normal styles: we use the listStyle()
     if (blockFormat.hasProperty(OutlineLevel)) {
+        KoStyleManager *styleManager = KoTextDocument(block.document()).styleManager();
         if (!d->list) {
             if (!KoTextDocument(block.document()).headingList()) {
-                if (KoTextDocument(block.document()).styleManager() && KoTextDocument(block.document()).styleManager()->outlineStyle()) {
-                    d->list = new KoList(block.document(), KoTextDocument(block.document()).styleManager()->outlineStyle());
+                if (styleManager && styleManager->outlineStyle()) {
+                    d->list = new KoList(block.document(), styleManager->outlineStyle());
                     KoTextDocument(block.document()).setHeadingList(d->list);
                 }
             } else {
@@ -289,7 +299,18 @@ void KoParagraphStyle::applyParagraphListStyle(QTextBlock &block, const QTextBlo
             }
         }
         if (d->list) {
-            d->list->applyStyle(block, KoTextDocument(block.document()).styleManager()->outlineStyle(), blockFormat.intProperty(OutlineLevel));
+            d->list->applyStyle(block, styleManager->outlineStyle(), blockFormat.intProperty(OutlineLevel));
+        }
+        // MS Word-like: headings are never auto-numbered.  The heading list is
+        // only kept for chapter counters/ToC; the number label itself is
+        // suppressed and can be re-enabled per paragraph with the numbering
+        // button.  Headings inside an explicit list get their numbering from
+        // KoTextLoader instead.
+        QTextCursor cursor(block);
+        QTextBlockFormat format = cursor.blockFormat();
+        if (!format.boolProperty(UnnumberedListItem)) {
+            format.setProperty(UnnumberedListItem, true);
+            cursor.setBlockFormat(format);
         }
     } else {
         if (listStyle()) {
@@ -1056,7 +1077,10 @@ KoListStyle *KoParagraphStyle::listStyle() const
     QVariant variant = value(ParagraphListStyleId);
     if (variant.isNull())
         return nullptr;
-    return variant.value<KoListStyle *>();
+    // The block format may outlive the style it refers to, so the property
+    // keeps a QPointer: a destroyed style reads back as null instead of
+    // leaving a dangling raw pointer behind.
+    return variant.value<QPointer<KoListStyle>>().data();
 }
 
 void KoParagraphStyle::setListStyle(KoListStyle *style)
@@ -1069,7 +1093,7 @@ void KoParagraphStyle::setListStyle(KoListStyle *style)
     KoListStyle *cloneStyle = nullptr;
     if (style) {
         cloneStyle = style->clone(this);
-        variant.setValue(cloneStyle);
+        variant.setValue(QPointer<KoListStyle>(cloneStyle));
 
         setProperty(ParagraphListStyleId, variant);
     } else {
@@ -1463,7 +1487,12 @@ void KoParagraphStyle::loadOdfProperties(KoShapeLoadingContext &scontext)
     }
 
     // Tabulators
-    const QString tabStopDistance(styleStack.property(KoXmlNS::style, "tab-stop-distance"));
+    QString tabStopDistance = styleStack.property(KoXmlNS::style, "tab-stop-distance");
+    if (tabStopDistance.isEmpty()) {
+        // Impress writes per-paragraph default tab intervals in this extension.
+        tabStopDistance = styleStack.property(QStringLiteral("urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0"),
+                                             QStringLiteral("tab-stop-distance"));
+    }
     if (!tabStopDistance.isEmpty()) {
         qreal stopDistance = KoUnit::parseValue(tabStopDistance);
         if (stopDistance >= 0)

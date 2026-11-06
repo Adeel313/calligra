@@ -8,6 +8,8 @@
 
 // Qt
 #include <QDomElement>
+#include <QCoreApplication>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QStyle>
 #include <QToolButton>
@@ -60,13 +62,35 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
     setObjectName(name);
     setWindowTitle(i18n(name.toLatin1()));
 
-    QLayout *layout = new GroupFlowLayout(this); // QBoxLayout(QBoxLayout::TopToBottom, this);
+    const bool ribbon = QCoreApplication::applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive);
+    QGridLayout *ribbonLayout = ribbon ? new QGridLayout(this) : nullptr;
+    QLayout *layout = ribbonLayout ? static_cast<QLayout *>(ribbonLayout) : new GroupFlowLayout(this);
     layout->setContentsMargins({});
+    if (ribbonLayout) {
+        ribbonLayout->setSpacing(3);
+        ribbonLayout->setAlignment(Qt::AlignTop);
+        const QStringList order = {QStringLiteral("Font"), QStringLiteral("Alignment"), QStringLiteral("Number format"),
+                                   QStringLiteral("Borders"), QStringLiteral("Merge")};
+        setProperty("ribbonGroupOrder", 20 + order.indexOf(name) * 10);
+    }
 
+    int groupPosition = 0;
     for (QDomElement group = e.firstChildElement("group"); !group.isNull(); group = group.nextSiblingElement("group")) {
         QHBoxLayout *groupLayout = new QHBoxLayout();
         groupLayout->setSpacing(4);
-        layout->addItem(groupLayout);
+        QWidget *ribbonGroup = nullptr;
+        if (ribbonLayout) {
+            // Containers keep short, fixed-width icon rows from limiting
+            // the grid column that also holds the wider font selectors.
+            ribbonGroup = new QWidget(this);
+            ribbonGroup->setLayout(groupLayout);
+            groupLayout->setContentsMargins(0, 0, 0, 0);
+            groupLayout->setAlignment(Qt::AlignLeft);
+            ribbonLayout->addWidget(ribbonGroup, groupPosition % 3, groupPosition / 3, Qt::AlignLeft | Qt::AlignTop);
+            ++groupPosition;
+        } else {
+            layout->addItem(groupLayout);
+        }
 
         // In each group there are a number of actions that will be layouted together.
         for (QDomElement action = group.firstChildElement("action"); !action.isNull(); action = action.nextSiblingElement("action")) {
@@ -78,7 +102,11 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
             }
             QWidgetAction *wa = qobject_cast<QWidgetAction *>(a);
             QWidget *w = wa ? wa->requestWidget(this) : nullptr;
-            if (w && qobject_cast<KoFontComboBox *>(w)) {
+            if (w && ribbon && actionName == QLatin1String("font")) {
+                w->setFixedWidth(170);
+            } else if (w && ribbon && actionName == QLatin1String("fontSize")) {
+                w->setFixedWidth(64);
+            } else if (w && qobject_cast<KoFontComboBox *>(w)) {
                 w->setMinimumWidth(w->minimumWidth() / 2);
             }
             if (!w) {
@@ -93,14 +121,19 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
                 groupLayout->addWidget(w);
             }
         }
+        if (ribbonGroup) {
+            ribbonGroup->setMinimumSize(groupLayout->minimumSize());
+        }
     }
 
     // The following widget activates a special feature in the
     // ToolOptionsDocker that makes the components of the widget align
     // to the top if there is extra space.
-    QWidget *specialSpacer = new QWidget(this);
-    specialSpacer->setObjectName("SpecialSpacer");
-    layout->addWidget(specialSpacer);
+    if (!ribbon) {
+        QWidget *specialSpacer = new QWidget(this);
+        specialSpacer->setObjectName("SpecialSpacer");
+        layout->addWidget(specialSpacer);
+    }
 }
 
 GroupFlowLayout::GroupFlowLayout(QWidget *parent, int margin, int hSpacing, int vSpacing)

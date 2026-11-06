@@ -705,7 +705,7 @@ void KoTextDocumentLayout::layout()
     }
 }
 
-RootAreaConstraint constraintsForPosition(QTextFrame::iterator it, bool previousIsValid)
+RootAreaConstraint constraintsForPosition(QTextFrame::iterator it, bool previousIsValid, const QString &currentMasterPageName)
 {
     RootAreaConstraint constraints;
     constraints.visiblePageNumber = -1;
@@ -727,7 +727,10 @@ RootAreaConstraint constraintsForPosition(QTextFrame::iterator it, bool previous
         constraints.newPageForced = table->frameFormat().intProperty(KoTableStyle::BreakBefore) == KoText::PageBreak;
     }
 
-    if (!constraints.masterPageName.isEmpty()) {
+    if (!constraints.masterPageName.isEmpty() && constraints.masterPageName != currentMasterPageName) {
+        // A section start only needs a new page when it actually switches to a
+        // different master page.  Repeating the current master page (as a
+        // continuous section does) must not force a page break.
         constraints.newPageForced = true;
     }
     if (previousIsValid && !constraints.newPageForced) {
@@ -766,7 +769,11 @@ bool KoTextDocumentLayout::doLayout()
         }
 
         // Build our request for our rootArea provider
-        RootAreaConstraint constraints = constraintsForPosition(d->layoutPosition->it, currentAreaNumber > 0);
+        QString currentMasterPageName;
+        if (!d->rootAreaList.isEmpty() && d->rootAreaList.last()->page()) {
+            currentMasterPageName = d->rootAreaList.last()->page()->masterPageName();
+        }
+        RootAreaConstraint constraints = constraintsForPosition(d->layoutPosition->it, currentAreaNumber > 0, currentMasterPageName);
 
         // Request a new root-area. If NULL is returned then layouting is finished.
         bool newRootArea = false;

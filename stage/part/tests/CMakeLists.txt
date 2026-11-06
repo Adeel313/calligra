@@ -63,3 +63,8 @@ stage_part_add_unit_test(TestDeleteSlidesCommand
     TestDeleteSlidesCommand.cpp
     LINK_LIBRARIES calligrastageprivate Qt6::Test
 )
+
+stage_part_add_unit_test(TestDefaultSlideLayouts
+    TestDefaultSlideLayouts.cpp
+    LINK_LIBRARIES calligrastageprivate Qt6::Widgets
+)

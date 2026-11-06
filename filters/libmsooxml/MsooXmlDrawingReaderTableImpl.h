@@ -302,7 +302,8 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_tableStyleId()
     QString id = text().toString();
 
     QString predefinedTable = getPresetTable(id);
-    if (!predefinedTable.isEmpty()) {
+    // Embedded styles can customize a built-in ID; only synthesize missing styles.
+    if (!predefinedTable.isEmpty() && !d->tableStyleList->contains(id)) {
         predefinedTable.prepend("<a:tblStyleLst xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\">");
         predefinedTable.prepend("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>");
         predefinedTable.append("</a:tblStyleLst>");
@@ -371,7 +372,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_tcPr()
                 TRY_READ(solidFill)
                 localStyleProperties->backgroundColor = m_currentColor;
                 localStyleProperties->setProperties |= MSOOXML::TableStyleProperties::BackgroundColor;
-                if (m_currentAlpha > 0) {
+                if (m_currentAlpha >= 0) {
                     localStyleProperties->backgroundOpacity = m_currentAlpha;
                     localStyleProperties->setProperties |= MSOOXML::TableStyleProperties::BackgroundOpacity;
                 }

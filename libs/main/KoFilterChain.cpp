@@ -103,6 +103,11 @@ QString KoFilterChain::chainOutput() const
     return QString();
 }
 
+void KoFilterChain::setErrorMessage(const QString &message)
+{
+    if (KoDocument *document = filterManagerKoDocument()) document->setErrorMessage(message);
+}
+
 QString KoFilterChain::inputFile()
 {
     if (m_inputQueried == File)

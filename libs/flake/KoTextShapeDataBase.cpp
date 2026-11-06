@@ -11,6 +11,8 @@ KoTextShapeDataBasePrivate::KoTextShapeDataBasePrivate()
     : document(nullptr)
     , textAlignment(Qt::AlignLeft | Qt::AlignTop)
     , resizeMethod(KoTextShapeDataBase::NoResize)
+    , autofitFontScale(0)
+    , autofitLineSpacingReduction(0)
 {
 }
 
@@ -68,4 +70,28 @@ KoTextShapeDataBase::ResizeMethod KoTextShapeDataBase::resizeMethod() const
 {
     Q_D(const KoTextShapeDataBase);
     return d->resizeMethod;
+}
+
+int KoTextShapeDataBase::autofitFontScale() const
+{
+    Q_D(const KoTextShapeDataBase);
+    return d->autofitFontScale;
+}
+
+void KoTextShapeDataBase::setAutofitFontScale(int scale)
+{
+    Q_D(KoTextShapeDataBase);
+    d->autofitFontScale = scale;
+}
+
+int KoTextShapeDataBase::autofitLineSpacingReduction() const
+{
+    Q_D(const KoTextShapeDataBase);
+    return d->autofitLineSpacingReduction;
+}
+
+void KoTextShapeDataBase::setAutofitLineSpacingReduction(int reduction)
+{
+    Q_D(KoTextShapeDataBase);
+    d->autofitLineSpacingReduction = reduction;
 }

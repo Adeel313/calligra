@@ -92,3 +92,8 @@ if( SHOULD_BUILD_FEATURE_RDF )
 #     LINK_LIBRARIES wordsprivate Qt6::Test
 # )
 endif()
+
+words_part_add_unit_test(TestHeaderFooterLayout
+    TestHeaderFooterLayout.cpp
+    LINK_LIBRARIES wordsprivate Qt6::Test
+)

@@ -14,6 +14,7 @@ set(docx2odt_PART_SRCS
     DocxXmlFontTableReader.cpp
     DocxXmlCommentsReader.cpp
     DocxXmlDocumentReader.cpp
+    DocxMathMLWriter.cpp
     DocxXmlHeaderReader.cpp
     DocxXmlFooterReader.cpp
     DocxXmlNumberingReader.cpp

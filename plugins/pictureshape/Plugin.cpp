@@ -7,6 +7,7 @@
 #include "PictureShapeFactory.h"
 #include "PictureToolFactory.h"
 
+#include <QCoreApplication>
 #include <QPixmapCache>
 
 #include <KoShapeRegistry.h>
@@ -26,7 +27,14 @@ Plugin::Plugin(QObject *parent, const QVariantList &)
     }
 
     KoShapeRegistry::instance()->add(new PictureShapeFactory());
-    KoToolRegistry::instance()->add(new PictureToolFactory());
+    // The ribbon applications use the standard selection tool for images, without a separate
+    // Picture editing tab or automatic switches into the picture editor.
+    const QString appName = QCoreApplication::applicationName();
+    if (!appName.contains(QLatin1String("words"), Qt::CaseInsensitive)
+        && !appName.contains(QLatin1String("sheets"), Qt::CaseInsensitive)
+        && !appName.contains(QLatin1String("stage"), Qt::CaseInsensitive)) {
+        KoToolRegistry::instance()->add(new PictureToolFactory());
+    }
 }
 
 #include <Plugin.moc>

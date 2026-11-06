@@ -109,7 +109,11 @@ public:
 
     void saveEnhancedGeometry(KoShapeSavingContext &context) const;
 
+    void setPresetGeometry(const QString &preset, const QString &path, const QString &textArea, const QMap<QString, QString> &formulae);
     bool loadEnhancedGeometry(const KoXmlElement &element, KoShapeLoadingContext &context);
+    /// Loads the shape from ODF. Exposed so shape factories can create the
+    /// shape directly instead of building a default preset only to reset it.
+    bool loadOdfDirect(const KoXmlElement &element, KoShapeLoadingContext &context) { return loadOdf(element, context); }
 
 protected:
     // from KoShape
@@ -154,6 +158,7 @@ protected:
     QTransform m_viewMatrix; ///< matrix to convert from viewbox coordinates to shape coordinates
     QTransform m_mirrorMatrix; ///< matrix to used for mirroring
     QPointF m_viewBoxOffset;
+    QString m_officePreset;
     QStringList m_textArea;
     QList<EnhancedPathCommand *> m_commands; ///< the commands creating the outline
     QList<EnhancedPathHandle *> m_enhancedHandles; ///< the handles for modifying the shape

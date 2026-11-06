@@ -324,30 +324,35 @@ QString normalizedParagraphStyleName(const QString &name)
     return normalized;
 }
 
-int paragraphStylePriority(const QString &name)
+int paragraphStylePriority(const KoParagraphStyle *style)
 {
-    const QString normalized = normalizedParagraphStyleName(name);
-    if (normalized == QLatin1String("documenttitle") || normalized == QLatin1String("title")) {
-        return 0;
-    }
-    if (normalized == QLatin1String("subtitle")) {
-        return 1;
-    }
-    if (normalized.startsWith(QLatin1String("heading")) && normalized.size() == 8 && normalized.at(7).isDigit()) {
-        const int level = normalized.at(7).digitValue();
-        if (level > 0 && level <= 9) {
-            return level + 1;
-        }
-    }
-    if (normalized.startsWith(QLatin1String("head")) && normalized.size() == 5 && normalized.at(4).isDigit()) {
-        const int level = normalized.at(4).digitValue();
-        if (level > 0 && level <= 9) {
-            return level + 1;
-        }
-    }
+    const QString normalized = normalizedParagraphStyleName(style->name());
+    // Microsoft Office's styles gallery order: Normal first, then Heading 1
+    // to Heading 9, then Title, Subtitle and the remaining styles.
     if (normalized == QLatin1String("normal") || normalized == QLatin1String("standard") || normalized == QLatin1String("defaultparagraphstyle")
         || normalized == QLatin1String("textbody") || normalized == QLatin1String("bodytext")) {
+        return 0;
+    }
+    if (normalized == QLatin1String("nospacing")) {
+        return 1;
+    }
+    int level = style->outlineLevel();
+    if (level < 1 || level > 9) {
+        // Fall back to the style name for heading styles without an outline level.
+        if (normalized.startsWith(QLatin1String("heading")) && normalized.size() == 8 && normalized.at(7).isDigit()) {
+            level = normalized.at(7).digitValue();
+        } else if (normalized.startsWith(QLatin1String("head")) && normalized.size() == 5 && normalized.at(4).isDigit()) {
+            level = normalized.at(4).digitValue();
+        }
+    }
+    if (level >= 1 && level <= 9) {
+        return level + 1; // Heading 1 -> 2 ... Heading 9 -> 10
+    }
+    if (normalized == QLatin1String("title") || normalized == QLatin1String("documenttitle")) {
         return 11;
+    }
+    if (normalized == QLatin1String("subtitle")) {
+        return 12;
     }
     return 100;
 }
@@ -357,8 +362,8 @@ bool sortParagraphStyleByName(KoParagraphStyle *style1, KoParagraphStyle *style2
 {
     Q_ASSERT(style1);
     Q_ASSERT(style2);
-    const int priority1 = paragraphStylePriority(style1->name());
-    const int priority2 = paragraphStylePriority(style2->name());
+    const int priority1 = paragraphStylePriority(style1);
+    const int priority2 = paragraphStylePriority(style2);
     if (priority1 != priority2) {
         return priority1 < priority2;
     }

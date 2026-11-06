@@ -33,3 +33,5 @@ kotext_add_unit_test(TestKoBookmarkManager TestKoBookmarkManager.cpp  LINK_LIBRA
 ########### next target ###############
 
 kotext_add_unit_test(TestKoInlineTextObjectManager TestKoInlineTextObjectManager.cpp  LINK_LIBRARIES kotext Qt6::Test)
+
+kotext_add_unit_test(TestFontMetrics TestFontMetrics.cpp LINK_LIBRARIES kotext Qt6::Test)

@@ -21,8 +21,8 @@ is selected) is exported from styles.xml as word/header1.xml and
 word/footer1.xml (including their images and tables), and the matching w:sectPr
 with page size, margins, and header/footer references is appended to the
 document body. Floating and inline placement, basic square/top-and-bottom/
-run-through wrapping, and image rotation are preserved. Image cropping,
-tight/through contour wrapping, SVG images, and many other advanced Word
+run-through wrapping, tight/through contour wrapping, and image rotation are preserved. Image cropping,
+SVG images, and many other advanced Word
 features are not yet preserved; only the first master page is used and its
 first/left header and footer variants are skipped. Unsupported ODF constructs
 may be lost in conversion.
@@ -35,7 +35,8 @@ DocxExport                  Coordinates ODT traversal, header/footer export,
 OdfReaderDocxContext        Holds output XML writers, the current output part,
                             the section properties, and the package collector
 OdfTextReaderDocxBackend    Converts ODF paragraphs, runs, links, and comments
-DocxDrawReaderBackend       Embeds raster images and writes DrawingML pictures
+DocxDrawReaderBackend       Embeds raster images and charts, with DrawingML placement
+DocxChartWriter             Exports chart series and embedded editable XLSX data
 DocxStyleWriter             Writes Word style definitions
 DocxStyleHelper             Maps supported ODF text and paragraph properties
 DocxNumbering               Maps ODF list styles to word/numbering.xml
@@ -46,3 +47,69 @@ OpcRelSetManager            Writes package-level and part-level relationships
 Relationship sets are generated from the relationships registered during the
 conversion. Add relationships through DocxFile::addRelationship so that the
 relationship identifiers used in document XML match the emitted .rels parts.
+
+Charts
+------
+Embedded ODF charts with local table data are exported as native DrawingML chart
+parts with cached series, category labels, titles, and an embedded XLSX worksheet.
+Bar, line, area, pie, ring, scatter, bubble, radar and stock charts are supported.
+Area series order and bubble size/domain mappings follow the differing ODF and
+DrawingML conventions. Advanced formatting (including 3D effects, secondary axes,
+custom labels and exact legend/plot geometry) is not fully mapped yet. Linked
+charts without local data, mixed chart types and unrecognized embedded objects
+cause export to fail rather than produce a successful file missing the object.
+Run tests/charts.py with calligraconverter and the local plugin environment for
+chart/data round trips, workbook references, placement and unsupported-chart checks.
+
+Office preset shapes
+--------------------
+The Words Shapes gallery exposes the native Office preset catalog. Preset
+identity is stored as draw:type="ooxml-..." on enhanced geometry. DOCX export
+writes editable WordprocessingShape objects, with size, placement, basic fill
+and outline colors, mirroring, rotation and plain text. Import reconstructs
+native enhanced geometry and retains preset identity for subsequent saves.
+Arbitrary custom paths, adjustment handles, connector attachment semantics and
+rich shape-text formatting are not fully mapped by this preset conversion.
+Run tests/preset_shapes.py to check all 187 presets, Unicode text and repeated
+save/open cycles. Native previews and saved geometry share the existing OOXML
+preset definitions; sequentially reassigned guide names are normalized to avoid
+recursive ODF equations (notably in the gear presets).
+
+Formatting and run-structure regressions
+---------------------------------------
+Document-wide run defaults are written in w:docDefaults/w:rPrDefault. ODF
+font-face identifiers are resolved to actual family names, including separate
+Latin, Asian and complex-script fonts, sizes and language tags. The exporter
+preserves double/colored underlines, hidden text, numeric super/subscript and
+baseline resets, and explicit resets of capitalization, character spacing,
+text scaling and paragraph keep controls. ODF automatic soft-page-break hints
+are ignored instead of becoming forced Word page breaks.
+
+Nested ODF spans are tracked as formatting scopes. Text, spaces, tabs and
+fields emit flat Word runs; hyperlinks inside formatted spans remain real
+hyperlinks. Footnote formatting scopes are isolated from the enclosing body
+span. This avoids nested w:r elements and text/link loss when Word-compatible
+applications reopen the package.
+
+Run the common-ODT comparison fixture with the local installed native filter:
+
+    /usr/bin/python3 filters/words/docx/export/tests/export_options.py \
+      --output build/docx-export-options-new
+
+Its 31 checks cover defaults, script-specific formatting, explicit resets,
+run structure, nested hyperlink/note text, and reopened-PDF rendering. Boolean
+and color values are compared semantically. The rendering check requires equal
+page counts and at least 0.95 pixel similarity on each fixture page; it does
+not certify exact visual identity or unsupported features.
+
+To isolate export differences on an existing ODT:
+
+    /usr/bin/python3 devtools/office/compare_docx_export.py input.odt \
+      --baseline older-native.docx --output build/docx-export-comparison-new
+
+The optional baseline must be an older export of the same input. Both native
+and reference DOCX are independently reopened by LibreOffice for rendering.
+Content, tables, notes, header/footer text, hyperlinks, image counts, page
+counts, package integrity, source SHA-256 and per-page differences are recorded.
+The existing page_margins.py, charts.py, primitive_shapes.py and preset_shapes.py
+regressions can be run with the calligraconverter path and its plugin environment.

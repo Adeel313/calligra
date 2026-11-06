@@ -20,6 +20,7 @@
 #include <cmath>
 #include <limits>
 #include <QtMath>
+#include <QRegularExpression>
 
 const qreal DefaultFontSize = 12.0;
 
@@ -113,19 +114,23 @@ void DocxStyleHelper::handleTextStyles(KoOdfStyleProperties *properties, KoXmlWr
 
     // The children of w:rPr have a fixed order in WordprocessingML; Word
     // ignores elements that appear out of sequence.  The order used here is:
-    // rFonts, b, bCs, i, iCs, caps, smallCaps, strike/dstrike, color, spacing,
-    // w, sz, szCs, u, shd, vertAlign, lang.
+    // rFonts, b, bCs, i, iCs, caps, smallCaps, strike/dstrike, vanish, color,
+    // spacing, w, position, sz, szCs, u, shd, vertAlign, lang.
 
     const QString fontName = properties->attribute("style:font-name");
     const QString fontNameComplex = properties->attribute("style:font-name-complex");
-    if (!fontName.isEmpty() || !fontNameComplex.isEmpty()) {
+    const QString fontNameAsian = properties->attribute("style:font-name-asian");
+    if (!fontName.isEmpty() || !fontNameComplex.isEmpty() || !fontNameAsian.isEmpty()) {
         writer->startElement("w:rFonts");
         if (!fontName.isEmpty()) {
             writer->addAttribute("w:ascii", fontName);
             writer->addAttribute("w:hAnsi", fontName);
-            writer->addAttribute("w:eastAsia", fontName);
+
         }
-        writer->addAttribute("w:cs", fontNameComplex.isEmpty() ? fontName : fontNameComplex);
+        if (!fontNameAsian.isEmpty() || !fontName.isEmpty())
+            writer->addAttribute("w:eastAsia", fontNameAsian.isEmpty() ? fontName : fontNameAsian);
+        if (!fontNameComplex.isEmpty() || !fontName.isEmpty())
+            writer->addAttribute("w:cs", fontNameComplex.isEmpty() ? fontName : fontNameComplex);
         writer->endElement(); // w:rFonts
     }
 
@@ -169,7 +174,7 @@ void DocxStyleHelper::handleTextStyles(KoOdfStyleProperties *properties, KoXmlWr
     if (textTransform == QLatin1String("uppercase")) {
         writer->startElement("w:caps");
         writer->endElement(); // w:caps
-    } else if (textTransform == QLatin1String("lowercase")) {
+    } else if (textTransform == QLatin1String("lowercase") || textTransform == QLatin1String("none")) {
         writer->startElement("w:caps");
         writer->addAttribute("w:val", "0");
         writer->endElement(); // w:caps
@@ -198,6 +203,13 @@ void DocxStyleHelper::handleTextStyles(KoOdfStyleProperties *properties, KoXmlWr
         }
     }
 
+    const QString display = properties->attribute("text:display");
+    if (!display.isEmpty()) {
+        writer->startElement("w:vanish");
+        if (display != QLatin1String("none")) writer->addAttribute("w:val", "0");
+        writer->endElement();
+    }
+
     const QString textColor = properties->attribute("fo:color");
     if (textColor.startsWith(QLatin1Char('#')) && textColor.size() == 7) {
         writer->startElement("w:color");
@@ -208,7 +220,7 @@ void DocxStyleHelper::handleTextStyles(KoOdfStyleProperties *properties, KoXmlWr
     // Character spacing (letter spacing) and horizontal scaling.
     const QString letterSpacing = properties->attribute("fo:letter-spacing");
     qint64 spacingTwips = 0;
-    if (toTwips(letterSpacing, &spacingTwips)) {
+    if (letterSpacing == QLatin1String("normal") || toTwips(letterSpacing, &spacingTwips)) {
         writer->startElement("w:spacing");
         writer->addAttribute("w:val", wordTwips(spacingTwips));
         writer->endElement(); // w:spacing
@@ -219,10 +231,18 @@ void DocxStyleHelper::handleTextStyles(KoOdfStyleProperties *properties, KoXmlWr
     }
     bool scaleOk = false;
     const int scale = textScale.toInt(&scaleOk);
-    if (scaleOk && scale > 0 && scale <= 600 && scale != 100) {
+    if (scaleOk && scale > 0 && scale <= 600) {
         writer->startElement("w:w");
         writer->addAttribute("w:val", scale);
         writer->endElement(); // w:w
+    }
+
+    const QString textPosition = properties->attribute("style:text-position");
+    const QRegularExpressionMatch positionMatch = QRegularExpression(QStringLiteral("^(-?[0-9.]+)%")).match(textPosition);
+    if (positionMatch.hasMatch() && qFuzzyIsNull(positionMatch.captured(1).toDouble())) {
+        writer->startElement("w:position");
+        writer->addAttribute("w:val", 0);
+        writer->endElement();
     }
 
     const QString fontSize = properties->attribute("fo:font-size");
@@ -234,7 +254,7 @@ void DocxStyleHelper::handleTextStyles(KoOdfStyleProperties *properties, KoXmlWr
             writer->endElement(); // w:sz
         }
     }
-    const QString fontSizeC = properties->attribute("fo:font-size-complex");
+    const QString fontSizeC = properties->attribute("style:font-size-complex");
     if (!fontSizeC.isEmpty()) {
         const qreal sizeInHalfPoints = getHalfPoints(fontSizeC, DefaultFontSize * 2);
         if (sizeInHalfPoints > 0) {
@@ -246,10 +266,15 @@ void DocxStyleHelper::handleTextStyles(KoOdfStyleProperties *properties, KoXmlWr
 
     const QString underlineStyle = properties->attribute("style:text-underline-style");
     if (!underlineStyle.isEmpty()) {
-        const QString wordStyle = wordUnderline(underlineStyle);
+        QString wordStyle = wordUnderline(underlineStyle);
+        if (underlineStyle == QLatin1String("solid") && properties->attribute("style:text-underline-type") == QLatin1String("double"))
+            wordStyle = QStringLiteral("double");
         if (!wordStyle.isEmpty()) {
             writer->startElement("w:u");
             writer->addAttribute("w:val", wordStyle);
+            const QString color = properties->attribute("style:text-underline-color");
+            if (color.startsWith(QLatin1Char('#')) && color.size() == 7)
+                writer->addAttribute("w:color", color.mid(1));
             writer->endElement(); // w:u
         }
     }
@@ -270,29 +295,41 @@ void DocxStyleHelper::handleTextStyles(KoOdfStyleProperties *properties, KoXmlWr
         writer->endElement(); // w:shd
     }
 
-    const QString textPosition = properties->attribute("style:text-position");
-    if (textPosition.startsWith(QLatin1String("super"))) {
+    QString alignment;
+    if (textPosition.startsWith(QLatin1String("super")) || (positionMatch.hasMatch() && positionMatch.captured(1).toDouble() > 0))
+        alignment = QStringLiteral("superscript");
+    else if (textPosition.startsWith(QLatin1String("sub")) || (positionMatch.hasMatch() && positionMatch.captured(1).toDouble() < 0))
+        alignment = QStringLiteral("subscript");
+    else if (positionMatch.hasMatch()) alignment = QStringLiteral("baseline");
+    if (!alignment.isEmpty()) {
         writer->startElement("w:vertAlign");
-        writer->addAttribute("w:val", "superscript");
-        writer->endElement(); // w:vertAlign
-    } else if (textPosition.startsWith(QLatin1String("sub"))) {
-        writer->startElement("w:vertAlign");
-        writer->addAttribute("w:val", "subscript");
-        writer->endElement(); // w:vertAlign
+        writer->addAttribute("w:val", alignment);
+        writer->endElement();
     }
 
-    // Language tags matter for right-to-left and complex script shaping.
-    const QString language = properties->attribute("fo:language");
-    const QString country = properties->attribute("fo:country");
-    if (!language.isEmpty()) {
-        QString tag = language;
-        if (!country.isEmpty()) {
-            tag += QLatin1Char('-') + country;
-        }
+    const auto languageTag = [&](const QString &prefix) {
+        const QString language = properties->attribute(prefix + QStringLiteral("language"));
+        const QString country = properties->attribute(prefix + QStringLiteral("country"));
+        return language.isEmpty() || language == QLatin1String("none") ? QString()
+            : language + (country.isEmpty() || country == QLatin1String("none") ? QString() : QLatin1Char('-') + country);
+    };
+    const QString language = languageTag(QStringLiteral("fo:"));
+    const auto scriptLanguage = [&](const QString &script) {
+        const QString lang = properties->attribute(QStringLiteral("style:language-") + script);
+        const QString country = properties->attribute(QStringLiteral("style:country-") + script);
+        return lang.isEmpty() || lang == QLatin1String("none") ? QString()
+            : lang + (country.isEmpty() || country == QLatin1String("none") ? QString() : QLatin1Char('-') + country);
+    };
+    const QString asianLanguage = scriptLanguage(QStringLiteral("asian"));
+    const QString complexLanguage = scriptLanguage(QStringLiteral("complex"));
+    if (!language.isEmpty() || !asianLanguage.isEmpty() || !complexLanguage.isEmpty()) {
         writer->startElement("w:lang");
-        writer->addAttribute("w:val", tag);
-        writer->endElement(); // w:lang
+        if (!language.isEmpty()) writer->addAttribute("w:val", language);
+        if (!asianLanguage.isEmpty()) writer->addAttribute("w:eastAsia", asianLanguage);
+        if (!complexLanguage.isEmpty()) writer->addAttribute("w:bidi", complexLanguage);
+        writer->endElement();
     }
+
 }
 
 void DocxStyleHelper::handleParagraphStyles(KoOdfStyleProperties *properties, KoXmlWriter *writer, const ParagraphExtras &extras)
@@ -337,16 +374,20 @@ void DocxStyleHelper::handleParagraphStyles(KoOdfStyleProperties *properties, Ko
     }
 
     // Keep controls.
-    if (keepWithNext == QLatin1String("always")) {
+    if (!keepWithNext.isEmpty()) {
+
         writer->startElement("w:keepNext");
+        if (keepWithNext != QLatin1String("always")) writer->addAttribute("w:val", "0");
         writer->endElement(); // w:keepNext
     }
-    if (keepTogether == QLatin1String("always")) {
+    if (!keepTogether.isEmpty()) {
         writer->startElement("w:keepLines");
+        if (keepTogether != QLatin1String("always")) writer->addAttribute("w:val", "0");
         writer->endElement(); // w:keepLines
     }
-    if (breakBefore == QLatin1String("page") || breakBefore == QLatin1String("column")) {
+    if (breakBefore == QLatin1String("page") || breakBefore == QLatin1String("auto")) {
         writer->startElement("w:pageBreakBefore");
+        if (breakBefore == QLatin1String("auto")) writer->addAttribute("w:val", "0");
         writer->endElement(); // w:pageBreakBefore
     }
 
@@ -362,44 +403,40 @@ void DocxStyleHelper::handleParagraphStyles(KoOdfStyleProperties *properties, Ko
         writer->endElement(); // w:numPr
     }
 
-    // Paragraph borders (ODF only has a full border; DOCX needs all edges).
-    if (!border.isEmpty() && border != QLatin1String("none")) {
-        const QStringList parts = border.split(QLatin1Char(' '), Qt::SkipEmptyParts);
-        QString lineWidth;
-        QString lineStyle;
-        QString lineColor;
-        for (const QString &part : parts) {
-            if (part.endsWith(QLatin1String("pt")) || part.endsWith(QLatin1String("in")) || part.endsWith(QLatin1String("cm")) || part.endsWith(QLatin1String("mm"))) {
-                lineWidth = part;
-            } else if (part.startsWith(QLatin1Char('#'))) {
-                lineColor = part.mid(1);
-            } else {
-                lineStyle = part;
-            }
-        }
-        qint64 widthTwips = 0;
-        int wordSize = 4;
-        if (toTwips(lineWidth, &widthTwips) && widthTwips > 0) {
-            wordSize = qBound(2, static_cast<int>(qRound(widthTwips / 20.0 * 8.0)), 96);
-        }
-        QString wordStyle = QStringLiteral("single");
-        if (lineStyle == QLatin1String("dashed")) {
-            wordStyle = QStringLiteral("dashed");
-        } else if (lineStyle == QLatin1String("dotted")) {
-            wordStyle = QStringLiteral("dotted");
-        } else if (lineStyle == QLatin1String("double")) {
-            wordStyle = QStringLiteral("double");
-        }
+    // ODF permits a border on an individual edge (the proposal's cover
+    // rule is fo:border-bottom), as well as a shorthand for all four.
+    const QStringList edges = {QStringLiteral("top"), QStringLiteral("left"), QStringLiteral("bottom"), QStringLiteral("right")};
+    bool hasBorder = !border.isEmpty();
+    if (properties) {
+        for (const QString &edge : edges) hasBorder |= !properties->attribute(QStringLiteral("fo:border-") + edge).isEmpty();
+    }
+    if (hasBorder) {
         writer->startElement("w:pBdr");
-        for (const char *side : {"w:top", "w:left", "w:bottom", "w:right"}) {
-            writer->startElement(side);
-            writer->addAttribute("w:val", wordStyle);
-            writer->addAttribute("w:sz", wordSize);
-            writer->addAttribute("w:space", 1);
-            writer->addAttribute("w:color", lineColor.isEmpty() ? "auto" : lineColor);
-            writer->endElement(); // side
+        for (const QString &edge : edges) {
+            QString value = properties ? properties->attribute(QStringLiteral("fo:border-") + edge) : QString();
+            if (value.isEmpty()) value = border;
+            if (value.isEmpty()) continue;
+            QString width, color = QStringLiteral("auto"), style = QStringLiteral("single");
+            for (const QString &part : value.split(QLatin1Char(' '), Qt::SkipEmptyParts)) {
+                if (part.startsWith(QLatin1Char('#'))) color = part.mid(1);
+                else if (part == QLatin1String("none")) style = QStringLiteral("nil");
+                else if (part == QLatin1String("dashed") || part == QLatin1String("dotted") || part == QLatin1String("double")) style = part;
+                else if (part.endsWith(QLatin1String("pt")) || part.endsWith(QLatin1String("in"))
+                         || part.endsWith(QLatin1String("cm")) || part.endsWith(QLatin1String("mm"))) width = part;
+            }
+            qint64 twips = 0;
+            const int size = toTwips(width, &twips) && twips > 0 ? qBound(2, int(qRound(twips * .4)), 96) : 4;
+            writer->startElement((QStringLiteral("w:") + edge).toLatin1().constData());
+            writer->addAttribute("w:val", style);
+            writer->addAttribute("w:sz", size);
+            QString padding = properties ? properties->attribute(QStringLiteral("fo:padding-") + edge) : QString();
+            if (padding.isEmpty() && properties) padding = properties->attribute(QStringLiteral("fo:padding"));
+            qint64 paddingTwips = 0;
+            writer->addAttribute("w:space", toTwips(padding, &paddingTwips) ? qBound(0, int(qRound(paddingTwips / 20.0)), 31) : 0);
+            writer->addAttribute("w:color", color);
+            writer->endElement();
         }
-        writer->endElement(); // w:pBdr
+        writer->endElement();
     }
 
     // Paragraph background.

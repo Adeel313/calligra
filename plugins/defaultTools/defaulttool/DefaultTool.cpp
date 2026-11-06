@@ -50,11 +50,14 @@
 #include <KoIcon.h>
 
 #include <QAction>
+#include <QApplication>
 #include <QClipboard>
 #include <QKeyEvent>
 #include <QPainterPath>
 #include <QStandardPaths>
 
+#include <algorithm>
+#include <iterator>
 #include <math.h>
 
 #include <QDebug>
@@ -163,18 +166,20 @@ DefaultTool::DefaultTool(KoCanvasBase *canvas)
 
     QPixmap rotatePixmap, shearPixmap;
     rotatePixmap.load(QStandardPaths::locate(QStandardPaths::GenericDataLocation, "calligra/cursors/cursor_rotate.png"));
-    Q_ASSERT(!rotatePixmap.isNull());
     shearPixmap.load(QStandardPaths::locate(QStandardPaths::GenericDataLocation, "calligra/cursors/cursor_shear.png"));
-    Q_ASSERT(!shearPixmap.isNull());
 
-    m_rotateCursors[0] = QCursor(rotatePixmap.transformed(QTransform().rotate(45)));
-    m_rotateCursors[1] = QCursor(rotatePixmap.transformed(QTransform().rotate(90)));
-    m_rotateCursors[2] = QCursor(rotatePixmap.transformed(QTransform().rotate(135)));
-    m_rotateCursors[3] = QCursor(rotatePixmap.transformed(QTransform().rotate(180)));
-    m_rotateCursors[4] = QCursor(rotatePixmap.transformed(QTransform().rotate(225)));
-    m_rotateCursors[5] = QCursor(rotatePixmap.transformed(QTransform().rotate(270)));
-    m_rotateCursors[6] = QCursor(rotatePixmap.transformed(QTransform().rotate(315)));
-    m_rotateCursors[7] = QCursor(rotatePixmap);
+    if (rotatePixmap.isNull()) {
+        std::fill(std::begin(m_rotateCursors), std::end(m_rotateCursors), QCursor(Qt::CrossCursor));
+    } else {
+        m_rotateCursors[0] = QCursor(rotatePixmap.transformed(QTransform().rotate(45)));
+        m_rotateCursors[1] = QCursor(rotatePixmap.transformed(QTransform().rotate(90)));
+        m_rotateCursors[2] = QCursor(rotatePixmap.transformed(QTransform().rotate(135)));
+        m_rotateCursors[3] = QCursor(rotatePixmap.transformed(QTransform().rotate(180)));
+        m_rotateCursors[4] = QCursor(rotatePixmap.transformed(QTransform().rotate(225)));
+        m_rotateCursors[5] = QCursor(rotatePixmap.transformed(QTransform().rotate(270)));
+        m_rotateCursors[6] = QCursor(rotatePixmap.transformed(QTransform().rotate(315)));
+        m_rotateCursors[7] = QCursor(rotatePixmap);
+    }
     /*
         m_rotateCursors[0] = QCursor(Qt::RotateNCursor);
         m_rotateCursors[1] = QCursor(Qt::RotateNECursor);
@@ -185,14 +190,18 @@ DefaultTool::DefaultTool(KoCanvasBase *canvas)
         m_rotateCursors[6] = QCursor(Qt::RotateWCursor);
         m_rotateCursors[7] = QCursor(Qt::RotateNWCursor);
     */
-    m_shearCursors[0] = QCursor(shearPixmap);
-    m_shearCursors[1] = QCursor(shearPixmap.transformed(QTransform().rotate(45)));
-    m_shearCursors[2] = QCursor(shearPixmap.transformed(QTransform().rotate(90)));
-    m_shearCursors[3] = QCursor(shearPixmap.transformed(QTransform().rotate(135)));
-    m_shearCursors[4] = QCursor(shearPixmap.transformed(QTransform().rotate(180)));
-    m_shearCursors[5] = QCursor(shearPixmap.transformed(QTransform().rotate(225)));
-    m_shearCursors[6] = QCursor(shearPixmap.transformed(QTransform().rotate(270)));
-    m_shearCursors[7] = QCursor(shearPixmap.transformed(QTransform().rotate(315)));
+    if (shearPixmap.isNull()) {
+        std::fill(std::begin(m_shearCursors), std::end(m_shearCursors), QCursor(Qt::SizeAllCursor));
+    } else {
+        m_shearCursors[0] = QCursor(shearPixmap);
+        m_shearCursors[1] = QCursor(shearPixmap.transformed(QTransform().rotate(45)));
+        m_shearCursors[2] = QCursor(shearPixmap.transformed(QTransform().rotate(90)));
+        m_shearCursors[3] = QCursor(shearPixmap.transformed(QTransform().rotate(135)));
+        m_shearCursors[4] = QCursor(shearPixmap.transformed(QTransform().rotate(180)));
+        m_shearCursors[5] = QCursor(shearPixmap.transformed(QTransform().rotate(225)));
+        m_shearCursors[6] = QCursor(shearPixmap.transformed(QTransform().rotate(270)));
+        m_shearCursors[7] = QCursor(shearPixmap.transformed(QTransform().rotate(315)));
+    }
     m_sizeCursors[0] = Qt::SizeVerCursor;
     m_sizeCursors[1] = Qt::SizeBDiagCursor;
     m_sizeCursors[2] = Qt::SizeHorCursor;
@@ -1180,28 +1189,43 @@ QList<QPointer<QWidget>> DefaultTool::createOptionWidgets()
 {
     QList<QPointer<QWidget>> widgets;
 
-    auto shapeProperty = new KoShapePropertyWidget;
-    shapeProperty->setCanvas(canvas());
-    widgets.append(shapeProperty);
+    // Calligra Words has no shape style presets, so the "Shape Styles" widget
+    // is always empty there; leave it out instead of showing an empty group.
+    if (!qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        auto shapeProperty = new KoShapePropertyWidget;
+        shapeProperty->setCanvas(canvas());
+        shapeProperty->setWindowTitle(i18n("Shape Styles"));
+        shapeProperty->setProperty("ribbonGroupOrder", 20);
+        widgets.append(shapeProperty);
+    }
 
     DefaultToolArrangeWidget *defaultArrange = new DefaultToolArrangeWidget(this);
     defaultArrange->setWindowTitle(i18n("Arrange"));
+    defaultArrange->setProperty("ribbonGroupOrder", 30);
     widgets.append(defaultArrange);
-    DefaultToolWidget *defaultTool = new DefaultToolWidget(this);
-    defaultTool->setWindowTitle(i18n("Geometry"));
-    widgets.append(defaultTool);
+    // The Words Draw tab shows the drawing and shape-formatting groups only;
+    // the X/Y position and width/height fields are not needed there.
+    if (!qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        DefaultToolWidget *defaultTool = new DefaultToolWidget(this);
+        defaultTool->setWindowTitle(i18n("Geometry"));
+        defaultTool->setProperty("ribbonGroupOrder", 40);
+        widgets.append(defaultTool);
+    }
     KoStrokeConfigWidget *strokeWidget = new KoStrokeConfigWidget(nullptr);
     strokeWidget->setWindowTitle(i18n("Line"));
+    strokeWidget->setProperty("ribbonGroupOrder", 50);
     strokeWidget->setCanvas(canvas());
     widgets.append(strokeWidget);
 
     KoFillConfigWidget *fillWidget = new KoFillConfigWidget(nullptr);
     fillWidget->setWindowTitle(i18n("Fill"));
+    fillWidget->setProperty("ribbonGroupOrder", 60);
     fillWidget->setCanvas(canvas());
     widgets.append(fillWidget);
 
     KoShadowConfigWidget *shadowWidget = new KoShadowConfigWidget(nullptr);
     shadowWidget->setWindowTitle(i18n("Shadow"));
+    shadowWidget->setProperty("ribbonGroupOrder", 70);
     shadowWidget->setCanvas(canvas());
     widgets.append(shadowWidget);
 
@@ -1268,6 +1292,7 @@ KoInteractionStrategy *DefaultTool::createStrategy(KoPointerEvent *event)
 
     bool selectMultiple = event->modifiers() & Qt::ControlModifier;
     bool selectNextInStack = event->modifiers() & Qt::ShiftModifier;
+    KoShape *shape = shapeManager->shapeAt(event->point, selectNextInStack ? KoFlake::NextUnselected : KoFlake::ShapeOnTop);
 
     if (editableShape) {
         // manipulation of selected shapes goes first
@@ -1294,7 +1319,8 @@ KoInteractionStrategy *DefaultTool::createStrategy(KoPointerEvent *event)
         }
         if (!(selectMultiple || selectNextInStack) && event->buttons() == Qt::LeftButton) {
             const QPainterPath outlinePath = select->transformation().map(select->outline());
-            if (outlinePath.contains(event->point) || outlinePath.intersects(handlePaintRect(event->point)))
+            if ((!shape || select->isSelected(shape))
+                && (outlinePath.contains(event->point) || outlinePath.intersects(handlePaintRect(event->point))))
                 return new ShapeMoveStrategy(this, event->point);
         }
     }
@@ -1302,7 +1328,6 @@ KoInteractionStrategy *DefaultTool::createStrategy(KoPointerEvent *event)
     if ((event->buttons() & Qt::LeftButton) == 0)
         return nullptr; // Nothing to do for middle/right mouse button
 
-    KoShape *shape = shapeManager->shapeAt(event->point, selectNextInStack ? KoFlake::NextUnselected : KoFlake::ShapeOnTop);
 
     if (!shape && handle == KoFlake::NoHandle) {
         // check if we have hit a guide

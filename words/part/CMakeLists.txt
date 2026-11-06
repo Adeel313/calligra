@@ -42,6 +42,11 @@ set(wordsprivate_LIB_SRCS
     pagetool/SimpleSetupWidget.cpp
     pagetool/SimpleHeaderFooterWidget.cpp
 
+    mailmerge/KWMailMergeField.cpp
+    mailmerge/KWMailMergeFieldFactory.cpp
+    mailmerge/KWMailMergeManager.cpp
+    mailmerge/KWMailMergeDialog.cpp
+
     frames/KWFrameLayout.cpp
     frames/KWFrame.cpp
     frames/KWFrameSet.cpp

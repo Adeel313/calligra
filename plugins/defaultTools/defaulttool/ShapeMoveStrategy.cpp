@@ -11,6 +11,8 @@
 
 #include <KLocalizedString>
 
+#include <QApplication>
+
 #include <KoCanvasBase.h>
 #include <KoPointerEvent.h>
 #include <KoSelection.h>
@@ -26,7 +28,7 @@ ShapeMoveStrategy::ShapeMoveStrategy(KoToolBase *tool, const QPointF &clicked)
     : KoInteractionStrategy(tool)
     , m_start(clicked)
     , m_canvas(tool->canvas())
-    , m_firstMove(true)
+    , m_dragStarted(false)
 {
     // FIXME: This test is also done in DefaultTool, so it should also be responsible for setting the shapes to operate on
     QList<KoShape *> selectedShapes = m_canvas->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
@@ -59,10 +61,12 @@ void ShapeMoveStrategy::handleMouseMove(const QPointF &point, Qt::KeyboardModifi
     if (m_selectedShapes.isEmpty())
         return;
 
-    if (m_firstMove) {
-        // skip first move to avoid accidental move during mouse button press
-        m_firstMove = false;
-        return;
+    if (!m_dragStarted) {
+        const QPointF viewDelta = m_canvas->viewConverter()->documentToView(point - m_start);
+        if (viewDelta.manhattanLength() < QApplication::startDragDistance()) {
+            return;
+        }
+        m_dragStarted = true;
     }
 
     QPointF diff = point - m_start;

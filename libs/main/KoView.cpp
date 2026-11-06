@@ -348,6 +348,21 @@ public:
     }
 };
 
+class AddChartAction : public KActionMenu
+{
+public:
+    explicit AddChartAction(QObject *parent = nullptr)
+        : KActionMenu(parent)
+    {
+        delete menu();
+        setPopupMode(QToolButton::InstantPopup);
+        setMenu(new KoShapeCollectionMenu(nullptr, true));
+        setProperty("ribbonMenuOnly", true);
+        setIcon(QIcon::fromTheme("office-chart-bar"));
+        setText(i18nc("Insert a chart", "Chart"));
+    }
+};
+
 void KoView::setupGlobalActions()
 {
     QAction *undo = actionCollection()->addAction("edit_undo", new KoUndoStackAction(d->document->undoStack(), KoUndoStackAction::UNDO));
@@ -360,6 +375,11 @@ void KoView::setupGlobalActions()
     actionCollection()->addAction("settings_active_author", d->actionAuthor);
 
     actionCollection()->addAction("add_shape", new AddShapeAction(this));
+    if (qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)
+        || qApp->applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive)
+        || qApp->applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)) {
+        actionCollection()->addAction("insert_chart", new AddChartAction(this));
+    }
 
     slotUpdateAuthorProfileActions();
 }

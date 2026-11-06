@@ -28,6 +28,8 @@ public:
     void setFamily(const QString &family);
     QString parent() const;
     void setParent(const QString &parent);
+    QString masterPageName() const;
+    void setMasterPageName(const QString &name);
 
     /**
      * @brief Return all property sets in the style.

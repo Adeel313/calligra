@@ -29,6 +29,9 @@
 #include "frames/KWFrame.h"
 #include "frames/KWTextFrameSet.h"
 #include "gemini/ViewModeSwitchEvent.h"
+#include "mailmerge/KWMailMergeDialog.h"
+#include "mailmerge/KWMailMergeField.h"
+#include "mailmerge/KWMailMergeManager.h"
 #include "ui_KWInsertImage.h"
 #include "widgets/KoFindToolbar.h"
 
@@ -95,9 +98,11 @@
 
 // Qt
 #include <QClipboard>
+#include <QFileDialog>
 #include <QMenuBar>
 #include <QPushButton>
 #include <QScrollBar>
+#include <QStandardPaths>
 #include <QStatusBar>
 #include <QTimer>
 
@@ -305,7 +310,16 @@ void KWView::setupActions()
     action = new QAction(koIcon("edit-delete"), i18n("Delete"), this);
     action->setShortcut(QKeySequence("Del"));
     connect(action, &QAction::triggered, this, &KWView::editDeleteSelection);
-    connect(canvasBase()->toolProxy(), &KoToolProxy::selectionChanged, action, &QAction::setEnabled);
+    // Keep Delete enabled based on the shape selection instead of
+    // KoToolProxy::selectionChanged: the latter reports the active tool's
+    // internal selection (a text selection for the text tool, nothing at all for
+    // shape tools like the chart tool), so Delete got disabled exactly when an
+    // object was selected and Del had to work.
+    auto updateDeleteAction = [this, action]() {
+        action->setEnabled(kwdocument()->isReadWrite() && !canvasBase()->shapeManager()->selection()->selectedShapes().isEmpty());
+    };
+    connect(canvasBase()->shapeManager()->selection(), &KoSelection::selectionChanged, this, updateDeleteAction);
+    updateDeleteAction();
     actionCollection()->addAction("edit_delete", action);
 
     // -------------- View menu
@@ -483,6 +497,62 @@ void KWView::setupActions()
 
     new QAction(i18n("Completion"), KStdAccel::shortcut(KStdAccel::TextCompletion), this, SLOT(slotCompletion()), actionCollection(), "completion");
     */
+
+    // -------------- Mail merge (Mailings ribbon tab)
+    QAction *mailMergeSelect = new QAction(koIcon("document-open"), i18n("Select Recipients..."), this);
+    actionCollection()->addAction("mailmerge_select_recipients", mailMergeSelect);
+    mailMergeSelect->setToolTip(i18n("Load the recipient list for a mail merge from a CSV or tab separated file"));
+    connect(mailMergeSelect, &QAction::triggered, this, &KWView::mailMergeSelectRecipients);
+
+    QAction *mailMergeEdit = new QAction(koIcon("document-edit"), i18n("Edit Recipient List..."), this);
+    actionCollection()->addAction("mailmerge_edit_recipients", mailMergeEdit);
+    mailMergeEdit->setToolTip(i18n("View and edit the mail merge recipients"));
+    connect(mailMergeEdit, &QAction::triggered, this, &KWView::mailMergeEditRecipients);
+
+    m_mailMergeFieldMenu = new KActionMenu(koIcon("insert-text"), i18n("Insert Merge Field"), this);
+    actionCollection()->addAction("mailmerge_insert_field", m_mailMergeFieldMenu);
+    m_mailMergeFieldMenu->setToolTip(i18n("Insert a merge field that shows a recipient value"));
+    connect(m_mailMergeFieldMenu->menu(), &QMenu::triggered, this, &KWView::mailMergeInsertField);
+
+    m_actionMailMergeGreeting = new QAction(i18n("Greeting Line"), this);
+    actionCollection()->addAction("mailmerge_greeting_line", m_actionMailMergeGreeting);
+    m_actionMailMergeGreeting->setToolTip(i18n("Insert a greeting line built from merge fields"));
+    connect(m_actionMailMergeGreeting, &QAction::triggered, this, &KWView::mailMergeGreetingLine);
+
+    m_actionMailMergeHighlight = new KToggleAction(i18n("Highlight Merge Fields"), this);
+    actionCollection()->addAction("mailmerge_highlight", m_actionMailMergeHighlight);
+    m_actionMailMergeHighlight->setChecked(KWMailMergeManager::instance()->highlightEnabled());
+    connect(m_actionMailMergeHighlight, &KToggleAction::toggled, this, &KWView::mailMergeHighlightFields);
+
+    m_actionMailMergePreview = new KToggleAction(koIcon("document-preview"), i18n("Preview Results"), this);
+    actionCollection()->addAction("mailmerge_preview", m_actionMailMergePreview);
+    connect(m_actionMailMergePreview, &KToggleAction::toggled, this, &KWView::mailMergePreview);
+
+    m_actionMailMergeFirst = new QAction(QIcon::fromTheme("go-first"), i18n("First Record"), this);
+    actionCollection()->addAction("mailmerge_first", m_actionMailMergeFirst);
+    connect(m_actionMailMergeFirst, &QAction::triggered, this, &KWView::mailMergeFirstRecord);
+
+    m_actionMailMergePrev = new QAction(QIcon::fromTheme("go-previous"), i18n("Previous Record"), this);
+    actionCollection()->addAction("mailmerge_prev", m_actionMailMergePrev);
+    connect(m_actionMailMergePrev, &QAction::triggered, this, &KWView::mailMergePreviousRecord);
+
+    m_actionMailMergeNext = new QAction(QIcon::fromTheme("go-next"), i18n("Next Record"), this);
+    actionCollection()->addAction("mailmerge_next", m_actionMailMergeNext);
+    connect(m_actionMailMergeNext, &QAction::triggered, this, &KWView::mailMergeNextRecord);
+
+    m_actionMailMergeLast = new QAction(QIcon::fromTheme("go-last"), i18n("Last Record"), this);
+    actionCollection()->addAction("mailmerge_last", m_actionMailMergeLast);
+    connect(m_actionMailMergeLast, &QAction::triggered, this, &KWView::mailMergeLastRecord);
+
+    m_actionMailMergeFinish = new QAction(koIcon("document-export"), i18n("Edit Individual Documents"), this);
+    actionCollection()->addAction("mailmerge_finish", m_actionMailMergeFinish);
+    m_actionMailMergeFinish->setToolTip(i18n("Merge all included recipients into one document, one letter per recipient"));
+    connect(m_actionMailMergeFinish, &QAction::triggered, this, &KWView::mailMergeFinish);
+
+    connect(KWMailMergeManager::instance(), &KWMailMergeManager::recipientsChanged, this, &KWView::updateMailMergeActions);
+    connect(KWMailMergeManager::instance(), &KWMailMergeManager::recordChanged, this, &KWView::updateMailMergeActions);
+    connect(KWMailMergeManager::instance(), &KWMailMergeManager::displayChanged, this, &KWView::updateMailMergeActions);
+    updateMailMergeActions();
 }
 
 QList<KoShape *> KWView::selectedShapes() const
@@ -772,6 +842,19 @@ void KWView::editDeleteSelection()
     }
     if (!deletableShapes.isEmpty()) {
         canvasBase()->addCommand(canvasBase()->shapeController()->removeShapes(deletableShapes));
+
+        // Office-like behavior: deleting a selected object returns to text
+        // editing mode.  Without this the shape tool stays active (its Draw tab
+        // stays highlighted) and the page's top-level text frame can end up
+        // selected as an object.  Select the body text frame and activate the
+        // text tool instead so the caret is ready for typing again.
+        KWTextFrameSet *mainFs = kwdocument()->mainFrameSet();
+        if (mainFs && !mainFs->shapes().isEmpty()) {
+            KoSelection *selection = canvasBase()->shapeManager()->selection();
+            selection->deselectAll();
+            selection->select(mainFs->shapes().first());
+            KoToolManager::instance()->switchToolRequested(QStringLiteral("TextToolFactory_ID"));
+        }
         return;
     }
     canvasBase()->toolProxy()->deleteSelection();
@@ -1158,3 +1241,140 @@ void KWView::addImages(const QVector<QImage> &imageList, const QPoint &insertAt)
 }
 
 const qreal KWView::AnnotationAreaWidth = 200.0; // only static const integral data members can be initialized within a class
+
+// -------------------- Mail merge -----------------------
+
+void KWView::mailMergeSelectRecipients()
+{
+    const QString filter = i18n("Recipient files (*.csv *.tsv *.txt);;All files (*)");
+    const QString file = QFileDialog::getOpenFileName(this,
+                                                      i18n("Select Recipients"),
+                                                      QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+                                                      filter);
+    if (!file.isEmpty()) {
+        KWMailMergeManager::instance()->loadFromCsv(QUrl::fromLocalFile(file));
+    }
+}
+
+void KWView::mailMergeEditRecipients()
+{
+    KWMailMergeDialog dialog(this);
+    dialog.exec();
+}
+
+void KWView::mailMergeInsertField(QAction *action)
+{
+    if (!action) {
+        return;
+    }
+    const QString columnName = action->data().toString();
+    KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(canvasBase());
+    if (!editor || columnName.isEmpty()) {
+        return;
+    }
+    editor->insertInlineObject(new KWMailMergeField(columnName));
+}
+
+void KWView::mailMergeGreetingLine()
+{
+    const QStringList columns = KWMailMergeManager::instance()->columnNames();
+    if (columns.isEmpty()) {
+        return;
+    }
+
+    // Pick the most likely first/last name columns, fall back to the first ones.
+    QString firstColumn;
+    QString lastColumn;
+    for (const QString &column : columns) {
+        if (firstColumn.isEmpty() && column.contains(QLatin1String("first"), Qt::CaseInsensitive)) {
+            firstColumn = column;
+        } else if (lastColumn.isEmpty() && column.contains(QLatin1String("last"), Qt::CaseInsensitive)) {
+            lastColumn = column;
+        }
+    }
+    if (firstColumn.isEmpty()) {
+        firstColumn = columns.first();
+    }
+    if (lastColumn.isEmpty()) {
+        for (const QString &column : columns) {
+            if (column != firstColumn && column.contains(QLatin1String("name"), Qt::CaseInsensitive)) {
+                lastColumn = column;
+                break;
+            }
+        }
+    }
+
+    KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(canvasBase());
+    if (!editor) {
+        return;
+    }
+    editor->insertText(i18n("Dear "));
+    editor->insertInlineObject(new KWMailMergeField(firstColumn));
+    if (!lastColumn.isEmpty()) {
+        editor->insertText(QLatin1String(" "));
+        editor->insertInlineObject(new KWMailMergeField(lastColumn));
+    }
+    editor->insertText(i18n(","));
+}
+
+void KWView::mailMergeHighlightFields(bool enabled)
+{
+    KWMailMergeManager::instance()->setHighlightEnabled(enabled);
+}
+
+void KWView::mailMergePreview(bool enabled)
+{
+    KWMailMergeManager::instance()->setPreviewEnabled(enabled);
+}
+
+void KWView::mailMergeFirstRecord()
+{
+    KWMailMergeManager::instance()->firstRecord();
+}
+
+void KWView::mailMergePreviousRecord()
+{
+    KWMailMergeManager::instance()->previousRecord();
+}
+
+void KWView::mailMergeNextRecord()
+{
+    KWMailMergeManager::instance()->nextRecord();
+}
+
+void KWView::mailMergeLastRecord()
+{
+    KWMailMergeManager::instance()->lastRecord();
+}
+
+void KWView::mailMergeFinish()
+{
+    KWMailMergeManager::instance()->mergeToNewDocument(kwdocument(), mainWindow());
+}
+
+void KWView::updateMailMergeActions()
+{
+    KWMailMergeManager *manager = KWMailMergeManager::instance();
+    const bool hasRecipients = manager->hasRecipients();
+    const int record = manager->currentRecord();
+
+    m_mailMergeFieldMenu->setEnabled(hasRecipients);
+    m_actionMailMergeGreeting->setEnabled(hasRecipients);
+    m_actionMailMergeHighlight->setEnabled(hasRecipients);
+    m_actionMailMergePreview->setEnabled(hasRecipients);
+    m_actionMailMergeFinish->setEnabled(hasRecipients);
+    m_actionMailMergeFirst->setEnabled(hasRecipients && record > 0);
+    m_actionMailMergePrev->setEnabled(hasRecipients && record > 0);
+    m_actionMailMergeNext->setEnabled(hasRecipients && record < manager->recordCount() - 1);
+    m_actionMailMergeLast->setEnabled(hasRecipients && record < manager->recordCount() - 1);
+
+    // Rebuild the merge field menu with the recipient columns.
+    QMenu *menu = m_mailMergeFieldMenu->menu();
+    menu->clear();
+    const QStringList columns = manager->columnNames();
+    for (const QString &column : columns) {
+        QAction *fieldAction = menu->addAction(column);
+        fieldAction->setData(column);
+    }
+    menu->setEnabled(!columns.isEmpty());
+}

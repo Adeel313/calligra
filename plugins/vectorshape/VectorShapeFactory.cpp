@@ -43,7 +43,7 @@ KoShape *VectorShapeFactory::createDefaultShape(KoDocumentResourceManager *docum
 bool VectorShapeFactory::supports(const KoXmlElement &e, KoShapeLoadingContext &context) const
 {
     if (e.localName() == "image" && e.namespaceURI() == KoXmlNS::draw) {
-        QString href = e.attribute("href");
+        QString href = e.attributeNS(KoXmlNS::xlink, "href");
         if (!href.isEmpty()) {
             // check the mimetype
             if (href.startsWith(QLatin1String("./"))) {

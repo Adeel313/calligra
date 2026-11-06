@@ -598,6 +598,13 @@ void KoTextSharedLoadingData::addOutlineStyle(KoShapeLoadingContext &context, Ko
     if (styleManager && outlineStyleElem.isElement()) {
         KoListStyle *outlineStyle = new KoListStyle();
         outlineStyle->loadOdf(context, outlineStyleElem);
+        if (styleManager->isDefaultOutlineNumbering(outlineStyle)) {
+            // MS Word-like: the default outline numbering is not chapter
+            // numbering.  Documents that only round-tripped it (older Calligra
+            // versions saved it) must keep their headings unnumbered.
+            delete outlineStyle;
+            return;
+        }
         styleManager->setOutlineStyle(outlineStyle); // style manager owns it now and will take care of deleting it.
     }
 }

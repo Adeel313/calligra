@@ -803,6 +803,11 @@ QList<QPointer<QWidget>> ConnectionTool::createOptionWidgets()
 
     m_connectionShapeWidgets.clear();
 
+    ConnectionPointWidget *connectPoint = new ConnectionPointWidget(this);
+    connectPoint->setWindowTitle(i18n("Connection Point"));
+    connectPoint->setProperty("ribbonGroupOrder", 40);
+    list.append(connectPoint);
+
     KoShapeFactoryBase *factory = KoShapeRegistry::instance()->get(KOCONNECTIONSHAPEID);
     if (factory) {
         QList<KoShapeConfigWidgetBase *> widgets = factory->createShapeOptionPanels();
@@ -819,17 +824,15 @@ QList<QPointer<QWidget>> ConnectionTool::createOptionWidgets()
             }
             m_connectionShapeWidgets.append(cw);
             cw->setWindowTitle(i18n("Connection"));
+            cw->setProperty("ribbonGroupOrder", 50);
             list.append(cw);
         }
     }
     KoStrokeConfigWidget *strokeWidget = new KoStrokeConfigWidget(nullptr);
     strokeWidget->setWindowTitle(i18n("Line"));
+    strokeWidget->setProperty("ribbonGroupOrder", 60);
     strokeWidget->setCanvas(canvas());
     list.append(strokeWidget);
-
-    ConnectionPointWidget *connectPoint = new ConnectionPointWidget(this);
-    connectPoint->setWindowTitle(i18n("Connection Point"));
-    list.append(connectPoint);
 
     return list;
 }

@@ -32,6 +32,7 @@ public:
 
     QString family;
     QString parent;
+    QString masterPageName;
 
     QHash<QString, KoOdfStyleProperties *> properties; // e.g. "text-properties",
 };
@@ -76,6 +77,16 @@ void KoOdfStyle::setParent(const QString &parent)
     d->parent = parent;
 }
 
+QString KoOdfStyle::masterPageName() const
+{
+    return d->masterPageName;
+}
+
+void KoOdfStyle::setMasterPageName(const QString &name)
+{
+    d->masterPageName = name;
+}
+
 QHash<QString, KoOdfStyleProperties *> KoOdfStyle::properties() const
 {
     return d->properties;
@@ -112,6 +123,7 @@ bool KoOdfStyle::readOdf(KoXmlStreamReader &reader)
     setDisplayName(attrs.value("style:display-name").toString());
     setFamily(attrs.value("style:family").toString());
     setParent(attrs.value("style:parent-style-name").toString());
+    setMasterPageName(attrs.value("style:master-page-name").toString());
 
     debugOdf2 << "Style:" << name() << family() << parent() << displayName();
 
@@ -132,6 +144,10 @@ bool KoOdfStyle::readOdf(KoXmlStreamReader &reader)
             // Table styles only need their plain attributes; the generic
             // property set is enough to expose e.g. style:width,
             // style:column-width, style:row-height and fo:border.
+            properties = new KoOdfStyleProperties();
+        } else if (propertiesType == "style:section-properties") {
+            // Sections only need their plain attributes too (column count,
+            // column gap, background, ...).
             properties = new KoOdfStyleProperties();
         }
 
@@ -162,6 +178,9 @@ bool KoOdfStyle::saveOdf(KoXmlWriter *writer)
     writer->addAttribute("style:family", family());
     if (!d->parent.isEmpty()) {
         writer->addAttribute("style:parent-style-name", d->parent);
+    }
+    if (!d->masterPageName.isEmpty()) {
+        writer->addAttribute("style:master-page-name", d->masterPageName);
     }
     if (!displayName().isEmpty()) {
         writer->addAttribute("style:display-name", displayName());

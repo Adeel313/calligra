@@ -76,6 +76,13 @@ public:
     virtual QString masterPageName() const;
 
     /**
+     * Returns whether \a masterPageName names a master page whose page setup
+     * (size, margins, ...) is the same as this page's setup.  Continuous
+     * sections can switch master pages without starting a new page.
+     */
+    virtual bool hasSamePageLayout(const QString &masterPageName) const;
+
+    /**
      * Returns the rect of the page in document coords
      */
     virtual QRectF rect() const = 0;

@@ -9,6 +9,7 @@
  */
 
 #include "KoDocument.h"
+#include "KoOoxmlDefaults_p.h"
 
 #include "KoMainWindow.h" // XXX: remove
 #include <KMessageBox> // XXX: remove
@@ -590,7 +591,7 @@ bool KoDocument::saveFile()
 
     QApplication::restoreOverrideCursor();
     if (!ret) {
-        if (!suppressErrorDialog) {
+        if (!suppressErrorDialog && d->autoErrorHandlingEnabled && !saveInBatchMode()) {
             if (errorMessage().isEmpty()) {
                 KMessageBox::error(nullptr, i18n("Could not save\n%1", localFilePath()));
             } else if (errorMessage() != "USER_CANCELED") {
@@ -1382,8 +1383,7 @@ bool KoDocument::openFile()
 
         if (typeName == replacement->typeFromName) {
             // debugMain << "found potential replacement target:" << typeName;
-            //  QT5TODO: this needs a new look with the different behaviour of QMimeDatabase
-            QString typeFromContents = QMimeDatabase().mimeTypeForUrl(u).name();
+            QString typeFromContents = QMimeDatabase().mimeTypeForFile(localFilePath(), QMimeDatabase::MatchContent).name();
             // debugMain << "found potential replacement:" << typeFromContents;
             if (typeFromContents == replacement->typeFromContents) {
                 typeName = replacement->useThisType;
@@ -2282,6 +2282,7 @@ void KoDocument::saveUnitOdf(KoXmlWriter *settingsWriter) const
 
 void KoDocument::initEmpty()
 {
+    setOutputMimeType(koDefaultSaveMimeType(nativeFormatMimeType()));
     setEmpty();
     setModified(false);
 }

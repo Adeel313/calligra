@@ -188,7 +188,10 @@ KoFilter::ConversionStatus MsooXmlDrawingTableStyleReader::read_tblBg()
                 // NOTE: This is a heavy simplification for the moment
                 // In reality we should use graphic properties in the cell-style
                 // but it is not supported atm.
+                const int index = attributes().value(QLatin1StringView("idx")).toInt();
                 TRY_READ(fillRef)
+                if (const auto *gradient = dynamic_cast<const DrawingMLGradientFill *>(m_context->themes->formatScheme.fillStyles.value(index)))
+                    m_currentColor = gradient->representativeColor(m_currentColor);
                 if (m_currentColor.isValid()) {
                     m_currentTableStyleProperties->backgroundColor = m_currentColor;
                     m_currentTableStyleProperties->setProperties |= TableStyleProperties::BackgroundColor;
@@ -551,7 +554,10 @@ KoFilter::ConversionStatus MsooXmlDrawingTableStyleReader::read_tcStyle()
                 // NOTE: This is a heavy simplification for the moment
                 // In reality we should use graphic properties in the cell-style
                 // but it is not supported atm.
+                const int index = attributes().value(QLatin1StringView("idx")).toInt();
                 TRY_READ(fillRef)
+                if (const auto *gradient = dynamic_cast<const DrawingMLGradientFill *>(m_context->themes->formatScheme.fillStyles.value(index)))
+                    m_currentColor = gradient->representativeColor(m_currentColor);
                 if (m_currentColor.isValid()) {
                     m_currentTableStyleProperties->backgroundColor = m_currentColor;
                     m_currentTableStyleProperties->setProperties |= TableStyleProperties::BackgroundColor;
@@ -887,7 +893,7 @@ KoFilter::ConversionStatus MsooXmlDrawingTableStyleReader::read_fill()
                 TRY_READ(solidFill)
                 m_currentTableStyleProperties->backgroundColor = m_currentColor;
                 m_currentTableStyleProperties->setProperties |= TableStyleProperties::BackgroundColor;
-                if (m_currentAlpha > 0) {
+                if (m_currentAlpha >= 0) {
                     m_currentTableStyleProperties->backgroundOpacity = m_currentAlpha;
                     m_currentTableStyleProperties->setProperties |= MSOOXML::TableStyleProperties::BackgroundOpacity;
                 }

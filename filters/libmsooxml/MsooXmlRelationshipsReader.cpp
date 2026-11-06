@@ -14,6 +14,7 @@
 #include <MsooXmlUtils.h>
 
 #include <QDir>
+#include <QUrl>
 
 // #define MSOOXML_CURRENT_NS
 #define MSOOXML_CURRENT_CLASS MsooXmlRelationshipsReader
@@ -149,12 +150,19 @@ KoFilter::ConversionStatus MsooXmlRelationshipsReader::read_Relationship()
     QString targetPath;
     if (attrs.value(QLatin1String("TargetMode")) == QLatin1String("External")) {
         targetPath = Target;
-    } else if (Target.startsWith(QLatin1Char('/'))) {
+    } else {
+        // OPC relationship targets are URI references. Decode escaped path
+        // characters before looking the target up in the ZIP package; ZIP
+        // member names contain the decoded characters (for example a space,
+        // not "%20"). Keep external URLs verbatim above.
+        const QString decodedTarget = QUrl::fromPercentEncoding(Target.toUtf8());
+        if (decodedTarget.startsWith(QLatin1Char('/'))) {
         // OPC relationship targets beginning with '/' are rooted at the
         // package, rather than relative to the source part's directory.
-        targetPath = QDir::cleanPath(Target.mid(1));
-    } else {
-        targetPath = QDir::cleanPath(m_context->path + QLatin1Char('/') + Target);
+            targetPath = QDir::cleanPath(decodedTarget.mid(1));
+        } else {
+            targetPath = QDir::cleanPath(m_context->path + QLatin1Char('/') + decodedTarget);
+        }
     }
     // debugMsooXml << "adding rel:";
     // debugMsooXml << d->pathAndFile + Id;

@@ -77,6 +77,34 @@ bool EnhancedPathCommand::execute()
     case 'S':
         // TODO implement me
         break;
+    // LibreOffice's OOXML arc: radii, clockwise start angle and sweep (degrees).
+    // Its starting point is the endpoint of the previous segment.
+    case 'G': {
+        m_odfArcPath.clear();
+        for (int i = 0; i < pointsCount; i += 2) {
+            KoPathPoint *last = lastPathPoint();
+            if (!last)
+                return false;
+            const qreal rx = qAbs(points[i].x());
+            const qreal ry = qAbs(points[i].y());
+            const qreal start = points[i + 1].x();
+            const qreal sweep = points[i + 1].y();
+            if (rx == 0 || ry == 0 || sweep == 0)
+                continue;
+            const QPointF first = last->point();
+            const QPointF center = first - QPointF(rx * cos(start / rad2deg), ry * sin(start / rad2deg));
+            m_parent->arcTo(rx, ry, -start, -sweep);
+            const QPointF end = lastPathPoint()->point();
+            // Keep a standard ODF fallback as well as the editable extension.
+            m_odfArcPath += QStringLiteral("%1 %2 %3 %4 %5 %6 %7 %8 %9 ")
+                .arg(sweep > 0 ? QLatin1Char('W') : QLatin1Char('A'))
+                .arg(center.x() - rx, 0, 'g', 16).arg(center.y() - ry, 0, 'g', 16)
+                .arg(center.x() + rx, 0, 'g', 16).arg(center.y() + ry, 0, 'g', 16)
+                .arg(first.x(), 0, 'g', 16).arg(first.y(), 0, 'g', 16)
+                .arg(end.x(), 0, 'g', 16).arg(end.y(), 0, 'g', 16);
+        }
+        break;
+    }
     // segment of an ellipse (x y w h t0 t1) +
     case 'T':
     // same like T but with implied movement to starting point (x y w h t0 t1) +
@@ -218,7 +246,7 @@ QVector<QPointF> EnhancedPathCommand::pointsFromParameters() const
         mod = 3;
     } else if (m_command.unicode() == 'A' || m_command.unicode() == 'B' || m_command.unicode() == 'W' || m_command.unicode() == 'V') {
         mod = 4;
-    } else if (m_command.unicode() == 'Q') {
+    } else if (m_command.unicode() == 'Q' || m_command.unicode() == 'G') {
         mod = 2;
     }
     if ((points.count() % mod) != 0) { // invalid command
@@ -299,8 +327,10 @@ QRectF EnhancedPathCommand::rectFromPoints(const QPointF &tl, const QPointF &br)
     return QRectF(tl, QSizeF(br.x() - tl.x(), br.y() - tl.y())).normalized();
 }
 
-QString EnhancedPathCommand::toString() const
+QString EnhancedPathCommand::toString(bool useExtensions) const
 {
+    if (m_command == QLatin1Char('G') && !useExtensions)
+        return m_odfArcPath.trimmed();
     QString cmd = m_command;
 
     foreach (EnhancedPathParameter *p, m_parameters)

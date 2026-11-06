@@ -16,3 +16,8 @@ QString KoTextPage::masterPageName() const
 {
     return QString();
 }
+
+bool KoTextPage::hasSamePageLayout(const QString &masterPageName) const
+{
+    return masterPageName == this->masterPageName();
+}

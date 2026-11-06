@@ -24,6 +24,7 @@ set(komain_LIB_SRCS
     KoPrintJob.cpp
     KoVersionDialog.cpp
     KoView.cpp
+    KoAppRibbon.cpp
     KoFilterManager.cpp
     KoFilterChain.cpp
     KoFilter.cpp
@@ -160,6 +161,7 @@ install( FILES
     KoPrintJob.h
     KoVersionDialog.h
     KoView.h
+    KoAppRibbon.h
     KoStandardAction.h
     komain_export.h
 DESTINATION ${KDE_INSTALL_INCLUDEDIR}/calligra COMPONENT Devel)

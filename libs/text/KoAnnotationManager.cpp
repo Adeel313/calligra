@@ -35,13 +35,18 @@ void KoAnnotationManager::insert(const QString &name, KoAnnotation *annotation)
 {
     annotation->setName(name);
     d->annotationHash[name] = annotation;
-    d->annotationNameList.append(name);
+    if (!d->annotationNameList.contains(name)) {
+        d->annotationNameList.append(name);
+    }
 }
 
 void KoAnnotationManager::remove(const QString &name)
 {
     d->annotationHash.remove(name);
-    d->annotationNameList.removeAt(d->annotationNameList.indexOf(name));
+    const int index = d->annotationNameList.indexOf(name);
+    if (index >= 0) {
+        d->annotationNameList.removeAt(index);
+    }
 }
 
 void KoAnnotationManager::rename(const QString &oldName, const QString &newName)

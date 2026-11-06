@@ -91,6 +91,8 @@ public:
 protected:
     KoFilter::ConversionStatus createDocument(KoStore *outputStore, KoOdfWriters *writers) override;
 
+    KoFilter::ConversionStatus createDocumentFromFile(KoStore *outputStore, KoOdfWriters *writers, const QString &inputFile);
+
     void writeConfigurationSettings(KoXmlWriter *settings) const override;
 
     bool isPasswordProtectedFile(QString &filename);

@@ -18,6 +18,8 @@
 #include <QTime>
 #include <math.h>
 #include <memory>
+#include <algorithm>
+#include <cmath>
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626
@@ -206,6 +208,10 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_pic()
     }
 
     // Reset picture properties
+#ifdef PPTXXMLSLIDEREADER_CPP
+    m_mediaHref.clear();
+    m_mediaMimeType.clear();
+#endif
     m_xlinkHref.clear();
     m_ignoreLinkHref = false;
     m_cNvPrId.clear();
@@ -273,7 +279,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_pic()
 #ifndef DOCXXMLDOCUMENTREADER_H
     body->startElement("draw:frame"); // CASE #P421
 #ifdef PPTXXMLSLIDEREADER_CPP
-    if (m_context->type == Slide || m_context->type == SlideLayout) {
+    if (m_context->type == Slide || m_context->type == SlideLayout || m_context->type == Notes) {
         body->addAttribute("draw:layer", "layout");
     } else { // Slidemaster
         body->addAttribute("draw:layer", "backgroundobjects");
@@ -318,7 +324,10 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_pic()
         // m_rot is in 1/60,000th of a degree
         qreal angle, xDiff, yDiff;
         MSOOXML::Utils::rotateString(m_rot, m_svgWidth, m_svgHeight, angle, xDiff, yDiff);
-        QString rotString = QString("rotate(%1) translate(%2cm %3cm)").arg(angle).arg((m_svgX + xDiff) / 360000, 3, 'f').arg((m_svgY + yDiff) / 360000, 3, 'f');
+        QString rotString = QString("matrix(%1 %2 %3 %4 %5cm %6cm)")
+                    .arg(cos(angle), 0, 'g', 16).arg(-sin(angle), 0, 'g', 16)
+                    .arg(sin(angle), 0, 'g', 16).arg(cos(angle), 0, 'g', 16)
+                    .arg((m_svgX + xDiff) / 360000, 0, 'g', 16).arg((m_svgY + yDiff) / 360000, 0, 'g', 16);
         body->addAttribute("draw:transform", rotString);
     }
 
@@ -342,6 +351,17 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_pic()
     body->addAttribute("draw:style-name", styleName);
 #endif
 
+#ifdef PPTXXMLSLIDEREADER_CPP
+    if (!m_mediaHref.isEmpty()) {
+        body->startElement("draw:plugin");
+        body->addAttribute("xlink:href", m_mediaHref);
+        body->addAttribute("xlink:type", "simple");
+        body->addAttribute("xlink:show", "embed");
+        body->addAttribute("xlink:actuate", "onLoad");
+        body->addAttribute("draw:mime-type", m_mediaMimeType);
+        body->endElement();
+    }
+#endif
     // Now it's time to link to the actual picture.  Only do it if
     // there is an image to link to.  If so, this was created in
     // read_blip().
@@ -725,6 +745,8 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_grpSp()
         READ_PROLOGUE
     }
 
+    QString groupId;
+    QString groupName;
     pushCurrentDrawStyle(new KoGenStyle(KoGenStyle::GraphicAutoStyle, "graphic"));
     MSOOXML::Utils::XmlWriteBuffer drawFrameBuf; // buffer this draw:g, because we have
 
@@ -760,7 +782,16 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_grpSp()
                 BREAK_IF_END_OF(CURRENT_EL)
                 debugMsooXml << *this;
                 if (isStartElement()) {
-                    TRY_READ_IF(grpSp)
+                    if (name() == QLatin1StringView("nvGrpSpPr")) {
+                        while (readNextStartElement()) {
+                            if (name() == QLatin1StringView("cNvPr")) {
+                                groupId = attributes().value(QLatin1StringView("id")).toString();
+                                groupName = attributes().value(QLatin1StringView("name")).toString();
+                            }
+                            skipCurrentElement();
+                        }
+                    }
+                    ELSE_TRY_READ_IF(grpSp)
                     ELSE_TRY_READ_IF(grpSpPr)
                     ELSE_TRY_READ_IF(pic)
                     ELSE_TRY_READ_IF(sp)
@@ -780,6 +811,14 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_grpSp()
 
     body = drawFrameBuf.originalWriter();
     body->startElement("draw:g");
+#ifdef PPTXXMLSLIDEREADER_CPP
+    if (!groupId.isEmpty()) {
+        const QString id = QStringLiteral("slide%1item%2").arg(m_context->slideNumber).arg(groupId);
+        body->addAttribute("draw:id", id);
+        body->addAttribute("xml:id", id);
+    }
+    if (!groupName.isEmpty()) body->addAttribute("draw:name", groupName);
+#endif
 
 #ifdef PPTXXMLSLIDEREADER_CPP
     if (m_context->type == SlideMaster || m_context->type == NotesMaster) {
@@ -904,6 +943,8 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_grpSpPr()
                 m_currentDrawStyle->addProperty("draw:fill", "gradient");
                 const QString gradName = mainStyles->insert(m_currentGradientStyle);
                 m_currentDrawStyle->addProperty("draw:fill-gradient-name", gradName);
+                if (!m_gradientOpacityName.isEmpty())
+                    m_currentDrawStyle->addProperty("draw:opacity-name", m_gradientOpacityName);
             }
             SKIP_UNKNOWN
             //! @todo add ELSE_WRONG_FORMAT
@@ -1093,15 +1134,20 @@ void MSOOXML_CURRENT_CLASS::generateFrameSp()
     // Properties may or may not override default ones.
     inheritBodyProperties();
 
-    // FIXME: The draw:fit-to-size attribute specifies whether to stretch the
-    // text content of a drawing object to fill an entire object.  The
-    // style:shrink-to-fit attribute specifies whether content is reduced in
-    // size to fit within a cell or drawing object.  Shrinking means that the
-    // font size of the content is decreased to fit the content into a cell or
-    // drawing object.  That's needed to be compatible with MS PowerPoint.  Any
-    // margin, padding or indent MUST be retained.
+    // PowerPoint autofit shrinks text uniformly or grows the frame. ODF
+    // fit-to-size stretches glyphs to fill the frame and changes the layout.
     if (m_normAutofit == MSOOXML::Utils::autoFitOn) {
-        m_currentPresentationStyle.addProperty("draw:fit-to-size", "true", KoGenStyle::GraphicType);
+        m_currentPresentationStyle.addProperty("draw:fit-to-size", "false", KoGenStyle::GraphicType);
+        m_currentPresentationStyle.addProperty("style:shrink-to-fit",
+            m_currentPresentationStyle.property("draw:auto-grow-height", KoGenStyle::GraphicType) == MsooXmlReader::constTrue
+                ? MsooXmlReader::constFalse : MsooXmlReader::constTrue, KoGenStyle::GraphicType);
+        if (m_normAutofitFontScale > 0)
+            m_currentPresentationStyle.addProperty("calligra:autofit-font-scale", m_normAutofitFontScale, KoGenStyle::GraphicType);
+        if (m_normAutofitLineSpacingReduction > 0)
+            m_currentPresentationStyle.addProperty("calligra:autofit-line-spacing-reduction", m_normAutofitLineSpacingReduction, KoGenStyle::GraphicType);
+    } else if (m_normAutofit == MSOOXML::Utils::autoFitOff) {
+        m_currentPresentationStyle.addProperty("draw:fit-to-size", "false", KoGenStyle::GraphicType);
+        m_currentPresentationStyle.addProperty("style:shrink-to-fit", "false", KoGenStyle::GraphicType);
     }
 #endif
     if (m_contentType == "line" || m_contentType == "arc") {
@@ -1166,7 +1212,7 @@ void MSOOXML_CURRENT_CLASS::generateFrameSp()
 #else
     const QString presentationClass(MSOOXML::Utils::ST_PlaceholderType_to_ODF(d->phType));
 
-    if (m_context->type == Slide || m_context->type == SlideLayout) {
+    if (m_context->type == Slide || m_context->type == SlideLayout || m_context->type == Notes) {
         body->addAttribute("draw:layer", "layout");
     } else {
         body->addAttribute("draw:layer", "backgroundobjects");
@@ -1192,12 +1238,16 @@ void MSOOXML_CURRENT_CLASS::generateFrameSp()
     }
     inheritShapePosition();
 
-    if (m_context->type == Slide) {
+    if (m_context->type == Slide || m_context->type == Notes) {
         // CASE #P476
-        QString id = "slide" + QString::number(m_context->slideNumber) + "item" + m_cNvPrId;
-        body->addAttribute("draw:id", id);
-        body->addAttribute("xml:id", id);
-        body->addAttribute("presentation:class", presentationClass);
+        QString id = (m_context->type == Notes ? QStringLiteral("notes") : QStringLiteral("slide"))
+            + QString::number(m_context->slideNumber) + QStringLiteral("item") + m_cNvPrId;
+        if (!m_cNvPrId.isEmpty()) {
+            body->addAttribute("draw:id", id);
+            body->addAttribute("xml:id", id);
+        }
+        body->addAttribute("presentation:class", m_context->type == Notes && d->phType == QLatin1String("body")
+                               ? QStringLiteral("notes") : presentationClass);
         debugMsooXml << "presentationClass:" << d->phType << "->" << presentationClass;
         debugMsooXml << "m_svgWidth:" << m_svgWidth << "m_svgHeight:" << m_svgHeight << "m_svgX:" << m_svgX << "m_svgY:" << m_svgY;
     }
@@ -1281,7 +1331,10 @@ void MSOOXML_CURRENT_CLASS::generateFrameSp()
                 }
 
                 QString rotString =
-                    QString("rotate(%1) translate(%2cm %3cm)").arg(angle).arg((m_svgX + xDiff) / 360000, 3, 'f').arg((m_svgY + yDiff) / 360000, 3, 'f');
+                    QString("matrix(%1 %2 %3 %4 %5cm %6cm)")
+                    .arg(cos(angle), 0, 'g', 16).arg(-sin(angle), 0, 'g', 16)
+                    .arg(sin(angle), 0, 'g', 16).arg(cos(angle), 0, 'g', 16)
+                    .arg((m_svgX + xDiff) / 360000, 0, 'g', 16).arg((m_svgY + yDiff) / 360000, 0, 'g', 16);
                 body->addAttribute("draw:transform", rotString);
             }
             body->addAttribute("svg:width", EMU_TO_CM_STRING(m_svgWidth));
@@ -1502,6 +1555,10 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_sp()
         READ_PROLOGUE
     }
 
+    const bool previousShapeUsesBackgroundFill = m_shapeUsesBackgroundFill;
+    m_shapeUsesBackgroundFill = attributes().value(QLatin1String("useBgFill")) == QLatin1String("1")
+        || attributes().value(QLatin1String("useBgFill")) == QLatin1String("true");
+
     m_contentType.clear();
     m_xlinkHref.clear();
 
@@ -1568,6 +1625,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_sp()
 #endif
 
     popCurrentDrawStyle();
+    m_shapeUsesBackgroundFill = previousShapeUsesBackgroundFill;
 
     if (m_isLockedCanvas) {
         READ_EPILOGUE_IF_NS(a)
@@ -1622,7 +1680,9 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_style()
             BREAK_IF_END_OF(CURRENT_EL)
         }
         if (isStartElement()) {
-            TRY_READ_IF_NS(a, fillRef)
+            if (qualifiedName() == QLatin1String("a:fillRef") && m_shapeUsesBackgroundFill) {
+                skipCurrentElement();
+            } else TRY_READ_IF_NS(a, fillRef)
             ELSE_TRY_READ_IF_NS(a, lnRef)
             else if (qualifiedName() == QLatin1StringView("a:fontRef"))
             {
@@ -1695,7 +1755,10 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_style()
 //! @todo support all child elements
 KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_spPr()
 {
-    if (m_isLockedCanvas) {
+    const bool wordShape = namespaceUri() == QLatin1String("http://schemas.microsoft.com/office/word/2010/wordprocessingShape");
+    if (wordShape) {
+        if (!isStartElement() || name() != QLatin1String("spPr")) { return KoFilter::WrongFormat; }
+    } else if (m_isLockedCanvas) {
         READ_PROLOGUE_IF_NS(a);
     } else {
         READ_PROLOGUE
@@ -1709,7 +1772,9 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_spPr()
     while (!atEnd()) {
         readNext();
         debugMsooXml << *this;
-        if (m_isLockedCanvas) {
+        if (wordShape) {
+            if (isEndElement() && name() == QLatin1String("spPr")) { break; }
+        } else if (m_isLockedCanvas) {
             BREAK_IF_END_OF_WITH_NS(a, CURRENT_EL)
         } else {
             BREAK_IF_END_OF(CURRENT_EL)
@@ -1732,7 +1797,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_spPr()
                     m_currentDrawStyle->addProperty("draw:fill", QLatin1String("solid"));
                     m_currentDrawStyle->addProperty("draw:fill-color", m_currentColor.name());
                     m_currentColor = QColor();
-                    if (m_currentAlpha > 0) {
+                    if (m_currentAlpha >= 0) {
                         m_currentDrawStyle->addProperty("draw:opacity", QString("%1%").arg(m_currentAlpha));
                     }
                 }
@@ -1765,6 +1830,8 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_spPr()
                 m_currentDrawStyle->addProperty("draw:fill", "gradient");
                 const QString gradName = mainStyles->insert(m_currentGradientStyle);
                 m_currentDrawStyle->addProperty("draw:fill-gradient-name", gradName);
+                if (!m_gradientOpacityName.isEmpty())
+                    m_currentDrawStyle->addProperty("draw:opacity-name", m_gradientOpacityName);
             }
             SKIP_UNKNOWN
             //! @todo add ELSE_WRONG_FORMAT
@@ -1775,7 +1842,9 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_spPr()
     saveCurrentGraphicStyles();
 #endif
 
-    if (m_isLockedCanvas) {
+    if (wordShape) {
+        return KoFilter::OK;
+    } else if (m_isLockedCanvas) {
         READ_EPILOGUE_IF_NS(a)
     } else {
         READ_EPILOGUE
@@ -2228,6 +2297,9 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_overrideClrMapping()
 KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_p()
 {
     READ_PROLOGUE2(DrawingML_p)
+#ifdef PPTXXMLSLIDEREADER_CPP
+    const int paragraphIndex = m_textParagraphIndex++;
+#endif
 
     // Using TEXT_FONTSIZE_MAX, because the font-size information might not be
     // provided, which would break the margin-top/margin-bottom calculation.
@@ -2239,6 +2311,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_p()
     m_read_DrawingML_p_args = {};
     m_paragraphStyleNameWritten = false;
     m_listStylePropertiesAltered = false;
+    m_explicitBulletProperties = false;
 
     m_currentCombinedBulletProperties.clear();
 
@@ -2319,6 +2392,30 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_p()
                 rRead = true;
                 TRY_READ(fld)
                 brLastElement = false;
+#ifdef PPTXXMLSLIDEREADER_CPP
+            } else if (name() == QLatin1StringView("m")
+                       && namespaceUri() == QLatin1StringView("http://schemas.microsoft.com/office/drawing/2010/main")) {
+                // Office Math is embedded in DrawingML text as a14:m. Keep a
+                // readable linear form when importing into a text shape.
+                const QString mathNamespace = QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/math");
+                const QString extensionNamespace = QStringLiteral("http://schemas.microsoft.com/office/drawing/2010/main");
+                QString mathText;
+                while (!atEnd()) {
+                    readNext();
+                    if (isEndElement() && name() == QLatin1StringView("m") && namespaceUri() == extensionNamespace) {
+                        break;
+                    }
+                    if (isStartElement() && name() == QLatin1StringView("t") && namespaceUri() == mathNamespace) {
+                        mathText += readElementText(QXmlStreamReader::IncludeChildElements);
+                    }
+                }
+                if (!mathText.isEmpty()) {
+                    body->addTextSpan(mathText);
+                    rRead = true;
+                    d->textBoxHasContent = true;
+                }
+                brLastElement = false;
+#endif
             } else if (QUALIFIED_NAME_IS(endParaRPr)) {
                 m_currentTextStyleProperties = new KoCharacterStyle();
                 m_currentTextStyle = KoGenStyle(KoGenStyle::TextAutoStyle, "text");
@@ -2388,8 +2485,16 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_p()
     // Prepare for the List Style
     //---------------------------------------------
 #ifdef PPTXXMLSLIDEREADER_CPP
-    // MS PowerPoint treats each paragraph as a list-item.
-    m_listStylePropertiesAltered = true;
+    const bool unbulletedTitle = m_context->type == Slide && (d->phType == QLatin1String("title") || d->isSubtitlePlaceholder || (d->phType.isEmpty() && d->phIdx.isEmpty()));
+    if (unbulletedTitle && !m_explicitBulletProperties) {
+        m_listStylePropertiesAltered = false;
+        m_currentBulletProperties.clear();
+        m_currentListLevel = 0;
+        m_currentParagraphStyle.removeAttribute("style:list-style-name");
+    } else {
+        // MS PowerPoint treats each paragraph as a list-item.
+        m_listStylePropertiesAltered = true;
+    }
 #else
     if (m_currentListLevel == 0) {
         m_listStylePropertiesAltered = false;
@@ -2610,6 +2715,12 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_p()
     // Start Paragraph
     //---------------------------------------------
     body->startElement("text:p", false);
+#ifdef PPTXXMLSLIDEREADER_CPP
+    if ((m_context->type == Slide || m_context->type == Notes) && !m_cNvPrId.isEmpty())
+    body->addAttribute("xml:id", QStringLiteral("%1%2item%3p%4")
+        .arg(m_context->type == Notes ? QStringLiteral("notes") : QStringLiteral("slide"))
+        .arg(m_context->slideNumber).arg(m_cNvPrId).arg(paragraphIndex));
+#endif
     body->addAttribute("text:style-name", currentParagraphStyleName);
 
     (void)textPBuf.releaseWriter();
@@ -2700,12 +2811,6 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_r()
 
     body = rBuf.originalWriter();
 
-    if (m_hyperLink) {
-        body->startElement("text:a", false);
-        body->addAttribute("xlink:type", "simple");
-        body->addAttribute("xlink:href", QUrl(m_hyperLinkTarget).toEncoded());
-    }
-
     QString fontSize = m_currentTextStyle.property("fo:font-size");
 
 #ifdef PPTXXMLSLIDEREADER_CPP
@@ -2728,13 +2833,20 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_r()
     const QString currentTextStyleName(mainStyles->insert(m_currentTextStyle));
     body->startElement("text:span", false);
     body->addAttribute("text:style-name", currentTextStyleName);
+    // Impress reads hyperlink text directly but drops nested spans inside
+    // text:a. Keep run formatting on the outer span, as its ODP writer does.
+    if (m_hyperLink) {
+        body->startElement("text:a", false);
+        body->addAttribute("xlink:type", "simple");
+        body->addAttribute("xlink:href", QUrl(m_hyperLinkTarget).toEncoded());
+    }
 
     (void)rBuf.releaseWriter();
 
-    body->endElement(); // text:span
     if (m_hyperLink) {
         body->endElement(); // text:a
     }
+    body->endElement(); // text:span
 
     READ_EPILOGUE
 }
@@ -3102,7 +3214,17 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_pPr()
     m_currentBulletProperties = m_currentCombinedBulletProperties[m_currentListLevel];
 
 #ifdef PPTXXMLSLIDEREADER_CPP
+    // Title and subtitle placeholders are unbulleted by default. Some themes
+    // define numbering on their shared paragraph styles; that numbering must
+    // not appear on these placeholders unless the slide paragraph explicitly
+    // supplies a bullet element below.
+    if (m_context->type == Slide && (d->phType == QLatin1String("title") || d->isSubtitlePlaceholder || (d->phType.isEmpty() && d->phIdx.isEmpty()))) {
+        m_currentBulletProperties.clear();
+        m_listStylePropertiesAltered = false;
+    }
     inheritParagraphStyle(m_currentParagraphStyle);
+    if (m_context->type == Slide && (d->phType == QLatin1String("title") || d->isSubtitlePlaceholder || (d->phType.isEmpty() && d->phIdx.isEmpty())))
+        m_currentParagraphStyle.removeAttribute("style:list-style-name");
 #endif
 
     TRY_READ_ATTR_WITHOUT_NS(algn)
@@ -4071,6 +4193,11 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_graphicData()
             // DrawingML diagram
             ELSE_TRY_READ_IF_NS(dgm, relIds)
             ELSE_TRY_READ_IF_NS(lc, lockedCanvas)
+#ifdef DOCXXMLDOCREADER_CPP
+            else if (namespaceUri() == QLatin1String("http://schemas.microsoft.com/office/word/2010/wordprocessingShape") && name() == QLatin1String("wsp")) {
+                TRY_READ(wsp)
+            }
+#endif
 #ifdef PPTXXMLSLIDEREADER_CPP
             ELSE_TRY_READ_IF_NS(p, oleObj)
             ELSE_TRY_READ_IF_NS(a, tbl)
@@ -4492,9 +4619,10 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_highlight()
             ELSE_WRONG_FORMAT
         }
     }
-    // note: paragraph background is unsupported in presentation applications anyway...
     if (m_currentColor.isValid()) {
-        m_currentParagraphStyle.addProperty("fo:background-color", m_currentColor.name());
+        // Highlight belongs to a run, including an optional paragraph-end
+        // run. Applying it to the paragraph paints unrelated text as well.
+        m_currentTextStyle.addProperty("fo:background-color", m_currentColor.name());
         m_currentColor = QColor();
     }
     READ_EPILOGUE
@@ -4552,6 +4680,8 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_gradFill()
     const QXmlStreamAttributes attrs(attributes());
 
     bool gradRotation = false;
+    m_gradientStops.clear();
+    m_gradientOpacityName.clear();
 
     while (!atEnd()) {
         readNext();
@@ -4580,6 +4710,38 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_gradFill()
         m_currentGradientStyle.addAttribute("svg:y2", "100%");
     }
 
+    // A constant-color transparency ramp needs an ODF opacity style. SVG-only
+    // gradient definitions otherwise reopen as an unrelated black/white fill
+    // in readers that only implement draw:gradient.
+    if (!m_gradientStops.isEmpty()) {
+        auto stops = m_gradientStops;
+        std::stable_sort(stops.begin(), stops.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+        bool constantColor = true;
+        for (const auto &stop : stops)
+            constantColor = constantColor && stop.second.rgb() == stops.first().second.rgb();
+        if (constantColor) {
+            const qreal angle = gradRotation ? m_gradAngle.toDouble() / 60000.0 : 90.0;
+            const qreal odfAngle = std::fmod(450.0 - angle, 360.0);
+            m_currentGradientStyle = KoGenStyle(KoGenStyle::GradientStyle);
+            m_currentGradientStyle.addAttribute("draw:style", "linear");
+            m_currentGradientStyle.addAttribute("draw:start-color", stops.first().second.name());
+            m_currentGradientStyle.addAttribute("draw:end-color", stops.first().second.name());
+            m_currentGradientStyle.addAttribute("draw:start-intensity", "100%");
+            m_currentGradientStyle.addAttribute("draw:end-intensity", "100%");
+            m_currentGradientStyle.addAttribute("draw:angle", QString("%1deg").arg(odfAngle));
+            KoGenStyle opacity(KoGenStyle::OpacityStyle);
+            opacity.addAttribute("draw:style", "linear");
+            opacity.addAttribute("draw:angle", QString("%1deg").arg(odfAngle));
+            opacity.addAttribute("draw:start", QString("%1%").arg(stops.first().second.alphaF() * 100));
+            opacity.addAttribute("draw:end", QString("%1%").arg(stops.last().second.alphaF() * 100));
+            for (int i = 0; i < stops.size(); ++i) {
+                opacity.addChildElement(QString::number(i).rightJustified(6, QLatin1Char('0')),
+                    QString("<loext:opacity-stop xmlns:loext=\"urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0\" svg:offset=\"%1\" svg:stop-opacity=\"%2\"/>")
+                        .arg(stops[i].first / 100.0).arg(stops[i].second.alphaF()));
+            }
+            m_gradientOpacityName = mainStyles->insert(opacity);
+        }
+    }
     READ_EPILOGUE
 }
 
@@ -4706,14 +4868,20 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_gsLst()
             if (QUALIFIED_NAME_IS(gs)) {
                 TRY_READ(gs)
                 qreal alphaLevel = 1;
-                if (m_currentAlpha > 0) {
+                if (m_currentAlpha >= 0) {
                     alphaLevel = m_currentAlpha / 100.0;
                 }
+                QColor stopColor = m_currentColor;
+                stopColor.setAlphaF(alphaLevel);
+                m_gradientStops.append({m_gradPosition, stopColor});
                 QString contents = QString("<svg:stop svg:offset=\"%1\" svg:stop-color=\"%2\" svg:stop-opacity=\"%3\"/>")
                                        .arg(m_gradPosition / 100.0)
                                        .arg(m_currentColor.name())
                                        .arg(alphaLevel);
-                QString name = QString("%1").arg(index);
+                // Producers may store stops out of order. KoGenStyle writes
+                // child elements in key order, so sort by position and retain
+                // the authored order for coincident stops.
+                QString name = QString("%1-%2").arg(m_gradPosition, 3, 10, QLatin1Char('0')).arg(index, 6, 10, QLatin1Char('0'));
                 m_currentGradientStyle.addChildElement(name, contents);
                 ++index;
             }
@@ -4742,6 +4910,8 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_gsLst()
 KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_gs()
 {
     READ_PROLOGUE
+    // An omitted alpha means opaque; it must not inherit the previous stop.
+    m_currentAlpha = -1;
     const QXmlStreamAttributes attrs(attributes());
     TRY_READ_ATTR_WITHOUT_NS(pos)
 
@@ -5010,7 +5180,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_outerShdw()
         m_currentDrawStyle->addProperty("draw:shadow", "visible");
         m_currentDrawStyle->addProperty("draw:shadow-color", m_currentColor.name());
         m_currentColor = QColor();
-        if (m_currentAlpha > 0) {
+        if (m_currentAlpha >= 0) {
             m_currentDrawStyle->addProperty("draw:shadow-opacity", QString("%1%").arg(m_currentAlpha));
         }
     }
@@ -5285,6 +5455,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_buBlip()
     }
 
     if (!m_xlinkHref.isEmpty()) {
+        m_explicitBulletProperties = true;
         m_currentBulletProperties.setPicturePath(m_xlinkHref);
         m_listStylePropertiesAltered = true;
     }
@@ -5315,6 +5486,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_buBlip()
 KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_buChar()
 {
     READ_PROLOGUE
+    m_explicitBulletProperties = true;
     const QXmlStreamAttributes attrs(attributes());
 
     if (attrs.hasAttribute("char")) {
@@ -5533,6 +5705,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_buFont()
 KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_buNone()
 {
     READ_PROLOGUE
+    m_explicitBulletProperties = true;
     m_currentBulletProperties.setBulletChar("");
     m_listStylePropertiesAltered = true;
     readNext();
@@ -5560,6 +5733,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_buNone()
 KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_buAutoNum()
 {
     READ_PROLOGUE
+    m_explicitBulletProperties = true;
     const QXmlStreamAttributes attrs(attributes());
 
     TRY_READ_ATTR_WITHOUT_NS(type)
@@ -6109,7 +6283,10 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_bodyPr()
 
     //! @todo more attributes
 
-    m_normAutofit = MSOOXML::Utils::autoFitUnUsed;
+    // ISO 29500: omitted autofit means noAutofit, even when a master fits text.
+    m_normAutofit = MSOOXML::Utils::autoFitOff;
+    m_normAutofitFontScale = 0;
+    m_normAutofitLineSpacingReduction = 0;
 
     bool spAutoFit = false;
     while (!atEnd()) {
@@ -6168,6 +6345,16 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_bodyPr()
 KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_normAutofit()
 {
     READ_PROLOGUE
+
+    const QXmlStreamAttributes attrs(attributes());
+    bool ok = false;
+    int fontScale = attrs.value(QLatin1String("fontScale")).toInt(&ok);
+    if (ok)
+        m_normAutofitFontScale = fontScale;
+    int lineSpacingReduction = attrs.value(QLatin1String("lnSpcReduction")).toInt(&ok);
+    if (ok)
+        m_normAutofitLineSpacingReduction = lineSpacingReduction;
+
     readNext();
     READ_EPILOGUE
 }

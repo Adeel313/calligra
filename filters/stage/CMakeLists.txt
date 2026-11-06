@@ -7,7 +7,7 @@ if(SHOULD_BUILD_FILTER_KPR_TO_ODP)
     add_subdirectory( kpr2odf )
 endif()
 
-if(SHOULD_BUILD_FILTER_PPTX_TO_ODP)
+if(SHOULD_BUILD_FILTER_PPTX_TO_ODP OR SHOULD_BUILD_FILTER_ODP_TO_PPTX)
     add_subdirectory( pptx )
 endif()
 

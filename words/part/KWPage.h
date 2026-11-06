@@ -135,6 +135,7 @@ public:
 
     /// reimplemented from KoTextPage
     QString masterPageName() const override;
+    bool hasSamePageLayout(const QString &masterPageName) const override;
 
     /// returns the page style applied on this page
     KWPageStyle pageStyle() const;

@@ -555,11 +555,13 @@ void KoTextEditor::insertInlineObject(KoInlineObject *inliner, KUndo2Command *cm
         format.clearProperty(KoCharacterStyle::ChangeTrackerId);
     }
 
-    std::make_unique<InsertInlineObjectCommand>(inliner, d->document, topCommand).release();
+    // beginEditBlock() has already put the parent macro on the undo stack.
+    // Execute and parent only the insertion command; adding the macro again
+    // gives addCommand() a second owner and leaves a dangling undo entry.
+    addCommand(std::make_unique<InsertInlineObjectCommand>(inliner, d->document, topCommand));
     d->caret.endEditBlock();
 
     if (!cmd) {
-        addCommand(topCommand);
         endEditBlock();
     }
 

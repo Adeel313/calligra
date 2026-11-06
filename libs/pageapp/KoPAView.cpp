@@ -31,6 +31,7 @@
 #include <KoInlineTextObjectManager.h>
 #include <KoMainWindow.h>
 #include <KoModeBoxFactory.h>
+#include <KoAppRibbon.h>
 #include <KoProperties.h>
 #include <KoRuler.h>
 #include <KoRulerController.h>
@@ -295,8 +296,17 @@ void KoPAView::initGUI(KoPAFlags flags)
     KoMainWindow *mw = mainWindow();
     if (flags & KoPAView::ModeBox) {
         if (mw) {
-            KoModeBoxFactory modeBoxFactory(canvasController, qApp->applicationName(), i18n("Tools"));
+            const bool stageRibbon = qApp->applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive);
+            KoModeBoxFactory modeBoxFactory(canvasController, qApp->applicationName(), i18n("Tools"),
+                                             stageRibbon ? KoDockFactoryBase::DockTop : KoDockFactoryBase::DockRight);
+            if (stageRibbon) {
+                KoAppRibbon::configure(modeBoxFactory, this, d->canvas, false);
+            }
             QDockWidget *modeBox = mw->createDockWidget(&modeBoxFactory);
+            if (stageRibbon) {
+                modeBox->setAllowedAreas(Qt::TopDockWidgetArea);
+                mw->addDockWidget(Qt::TopDockWidgetArea, modeBox);
+            }
             mw->dockerManager()->removeToolOptionsDocker();
             dynamic_cast<KoCanvasObserverBase *>(modeBox)->setObservedCanvas(d->canvas);
         }
@@ -924,7 +934,13 @@ void KoPAView::insertPage()
     } else {
         KoPAPage *activePage = static_cast<KoPAPage *>(d->activePage);
         KoPAMasterPage *masterPage = activePage->masterPage();
-        page = d->doc->newPage(masterPage);
+        KoPAPage *newPage = d->doc->newPage(masterPage);
+        // A slide can override its master's background (including image fills).
+        // Continue that design when inserting another slide.
+        newPage->setBackground(activePage->background());
+        newPage->setDisplayMasterBackground(activePage->displayMasterBackground());
+        newPage->setDisplayMasterShapes(activePage->displayMasterShapes());
+        page = newPage;
     }
 
     KoPAPageInsertCommand *command = new KoPAPageInsertCommand(d->doc, page, d->activePage);

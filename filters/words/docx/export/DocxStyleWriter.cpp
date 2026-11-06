@@ -50,32 +50,35 @@ void DocxStyleWriter::read()
     m_documentWriter->addAttribute("xmlns:r", "http://schemas.openxmlformats.org/officeDocument/2006/relationships");
     m_documentWriter->addAttribute("xmlns:w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main");
 
-    QList<KoOdfStyle *> defaultStyles = manager->defaultStyles();
+    KoOdfStyle *paragraphDefault = nullptr;
+    KoOdfStyleProperties runDefaults;
+    for (KoOdfStyle *style : manager->defaultStyles()) {
+        if (style->isFromStylesXml() && style->family() == QLatin1String("paragraph")) {
+            paragraphDefault = style;
+            if (auto *properties = style->properties("style:text-properties"))
+                runDefaults.copyPropertiesFrom(*properties);
+        }
+    }
+    for (KoOdfStyle *style : manager->defaultStyles()) {
+        if (style->isFromStylesXml() && style->family() == QLatin1String("text")) {
+            if (auto *properties = style->properties("style:text-properties"))
+                runDefaults.copyPropertiesFrom(*properties);
+        }
+    }
+    // Document-wide run defaults belong in rPrDefault, before pPrDefault.
+    // Putting rPr under pPrDefault does not set the default font for runs.
     m_documentWriter->startElement("w:docDefaults");
-    foreach (KoOdfStyle *style, defaultStyles) {
-        if (!style->isFromStylesXml()) {
-            continue;
-        }
-        QString family = style->family();
-        if (family == "paragraph") {
-            m_documentWriter->startElement("w:pPrDefault");
-            m_documentWriter->startElement("w:pPr");
-            KoOdfStyleProperties *paragraphProperties = style->properties("style:paragraph-properties");
-            DocxStyleHelper::handleParagraphStyles(paragraphProperties, m_documentWriter);
-            KoOdfStyleProperties *textProperties = style->properties("style:text-properties");
-            m_documentWriter->startElement("w:rPr");
-            DocxStyleHelper::handleTextStyles(textProperties, m_documentWriter);
-            m_documentWriter->endElement(); // w:rPr
-            m_documentWriter->endElement(); // w:pPr
-            m_documentWriter->endElement(); // w:pPrDefault
-        } else if (family == "text") {
-            m_documentWriter->startElement("w:rPrDefault");
-            m_documentWriter->startElement("w:rPr");
-            KoOdfStyleProperties *textProperties = style->properties("style:text-properties");
-            DocxStyleHelper::handleTextStyles(textProperties, m_documentWriter);
-            m_documentWriter->endElement(); // w:rPr
-            m_documentWriter->endElement(); // w:rPrDefault
-        }
+    m_documentWriter->startElement("w:rPrDefault");
+    m_documentWriter->startElement("w:rPr");
+    DocxStyleHelper::handleTextStyles(&runDefaults, m_documentWriter);
+    m_documentWriter->endElement(); // w:rPr
+    m_documentWriter->endElement(); // w:rPrDefault
+    if (paragraphDefault) {
+        m_documentWriter->startElement("w:pPrDefault");
+        m_documentWriter->startElement("w:pPr");
+        DocxStyleHelper::handleParagraphStyles(paragraphDefault->properties("style:paragraph-properties"), m_documentWriter);
+        m_documentWriter->endElement(); // w:pPr
+        m_documentWriter->endElement(); // w:pPrDefault
     }
     m_documentWriter->endElement(); // w:docDefaults
 

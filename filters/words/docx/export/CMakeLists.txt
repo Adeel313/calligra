@@ -14,6 +14,8 @@ set(Odt2Docx_PART_SRCS
     OdfReaderDocxContext.cpp
     OdtReaderDocxBackend.cpp
     DocxDrawReaderBackend.cpp
+    DocxChartWriter.cpp
+    DocxMathWriter.cpp
     OdfTextReaderDocxBackend.cpp
     FileCollector.cpp
     DocxFile.cpp

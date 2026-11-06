@@ -14,6 +14,7 @@
 #include <QPixmap>
 #include <QTextBlock>
 #include <QWidget>
+#include <QPointer>
 
 #include <KoListLevelProperties.h>
 
@@ -25,6 +26,7 @@ class KoStyleThumbnailer;
 class StylesModel;
 class DockerStylesComboModel;
 class StylesDelegate;
+class QListView;
 
 namespace Lists
 {
@@ -39,6 +41,7 @@ public:
     ~SimpleParagraphWidget() override;
 
     void setInitialUsedStyles(QVector<int> list);
+    QWidget *configureRibbon();
 
 public Q_SLOTS:
     void setCurrentBlock(const QTextBlock &block);
@@ -88,6 +91,7 @@ private:
     StylesModel *m_stylesModel;
     DockerStylesComboModel *m_sortedStylesModel;
     StylesDelegate *m_stylesDelegate;
+    QPointer<QListView> m_ribbonGallery;
 };
 
 #endif
