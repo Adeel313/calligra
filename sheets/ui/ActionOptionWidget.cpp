@@ -11,6 +11,7 @@
 #include <QCoreApplication>
 #include <QGridLayout>
 #include <QHBoxLayout>
+#include <QMenu>
 #include <QStyle>
 #include <QToolButton>
 #include <QWidgetAction>
@@ -69,9 +70,9 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
     if (ribbonLayout) {
         ribbonLayout->setSpacing(3);
         ribbonLayout->setAlignment(Qt::AlignTop);
-        const QStringList order = {QStringLiteral("Font"), QStringLiteral("Alignment"), QStringLiteral("Number format"),
-                                   QStringLiteral("Borders"), QStringLiteral("Merge")};
-        setProperty("ribbonGroupOrder", 20 + order.indexOf(name) * 10);
+        const QStringList order = {QStringLiteral("Font"), QStringLiteral("Alignment"), QStringLiteral("Number")};
+        const int index = order.indexOf(name);
+        setProperty("ribbonGroupOrder", index < 0 ? 100 : 20 + index * 10);
     }
 
     int groupPosition = 0;
@@ -86,10 +87,38 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
             ribbonGroup->setLayout(groupLayout);
             groupLayout->setContentsMargins(0, 0, 0, 0);
             groupLayout->setAlignment(Qt::AlignLeft);
-            ribbonLayout->addWidget(ribbonGroup, groupPosition % 3, groupPosition / 3, Qt::AlignLeft | Qt::AlignTop);
+            // Two rows of groups keep the ribbon as flat as the office one.
+            ribbonLayout->addWidget(ribbonGroup, groupPosition % 2, groupPosition / 2, Qt::AlignLeft | Qt::AlignTop);
             ++groupPosition;
         } else {
             layout->addItem(groupLayout);
+        }
+
+        // A menu collects related actions into one drop-down button, the way
+        // the Office ribbon groups commands such as the cell borders.
+        for (QDomElement menu = group.firstChildElement("menu"); !menu.isNull(); menu = menu.nextSiblingElement("menu")) {
+            const QString menuName = menu.attribute("name");
+            auto *button = new QToolButton(this);
+            button->setText(menuName);
+            button->setIcon(QIcon::fromTheme(menu.attribute("icon"), QIcon::fromTheme(QStringLiteral("format-border"))));
+            button->setPopupMode(QToolButton::InstantPopup);
+            button->setAutoRaise(true);
+            auto *popup = new QMenu(button);
+            for (QDomElement entry = menu.firstChildElement("action"); !entry.isNull(); entry = entry.nextSiblingElement("action")) {
+                if (QAction *a = cellTool->action(entry.attribute("name"))) {
+                    popup->addAction(a);
+                }
+            }
+            if (popup->isEmpty()) {
+                delete popup;
+                delete button;
+                continue;
+            }
+            if (button->icon().isNull() && !popup->actions().isEmpty()) {
+                button->setIcon(popup->actions().constFirst()->icon());
+            }
+            button->setMenu(popup);
+            groupLayout->addWidget(button);
         }
 
         // In each group there are a number of actions that will be layouted together.

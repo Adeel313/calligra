@@ -27,12 +27,18 @@
 #include <QFont>
 #include <QImage>
 #include <QImageReader>
+#include <QSet>
+#include <QStringList>
+#include <QMap>
 #include <QInputDialog>
 #include <QPen>
 #include <QTemporaryFile>
 
 #include "MsooXmlDebug.h"
 #include <kzip.h>
+#include <KArchive>
+#include <KArchiveDirectory>
+#include <KArchiveEntry>
 
 #include <KoDocument.h>
 #include <KoDocumentInfo.h>
@@ -752,7 +758,30 @@ KoFilter::ConversionStatus MsooXmlImport::openFile(KoOdfWriters *writers, QStrin
         debugMsooXml << Content_Types_xml << "could not be parsed correctly! Aborting!";
         return status;
     }
-    RETURN_IF_ERROR(Utils::loadContentTypes(m_contentTypesXML, m_contentTypes))
+    // Collect the package's part names so parts typed only by a <Default> extension are mapped.
+    QStringList packageParts;
+    if (m_zip && m_zip->directory()) {
+        QStringList stack;
+        stack.append(QString());
+        while (!stack.isEmpty()) {
+            const QString dirPath = stack.takeFirst();
+            const KArchiveDirectory *dir = dirPath.isEmpty() ? m_zip->directory() : dynamic_cast<const KArchiveDirectory *>(m_zip->directory()->entry(dirPath));
+            if (!dir) {
+                continue;
+            }
+            for (const QString &name : dir->entries()) {
+                const KArchiveEntry *entry = dir->entry(name);
+                const QString path = dirPath.isEmpty() ? name : dirPath + QLatin1Char('/') + name;
+                if (entry && entry->isDirectory()) {
+                    stack.append(path);
+                } else if (path != QLatin1String("[Content_Types].xml")) {
+                    // The content types stream itself has no content type entry (OPC, ECMA-376 Part 2).
+                    packageParts.append(path);
+                }
+            }
+        }
+    }
+    RETURN_IF_ERROR(Utils::loadContentTypes(m_contentTypesXML, m_contentTypes, packageParts))
 
     static const char docPropy_core_xml[] = "docProps/core.xml";
     KoXmlDocument coreXML;

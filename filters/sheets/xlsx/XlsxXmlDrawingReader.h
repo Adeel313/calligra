@@ -68,6 +68,7 @@ public:
         }
     };
     QMap<AnchorType, Position> m_positions;
+    QSize m_extent; //!< size from xdr:ext for one-cell anchors
     explicit XlsxDrawingObject(Sheet *sheet)
         : m_sheet(sheet)
         , m_type(Unknown)
@@ -94,6 +95,10 @@ public:
         m_diagram = diagram;
     }
     KoXmlWriter *setShape(XlsxShape *shape);
+    void setExtent(const QSize &extent)
+    {
+        m_extent = extent;
+    }
     void save(KoXmlWriter *xmlWriter);
 
     KoXmlWriter *pictureWriter();

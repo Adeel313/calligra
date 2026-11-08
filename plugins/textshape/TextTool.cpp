@@ -78,7 +78,9 @@
 #include <QDragLeaveEvent>
 #include <QDragMoveEvent>
 #include <QDropEvent>
+#include <QFrame>
 #include <QGraphicsObject>
+#include <QHBoxLayout>
 #include <QLinearGradient>
 #include <QMenu>
 #include <QMenuBar>
@@ -87,7 +89,10 @@
 #include <QTextDocumentFragment>
 #include <QTextList>
 #include <QTextTable>
+#include <QToolButton>
 #include <QToolTip>
+#include <QVBoxLayout>
+#include <QWidgetAction>
 
 #include "AnnotationTextShape.h"
 #define AnnotationShape_SHAPEID "AnnotationTextShapeID"
@@ -127,6 +132,137 @@ static bool hit(const QKeySequence &input, KStandardShortcut::StandardShortcut s
             return true;
     }
     return false;
+}
+
+namespace
+{
+/**
+ * A compact, Word-like formatting toolbar that floats over the canvas while
+ * text is selected. It is deliberately a plain child widget of the canvas
+ * widget: that keeps it inside the window (and therefore positioned correctly
+ * on both X11 and Wayland) and still lets it be moved relative to the document
+ * content.
+ */
+class TextMiniToolbar : public QFrame
+{
+public:
+    explicit TextMiniToolbar(QWidget *parent)
+        : QFrame(parent)
+    {
+        setObjectName(QStringLiteral("TextToolMiniToolbar"));
+        setFrameShape(QFrame::NoFrame);
+        setAttribute(Qt::WA_StyledBackground, true);
+        setFocusPolicy(Qt::NoFocus);
+        // The canvas shows a text cursor over the document; the toolbar is a
+        // control, so it takes the ordinary arrow, which its children inherit.
+        setCursor(Qt::ArrowCursor);
+        setStyleSheet(QStringLiteral(
+            "QFrame#TextToolMiniToolbar {"
+            " background-color: palette(window);"
+            " border: 1px solid palette(mid);"
+            " border-radius: 5px;"
+            "}"
+            "QFrame#TextToolMiniToolbar QToolButton {"
+            " border: 1px solid transparent;"
+            " border-radius: 3px;"
+            " padding: 2px;"
+            "}"
+            "QFrame#TextToolMiniToolbar QToolButton:hover {"
+            " background-color: palette(midlight);"
+            " border-color: palette(mid);"
+            "}"
+            "QFrame#TextToolMiniToolbar QToolButton:checked {"
+            " background-color: palette(mid);"
+            "}"
+            "QFrame#TextToolMiniToolbar QComboBox {"
+            " border: 1px solid palette(mid);"
+            " border-radius: 3px;"
+            " padding: 1px 3px;"
+            "}"));
+
+        m_rows = new QVBoxLayout(this);
+        m_rows->setContentsMargins(5, 3, 5, 3);
+        m_rows->setSpacing(1);
+        beginRow();
+    }
+
+    /**
+     * Starts a new row of buttons. The toolbar is too wide for a single row, so
+     * it is stacked: the caller adds buttons with the add*() methods below and
+     * calls this to wrap to the next row.
+     */
+    void beginRow()
+    {
+        m_layout = new QHBoxLayout;
+        m_layout->setContentsMargins(0, 0, 0, 0);
+        m_layout->setSpacing(2);
+        m_rows->addLayout(m_layout);
+    }
+
+    //! Ends the current row. The trailing stretch keeps the buttons of a short
+    //! row left aligned instead of spreading them over the toolbar width.
+    void endRow()
+    {
+        if (m_layout)
+            m_layout->addStretch(1);
+    }
+
+    void addAction(QAction *action)
+    {
+        if (!action)
+            return;
+        auto *button = new QToolButton(this);
+        button->setDefaultAction(action);
+        button->setAutoRaise(true);
+        button->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        button->setIconSize(QSize(16, 16));
+        button->setFocusPolicy(Qt::NoFocus);
+        m_layout->addWidget(button);
+    }
+
+    void addTextAction(QAction *action, const QString &text)
+    {
+        if (!action)
+            return;
+        auto *button = new QToolButton(this);
+        button->setText(text);
+        button->setToolTip(action->text());
+        button->setAutoRaise(true);
+        button->setFocusPolicy(Qt::NoFocus);
+        button->setFixedWidth(24);
+        connect(button, &QToolButton::clicked, action, &QAction::trigger);
+        m_layout->addWidget(button);
+    }
+
+    void addWidgetAction(QWidgetAction *action, int width)
+    {
+        if (!action)
+            return;
+        QWidget *widget = action->requestWidget(this);
+        if (!widget)
+            return;
+        widget->setFocusPolicy(Qt::NoFocus);
+        if (width > 0)
+            widget->setFixedWidth(width);
+        m_layout->addWidget(widget);
+    }
+
+    void addSeparator()
+    {
+        auto *line = new QFrame(this);
+        line->setFrameShape(QFrame::VLine);
+        line->setFrameShadow(QFrame::Plain);
+        line->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+        line->setFixedWidth(1);
+        m_layout->addSpacing(2);
+        m_layout->addWidget(line);
+        m_layout->addSpacing(2);
+    }
+
+private:
+    QVBoxLayout *m_rows;
+    QHBoxLayout *m_layout = nullptr;
+};
 }
 
 TextTool::TextTool(KoCanvasBase *canvas)
@@ -590,6 +726,136 @@ TextTool::TextTool(MockCanvas *canvas) // constructor for our unit tests;
 TextTool::~TextTool()
 {
     delete m_toolSelection;
+    if (m_miniToolbar) {
+        m_miniToolbar->hide();
+        delete m_miniToolbar.data();
+    }
+}
+
+QWidget *TextTool::ensureMiniToolbar()
+{
+    if (m_miniToolbar)
+        return m_miniToolbar;
+
+    QWidget *host = canvas()->canvasWidget();
+    if (!host)
+        return nullptr;
+
+    auto *toolbar = new TextMiniToolbar(host);
+    // First row: font name and size, then the format painter, as in Word.
+    toolbar->addWidgetAction(qobject_cast<QWidgetAction *>(m_actionFormatFontFamily), 215);
+    toolbar->addWidgetAction(qobject_cast<QWidgetAction *>(m_actionFormatFontSize), 66);
+    toolbar->addTextAction(action("fontsizeup"), i18n("A+"));
+    toolbar->addTextAction(action("fontsizedown"), i18n("A-"));
+    toolbar->addSeparator();
+    toolbar->addAction(m_actionFormatPainter);
+    toolbar->endRow();
+
+    // Second row: emphasis, colours, script, alignment and indentation.
+    toolbar->beginRow();
+    toolbar->addAction(m_actionFormatBold);
+    toolbar->addAction(m_actionFormatItalic);
+    toolbar->addAction(m_actionFormatUnderline);
+    toolbar->addAction(m_actionFormatStrikeOut);
+    toolbar->addAction(m_actionFormatTextColor);
+    toolbar->addAction(m_actionFormatBackgroundColor);
+    toolbar->addAction(m_actionFormatSuper);
+    toolbar->addAction(m_actionFormatSub);
+    toolbar->addAction(m_actionAlignLeft);
+    toolbar->addAction(m_actionAlignCenter);
+    toolbar->addAction(m_actionAlignRight);
+    toolbar->addAction(m_actionAlignBlock);
+    toolbar->addAction(m_actionFormatDecreaseIndent);
+    toolbar->addAction(m_actionFormatIncreaseIndent);
+    toolbar->endRow();
+    toolbar->hide();
+    m_miniToolbar = toolbar;
+
+    if (KoCanvasController *controller = canvas()->canvasController()) {
+        connect(controller->proxyObject, &KoCanvasControllerProxyObject::moveDocumentOffset, this, [this] {
+            hideMiniToolbar();
+        });
+        connect(controller->proxyObject, &KoCanvasControllerProxyObject::canvasOffsetXChanged, this, [this] {
+            hideMiniToolbar();
+        });
+        connect(controller->proxyObject, &KoCanvasControllerProxyObject::canvasOffsetYChanged, this, [this] {
+            hideMiniToolbar();
+        });
+        connect(controller->proxyObject, &KoCanvasControllerProxyObject::sizeChanged, this, [this] {
+            hideMiniToolbar();
+        });
+    }
+
+    return toolbar;
+}
+
+void TextTool::showMiniToolbar()
+{
+    if (m_textEditor.isNull() || !m_textEditor->hasSelection() || !m_textShape || !m_textShapeData || m_textEditor->isEditProtected()) {
+        hideMiniToolbar();
+        return;
+    }
+
+    QWidget *toolbar = ensureMiniToolbar();
+    if (!toolbar)
+        return;
+
+    positionMiniToolbar();
+    toolbar->show();
+    toolbar->raise();
+}
+
+void TextTool::hideMiniToolbar()
+{
+    if (m_miniToolbar)
+        m_miniToolbar->hide();
+}
+
+void TextTool::positionMiniToolbar()
+{
+    if (!m_miniToolbar || !m_textShape || !m_textShapeData || m_textEditor.isNull())
+        return;
+
+    QWidget *host = canvas()->canvasWidget();
+    if (!host)
+        return;
+
+    QTextCursor cursor = *m_textEditor->cursor();
+    if (!cursor.hasSelection())
+        return;
+
+    QRectF rect = textRect(cursor);
+    if (!rect.isValid() || rect.isEmpty())
+        return;
+
+    rect.moveTop(rect.y() - m_textShapeData->documentOffset());
+    rect = m_textShape->absoluteTransformation(nullptr).mapRect(rect);
+    const QRectF viewRect = canvas()->viewConverter()->documentToView(rect);
+
+    QPoint offset;
+    if (KoCanvasController *controller = canvas()->canvasController()) {
+        offset = QPoint(controller->canvasOffsetX(), controller->canvasOffsetY());
+    }
+
+    const QPoint selectionTopLeft = viewRect.topLeft().toPoint() + offset;
+    const QPoint selectionBottomRight = viewRect.bottomRight().toPoint() + offset;
+    const QSize toolbarSize = m_miniToolbar->sizeHint();
+
+    QRect visible = host->visibleRegion().boundingRect();
+    if (visible.isEmpty())
+        visible = host->rect();
+
+    const int gap = 8;
+    int x = selectionTopLeft.x() + (viewRect.width() - toolbarSize.width()) / 2;
+    int y = selectionTopLeft.y() - toolbarSize.height() - gap;
+    if (y < visible.top())
+        y = selectionBottomRight.y() + gap;
+
+    x = qBound(visible.left(), x, qMax(visible.left(), visible.right() - toolbarSize.width()));
+    y = qBound(visible.top(), y, qMax(visible.top(), visible.bottom() - toolbarSize.height()));
+
+    m_miniToolbar->resize(toolbarSize);
+    m_miniToolbar->move(x, y);
 }
 
 void TextTool::showEditTip()
@@ -907,6 +1173,8 @@ void TextTool::mousePressEvent(KoPointerEvent *event)
     if (m_textEditor.isNull())
         return;
 
+    hideMiniToolbar();
+
     // Annotation comments are separate shapes, not editable body text. Select
     // the comment as an object and avoid routing its header/body through the
     // regular text cursor hit testing path.
@@ -922,11 +1190,6 @@ void TextTool::mousePressEvent(KoPointerEvent *event)
             event->accept();
             return;
         }
-    }
-
-    { // DRAGDBG temporary instrumentation
-        KoShape *s = canvas()->shapeManager()->shapeAt(event->point);
-        qWarning() << "[DRAGDBG] TextTool press shapeAt=" << (s ? s->shapeId() : QString("none")) << "buttons=" << event->buttons();
     }
 
     // request the software keyboard, if any
@@ -1056,6 +1319,9 @@ void TextTool::mousePressEvent(KoPointerEvent *event)
             editingPluginEvents();
         }
     }
+
+    if (event->button() == Qt::RightButton && m_textEditor.data()->hasSelection())
+        showMiniToolbar();
 }
 
 void TextTool::setShapeData(KoTextShapeData *data)
@@ -1095,12 +1361,17 @@ void TextTool::setShapeData(KoTextShapeData *data)
 void TextTool::updateSelectionHandler()
 {
     if (m_textEditor) {
-        Q_EMIT selectionChanged(m_textEditor.data()->hasSelection());
-        if (m_textEditor.data()->hasSelection()) {
+        const bool hasSelection = m_textEditor.data()->hasSelection();
+        Q_EMIT selectionChanged(hasSelection);
+        if (hasSelection) {
             QClipboard *clipboard = QApplication::clipboard();
             if (clipboard->supportsSelection())
                 clipboard->setText(m_textEditor.data()->selectedText(), QClipboard::Selection);
+        } else {
+            hideMiniToolbar();
         }
+    } else {
+        hideMiniToolbar();
     }
 
     KoCanvasResourceManager *p = canvas()->resourceManager();
@@ -1668,6 +1939,9 @@ void TextTool::mouseReleaseEvent(KoPointerEvent *event)
         updateActions();
         event->accept();
     }
+
+    if (event->button() == Qt::LeftButton && m_textEditor && m_textEditor->hasSelection() && !m_actionFormatPainter->isChecked())
+        showMiniToolbar();
 }
 
 void TextTool::shortcutOverrideEvent(QKeyEvent *event)
@@ -1680,6 +1954,7 @@ void TextTool::shortcutOverrideEvent(QKeyEvent *event)
 
 void TextTool::keyPressEvent(QKeyEvent *event)
 {
+    hideMiniToolbar();
     if (event->key() == Qt::Key_Escape && m_actionFormatPainter->isChecked()) {
         m_actionFormatPainter->setChecked(false);
         event->accept();
@@ -2174,6 +2449,7 @@ void TextTool::activate(ToolActivation toolActivation, const QSet<KoShape *> &sh
 
 void TextTool::deactivate()
 {
+    hideMiniToolbar();
     m_actionFormatPainter->setChecked(false);
     m_caretTimer.stop();
     m_caretTimerState = false;
@@ -2402,15 +2678,18 @@ QList<QPointer<QWidget>> TextTool::createOptionWidgets()
         siw->setWindowTitle(i18n("Quick Insert"));
         siw->setProperty("ribbonGroupOrder", 70);
         if (wordsRibbon) {
-            siw->setWindowTitle(i18n("Text"));
+            siw->setWindowTitle(i18n("Sections"));
             siw->setProperty("ribbonTargetPage", QStringLiteral("insertRibbonPage"));
             const auto button = [siw](const char *name) { return siw->findChild<QToolButton *>(QLatin1String(name)); };
-            // The Pages group owns the ribbon's Page Break command and
-            // follows the active tool. Avoid a second, tool-bound copy here.
+            // The Pages, Tables, Header & Footer, and Symbols groups own these
+            // commands, so keep only the section controls in this group.
             button("insertPageBreak")->hide();
-            KoRibbonLayout::arrange(siw, {button("insertVariable")},
-                                   {button("quickTable"), button("insertSpecialChar"),
-                                    button("insertSection"), button("configureSection"), button("splitSections")});
+            button("insertVariable")->hide();
+            button("quickTable")->hide();
+            button("insertSpecialChar")->hide();
+            KoRibbonLayout::arrange(siw,
+                                   {button("insertSection"), button("configureSection"), button("splitSections")},
+                                   {});
         }
         if (stageRibbon)
             siw->setProperty("ribbonTargetPage", QStringLiteral("stageInsertPage"));
@@ -2947,6 +3226,7 @@ void TextTool::shapeAddedToCanvas()
 
 void TextTool::shapeDataRemoved()
 {
+    hideMiniToolbar();
     m_textShapeData = nullptr;
     m_textShape = nullptr;
     if (!m_textEditor.isNull() && !m_textEditor.data()->cursor()->isNull()) {

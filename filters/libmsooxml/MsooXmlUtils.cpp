@@ -30,6 +30,10 @@
 
 #include <cmath>
 #include "MsooXmlUtils.h"
+
+#include <QMap>
+#include <QSet>
+#include <QStringList>
 #include "MsooXmlContentTypes.h"
 #include "MsooXmlDebug.h"
 #include "MsooXmlReader.h"
@@ -150,6 +154,23 @@ const char MSOOXML::Schemas::schemaLibrary[] = "http://schemas.openxmlformats.or
 static const char UNUSED[] = "UNUSED";
 
 using namespace MSOOXML;
+
+QString Utils::canonicalNamespace(QStringView uri)
+{
+    static const QLatin1String strictPrefix("http://purl.oclc.org/ooxml/");
+    if (!uri.startsWith(QLatin1StringView(strictPrefix))) {
+        return uri.toString();
+    }
+    // Strict URIs are formed as purl.oclc.org/ooxml/<family>/<rest>, the matching
+    // Transitional ones as schemas.openxmlformats.org/<family>/2006/<rest>.
+    const QStringView rest = uri.mid(strictPrefix.size());
+    const qsizetype slash = rest.indexOf(QLatin1Char('/'));
+    if (slash <= 0) {
+        return uri.toString();
+    }
+    return QLatin1String("http://schemas.openxmlformats.org/") + rest.left(slash)
+        + QLatin1String("/2006/") + rest.mid(slash + 1);
+}
 
 //-----------------------------------------
 
@@ -454,7 +475,8 @@ bool Utils::convertBooleanAttr(const QString &value, bool defaultValue)
     return val != MsooXmlReader::constOff && val != MsooXmlReader::constFalse && val != MsooXmlReader::const0;
 }
 
-KoFilter::ConversionStatus Utils::loadContentTypes(const KoXmlDocument &contentTypesXML, QMultiHash<QByteArray, QByteArray> &contentTypes)
+KoFilter::ConversionStatus Utils::loadContentTypes(const KoXmlDocument &contentTypesXML, QMultiHash<QByteArray, QByteArray> &contentTypes,
+                                                   const QStringList &packageParts)
 {
     KoXmlElement typesEl(contentTypesXML.documentElement());
     if (!checkTag(typesEl, "Types", "documentElement")) {
@@ -463,6 +485,9 @@ KoFilter::ConversionStatus Utils::loadContentTypes(const KoXmlDocument &contentT
     if (!checkNsUri(typesEl, Schemas::contentTypes)) {
         return KoFilter::WrongFormat;
     }
+    // extension (lowercase) -> ContentType, from <Default Extension="..." ContentType="..."/>
+    QMap<QString, QByteArray> defaultContentTypes;
+    QSet<QString> overriddenParts;
     KoXmlElement e;
     forEachElement(e, typesEl)
     {
@@ -481,9 +506,33 @@ KoFilter::ConversionStatus Utils::loadContentTypes(const KoXmlDocument &contentT
             }
             // debugMsooXml << atrContentType << "->" << atrPartName;
             contentTypes.insert(atrContentType, atrPartName);
+            overriddenParts.insert(QString::fromLatin1(atrPartName));
         } else if (tagName == "Default") {
-            //! @todo
-            // skip for now...
+            const QString extension = e.attribute("Extension").toLower();
+            const QByteArray atrContentType(e.attribute("ContentType").toLatin1());
+            if (extension.isEmpty() || atrContentType.isEmpty()) {
+                warnMsooXml << "Invalid data for" << tagName << "element: Extension=" << extension << "ContentType=" << atrContentType;
+                return KoFilter::WrongFormat;
+            }
+            defaultContentTypes.insert(extension, atrContentType);
+        }
+    }
+    // OPC (ECMA-376 Part 2, 10.1.2.2): a part without an Override takes the ContentType
+    // of the Default for its extension. Only parts that exist in the package are mapped.
+    for (const QString &part : packageParts) {
+        const QString fullPath = part.startsWith(QLatin1Char('/')) ? part : QLatin1Char('/') + part;
+        if (overriddenParts.contains(fullPath)) {
+            continue;
+        }
+        const int dot = fullPath.lastIndexOf(QLatin1Char('.'));
+        const int slash = fullPath.lastIndexOf(QLatin1Char('/'));
+        if (dot <= slash) {
+            continue;
+        }
+        const QString extension = fullPath.mid(dot + 1).toLower();
+        const auto it = defaultContentTypes.constFind(extension);
+        if (it != defaultContentTypes.constEnd()) {
+            contentTypes.insert(it.value(), fullPath.toLatin1());
         }
     }
     return KoFilter::OK;

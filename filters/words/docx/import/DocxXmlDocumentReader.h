@@ -56,6 +56,11 @@ public:
 protected:
     KoFilter::ConversionStatus read_body();
     KoFilter::ConversionStatus read_p();
+
+    //! Close a list left open by read_p. Derived header/footer/footnote
+    //! readers buffer their output and need to finish it before handing the
+    //! buffer back.
+    void closeOpenList();
     KoFilter::ConversionStatus read_r();
     KoFilter::ConversionStatus read_smartTag();
     KoFilter::ConversionStatus read_rPr();
@@ -302,10 +307,6 @@ protected:
     //! of a floating table.
     QString m_currentDrawStyleName;
 
-    //! The complete XML snippet representing a floating table, which MUST be
-    //! inserted into the following paragraph.
-    QString m_floatingTable;
-
     //! The complete XML snippet representing a bookmark-start or
     //! bookmark-end, which MUST be inserted into the following paragraph.
     QString m_bookmarkSnippet;
@@ -410,6 +411,17 @@ private:
     bool m_insideParagraph;
 
     QString m_currentNumId;
+
+    //! List currently open in the generated ODF body. Numbered/bulleted
+    //! paragraphs are appended to it instead of starting a new list for every
+    //! paragraph, so nested levels become a real ODF list hierarchy.
+    QString m_openListNumId;
+    int m_openListLevel = 0; //!< deepest text:list currently open (1-based)
+    int m_openItemLevel = 0; //!< deepest text:list-item currently open (1-based)
+    KoXmlWriter *m_openListWriter = nullptr; //!< writer that owns the open list
+
+    void prepareListForParagraph();
+    QString createListStyleForLevel(int level);
 
     //! Map of list styles encountered so far, reuse already created list style.
     QMap<QString, QString> m_usedListStyles;

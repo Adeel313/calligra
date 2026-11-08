@@ -10,6 +10,7 @@
 #include "FormattingButton.h"
 #include "TextTool.h"
 #include <KoStyleThumbnailer.h>
+#include <KoRibbonIcons.h>
 #include <KoRibbonLayout.h>
 #include <ListItemsHelper.h>
 
@@ -192,7 +193,7 @@ QWidget *SimpleParagraphWidget::configureRibbon()
     widget.gridLayout->setSpacing(2);
     auto *numbering = new FormattingButton(this);
     numbering->setObjectName(QStringLiteral("ribbonNumbering"));
-    numbering->setIcon(QIcon::fromTheme(QStringLiteral("format-list-ordered")));
+    numbering->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("format-list-ordered")));
     numbering->setToolTip(i18n("Numbering"));
     numbering->setAccessibleName(i18n("Numbering"));
     numbering->setAutoRaise(true);
@@ -218,7 +219,7 @@ QWidget *SimpleParagraphWidget::configureRibbon()
     lineSpacing->setText(i18n("Line Spacing"));
     lineSpacing->setToolTip(i18n("Change spacing between lines in the selected paragraphs"));
     lineSpacing->setAccessibleName(i18n("Line Spacing"));
-    lineSpacing->setIcon(QIcon::fromTheme(QStringLiteral("format-line-spacing-normal")));
+    lineSpacing->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("format-line-spacing-normal")));
     lineSpacing->setPopupMode(QToolButton::InstantPopup);
     auto *spacingMenu = new QMenu(lineSpacing);
     lineSpacing->setMenu(spacingMenu);

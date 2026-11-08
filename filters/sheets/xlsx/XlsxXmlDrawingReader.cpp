@@ -120,26 +120,33 @@ KoXmlWriter *XlsxDrawingObject::pictureWriter()
 
 QRect XlsxDrawingObject::positionRect() const
 {
-    QRect rect(QPoint(0, 0), QSize(0, 0));
+    int x = 0;
+    int y = 0;
+    int width = 0;
+    int height = 0;
     if (m_positions.contains(FromAnchor)) {
         qreal defaultColumnWidth = 8.43;
         qreal defaultRowHeight = 12.75;
-        Position f1 = m_positions[FromAnchor];
-        rect.setX(EMU_TO_POINT(f1.m_colOff));
-        rect.setY(EMU_TO_POINT(f1.m_rowOff));
+        const Position f1 = m_positions.value(FromAnchor);
+        x = qRound(EMU_TO_POINT(f1.m_colOff));
+        y = qRound(EMU_TO_POINT(f1.m_rowOff));
         if (m_positions.contains(ToAnchor)) {
-            Position f2 = m_positions[ToAnchor];
-            if (f2.m_col > 0 && f2.m_row > 0) {
-                rect.setWidth(columnWidth2(f2.m_col - f1.m_col - 1, EMU_TO_POINT(f2.m_colOff), defaultColumnWidth));
-                rect.setHeight(rowHeight2(f2.m_row - f1.m_row - 1, EMU_TO_POINT(f2.m_rowOff), defaultRowHeight));
+            const Position f2 = m_positions.value(ToAnchor);
+            const int columns = f2.m_col - f1.m_col - 1;
+            const int rows = f2.m_row - f1.m_row - 1;
+            if (columns > 0) {
+                width = columnWidth2(columns, EMU_TO_POINT(f2.m_colOff), defaultColumnWidth);
             }
+            if (rows > 0) {
+                height = rowHeight2(rows, EMU_TO_POINT(f2.m_rowOff), defaultRowHeight);
+            }
+        } else if (!m_extent.isEmpty()) {
+            // One-cell anchors carry their size in xdr:ext instead of a second anchor point.
+            width = qRound(EMU_TO_POINT(m_extent.width()));
+            height = qRound(EMU_TO_POINT(m_extent.height()));
         }
-        Q_ASSERT(rect.x() >= 0);
-        Q_ASSERT(rect.y() >= 0);
-        Q_ASSERT(rect.width() >= 0);
-        Q_ASSERT(rect.height() >= 0);
     }
-    return rect;
+    return QRect(QPoint(x, y), QSize(qMax(0, width), qMax(0, height)));
 }
 
 QString XlsxDrawingObject::cellAddress(const QString &sheetname, int row, int column) const
@@ -303,7 +310,7 @@ KoFilter::ConversionStatus XlsxXmlDrawingReader::read_anchor(const QString &refe
             // twoCellAnchor does define the 'from' and 'to' elements which do define the anchor-points
             TRY_READ_IF(from)
             ELSE_TRY_READ_IF(to)
-            else if (qualifiedName() == QLatin1String("xdr:ext"))
+            else if (isElement("xdr:ext"))
             {
                 // read_ext expects the qualifed name a:ext
                 const QXmlStreamAttributes attrs(attributes());
@@ -312,6 +319,9 @@ KoFilter::ConversionStatus XlsxXmlDrawingReader::read_anchor(const QString &refe
                 STRING_TO_INT(cx, m_svgWidth, "ext@cx")
                 READ_ATTR_WITHOUT_NS(cy)
                 STRING_TO_INT(cy, m_svgHeight, "ext@cy")
+                if (m_currentDrawingObject) {
+                    m_currentDrawingObject->setExtent(QSize(m_svgWidth, m_svgHeight));
+                }
                 readNext();
             }
             ELSE_TRY_READ_IF(ext)

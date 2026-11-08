@@ -18,19 +18,23 @@
 #include <KoViewConverter.h>
 #include <KoZoomHandler.h>
 
+#include <QPointer>
 #include <QWidget>
 
 class KWDocument;
 class KWCanvas;
 class KWFrame;
 class KWGui;
+class KWTextFrameSet;
 
 class KoPart;
 class KoCanvasBase;
 class KoZoomController;
 class KoFindText;
 
+class QMimeData;
 class QPushButton;
+class QUrl;
 #ifdef SHOULD_BUILD_RDF
 class KoRdfBasicSemanticItem;
 typedef QExplicitlySharedDataPointer<KoRdfBasicSemanticItem> hKoRdfBasicSemanticItem;
@@ -74,6 +78,9 @@ public:
     /// reimplemented from superclass
     void addImages(const QVector<QImage> &imageList, const QPoint &insertAt) override;
 
+    /// Insert images inline at the current cursor of \a textFrameSet.
+    void insertImagesIntoTextFrame(KWTextFrameSet *textFrameSet, const QVector<QImage> &imageList);
+
     // interface KoView
     /// reimplemented method from superclass
     void updateReadWrite(bool readWrite) override;
@@ -102,6 +109,36 @@ public:
 
     const KWPage currentPage() const;
     void setCurrentPage(const KWPage &page);
+
+    /// The text frame set that currently owns the text cursor, if any.
+    KWTextFrameSet *currentTextFrameSet() const;
+
+    /// The header or footer text frame set of the page under the mouse, if any.
+    KWTextFrameSet *headerFooterFrameSetAtPointer();
+    /// The header or footer text frame set the given document point belongs to.
+    /// Returns nullptr for points inside the page's text area.
+    KWTextFrameSet *headerFooterFrameSetAt(const QPointF &documentPoint) const;
+
+    /*!
+     * Start editing the header or footer the given document point is in.
+     *
+     * This makes double clicking a header or a footer of a page work even when
+     * it is still empty and therefore has no text to click on.
+     * @return true when the point belongs to a header/footer that is now edited.
+     */
+    bool startEditingHeaderFooterAt(const QPointF &documentPoint);
+
+    /**
+     * Collect the images the clipboard provides.  An image that is only
+     * available as a link on the web is returned through \a remoteImage.
+     */
+    QVector<QImage> imagesFromClipboard(const QMimeData *mimeData, QUrl *remoteImage) const;
+    /// The text frame set a pasted image belongs to (the caret's or the one under the mouse).
+    KWTextFrameSet *pasteTargetTextFrameSet();
+    /// Insert images the clipboard provided at the paste target.
+    void insertPastedImages(const QVector<QImage> &images);
+    /// Download an image that was copied as a link and insert it at the paste target.
+    void pasteImageFromUrl(const QUrl &url);
 
     /// go to page
     void goToPage(const KWPage &page);
@@ -156,6 +193,7 @@ protected:
 private:
     void setupActions();
     KoPrintJob *createPrintJob() override;
+    QPrintDialog *createPrintDialog(KoPrintJob *printJob, QWidget *parent) override;
     /// loops over the selected shapes and returns the top level shapes.
     QList<KoShape *> selectedShapes() const;
     KoShape *selectedShape() const;
@@ -277,6 +315,10 @@ private:
 
     bool m_snapToGrid;
     QString m_lastPageSettingsTab;
+
+    // Remembered so that actions which steal the focus (the ribbon, a file
+    // dialog) still know which text frame, e.g. a header, last had the cursor.
+    mutable QPointer<KWTextFrameSet> m_lastTextFrameSet;
 
     QSizeF m_pageSize; // The max size of the pages we currently show. Prevents endless loop
     qreal m_textMinX; // The min x value where text can appear we currently show. Prevents endless loop

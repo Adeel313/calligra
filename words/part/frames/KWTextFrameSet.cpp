@@ -18,6 +18,7 @@
 
 #include <KoAnnotationLayoutManager.h>
 #include <KoParagraphStyle.h>
+#include <KoShapeAnchor.h>
 #include <KoShapeFactoryBase.h>
 #include <KoStyleManager.h>
 #include <KoTextDocument.h>
@@ -164,6 +165,11 @@ void KWTextFrameSet::setupDocument()
 
     doc.setRelativeTabs(true);
     doc.setParaTableSpacingAtStart(true);
+
+    // Mark header/footer documents so anchored shapes (images in particular)
+    // stay part of the header/footer instead of being turned into floating
+    // shapes that can be dragged out of it.
+    m_document->addResource(QTextDocument::UserResource, KoShapeAnchor::headerFooterTextDocumentResource(), Words::isHeaderFooter(this));
 
     // the KoTextDocumentLayout needs to be setup after the actions above are done to prepare the document
     KoTextDocumentLayout *lay = new KoTextDocumentLayout(m_document, m_rootAreaProvider);

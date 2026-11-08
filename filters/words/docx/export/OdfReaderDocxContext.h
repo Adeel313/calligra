@@ -89,6 +89,8 @@ public:
 
     QHash<QString, QByteArray> masterPageSections;
     QString activeMasterPage;
+    //! True when at least one even-page header/footer was exported.
+    bool evenAndOddHeaders = false;
 
     /** Tab stops of a paragraph style, already serialized as a <w:tabs>
      *  element.  Empty when the style (or its ancestors) define none. */

@@ -9,6 +9,7 @@
 
 #include <KoIcon.h>
 #include <KoInlineNote.h>
+#include <KoRibbonIcons.h>
 
 #include <QAction>
 #include <QDebug>
@@ -22,12 +23,12 @@ SimpleFootEndNotesWidget::SimpleFootEndNotesWidget(TextTool *tool, QWidget *pare
     widget.addFootnote->addAction(tool->action("insert_autofootnote"));
     widget.addFootnote->addAction(tool->action("insert_labeledfootnote"));
     widget.addFootnote->addAction(tool->action("format_footnotes"));
-    widget.addFootnote->setIcon(koIcon("insert-footnote"));
+    widget.addFootnote->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("insert-footnote"), koIcon("insert-footnote")));
     widget.addFootnote->setToolTip(i18n("Inserts a footnote at the current cursor position"));
     widget.addEndnote->addAction(tool->action("insert_autoendnote"));
     widget.addEndnote->addAction(tool->action("insert_labeledendnote"));
     widget.addEndnote->addAction(tool->action("format_endnotes"));
-    widget.addEndnote->setIcon(koIcon("insert-endnote"));
+    widget.addEndnote->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("insert-endnote"), koIcon("insert-endnote")));
     widget.addEndnote->setToolTip(i18n("Inserts an endnote at the current cursor position"));
 
     connect(widget.addFootnote, &FormattingButton::doneWithFocus, this, &SimpleFootEndNotesWidget::doneWithFocus);

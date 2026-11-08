@@ -10,6 +10,7 @@
 #include <KoColor.h>
 #include <KoColorPopupAction.h>
 #include <KoIcon.h>
+#include <KoRibbonIcons.h>
 #include <KoTableCellStyle.h>
 #include <KoTextLayoutCellHelper.h>
 #include <KoZoomHandler.h>
@@ -42,7 +43,8 @@ SimpleTableWidget::SimpleTableWidget(TextTool *tool, QWidget *parent)
     fillBorderButton(QColor(0, 0, 0));
 
     KoColorPopupAction *actionBorderColor = new KoColorPopupAction(this);
-    actionBorderColor->setIcon(koIcon("format-fill-color"));
+    actionBorderColor->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("format-fill-color"),
+                                                           koIcon("format-fill-color")));
     actionBorderColor->setText(i18n("Set Border Color..."));
     widget.border->addAction(actionBorderColor);
     connect(actionBorderColor, &KoColorPopupAction::colorChanged, this, &SimpleTableWidget::setBorderColor);

@@ -19,6 +19,7 @@
 
 class KWPageStylePrivate;
 class KoShapeBackground;
+class KoShapeSavingContext;
 class KoOdfLoadingContext;
 class KoDocumentResourceManager;
 struct KoColumns;
@@ -189,7 +190,7 @@ public:
     /**
      * Save this page style to ODF.
      */
-    KoGenStyle saveOdf() const;
+    KoGenStyle saveOdf(KoShapeSavingContext *context = nullptr) const;
 
     /**
      * Load this page style from ODF

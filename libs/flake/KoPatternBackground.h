@@ -66,6 +66,9 @@ public:
     /// Original image data, retained for lossless export. Owned by this fill.
     KoImageData *patternData();
 
+    /// Image collection that owns patternData().
+    KoImageCollection *imageCollection() const;
+
     /// Sets the pattern repeatgfl
     void setRepeat(PatternRepeat repeat);
 

@@ -11,6 +11,7 @@
 #include "TableOfContentsTemplate.h"
 
 #include <KoIcon.h>
+#include <KoRibbonIcons.h>
 #include <KoTableOfContentsGeneratorInfo.h>
 #include <KoTextEditor.h>
 
@@ -29,7 +30,8 @@ SimpleTableOfContentsWidget::SimpleTableOfContentsWidget(ReferencesTool *tool, Q
     widget.setupUi(this);
     Q_ASSERT(tool);
 
-    widget.addToC->setIcon(koIcon("insert-table-of-contents"));
+    widget.addToC->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("insert-table-of-contents"),
+                                                       koIcon("insert-table-of-contents")));
     connect(widget.addToC, &QAbstractButton::clicked, this, &SimpleTableOfContentsWidget::doneWithFocus);
     connect(widget.addToC, &FormattingButton::aboutToShowMenu, this, &SimpleTableOfContentsWidget::prepareTemplateMenu);
     connect(widget.addToC, &FormattingButton::itemTriggered, this, &SimpleTableOfContentsWidget::applyTemplate);

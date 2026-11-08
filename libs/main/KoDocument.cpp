@@ -1286,6 +1286,13 @@ static const struct MimetypeReplacement {
      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
     {"application/msword", "application/zip", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+    // Words saves its native ODF package when the document is written back
+    // through a .doc name.  The extension must not make us send that package
+    // through the legacy MS Word filter.
+    {"application/msword", "application/vnd.oasis.opendocument.text", "application/vnd.oasis.opendocument.text"},
+    {"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+     "application/vnd.oasis.opendocument.text",
+     "application/vnd.oasis.opendocument.text"},
     {"application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword", "application/msword"},
     {"application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/x-ole-storage", "application/msword"},
 

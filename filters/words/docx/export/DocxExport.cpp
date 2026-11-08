@@ -12,7 +12,11 @@
 #include "DocxExport.h"
 
 #include <QFile>
+#include <QBuffer>
+#include <QColor>
+#include <QImage>
 #include <QRegularExpression>
+#include <QStringList>
 
 // KF5
 #include <KPluginFactory>
@@ -38,6 +42,7 @@
 
 // Calligra
 #include <KoUnit.h>
+#include <KoXmlNS.h>
 #include <KoXmlStreamReader.h>
 #include <KoOdfStyle.h>
 #include <KoOdfStyleManager.h>
@@ -65,11 +70,527 @@ struct PageGeometry {    bool valid = false;
     QString sectionType = QStringLiteral("nextPage");
     int columns = 1;
     qreal columnGap = 0;
+    QString borderTop;
+    QString borderRight;
+    QString borderBottom;
+    QString borderLeft;
+    QString backgroundImageHref;
 };
 
 int toTwips(qreal points)
 {
     return qRound(points * 20.0);
+}
+
+QString wordBorderStyle(const QString &odfStyle)
+{
+    if (odfStyle == QLatin1String("none")) return QStringLiteral("nil");
+    if (odfStyle == QLatin1String("dashed")) return QStringLiteral("dashed");
+    if (odfStyle == QLatin1String("dotted")) return QStringLiteral("dotted");
+    if (odfStyle == QLatin1String("double")) return QStringLiteral("double");
+    return QStringLiteral("single");
+}
+
+struct ParsedBorder {
+    bool visible = false;
+    QString style = QStringLiteral("single");
+    int size = 8;
+    QString color = QStringLiteral("000000");
+};
+
+ParsedBorder parseOdfBorder(const QString &value)
+{
+    ParsedBorder border;
+    const QStringList tokens = value.simplified().split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    if (tokens.isEmpty()) return border;
+
+    qreal width = KoUnit::parseValue(tokens.first());
+    if (width <= 0.0) {
+        if (tokens.first() == QLatin1String("thin")) width = 0.75;
+        else if (tokens.first() == QLatin1String("medium")) width = 1.5;
+        else if (tokens.first() == QLatin1String("thick")) width = 2.25;
+    }
+
+    QString style = QStringLiteral("solid");
+    for (int i = 1; i < tokens.size(); ++i) {
+        const QString token = tokens.at(i);
+        if (token == QLatin1String("none") || token == QLatin1String("solid")
+            || token == QLatin1String("dashed") || token == QLatin1String("dotted")
+            || token == QLatin1String("double")) {
+            style = token;
+        } else if (token.startsWith(QLatin1Char('#')) || QColor(token).isValid()) {
+            const QColor parsed(token);
+            if (parsed.isValid()) border.color = parsed.name(QColor::HexRgb).mid(1);
+        }
+    }
+
+    border.visible = style != QLatin1String("none") && width > 0.0;
+    border.style = wordBorderStyle(style);
+    border.size = qBound(2, qRound(width * 8.0), 96);
+    return border;
+}
+
+void writePageBorders(KoXmlWriter &writer, const PageGeometry &geometry)
+{
+    const ParsedBorder top = parseOdfBorder(geometry.borderTop);
+    const ParsedBorder right = parseOdfBorder(geometry.borderRight);
+    const ParsedBorder bottom = parseOdfBorder(geometry.borderBottom);
+    const ParsedBorder left = parseOdfBorder(geometry.borderLeft);
+    if (!top.visible && !right.visible && !bottom.visible && !left.visible) return;
+
+    writer.startElement("w:pgBorders");
+    writer.addAttribute("w:offsetFrom", "text");
+    const auto writeSide = [&writer](const char *name, const ParsedBorder &border) {
+        writer.startElement(name);
+        writer.addAttribute("w:val", border.visible ? border.style : QStringLiteral("nil"));
+        if (border.visible) {
+            writer.addAttribute("w:sz", border.size);
+            writer.addAttribute("w:space", 0);
+            writer.addAttribute("w:color", border.color);
+        }
+        writer.endElement();
+    };
+    writeSide("w:top", top);
+    writeSide("w:left", left);
+    writeSide("w:bottom", bottom);
+    writeSide("w:right", right);
+    writer.endElement(); // w:pgBorders
+}
+
+QByteArray watermarkParagraph(DocxFile &docxFile, KoStore *store, const PageGeometry &geometry,
+                              const QString &headerFile, int partNumber)
+{
+    if (geometry.backgroundImageHref.isEmpty()) return {};
+
+    if (!store->open(geometry.backgroundImageHref)) return {};
+    const QByteArray source = store->read(store->size());
+    store->close();
+    QImage image;
+    if (!image.loadFromData(source)) return {};
+
+    QByteArray png;
+    QBuffer pngBuffer(&png);
+    if (!pngBuffer.open(QIODevice::WriteOnly) || !image.save(&pngBuffer, "PNG")) return {};
+
+    QString imageStem = headerFile;
+    imageStem.remove(QLatin1String("header"));
+    imageStem.remove(QLatin1String(".xml"));
+    imageStem.remove(QLatin1Char('-'));
+    const QString imageName = QStringLiteral("watermark%1-%2.png").arg(partNumber).arg(imageStem);
+    const QString imageTarget = QStringLiteral("media/") + imageName;
+    docxFile.addContentFile(QString(), QStringLiteral("/word/") + imageTarget, "image/png", png);
+    const QString relationshipId = docxFile.addRelationship(
+        QStringLiteral("word/") + headerFile,
+        QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"),
+        imageTarget);
+    if (relationshipId.isEmpty()) return {};
+
+    const qint64 cx = qRound64(geometry.pageWidth * 12700.0);
+    const qint64 cy = qRound64(geometry.pageHeight * 12700.0);
+    const int variantOffset = headerFile.contains(QLatin1String("first")) ? 2
+        : headerFile.contains(QLatin1String("even")) ? 1 : 0;
+    const int drawingId = 9000 + partNumber * 10 + variantOffset;
+
+    QByteArray result;
+    QBuffer buffer(&result);
+    buffer.open(QIODevice::WriteOnly);
+    KoXmlWriter writer(&buffer);
+    writer.startElement("w:p");
+    writer.startElement("w:r");
+    writer.startElement("w:drawing");
+    writer.addAttribute("xmlns:wp", "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing");
+    writer.addAttribute("xmlns:a", "http://schemas.openxmlformats.org/drawingml/2006/main");
+    writer.addAttribute("xmlns:pic", "http://schemas.openxmlformats.org/drawingml/2006/picture");
+    writer.startElement("wp:anchor");
+    writer.addAttribute("distT", 0);
+    writer.addAttribute("distB", 0);
+    writer.addAttribute("distL", 0);
+    writer.addAttribute("distR", 0);
+    writer.addAttribute("simplePos", 0);
+    writer.addAttribute("relativeHeight", 0);
+    writer.addAttribute("behindDoc", 1);
+    writer.addAttribute("locked", 0);
+    writer.addAttribute("layoutInCell", 1);
+    writer.addAttribute("allowOverlap", 1);
+    writer.startElement("wp:simplePos");
+    writer.addAttribute("x", 0);
+    writer.addAttribute("y", 0);
+    writer.endElement();
+    writer.startElement("wp:positionH");
+    writer.addAttribute("relativeFrom", "page");
+    writer.startElement("wp:posOffset");
+    writer.addTextNode(QStringLiteral("0"));
+    writer.endElement();
+    writer.endElement();
+    writer.startElement("wp:positionV");
+    writer.addAttribute("relativeFrom", "page");
+    writer.startElement("wp:posOffset");
+    writer.addTextNode(QStringLiteral("0"));
+    writer.endElement();
+    writer.endElement();
+    writer.startElement("wp:extent");
+    writer.addAttribute("cx", QString::number(cx));
+    writer.addAttribute("cy", QString::number(cy));
+    writer.endElement();
+    writer.startElement("wp:wrapNone");
+    writer.endElement();
+    writer.startElement("wp:docPr");
+    writer.addAttribute("id", drawingId);
+    writer.addAttribute("name", "Watermark");
+    writer.endElement();
+    writer.startElement("wp:cNvGraphicFramePr");
+    writer.startElement("a:graphicFrameLocks");
+    writer.addAttribute("noChangeAspect", 1);
+    writer.endElement();
+    writer.endElement();
+    writer.startElement("a:graphic");
+    writer.startElement("a:graphicData");
+    writer.addAttribute("uri", "http://schemas.openxmlformats.org/drawingml/2006/picture");
+    writer.startElement("pic:pic");
+    writer.startElement("pic:nvPicPr");
+    writer.startElement("pic:cNvPr");
+    writer.addAttribute("id", 0);
+    writer.addAttribute("name", "Watermark");
+    writer.endElement();
+    writer.startElement("pic:cNvPicPr");
+    writer.endElement();
+    writer.endElement();
+    writer.startElement("pic:blipFill");
+    writer.startElement("a:blip");
+    writer.addAttribute("r:embed", relationshipId);
+    writer.endElement();
+    writer.startElement("a:stretch");
+    writer.startElement("a:fillRect");
+    writer.endElement();
+    writer.endElement();
+    writer.endElement();
+    writer.startElement("pic:spPr");
+    writer.startElement("a:xfrm");
+    writer.startElement("a:off");
+    writer.addAttribute("x", 0);
+    writer.addAttribute("y", 0);
+    writer.endElement();
+    writer.startElement("a:ext");
+    writer.addAttribute("cx", QString::number(cx));
+    writer.addAttribute("cy", QString::number(cy));
+    writer.endElement();
+    writer.endElement();
+    writer.startElement("a:prstGeom");
+    writer.addAttribute("prst", "rect");
+    writer.startElement("a:avLst");
+    writer.endElement();
+    writer.endElement();
+    writer.endElement();
+    writer.endElement();
+    writer.endElement();
+    writer.endElement();
+    writer.endElement();
+    writer.endElement();
+    writer.endElement();
+    writer.endElement();
+    return result;
+}
+
+struct OdtMetadata {
+    QString title;
+    QString subject;
+    QString description;
+    QString keywords;
+    QString initialCreator;
+    QString creator;
+    QString created;
+    QString modified;
+    QString revision;
+    QString generator;
+};
+
+OdtMetadata readOdtMetadata(KoStore *store)
+{
+    OdtMetadata result;
+    if (!store->open(QStringLiteral("meta.xml"))) {
+        return result;
+    }
+
+    KoXmlStreamReader reader;
+    prepareForOdf(reader);
+    reader.setDevice(store->device());
+
+    if (!reader.readNextStartElement() || reader.qualifiedName() != QLatin1StringView("office:document-meta")) {
+        store->close();
+        return result;
+    }
+
+    while (reader.readNextStartElement()) {
+        if (reader.namespaceUri() == KoXmlNS::office && reader.name() == QLatin1StringView("meta")) {
+            break;
+        }
+        reader.skipCurrentElement();
+    }
+
+    QStringList keywords;
+    while (reader.readNextStartElement()) {
+        const QString localName = reader.name().toString();
+        const QString ns = reader.namespaceUri().toString();
+        if (ns == KoXmlNS::dc && localName == QLatin1String("title")) {
+            result.title = reader.readElementText().trimmed();
+        } else if (ns == KoXmlNS::dc && localName == QLatin1String("subject")) {
+            result.subject = reader.readElementText().trimmed();
+        } else if (ns == KoXmlNS::dc && localName == QLatin1String("description")) {
+            result.description = reader.readElementText().trimmed();
+        } else if (ns == KoXmlNS::dc && localName == QLatin1String("creator")) {
+            result.creator = reader.readElementText().trimmed();
+        } else if (ns == KoXmlNS::dc && localName == QLatin1String("date")) {
+            result.modified = reader.readElementText().trimmed();
+        } else if (ns == KoXmlNS::meta && localName == QLatin1String("initial-creator")) {
+            result.initialCreator = reader.readElementText().trimmed();
+        } else if (ns == KoXmlNS::meta && localName == QLatin1String("creation-date")) {
+            result.created = reader.readElementText().trimmed();
+        } else if (ns == KoXmlNS::meta && localName == QLatin1String("editing-cycles")) {
+            result.revision = reader.readElementText().trimmed();
+        } else if (ns == KoXmlNS::meta && localName == QLatin1String("keyword")) {
+            const QString keyword = reader.readElementText().trimmed();
+            if (!keyword.isEmpty()) {
+                keywords.append(keyword);
+            }
+        } else if (ns == KoXmlNS::meta && localName == QLatin1String("generator")) {
+            result.generator = reader.readElementText().trimmed();
+        } else {
+            reader.skipCurrentElement();
+        }
+    }
+    result.keywords = keywords.join(QStringLiteral(", "));
+    store->close();
+    return result;
+}
+
+QByteArray corePropertiesPart(const OdtMetadata &metadata)
+{
+    QByteArray result;
+    QBuffer buffer(&result);
+    buffer.open(QIODevice::WriteOnly);
+    KoXmlWriter writer(&buffer);
+    writer.startDocument(nullptr);
+    writer.startElement("cp:coreProperties");
+    writer.addAttribute("xmlns:cp", "http://schemas.openxmlformats.org/package/2006/metadata/core-properties");
+    writer.addAttribute("xmlns:dc", "http://purl.org/dc/elements/1.1/");
+    writer.addAttribute("xmlns:dcterms", "http://purl.org/dc/terms/");
+    writer.addAttribute("xmlns:dcmitype", "http://purl.org/dc/dcmitype/");
+    writer.addAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+
+    const auto addText = [&writer](const char *element, const QString &value) {
+        if (!value.isEmpty()) {
+            writer.startElement(element);
+            writer.addTextNode(value);
+            writer.endElement();
+        }
+    };
+    addText("dc:title", metadata.title);
+    addText("dc:subject", metadata.subject);
+    addText("dc:description", metadata.description);
+    addText("cp:keywords", metadata.keywords);
+    addText("dc:creator", metadata.creator.isEmpty() ? metadata.initialCreator : metadata.creator);
+    addText("cp:lastModifiedBy", metadata.creator);
+    addText("cp:revision", metadata.revision);
+
+    const auto addDate = [&writer](const char *element, const QString &value) {
+        if (!value.isEmpty()) {
+            writer.startElement(element);
+            writer.addAttribute("xsi:type", "dcterms:W3CDTF");
+            writer.addTextNode(value);
+            writer.endElement();
+        }
+    };
+    addDate("dcterms:created", metadata.created);
+    addDate("dcterms:modified", metadata.modified);
+
+    writer.endElement(); // cp:coreProperties
+    writer.endDocument();
+    return result;
+}
+
+QByteArray appPropertiesPart()
+{
+    QByteArray result;
+    QBuffer buffer(&result);
+    buffer.open(QIODevice::WriteOnly);
+    KoXmlWriter writer(&buffer);
+    writer.startDocument(nullptr);
+    writer.startElement("Properties");
+    writer.addAttribute("xmlns", "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties");
+    writer.addAttribute("xmlns:vt", "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes");
+    writer.startElement("Application");
+    writer.addTextNode(QStringLiteral("Calligra Words"));
+    writer.endElement();
+    writer.endElement(); // Properties
+    writer.endDocument();
+    return result;
+}
+
+QByteArray emptyCustomPropertiesPart()
+{
+    QByteArray result;
+    QBuffer buffer(&result);
+    buffer.open(QIODevice::WriteOnly);
+    KoXmlWriter writer(&buffer);
+    writer.startDocument(nullptr);
+    writer.startElement("Properties");
+    writer.addAttribute("xmlns", "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties");
+    writer.addAttribute("xmlns:vt", "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes");
+    writer.endElement();
+    writer.endDocument();
+    return result;
+}
+
+QByteArray settingsPart(bool evenAndOddHeaders)
+{
+    QByteArray result;
+    QBuffer buffer(&result);
+    buffer.open(QIODevice::WriteOnly);
+    KoXmlWriter writer(&buffer);
+    writer.startDocument(nullptr);
+    writer.startElement("w:settings");
+    writer.addAttribute("xmlns:w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main");
+    if (evenAndOddHeaders) {
+        writer.startElement("w:evenAndOddHeaders");
+        writer.endElement();
+    }
+    writer.startElement("w:compat");
+    writer.startElement("w:compatSetting");
+    writer.addAttribute("w:val", 15);
+    writer.addAttribute("w:name", "compatibilityMode");
+    writer.addAttribute("w:uri", "http://schemas.microsoft.com/office/word");
+    writer.endElement();
+    writer.endElement(); // w:compat
+    writer.endElement(); // w:settings
+    writer.endDocument();
+    return result;
+}
+
+QByteArray emptyFontTablePart()
+{
+    QByteArray result;
+    QBuffer buffer(&result);
+    buffer.open(QIODevice::WriteOnly);
+    KoXmlWriter writer(&buffer);
+    writer.startDocument(nullptr);
+    writer.startElement("w:fonts");
+    writer.addAttribute("xmlns:w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main");
+    writer.endElement();
+    writer.endDocument();
+    return result;
+}
+
+QByteArray emptyCommentsPart()
+{
+    QByteArray result;
+    QBuffer buffer(&result);
+    buffer.open(QIODevice::WriteOnly);
+    KoXmlWriter writer(&buffer);
+    writer.startDocument(nullptr);
+    writer.startElement("w:comments");
+    writer.addAttribute("xmlns:w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main");
+    writer.endElement();
+    writer.endDocument();
+    return result;
+}
+
+QByteArray emptyNotesPart(const char *rootElement, const char *noteElement, const char *referenceName)
+{
+    QByteArray result;
+    QBuffer buffer(&result);
+    buffer.open(QIODevice::WriteOnly);
+    KoXmlWriter writer(&buffer);
+    writer.startDocument(nullptr);
+    writer.startElement(rootElement);
+    writer.addAttribute("xmlns:w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main");
+    const auto writeSeparator = [&writer, noteElement, referenceName](const char *type, int id, const char *separator) {
+        writer.startElement(noteElement);
+        writer.addAttribute("w:type", type);
+        writer.addAttribute("w:id", id);
+        writer.startElement("w:p");
+        writer.startElement("w:r");
+        writer.startElement("w:rPr");
+        writer.startElement("w:rStyle");
+        writer.addAttribute("w:val", referenceName);
+        writer.endElement();
+        writer.endElement(); // w:rPr
+        writer.startElement(separator);
+        writer.endElement();
+        writer.endElement(); // w:r
+        writer.endElement(); // w:p
+        writer.endElement(); // note
+    };
+    writeSeparator("separator", -1, "separator");
+    writeSeparator("continuationSeparator", 0, "continuationSeparator");
+    writer.endElement(); // root
+    writer.endDocument();
+    return result;
+}
+
+void writePackageMetadata(DocxFile &docxFile, KoStore *store, bool evenAndOddHeaders,
+                          bool hasComments, bool hasFootnotes, bool hasEndnotes)
+{
+    const OdtMetadata metadata = readOdtMetadata(store);
+
+    docxFile.addRelationship(QString(),
+                             QStringLiteral("http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties"),
+                             QStringLiteral("docProps/core.xml"));
+    docxFile.addContentFile(QString(), QStringLiteral("/docProps/core.xml"),
+                            QByteArrayLiteral("application/vnd.openxmlformats-package.core-properties+xml"),
+                            corePropertiesPart(metadata));
+
+    docxFile.addRelationship(QString(),
+                             QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties"),
+                             QStringLiteral("docProps/app.xml"));
+    docxFile.addContentFile(QString(), QStringLiteral("/docProps/app.xml"),
+                            QByteArrayLiteral("application/vnd.openxmlformats-officedocument.extended-properties+xml"),
+                            appPropertiesPart());
+
+    docxFile.addRelationship(QString(),
+                             QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties"),
+                             QStringLiteral("docProps/custom.xml"));
+    docxFile.addContentFile(QString(), QStringLiteral("/docProps/custom.xml"),
+                            QByteArrayLiteral("application/vnd.openxmlformats-officedocument.custom-properties+xml"),
+                            emptyCustomPropertiesPart());
+
+    docxFile.addRelationship(QStringLiteral("word/document.xml"),
+                             QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings"),
+                             QStringLiteral("settings.xml"));
+    docxFile.addContentFile(QString(), QStringLiteral("/word/settings.xml"),
+                            QByteArrayLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"),
+                            settingsPart(evenAndOddHeaders));
+
+    docxFile.addRelationship(QStringLiteral("word/document.xml"),
+                             QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable"),
+                             QStringLiteral("fontTable.xml"));
+    docxFile.addContentFile(QString(), QStringLiteral("/word/fontTable.xml"),
+                            QByteArrayLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml"),
+                            emptyFontTablePart());
+
+    if (!hasComments) {
+        docxFile.addRelationship(QStringLiteral("word/document.xml"),
+                                 QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"),
+                                 QStringLiteral("comments.xml"));
+        docxFile.addContentFile(QString(), QStringLiteral("/word/comments.xml"),
+                                QByteArrayLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"),
+                                emptyCommentsPart());
+    }
+    if (!hasFootnotes) {
+        docxFile.addRelationship(QStringLiteral("word/document.xml"),
+                                 QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes"),
+                                 QStringLiteral("footnotes.xml"));
+        docxFile.addContentFile(QString(), QStringLiteral("/word/footnotes.xml"),
+                                QByteArrayLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"),
+                                emptyNotesPart("w:footnotes", "w:footnote", "FootnoteReference"));
+    }
+    if (!hasEndnotes) {
+        docxFile.addRelationship(QStringLiteral("word/document.xml"),
+                                 QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes"),
+                                 QStringLiteral("endnotes.xml"));
+        docxFile.addContentFile(QString(), QStringLiteral("/word/endnotes.xml"),
+                                QByteArrayLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml"),
+                                emptyNotesPart("w:endnotes", "w:endnote", "EndnoteReference"));
+    }
 }
 
 void resolveFontFamilies(OdfReaderDocxContext &context)
@@ -158,8 +679,28 @@ void exportMasterPageSections(OdfReaderDocxContext &context, OdfTextReader &text
         return;
     }
 
-    const QString headerFile = QStringLiteral("header%1.xml").arg(partNumber);
-    const QString footerFile = QStringLiteral("footer%1.xml").arg(partNumber);
+    struct HeaderFooterPart {
+        bool present = false;
+        QByteArray content;
+        QString file;
+        QString relationshipId;
+    };
+
+    const auto partFile = [partNumber](bool header, const QString &type) {
+        QString suffix;
+        if (type == QLatin1String("even")) {
+            suffix = QStringLiteral("-even");
+        } else if (type == QLatin1String("first")) {
+            suffix = QStringLiteral("-first");
+        }
+        return QStringLiteral("%1%2%3.xml")
+            .arg(header ? QStringLiteral("header") : QStringLiteral("footer"))
+            .arg(partNumber)
+            .arg(suffix);
+    };
+
+    QHash<QString, HeaderFooterPart> headers;
+    QHash<QString, HeaderFooterPart> footers;
     QHash<QString, PageGeometry> pageLayouts;
     QString pageLayoutName;
     const QString masterPageName = selectedMaster;
@@ -171,8 +712,6 @@ void exportMasterPageSections(OdfReaderDocxContext &context, OdfTextReader &text
     prepareForOdf(reader);
     reader.setDevice(store->device());
 
-    QByteArray headerContent;
-    QByteArray footerContent;
     bool masterPageDone = false;
 
     // Find the root element.  Calling qualifiedName() also triggers the
@@ -224,10 +763,21 @@ void exportMasterPageSections(OdfReaderDocxContext &context, OdfTextReader &text
                             geometry.marginLeft = pageMargin(QStringLiteral("fo:margin-left"));
                             geometry.numberFormat = attrs.value(QStringLiteral("style:num-format")).toString();
                             geometry.landscape = attrs.value(QStringLiteral("style:print-orientation")) == QLatin1StringView("landscape");
+                            const QString allBorder = attrs.value(QStringLiteral("fo:border")).toString();
+                            geometry.borderTop = attrs.value(QStringLiteral("fo:border-top")).toString();
+                            geometry.borderRight = attrs.value(QStringLiteral("fo:border-right")).toString();
+                            geometry.borderBottom = attrs.value(QStringLiteral("fo:border-bottom")).toString();
+                            geometry.borderLeft = attrs.value(QStringLiteral("fo:border-left")).toString();
+                            if (geometry.borderTop.isEmpty()) geometry.borderTop = allBorder;
+                            if (geometry.borderRight.isEmpty()) geometry.borderRight = allBorder;
+                            if (geometry.borderBottom.isEmpty()) geometry.borderBottom = allBorder;
+                            if (geometry.borderLeft.isEmpty()) geometry.borderLeft = allBorder;
                             while (reader.readNextStartElement()) {
                                 if (reader.qualifiedName() == QLatin1StringView("style:columns")) {
                                     geometry.columns = qMax(1, reader.attributes().value(QStringLiteral("fo:column-count")).toInt());
                                     geometry.columnGap = KoUnit::parseValue(reader.attributes().value(QStringLiteral("fo:column-gap")).toString());
+                                } else if (reader.qualifiedName() == QLatin1StringView("style:background-image")) {
+                                    geometry.backgroundImageHref = reader.attributes().value(QStringLiteral("xlink:href")).toString();
                                 }
                                 reader.skipCurrentElement();
                             }
@@ -268,22 +818,38 @@ void exportMasterPageSections(OdfReaderDocxContext &context, OdfTextReader &text
                     masterPageDone = true;
                     pageLayoutName = thisLayoutName;
 
-                    // Redirect the backends' output into the header/footer
-                    // part while its content is traversed.
+                    // Redirect the backends' output into the matching
+                    // header/footer part while its content is traversed.
                     while (reader.readNextStartElement()) {
                         const QString childName = reader.qualifiedName().toString();
-                        if (childName != QLatin1StringView("style:header") && childName != QLatin1StringView("style:footer")) {
-                            reader.skipCurrentElement(); // first/left variants are not exported yet
+                        const bool isHeader = childName == QLatin1StringView("style:header")
+                            || childName == QLatin1StringView("style:header-left")
+                            || childName == QLatin1StringView("style:header-first");
+                        const bool isFooter = childName == QLatin1StringView("style:footer")
+                            || childName == QLatin1StringView("style:footer-left")
+                            || childName == QLatin1StringView("style:footer-first");
+                        if (!isHeader && !isFooter) {
+                            reader.skipCurrentElement();
                             continue;
                         }
-                        const bool isHeader = childName == QLatin1StringView("style:header");
+
+                        QString type = QStringLiteral("default");
+                        if (childName.endsWith(QLatin1String("-left"))) {
+                            type = QStringLiteral("even");
+                        } else if (childName.endsWith(QLatin1String("-first"))) {
+                            type = QStringLiteral("first");
+                        }
+
+                        HeaderFooterPart &part = (isHeader ? headers : footers)[type];
+                        part.present = true;
+                        part.file = partFile(isHeader, type);
 
                         QByteArray content;
                         QBuffer buffer(&content);
                         KoXmlWriter partWriter(&buffer);
                         KoXmlWriter *previousWriter = context.setDocumentWriter(&partWriter);
                         const QString previousPart = context.outputPart();
-                        context.setOutputPart(isHeader ? QStringLiteral("word/") + headerFile : QStringLiteral("word/") + footerFile);
+                        context.setOutputPart(QStringLiteral("word/") + part.file);
 
                         while (reader.readNextStartElement()) {
                             textReader.readTextLevelElement(reader);
@@ -291,12 +857,7 @@ void exportMasterPageSections(OdfReaderDocxContext &context, OdfTextReader &text
 
                         context.setOutputPart(previousPart);
                         context.setDocumentWriter(previousWriter);
-
-                        if (isHeader) {
-                            headerContent = content;
-                        } else {
-                            footerContent = content;
-                        }
+                        part.content = content;
                     }
                 }
             } else {
@@ -307,31 +868,55 @@ void exportMasterPageSections(OdfReaderDocxContext &context, OdfTextReader &text
 
     store->close();
 
-    // Create the parts and the relationships from document.xml to them.
-    QString headerRelId;
-    if (!headerContent.isEmpty()) {
-        headerRelId = docxFile.addRelationship(QStringLiteral("word/document.xml"),
-                                               QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/header"),
-                                               headerFile);
-        docxFile.addContentFile(QString(),
-                                QStringLiteral("/word/") + headerFile,
-                                QByteArrayLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"),
-                                wrapHeaderFooterPart(headerContent, "w:hdr"));
-    }
-
-    QString footerRelId;
-    if (!footerContent.isEmpty()) {
-        footerRelId = docxFile.addRelationship(QStringLiteral("word/document.xml"),
-                                               QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer"),
-                                               footerFile);
-        docxFile.addContentFile(QString(),
-                                QStringLiteral("/word/") + footerFile,
-                                QByteArrayLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"),
-                                wrapHeaderFooterPart(footerContent, "w:ftr"));
-    }
-
     const PageGeometry geometry = pageLayouts.value(pageLayoutName);
-    if (headerRelId.isEmpty() && footerRelId.isEmpty() && !geometry.valid) {
+
+    // A page background image (watermark) has to be present in every header
+    // variant, otherwise it disappears on first/even pages.  When there is no
+    // header at all, create the default header for it.
+    if (geometry.valid && !geometry.backgroundImageHref.isEmpty()) {
+        if (headers.isEmpty()) {
+            HeaderFooterPart &part = headers[QStringLiteral("default")];
+            part.present = true;
+            part.file = partFile(true, QStringLiteral("default"));
+        }
+        for (auto it = headers.begin(); it != headers.end(); ++it) {
+            const QByteArray watermark = watermarkParagraph(docxFile, store, geometry, it.value().file, partNumber);
+            if (!watermark.isEmpty()) {
+                it.value().content += watermark;
+            }
+        }
+    }
+
+    // Create the parts and the relationships from document.xml to them.
+    const auto createHeaderFooterParts = [&docxFile](QHash<QString, HeaderFooterPart> &parts, bool header) {
+        for (auto it = parts.begin(); it != parts.end(); ++it) {
+            HeaderFooterPart &part = it.value();
+            if (!part.present) {
+                continue;
+            }
+            if (part.content.isEmpty()) {
+                part.content = QByteArrayLiteral("<w:p/>");
+            }
+            part.relationshipId = docxFile.addRelationship(
+                QStringLiteral("word/document.xml"),
+                header ? QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/header")
+                       : QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer"),
+                part.file);
+            docxFile.addContentFile(
+                QString(),
+                QStringLiteral("/word/") + part.file,
+                header ? QByteArrayLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml")
+                       : QByteArrayLiteral("application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"),
+                wrapHeaderFooterPart(part.content, header ? "w:hdr" : "w:ftr"));
+        }
+    };
+
+    createHeaderFooterParts(headers, true);
+    createHeaderFooterParts(footers, false);
+
+    context.evenAndOddHeaders = headers.contains(QStringLiteral("even")) || footers.contains(QStringLiteral("even"));
+
+    if (headers.isEmpty() && footers.isEmpty() && !geometry.valid) {
         return;
     }
 
@@ -342,18 +927,20 @@ void exportMasterPageSections(OdfReaderDocxContext &context, OdfTextReader &text
     writer.startElement("w:sectPr");
     writer.addAttribute("xmlns:w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main");
     writer.addAttribute("xmlns:r", "http://schemas.openxmlformats.org/officeDocument/2006/relationships");
-    if (!headerRelId.isEmpty()) {
-        writer.startElement("w:headerReference");
-        writer.addAttribute("w:type", "default");
-        writer.addAttribute("r:id", headerRelId);
-        writer.endElement(); // w:headerReference
-    }
-    if (!footerRelId.isEmpty()) {
-        writer.startElement("w:footerReference");
-        writer.addAttribute("w:type", "default");
-        writer.addAttribute("r:id", footerRelId);
-        writer.endElement(); // w:footerReference
-    }
+    const auto writeReferences = [&writer](const QHash<QString, HeaderFooterPart> &parts, const char *element) {
+        for (const QString &type : {QStringLiteral("default"), QStringLiteral("even"), QStringLiteral("first")}) {
+            const auto it = parts.constFind(type);
+            if (it == parts.constEnd() || it.value().relationshipId.isEmpty()) {
+                continue;
+            }
+            writer.startElement(element);
+            writer.addAttribute("w:type", type);
+            writer.addAttribute("r:id", it.value().relationshipId);
+            writer.endElement();
+        }
+    };
+    writeReferences(headers, "w:headerReference");
+    writeReferences(footers, "w:footerReference");
     writer.startElement("w:type");
     writer.addAttribute("w:val", geometry.sectionType);
     writer.endElement(); // w:type
@@ -371,14 +958,15 @@ void exportMasterPageSections(OdfReaderDocxContext &context, OdfTextReader &text
         // active header/footer, keeping its distance from the paper edge
         // separately in w:header/w:footer.
         writer.startElement("w:pgMar");
-        writer.addAttribute("w:top", toTwips(geometry.marginTop + (headerRelId.isEmpty() ? 0 : geometry.headerMinHeight)));
+        writer.addAttribute("w:top", toTwips(geometry.marginTop + (headers.isEmpty() ? 0 : geometry.headerMinHeight)));
         writer.addAttribute("w:right", toTwips(geometry.marginRight));
-        writer.addAttribute("w:bottom", toTwips(geometry.marginBottom + (footerRelId.isEmpty() ? 0 : geometry.footerMinHeight)));
+        writer.addAttribute("w:bottom", toTwips(geometry.marginBottom + (footers.isEmpty() ? 0 : geometry.footerMinHeight)));
         writer.addAttribute("w:left", toTwips(geometry.marginLeft));
         writer.addAttribute("w:header", toTwips(geometry.marginTop));
         writer.addAttribute("w:footer", toTwips(geometry.marginBottom));
         writer.addAttribute("w:gutter", 0);
         writer.endElement(); // w:pgMar
+        writePageBorders(writer, geometry);
     }
     if (!geometry.numberFormat.isEmpty()) {
         const QHash<QString, QString> formats = {{QStringLiteral("i"), QStringLiteral("lowerRoman")},
@@ -387,6 +975,10 @@ void exportMasterPageSections(OdfReaderDocxContext &context, OdfTextReader &text
                                                 {QStringLiteral("A"), QStringLiteral("upperLetter")}};
         writer.startElement("w:pgNumType");
         writer.addAttribute("w:fmt", formats.value(geometry.numberFormat, QStringLiteral("decimal")));
+        writer.endElement();
+    }
+    if (headers.contains(QStringLiteral("first")) || footers.contains(QStringLiteral("first"))) {
+        writer.startElement("w:titlePg");
         writer.endElement();
     }
     if (geometry.columns > 1) {
@@ -851,6 +1443,14 @@ KoFilter::ConversionStatus DocxExport::convert(const QByteArray &from, const QBy
                                  QStringLiteral("endnotes.xml"));
         docxFile.addContentFile("", "/word/endnotes.xml", "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml", tempArray);
     }
+
+    // Emit the package metadata and the standard supporting parts.  Callers
+    // that inspect a DOCX package expect these parts even when the document
+    // has no comments, notes, custom properties, or explicit settings.
+    writePackageMetadata(docxFile, odfStore, docxBackendContext.evenAndOddHeaders,
+                         commentsExist,
+                         !docxBackendContext.footnotesContent().isEmpty(),
+                         !docxBackendContext.endnotesContent().isEmpty());
 
     // Add the newly converted document contents to the docx file.
     docxFile.addContentFile("",

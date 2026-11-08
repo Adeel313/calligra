@@ -7,6 +7,7 @@
 #include "KPrPresenterViewToolWidget.h"
 
 #include <KoIcon.h>
+#include <KoRibbonIcons.h>
 #include <QBoxLayout>
 #include <QLabel>
 #include <QTime>
@@ -21,12 +22,12 @@ KPrPresenterViewToolWidget::KPrPresenterViewToolWidget(QWidget *parent)
 
     QHBoxLayout *hLayout = new QHBoxLayout;
     QToolButton *toolButton = new QToolButton;
-    toolButton->setIcon(koIcon("go-previous"));
+    toolButton->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("go-previous"), koIcon("go-previous")));
     toolButton->setIconSize(iconSize);
     connect(toolButton, &QAbstractButton::clicked, this, &KPrPresenterViewToolWidget::previousSlideClicked);
     hLayout->addWidget(toolButton);
     toolButton = new QToolButton;
-    toolButton->setIcon(koIcon("go-next"));
+    toolButton->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("go-next"), koIcon("go-next")));
     toolButton->setIconSize(iconSize);
     connect(toolButton, &QAbstractButton::clicked, this, &KPrPresenterViewToolWidget::nextSlideClicked);
     hLayout->addWidget(toolButton);
@@ -40,7 +41,7 @@ KPrPresenterViewToolWidget::KPrPresenterViewToolWidget(QWidget *parent)
 
     m_slidesToolButton = new QToolButton;
     m_slidesToolButton->setCheckable(true);
-    m_slidesToolButton->setIcon(koIcon("view-list-icons"));
+    m_slidesToolButton->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("view-list-icons"), koIcon("view-list-icons")));
     m_slidesToolButton->setIconSize(iconSize);
     connect(m_slidesToolButton, &QAbstractButton::toggled, this, &KPrPresenterViewToolWidget::slideThumbnailsToggled);
     mainLayout->addWidget(m_slidesToolButton);

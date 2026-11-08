@@ -79,7 +79,7 @@ KoFilter::ConversionStatus DocxXmlEndnoteReader::read(MSOOXML::MsooXmlReaderCont
 
     //! @todo find out whether the namespace returned by namespaceUri()
     //!       is exactly the same ref as the element of namespaceDeclarations()
-    if (!namespaces.contains(QXmlStreamNamespaceDeclaration("w", MSOOXML::Schemas::wordprocessingml))) {
+    if (!hasNamespace(MSOOXML::Schemas::wordprocessingml)) {
         raiseError(i18n("Namespace \"%1\" not found", QLatin1String(MSOOXML::Schemas::wordprocessingml)));
         return KoFilter::WrongFormat;
     }
@@ -195,6 +195,7 @@ KoFilter::ConversionStatus DocxXmlEndnoteReader::read_endnote()
         }
     }
 
+    closeOpenList();
     QString content = QString::fromUtf8(buffer.buffer(), buffer.buffer().size());
 
     delete body;

@@ -186,6 +186,10 @@ void KoPrintingDialog::printPage(int, QPainter &)
 {
 }
 
+void KoPrintingDialog::printPagePost(int, QPainter &)
+{
+}
+
 QRectF KoPrintingDialog::preparePage(int)
 {
     return QRectF();

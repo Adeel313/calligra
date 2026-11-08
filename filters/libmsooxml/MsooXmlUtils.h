@@ -192,7 +192,8 @@ KOMSOOXML_EXPORT bool convertBooleanAttr(const QString &value, bool defaultValue
  @return status: KoFilter::OK on success or KoFilter::WrongFormat when any unexpected and critical incompatibility occurs.
 */
 //! @todo create whole class keeping the data
-KOMSOOXML_EXPORT KoFilter::ConversionStatus loadContentTypes(const KoXmlDocument &contentTypesXML, QMultiHash<QByteArray, QByteArray> &contentTypes);
+KOMSOOXML_EXPORT KoFilter::ConversionStatus loadContentTypes(const KoXmlDocument &contentTypesXML, QMultiHash<QByteArray, QByteArray> &contentTypes,
+                                                                       const QStringList &packageParts = QStringList());
 
 //! Loads content types from "docProps/app.xml"
 KOMSOOXML_EXPORT KoFilter::ConversionStatus loadDocumentProperties(const KoXmlDocument &appXML, QMap<QString, QVariant> &properties);
@@ -313,6 +314,11 @@ KOMSOOXML_EXPORT void setupUnderLineStyle(const QString &msooxmlName, KoCharacte
 //! @return the symbolic name of column @p column (counted from 0)
 //! This is similar to the notation of spreadsheet's column, e.g. 0th column is "A", 1st is "B", 26th is "AA".
 KOMSOOXML_EXPORT QString columnName(uint column);
+
+//! Maps ISO/IEC 29500 Strict namespace and relationship type URIs (purl.oclc.org/ooxml/...)
+//! to the Transitional URIs (schemas.openxmlformats.org/.../2006/...) the readers use.
+//! Other URIs are returned unchanged.
+KOMSOOXML_EXPORT QString canonicalNamespace(QStringView uri);
 
 //! Splits @a pathAndFile into path and file parts. Path does not end with '/'.
 KOMSOOXML_EXPORT void splitPathAndFile(const QString &pathAndFile, QString *path, QString *file);

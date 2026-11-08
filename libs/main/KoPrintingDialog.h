@@ -105,6 +105,15 @@ protected:
     virtual void printPage(int pageNumber, QPainter &painter);
 
     /**
+     * Called after the shape manager has painted the page.  Use this for
+     * page decorations that must appear above the page contents, such as
+     * page borders or crop marks.
+     * @param pageNumber the number of the page being printed.
+     * @param painter the painter.
+     */
+    virtual void printPagePost(int pageNumber, QPainter &painter);
+
+    /**
      * Implement to return the shapes on the requested page.
      */
     virtual QList<KoShape *> shapesOnPage(int pageNumber) = 0;

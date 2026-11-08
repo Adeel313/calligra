@@ -30,6 +30,7 @@ public:
 
 protected:
     QRectF preparePage(int pageNumber) override;
+    void printPagePost(int pageNumber, QPainter &painter) override;
     QList<KoShape *> shapesOnPage(int pageNumber) override;
     void printingDone() override;
     int documentFirstPage() const override;

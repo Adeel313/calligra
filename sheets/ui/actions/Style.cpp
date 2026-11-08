@@ -650,3 +650,9 @@ void FillColor::triggeredFillColor(const KoColor &color)
     command->add(*selection);
     command->execute(selection->canvas());
 }
+
+void FillColor::updateOnChange(Selection *, const Cell &activeCell)
+{
+    const Style style = activeCell.style();
+    m_colorAction->setCurrentColor(style.backgroundColor());
+}

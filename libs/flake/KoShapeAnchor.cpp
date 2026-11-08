@@ -152,6 +152,11 @@ void KoShapeAnchor::setOffset(const QPointF &offset)
     d->offset = offset;
 }
 
+QUrl KoShapeAnchor::headerFooterTextDocumentResource()
+{
+    return QUrl(QStringLiteral("calligra://text-document/header-footer"));
+}
+
 void KoShapeAnchor::saveOdf(KoShapeSavingContext &context) const
 {
     // anchor-type

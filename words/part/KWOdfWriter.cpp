@@ -118,7 +118,7 @@ void KWOdfWriter::saveHeaderFooter(KoShapeSavingContext &context)
             continue;
 
         KoGenStyle masterStyle(KoGenStyle::MasterPageStyle);
-        KoGenStyle layoutStyle = pageStyle.saveOdf();
+        KoGenStyle layoutStyle = pageStyle.saveOdf(&context);
         if (!pageStyle.displayName().isEmpty() && pageStyle.displayName() != pageStyle.name())
             masterStyle.addProperty("style:display-name", pageStyle.displayName());
         if (!pageStyle.nextStyleName().isEmpty())
@@ -140,7 +140,7 @@ void KWOdfWriter::saveHeaderFooter(KoShapeSavingContext &context)
 
         KoGenStyle masterStyle(KoGenStyle::MasterPageStyle);
         // masterStyle.setAutoStyleInStylesDotXml(true);
-        KoGenStyle layoutStyle = pageStyle.saveOdf();
+        KoGenStyle layoutStyle = pageStyle.saveOdf(&context);
         if (!pageStyle.displayName().isEmpty() && pageStyle.displayName() != pageStyle.name())
             masterStyle.addProperty("style:display-name", pageStyle.displayName());
         if (!pageStyle.nextStyleName().isEmpty())

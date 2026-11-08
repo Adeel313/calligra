@@ -18,11 +18,87 @@
 #include <KoSelection.h>
 #include <KoShapeAnchor.h>
 #include <KoShapeContainer.h>
+#include <QTextDocument>
+#include <QUrl>
 #include <KoShapeContainerModel.h>
 #include <KoShapeManager.h>
 #include <KoSnapGuide.h>
 #include <KoToolBase.h>
+#include <KoTextDocument.h>
+#include <KoTextEditor.h>
+#include <KoTextShapeDataBase.h>
+#include <commands/ChangeAnchorPropertiesCommand.h>
 #include <commands/KoShapeMoveCommand.h>
+
+/**
+ * An image inserted into a header or footer lives in the text document of that
+ * header/footer.  Its anchor points into that document.
+ */
+static bool isHeaderFooterAnchor(const KoShapeAnchor *anchor)
+{
+    if (!anchor || !anchor->textLocation()) {
+        return false;
+    }
+    const QTextDocument *document = anchor->textLocation()->document();
+    return document && document->resource(QTextDocument::UserResource, KoShapeAnchor::headerFooterTextDocumentResource()).toBool();
+}
+
+/**
+ * The rectangle a header/footer shape has to stay in: the frame that holds the
+ * header/footer text (in the coordinates of that frame, which are the
+ * coordinates of its children).
+ */
+static bool headerFooterLimit(const KoShape *shape, QRectF *limit)
+{
+    if (!isHeaderFooterAnchor(shape->anchor())) {
+        return false;
+    }
+    const KoShape *parent = shape->parent();
+    if (!parent) {
+        return false;
+    }
+    *limit = QRectF(QPointF(), parent->size());
+    return true;
+}
+
+/**
+ * Turn an as-character image of a header/footer into a floating image that is
+ * anchored to the same character inside the header/footer.  Keeping the anchor
+ * in that text document means the image stays part of the header/footer, while
+ * a floating anchor makes it draggable (an as-character image is positioned by
+ * the text layout and can not be moved with the mouse).
+ */
+static bool makeHeaderFooterShapeFloating(KoShape *shape, KoShapeAnchor *anchor)
+{
+    KoShapeContainer *container = shape->parent();
+    if (!container) {
+        return false;
+    }
+    KoTextShapeDataBase *textData = qobject_cast<KoTextShapeDataBase *>(container->userData());
+    if (!textData || !textData->document()) {
+        return false;
+    }
+    KoTextDocument textDocument(textData->document());
+    KoTextEditor *editor = textDocument.textEditor();
+    if (!editor) {
+        return false;
+    }
+
+    // The new anchor is put at the character the image used to occupy.
+    editor->setPosition(anchor->textLocation()->position());
+
+    KoShapeAnchor anchorProperties(nullptr);
+    anchorProperties.setAnchorType(KoShapeAnchor::AnchorToCharacter);
+    anchorProperties.setHorizontalRel(KoShapeAnchor::HChar);
+    anchorProperties.setVerticalRel(KoShapeAnchor::VChar);
+    anchorProperties.setHorizontalPos(KoShapeAnchor::HFromLeft);
+    anchorProperties.setVerticalPos(KoShapeAnchor::VFromTop);
+    anchorProperties.setOffset(anchor->offset());
+
+    ChangeAnchorPropertiesCommand *command = new ChangeAnchorPropertiesCommand(anchor, anchorProperties, container, nullptr);
+    editor->addCommand(command); // executes the command and makes it undoable
+    return true;
+}
 
 ShapeMoveStrategy::ShapeMoveStrategy(KoToolBase *tool, const QPointF &clicked)
     : KoInteractionStrategy(tool)
@@ -126,13 +202,24 @@ void ShapeMoveStrategy::promoteInlineAnchors()
         if (!anchor || anchor->anchorType() != KoShapeAnchor::AnchorAsCharacter) {
             continue;
         }
+        // An image anchored in a header or footer is part of that header/footer
+        // (like in Word) and must not escape it by turning into a page anchored
+        // shape.  It still has to be draggable inside the header/footer, so it
+        // becomes a floating shape anchored to a character of that same text.
+        if (isHeaderFooterAnchor(anchor)) {
+            if (makeHeaderFooterShapeFloating(shape, anchor)) {
+                m_previousOffsets[i] = anchor->offset();
+                m_newOffsets[i] = anchor->offset();
+            }
+            continue;
+        }
         // An as-character image is glued to the text flow: the layout keeps
         // recomputing its position, so a position-only drag would be undone
         // at the next relayout.  Turn it into a floating image anchored to
         // the page and take the current position as the new offset so it
         // does not visually jump.  From here on the generic move code
         // (position + offset kept in sync) applies.
-        anchor->setAnchorType(KoShapeAnchor::AnchorParagraph);
+        anchor->setAnchorType(KoShapeAnchor::AnchorPage);
         anchor->setHorizontalPos(KoShapeAnchor::HFromLeft);
         anchor->setVerticalPos(KoShapeAnchor::VFromTop);
         anchor->setHorizontalRel(KoShapeAnchor::HPage);
@@ -151,7 +238,16 @@ void ShapeMoveStrategy::moveSelection()
 
     int i = 0;
     foreach (KoShape *shape, m_selectedShapes) {
-        QPointF delta = m_previousPositions.at(i) + m_diff - shape->position();
+        QPointF target = m_previousPositions.at(i) + m_diff;
+        // A shape belonging to a header or footer can be dragged around inside
+        // it, but it must not leave the header/footer area.
+        QRectF limit;
+        if (headerFooterLimit(shape, &limit)) {
+            const QSizeF size = shape->boundingRect().size();
+            target.setX(qBound(limit.left(), target.x(), qMax(limit.left(), limit.right() - size.width())));
+            target.setY(qBound(limit.top(), target.y(), qMax(limit.top(), limit.bottom() - size.height())));
+        }
+        QPointF delta = target - shape->position();
         if (shape->parent()) {
             shape->parent()->model()->proposeMove(shape, delta);
         }

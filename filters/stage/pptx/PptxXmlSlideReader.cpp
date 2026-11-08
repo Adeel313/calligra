@@ -316,7 +316,7 @@ KoFilter::ConversionStatus PptxXmlSlideReader::readInternal()
     }
     //! @todo find out whether the namespace returned by namespaceUri()
     //!       is exactly the same ref as the element of namespaceDeclarations()
-    if (!namespaces.contains(QXmlStreamNamespaceDeclaration("p", MSOOXML::Schemas::presentationml))) {
+    if (!hasNamespace(MSOOXML::Schemas::presentationml)) {
         raiseError(i18n("Namespace \"%1\" not found", QLatin1String(MSOOXML::Schemas::presentationml)));
         return KoFilter::WrongFormat;
     }

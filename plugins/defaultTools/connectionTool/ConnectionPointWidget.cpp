@@ -8,6 +8,9 @@
 #include "ConnectionPointWidget.h"
 #include "ConnectionTool.h"
 #include <QAction>
+#include <QCoreApplication>
+#include <QGridLayout>
+#include <QSpacerItem>
 
 ConnectionPointWidget::ConnectionPointWidget(ConnectionTool *tool, QWidget *parent)
     : QWidget(parent)
@@ -31,6 +34,23 @@ ConnectionPointWidget::ConnectionPointWidget(ConnectionTool *tool, QWidget *pare
 
     connect(widget.toggleEditMode, &QCheckBox::checkStateChanged, tool, &ConnectionTool::toggleConnectionPointEditMode);
     connect(tool, &ConnectionTool::sendConnectionPointEditState, this, &ConnectionPointWidget::toggleEditModeCheckbox);
+
+    // The ribbon shows tool options as a flat group, so the form's labels and
+    // controls share two rows instead of the docker's stacked layout.
+    if (QCoreApplication::applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive)) {
+        widget.labelEscape->hide();
+        widget.labelAlign->hide();
+        widget.gridLayout->removeWidget(widget.toggleEditMode);
+        widget.SpecialSpacer->hide();
+        widget.gridLayout->addWidget(widget.toggleEditMode, 2, 1, Qt::AlignLeft);
+        // The form's vertical spacer would keep the group three rows high.
+        for (int i = widget.gridLayout->count() - 1; i >= 0; --i) {
+            if (QSpacerItem *spacer = widget.gridLayout->itemAt(i)->spacerItem()) {
+                widget.gridLayout->removeItem(spacer);
+                delete spacer;
+            }
+        }
+    }
 }
 
 void ConnectionPointWidget::toggleEditModeCheckbox(bool checked)

@@ -20,6 +20,7 @@
 #include <KoUnit.h>
 
 #include <QApplication>
+#include <QPageLayout>
 #include <QTextBlock>
 #include <QTextDocument>
 #include <QTextLayout>
@@ -47,6 +48,38 @@ QRectF KWPrintingDialog::preparePage(int pageNumber)
     KWPage page = m_document->pageManager()->page(pageNumber);
     if (!page.isValid())
         return QRectF();
+
+    if (property("printerPageLayout").toBool()) {
+        const qreal pointsToPixels = resolution / 72.0;
+        const QPageLayout printerLayout = printer().pageLayout();
+        const QRectF paper = printerLayout.fullRect(QPageLayout::Point);
+        const QMarginsF margins = printerLayout.margins(QPageLayout::Point);
+        QRectF target = paper.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
+        if (target.width() <= 0 || target.height() <= 0)
+            target = paper;
+
+        const bool rotate = (printerLayout.orientation() == QPageLayout::Landscape)
+            != (page.width() > page.height());
+        const qreal scale = rotate
+            ? qMin(target.width() / page.height(), target.height() / page.width())
+            : qMin(target.width() / page.width(), target.height() / page.height());
+        const qreal documentWidth = rotate ? page.height() : page.width();
+        const qreal documentHeight = rotate ? page.width() : page.height();
+        const qreal x = target.x() * pointsToPixels
+            + (target.width() * pointsToPixels - documentWidth * scale * pointsToPixels) / 2.0;
+        const qreal y = target.y() * pointsToPixels
+            + (target.height() * pointsToPixels - documentHeight * scale * pointsToPixels) / 2.0;
+
+        painter().translate(x + (rotate ? documentWidth * scale * pointsToPixels : 0.0), y);
+        if (rotate)
+            painter().rotate(90);
+        painter().scale(scale, scale);
+        painter().translate(0, -page.offsetInDocument() * pointsToPixels);
+        return QRectF(target.x() * pointsToPixels,
+                      target.y() * pointsToPixels,
+                      target.width() * pointsToPixels,
+                      target.height() * pointsToPixels);
+    }
     printer().setPageSize(QPageSize(page.rect().size().toSize(), QPageSize::Unit::Point));
 
     KoInsets bleed = m_document->pageManager()->padding();
@@ -63,6 +96,27 @@ QRectF KWPrintingDialog::preparePage(int pageNumber)
     int offsetX = -bleedOffsetX;
 
     return QRectF(offsetX, pageOffset - bleedOffsetY, clipWidth + bleedWidth, clipHeight + bleedHeight);
+}
+
+void KWPrintingDialog::printPagePost(int pageNumber, QPainter &painter)
+{
+    KWPage page = m_document->pageManager()->page(pageNumber);
+    if (!page.isValid()) {
+        return;
+    }
+    const KoPageLayout layout = page.pageStyle().pageLayout();
+    if (!layout.border.hasBorder()) {
+        return;
+    }
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing);
+    const qreal scale = printer().resolution() / 72.0;
+    painter.scale(scale, scale);
+    const QRectF borderRect(QPointF(layout.leftMargin, layout.topMargin),
+                            QPointF(layout.width - layout.rightMargin, layout.height - layout.bottomMargin));
+    layout.border.paint(painter, borderRect);
+    painter.restore();
 }
 
 QList<KoShape *> KWPrintingDialog::shapesOnPage(int pageNumber)

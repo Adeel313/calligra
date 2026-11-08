@@ -22,6 +22,8 @@
 
 #include <KLocalizedString>
 
+#include <KoRibbonIcons.h>
+
 #include "KPrPage.h"
 #include "KPrPageApplicationData.h"
 #include "KPrPageTransition.h"
@@ -159,7 +161,7 @@ void KPrPageEffectDocker::configureRibbon()
     };
     auto *preview = new QToolButton(this);
     preview->setText(i18n("Preview"));
-    preview->setIcon(QIcon::fromTheme(QStringLiteral("media-playback-start")));
+    preview->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("media-playback-start")));
     KoRibbonLayout::configureButton(preview, Qt::ToolButtonTextUnderIcon);
     connect(preview, &QToolButton::clicked, this, &KPrPageEffectDocker::setEffectPreview);
     group(i18n("Preview"))->addWidget(preview, 0, 0);

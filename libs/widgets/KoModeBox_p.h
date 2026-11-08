@@ -70,6 +70,10 @@ public Q_SLOTS:
     /** Populate a passive ribbon page with an existing tool's live controls. */
     void primeToolOptions(const QString &toolId);
     void showRibbonPage(const QString &objectName);
+    /** Show or hide the tab that hosts a tool without losing its controls. */
+    void setToolTabVisible(const QString &toolId, bool visible);
+    /** Switch to the visible tab that hosts a tool. */
+    void showToolTab(const QString &toolId);
     /**
      * Using the buttongroup id passed in addButton() you can set the new active tool.
      * If the id does not resolve to a visible heading, this call is ignored.
@@ -171,6 +175,11 @@ public:
 
 private:
     void routeOfficeOptions(const QString &toolId, const QList<QPointer<QWidget>> &widgets);
+
+    /// Show command labels while the page fits, icons only when it would overflow.
+    void updateRibbonCompactness(QWidget *page);
+    /// Keep the Sheets ribbon at the height of its command rows.
+    void fitRibbonBand();
     enum IconMode {
         IconAndText,
         IconOnly

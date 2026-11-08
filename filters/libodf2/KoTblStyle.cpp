@@ -55,7 +55,9 @@ KoTblStyle::KoTblStyle()
     , m_backgroundColor()
     , m_breakAfter(NoBreak)
     , m_breakBefore(NoBreak)
-    , m_allowBreakBetweenRows(false)
+    // Word tables break between rows by default; only a row with w:cantSplit
+    // (or a table that is kept together) must stay in one piece.
+    , m_allowBreakBetweenRows(true)
     , m_leftMargin(0.0)
     , m_topMargin(0.0)
     , m_rightMargin(0.0)

@@ -277,6 +277,7 @@ protected:
     {
     } // never called
     QAction *createAction() override;
+    void updateOnChange(Selection *selection, const Cell &activeCell) override;
 
     KoColorPopupAction *m_colorAction;
 };

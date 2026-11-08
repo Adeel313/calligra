@@ -23,12 +23,14 @@
 #include "dialogs/KWCreateBookmarkDialog.h"
 #include "dialogs/KWFrameDialog.h"
 #include "dialogs/KWPageSettingsDialog.h"
+#include "dialogs/KWPrintDialog.h"
 #include "dialogs/KWPrintingDialog.h"
 #include "dialogs/KWSelectBookmarkDialog.h"
 #include "frames/KWCopyShape.h"
 #include "frames/KWFrame.h"
 #include "frames/KWTextFrameSet.h"
 #include "gemini/ViewModeSwitchEvent.h"
+#include "Words.h"
 #include "mailmerge/KWMailMergeDialog.h"
 #include "mailmerge/KWMailMergeField.h"
 #include "mailmerge/KWMailMergeManager.h"
@@ -36,6 +38,7 @@
 #include "widgets/KoFindToolbar.h"
 
 // calligra libs includes
+#include <KoAnchorInlineObject.h>
 #include <KoAnnotation.h>
 #include <KoAnnotationLayoutManager.h>
 #include <KoAnnotationManager.h>
@@ -53,7 +56,6 @@
 #include <KoInlineTextObjectManager.h>
 #include <KoMainWindow.h>
 #include <KoPart.h>
-#include <KoPasteController.h>
 #include <KoPathShape.h> // for KoPathShapeId
 #include <KoPointedAt.h>
 #include <KoProperties.h>
@@ -68,6 +70,7 @@
 #include <KoShapeManager.h>
 #include <KoShapeRegistry.h>
 #include <KoStandardAction.h>
+#include <KoStore.h>
 #include <KoTemplateCreateDia.h>
 #include <KoText.h>
 #include <KoTextDocument.h>
@@ -76,6 +79,7 @@
 #include <KoTextShapeData.h>
 #include <KoToolManager.h>
 #include <KoToolProxy.h>
+#include <tools/KoInteractionTool.h>
 #include <KoZoomController.h>
 
 #ifdef SHOULD_BUILD_RDF
@@ -98,13 +102,23 @@
 
 // Qt
 #include <QClipboard>
+#include <QBuffer>
 #include <QFileDialog>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QPointer>
+#include <QRegularExpression>
+#include <QImageReader>
+#include <QMimeData>
 #include <QMenuBar>
 #include <QPushButton>
 #include <QScrollBar>
 #include <QStandardPaths>
 #include <QStatusBar>
 #include <QTimer>
+
+#include <QTextDocument>
 
 #include <limits>
 
@@ -202,6 +216,17 @@ KWView::KWView(KoPart *part, KWDocument *document, QWidget *parent)
                 SLOT(semanticObjectViewSiteUpdated(hKoRdfBasicSemanticItem, QString)));
     }
 #endif
+
+    // A newly opened document starts in text editing rather than in the object
+    // interaction tool.  Without this the text-only Insert commands (table,
+    // page break) stay disabled until the user clicks into the document.
+    QTimer::singleShot(0, m_canvas, [this] {
+        if (!m_canvas || !m_canvas->shapeManager()->selection()->selectedShapes().isEmpty()) {
+            return;
+        }
+        m_canvas->setFocus(Qt::OtherFocusReason);
+        KoToolManager::instance()->switchToolRequested(QStringLiteral("TextToolFactory_ID"));
+    });
 }
 
 KWView::~KWView()
@@ -219,6 +244,158 @@ KoCanvasBase *KWView::canvasBase() const
 const KWPage KWView::currentPage() const
 {
     return m_currentPage;
+}
+
+KWTextFrameSet *KWView::currentTextFrameSet() const
+{
+    if (!m_canvas) {
+        return nullptr;
+    }
+    const QVariant documentVariant = m_canvas->resourceManager()->resource(KoText::CurrentTextDocument);
+    QTextDocument *document = static_cast<QTextDocument *>(documentVariant.value<void *>());
+    if (!document) {
+        // The text tool clears its document when it is deactivated, which also
+        // happens when a ribbon button or a dialog takes the focus.  Fall back
+        // to the frame that had the cursor last so that e.g. Insert Image still
+        // lands in the header the caret was in.
+        return m_lastTextFrameSet;
+    }
+    for (KWFrameSet *frameSet : m_document->frameSets()) {
+        KWTextFrameSet *textFrameSet = dynamic_cast<KWTextFrameSet *>(frameSet);
+        if (textFrameSet && textFrameSet->document() == document) {
+            m_lastTextFrameSet = textFrameSet;
+            return textFrameSet;
+        }
+    }
+    return m_lastTextFrameSet;
+}
+
+KWTextFrameSet *KWView::headerFooterFrameSetAtPointer()
+{
+    if (!m_canvas) {
+        return nullptr;
+    }
+    const QPoint viewPoint = m_canvas->mapFromGlobal(QCursor::pos());
+    const QPointF documentPoint = viewConverter()->viewToDocument(m_canvas->documentOffset() + viewPoint - m_canvas->pos());
+    return headerFooterFrameSetAt(documentPoint);
+}
+
+KWTextFrameSet *KWView::headerFooterFrameSetAt(const QPointF &documentPoint) const
+{
+    if (!m_document) {
+        return nullptr;
+    }
+    const KWPage page = m_document->pageManager()->page(documentPoint);
+    if (!page.isValid()) {
+        return nullptr;
+    }
+    // The page content rect is the main text area; the area above and below it
+    // belongs to the header and the footer of that page style.  A footer with
+    // content can reach up into the text area, so the page margins are taken
+    // into account as well and the whole band around the text area counts.
+    const QRectF textArea = page.contentRect();
+    const QRectF pageRect = page.rect();
+    const qreal headerEnd = pageRect.isEmpty() ? textArea.top() : qMax(textArea.top(), pageRect.top() + page.topMargin());
+    const qreal footerStart = pageRect.isEmpty() ? textArea.bottom() : qMin(textArea.bottom(), pageRect.bottom() - page.bottomMargin());
+    const bool inHeader = documentPoint.y() < headerEnd;
+    const bool inFooter = documentPoint.y() > footerStart;
+    if (!inHeader && !inFooter) {
+        return nullptr;
+    }
+
+    const KWPageStyle pageStyle = page.pageStyle();
+    const Words::HeaderFooterType policy = inHeader ? pageStyle.headerPolicy() : pageStyle.footerPolicy();
+    if (policy == Words::HFTypeNone) {
+        return nullptr;
+    }
+    const bool evenPage = policy == Words::HFTypeEvenOdd && page.pageNumber() % 2 == 0;
+    Words::TextFrameSetType type;
+    if (inHeader) {
+        type = evenPage ? Words::EvenPagesHeaderTextFrameSet : Words::OddPagesHeaderTextFrameSet;
+    } else {
+        type = evenPage ? Words::EvenPagesFooterTextFrameSet : Words::OddPagesFooterTextFrameSet;
+    }
+
+    // Prefer the frameset that matches the page side, but fall back to the only
+    // header/footer frameset of that page style: documents that use a single
+    // header or footer for every page do not always end up with the odd/even
+    // frameset the page number suggests.
+    KWTextFrameSet *fallback = nullptr;
+    const QList<KWFrameSet *> frameSets = m_document->frameSets();
+    for (KWFrameSet *frameSet : frameSets) {
+        KWTextFrameSet *textFrameSet = dynamic_cast<KWTextFrameSet *>(frameSet);
+        if (!textFrameSet || textFrameSet->pageStyle() != pageStyle) {
+            continue;
+        }
+        const Words::TextFrameSetType candidate = textFrameSet->textFrameSetType();
+        const bool isHeaderType = candidate == Words::OddPagesHeaderTextFrameSet || candidate == Words::EvenPagesHeaderTextFrameSet;
+        if (isHeaderType != inHeader) {
+            continue;
+        }
+        if (candidate == type) {
+            return textFrameSet;
+        }
+        if (!fallback) {
+            fallback = textFrameSet;
+        }
+    }
+    return fallback;
+}
+
+bool KWView::startEditingHeaderFooterAt(const QPointF &documentPoint)
+{
+    if (!m_canvas) {
+        return false;
+    }
+    KWTextFrameSet *frameSet = headerFooterFrameSetAt(documentPoint);
+    if (!frameSet) {
+        return false;
+    }
+
+    // Text that is already part of the header/footer keeps the normal
+    // double-click behaviour (selecting the word under the cursor).
+    if (KoShape *hitShape = m_canvas->shapeManager()->shapeAt(documentPoint)) {
+        KoTextShapeData *hitData = qobject_cast<KoTextShapeData *>(hitShape->userData());
+        if (hitData && hitData->document() == frameSet->document() && hitData->document()->characterCount() > 1) {
+            return false;
+        }
+    }
+
+    // The frame that is shown on a page can be a copy of the shape that owns the
+    // text, and only the owning shape can be edited.
+    KoShape *editableShape = nullptr;
+    const QList<KoShape *> shapes = frameSet->shapes();
+    for (KoShape *shape : shapes) {
+        if (!dynamic_cast<KWCopyShape *>(shape)) {
+            editableShape = shape;
+            break;
+        }
+    }
+    if (!editableShape) {
+        return false;
+    }
+
+    KoToolManager *toolManager = KoToolManager::instance();
+    // The text tool keeps editing the shape it already edits, and switching to
+    // the tool it already is does nothing, so leave the tool first.  Selecting
+    // the header/footer has to happen while it is not the text tool, as the
+    // text tool reverts selection changes.
+    const bool textToolActive = toolManager->activeToolId() == QLatin1String("TextToolFactory_ID");
+    if (textToolActive) {
+        toolManager->switchToolRequested(KoInteractionTool_ID);
+    }
+
+    KoSelection *selection = m_canvas->shapeManager()->selection();
+    selection->deselectAll();
+    selection->select(editableShape);
+    toolManager->switchToolRequested(QStringLiteral("TextToolFactory_ID"));
+
+    if (KoTextEditor *editor = KoTextDocument(frameSet->document()).textEditor()) {
+        // Put the cursor at the end of the (possibly still empty) header/footer.
+        editor->setPosition(editor->document()->characterCount() - 1);
+    }
+    m_canvas->setFocus(Qt::OtherFocusReason);
+    return true;
 }
 
 QWidget *KWView::canvas() const
@@ -305,7 +482,10 @@ void KWView::setupActions()
     action = actionCollection()->addAction(KStandardAction::Copy, "edit_copy", nullptr, nullptr);
     new KoCopyController(canvasBase(), action);
     action = actionCollection()->addAction(KStandardAction::Paste, "edit_paste", nullptr, nullptr);
-    new KoPasteController(canvasBase(), action);
+    // Paste is handled here instead of by KoPasteController so that an image
+    // on the clipboard can be inserted at the text cursor (including inside
+    // headers and footers) rather than being dropped at the mouse position.
+    connect(action, &QAction::triggered, this, &KWView::pasteRequested);
 
     action = new QAction(koIcon("edit-delete"), i18n("Delete"), this);
     action->setShortcut(QKeySequence("Del"));
@@ -575,14 +755,262 @@ KoShape *KWView::selectedShape() const
 
 // -------------------- Actions -----------------------
 
+/**
+ * Find the image an HTML snippet points at, which is how browsers and chat
+ * applications usually expose an image that was copied from them.
+ */
+static QUrl imageUrlFromHtml(const QString &html)
+{
+    if (html.isEmpty()) {
+        return QUrl();
+    }
+    static const QRegularExpression imageTag(QStringLiteral("<img[^>]*\\bsrc\\s*=\\s*[\"']([^\"']+)[\"']"), QRegularExpression::CaseInsensitiveOption);
+    const QRegularExpressionMatch match = imageTag.match(html);
+    if (!match.hasMatch()) {
+        return QUrl();
+    }
+    const QString source = match.captured(1);
+    if (source.startsWith(QLatin1String("data:"))) {
+        return QUrl(source);
+    }
+    const QUrl url = QUrl::fromUserInput(source);
+    return url.isValid() ? url : QUrl();
+}
+
+static QImage imageFromDataUri(const QUrl &url)
+{
+    const QString data = url.toString();
+    const int comma = data.indexOf(QLatin1Char(','));
+    if (comma < 0 || !data.contains(QLatin1String(";base64"))) {
+        return QImage();
+    }
+    const QByteArray encoded = data.mid(comma + 1).toLatin1();
+    return QImage::fromData(QByteArray::fromBase64(encoded));
+}
+
+QVector<QImage> KWView::imagesFromClipboard(const QMimeData *mimeData, QUrl *remoteImage) const
+{
+    QVector<QImage> images;
+
+    // A plain bitmap, which is what most applications offer for a copied image.
+    const QImage image = QApplication::clipboard()->image();
+    if (!image.isNull()) {
+        images.append(image);
+        return images;
+    }
+
+    // Any other bitmap flavour the application offers.
+    const QStringList formats = mimeData->formats();
+    for (const QString &format : formats) {
+        if (!format.startsWith(QLatin1String("image/")) || format == QLatin1String("image/svg+xml")) {
+            continue;
+        }
+        const QImage flavourImage = QImage::fromData(mimeData->data(format));
+        if (!flavourImage.isNull()) {
+            images.append(flavourImage);
+        }
+    }
+    if (!images.isEmpty()) {
+        return images;
+    }
+
+    // Copied files, or a copied link to an image on the web.
+    const QList<QUrl> urls = mimeData->urls();
+    for (const QUrl &url : urls) {
+        if (!url.isLocalFile()) {
+            if (remoteImage && !remoteImage->isValid() && url.isValid() && (url.scheme() == QLatin1String("http") || url.scheme() == QLatin1String("https"))) {
+                *remoteImage = url;
+            }
+            continue;
+        }
+        QImageReader reader(url.toLocalFile());
+        reader.setAutoTransform(true);
+        const QImage loaded = reader.read();
+        if (!loaded.isNull()) {
+            images.append(loaded);
+        }
+    }
+    if (!images.isEmpty() || (remoteImage && remoteImage->isValid())) {
+        return images;
+    }
+
+    // An image copied out of a browser or a chat window is usually only
+    // available as an HTML snippet pointing at the image.  Copied text that
+    // happens to contain an image keeps pasting as text, though.
+    const QString plainText = mimeData->text().trimmed();
+    const bool textIsJustALink = !plainText.isEmpty() && !plainText.contains(QLatin1Char(' '))
+        && (plainText.startsWith(QLatin1String("http")) || plainText.startsWith(QLatin1String("file:")));
+    if (!plainText.isEmpty() && !textIsJustALink) {
+        return images;
+    }
+    const QUrl imageUrl = imageUrlFromHtml(mimeData->html());
+    if (imageUrl.isValid()) {
+        if (imageUrl.isLocalFile()) {
+            QImageReader reader(imageUrl.toLocalFile());
+            reader.setAutoTransform(true);
+            const QImage loaded = reader.read();
+            if (!loaded.isNull()) {
+                images.append(loaded);
+            }
+        } else if (imageUrl.scheme() == QLatin1String("data")) {
+            const QImage loaded = imageFromDataUri(imageUrl);
+            if (!loaded.isNull()) {
+                images.append(loaded);
+            }
+        } else if (remoteImage && (imageUrl.scheme() == QLatin1String("http") || imageUrl.scheme() == QLatin1String("https"))) {
+            *remoteImage = imageUrl;
+        }
+    }
+    return images;
+}
+
+KWTextFrameSet *KWView::pasteTargetTextFrameSet()
+{
+    KWTextFrameSet *textFrameSet = currentTextFrameSet();
+    // An empty header or footer has no text to put a cursor into, so a click
+    // there leaves the caret (if any) in the body.  When the mouse points at a
+    // header/footer band, a pasted image still belongs to that header/footer.
+    if (!textFrameSet || textFrameSet->textFrameSetType() == Words::MainTextFrameSet) {
+        if (KWTextFrameSet *headerFooter = headerFooterFrameSetAtPointer()) {
+            textFrameSet = headerFooter;
+        }
+    }
+    return textFrameSet;
+}
+
+void KWView::insertPastedImages(const QVector<QImage> &images)
+{
+    if (images.isEmpty()) {
+        return;
+    }
+    if (KWTextFrameSet *textFrameSet = pasteTargetTextFrameSet()) {
+        insertImagesIntoTextFrame(textFrameSet, images);
+    } else {
+        // No text caret: keep the historical behaviour and drop the image where
+        // the mouse points.
+        addImages(images, canvas()->mapFromGlobal(QCursor::pos()));
+    }
+}
+
+void KWView::pasteImageFromUrl(const QUrl &url)
+{
+    QPointer<KWTextFrameSet> targetFrameSet(pasteTargetTextFrameSet());
+
+    auto *manager = new QNetworkAccessManager(this);
+    QNetworkRequest request(url);
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    QNetworkReply *reply = manager->get(request);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, manager, targetFrameSet]() {
+        const QByteArray data = reply->readAll();
+        const bool failed = reply->error() != QNetworkReply::NoError;
+        const QUrl imageUrl = reply->url();
+        reply->deleteLater();
+        manager->deleteLater();
+        if (failed) {
+            warnWords << "Could not download the pasted image" << imageUrl;
+            return;
+        }
+        QImage image;
+        if (!image.loadFromData(data) || image.isNull()) {
+            return;
+        }
+        if (targetFrameSet) {
+            insertImagesIntoTextFrame(targetFrameSet.data(), QVector<QImage>{image});
+        }
+    });
+}
+
+/**
+ * Pictures of shapes that were copied inside the document only reach the
+ * clipboard as ODF data, so they are pulled out of that for a header or a
+ * footer, where a pasted picture has to become part of the text.
+ */
+static QVector<QImage> imagesFromCopiedShapes(const QMimeData *mimeData)
+{
+    QVector<QImage> images;
+    QString format;
+    const QStringList formats = mimeData->formats();
+    for (const QString &candidate : formats) {
+        if (candidate.startsWith(QLatin1String("application/vnd.oasis.opendocument."))) {
+            format = candidate;
+            break;
+        }
+    }
+    if (format.isEmpty()) {
+        return images;
+    }
+
+    QBuffer buffer;
+    buffer.setData(mimeData->data(format));
+    if (!buffer.open(QIODevice::ReadOnly)) {
+        return images;
+    }
+    const QScopedPointer<KoStore> store(KoStore::createStore(&buffer, KoStore::Read, format.toLatin1()));
+    if (!store || store->bad()) {
+        return images;
+    }
+
+    QByteArray content;
+    if (!store->extractFile(QStringLiteral("content.xml"), content)) {
+        return images;
+    }
+    static const QRegularExpression hrefExpression(QStringLiteral("xlink:href\\s*=\\s*\"([^\"]+)\""));
+    QStringList pictureNames;
+    QRegularExpressionMatchIterator matches = hrefExpression.globalMatch(QString::fromUtf8(content));
+    while (matches.hasNext()) {
+        const QString name = matches.next().captured(1);
+        if (name.startsWith(QLatin1String("Pictures/")) && !pictureNames.contains(name)) {
+            pictureNames.append(name);
+        }
+    }
+    for (const QString &name : pictureNames) {
+        QByteArray pictureData;
+        if (!store->extractFile(name, pictureData)) {
+            continue;
+        }
+        const QImage image = QImage::fromData(pictureData);
+        if (!image.isNull()) {
+            images.append(image);
+        }
+    }
+    return images;
+}
+
 void KWView::pasteRequested()
 {
-    QImage img = QApplication::clipboard()->image();
+    const QMimeData *mimeData = QApplication::clipboard()->mimeData();
 
-    if (!img.isNull()) {
+    if (mimeData) {
+        // A bitmap (or a copied image file) belongs at the text cursor: when the
+        // caret sits in a header or footer the image has to become part of that
+        // header/footer instead of a free floating shape at the mouse position.
+        const bool hasRichText = mimeData->hasFormat(QStringLiteral("application/vnd.oasis.opendocument.text"));
+        KWTextFrameSet *target = pasteTargetTextFrameSet();
+        const bool inHeaderOrFooter = target && target->textFrameSetType() != Words::MainTextFrameSet;
+
+        QUrl remoteImage;
         QVector<QImage> images;
-        images.append(img);
-        addImages(images, canvas()->mapFromGlobal(QCursor::pos()));
+        if (!hasRichText) {
+            images = imagesFromClipboard(mimeData, &remoteImage);
+        } else if (inHeaderOrFooter) {
+            // A picture copied in the document body is only on the clipboard as
+            // ODF shape data; in a header or footer it becomes part of the text
+            // like any other pasted image instead of a floating shape.
+            images = imagesFromCopiedShapes(mimeData);
+        }
+
+        if (!images.isEmpty()) {
+            insertPastedImages(images);
+            return;
+        }
+        if (remoteImage.isValid()) {
+            pasteImageFromUrl(remoteImage);
+            return;
+        }
+    }
+
+    if (m_canvas) {
+        m_canvas->toolProxy()->paste();
     }
 }
 
@@ -625,6 +1053,11 @@ KoPrintJob *KWView::createPrintJob()
     dia->printer().setCreator(QString::fromLatin1("Calligra Words %1").arg(CALLIGRA_VERSION));
     dia->printer().setFullPage(true); // ignore printer margins
     return dia;
+}
+
+QPrintDialog *KWView::createPrintDialog(KoPrintJob *printJob, QWidget *parent)
+{
+    return new KWPrintDialog(printJob, parent);
 }
 
 void KWView::createTemplate()
@@ -1196,6 +1629,12 @@ void KWView::addImages(const QVector<QImage> &imageList, const QPoint &insertAt)
         return;
     }
 
+    KWTextFrameSet *textFrameSet = currentTextFrameSet();
+    if (textFrameSet && Words::isHeaderFooter(textFrameSet)) {
+        insertImagesIntoTextFrame(textFrameSet, imageList);
+        return;
+    }
+
     foreach (const QImage &image, imageList) {
         KoProperties params;
         params.setProperty("qimage", image);
@@ -1238,6 +1677,63 @@ void KWView::addImages(const QVector<QImage> &imageList, const QPoint &insertAt)
         selection->select(shape);
         m_canvas->addCommand(cmd);
     }
+}
+
+void KWView::insertImagesIntoTextFrame(KWTextFrameSet *textFrameSet, const QVector<QImage> &imageList)
+{
+    if (!m_canvas || !textFrameSet || imageList.isEmpty()) {
+        return;
+    }
+
+    KoTextEditor *editor = KoTextDocument(textFrameSet->document()).textEditor();
+    if (!editor || editor->isEditProtected()) {
+        return;
+    }
+
+    KoShapeFactoryBase *factory = KoShapeRegistry::instance()->value(QStringLiteral("PictureShape"));
+    if (!factory) {
+        warnWords << "No picture shape found, cannot insert images.";
+        return;
+    }
+
+    const qreal maxWidth = textFrameSet->shapes().isEmpty()
+        ? currentPage().width() * 0.8
+        : textFrameSet->shapes().first()->size().width();
+    const qreal maxHeight = currentPage().height() * 0.5;
+
+    for (const QImage &image : imageList) {
+        KoProperties params;
+        params.setProperty(QStringLiteral("qimage"), image);
+
+        KoShape *shape = factory->createShape(&params, kwdocument()->resourceManager());
+        if (!shape) {
+            warnWords << "Could not create a shape from the image";
+            continue;
+        }
+
+        if (shape->size().width() > maxWidth * 0.6 || shape->size().height() > maxHeight) {
+            QSizeF size = shape->size();
+            size.scale(QSizeF(maxWidth * 0.6, maxHeight), Qt::KeepAspectRatio);
+            shape->setSize(size);
+        }
+        shape->setTextRunAroundSide(KoShape::NoRunAround);
+
+        KoShapeAnchor *anchor = new KoShapeAnchor(shape);
+        anchor->setAnchorType(KoShapeAnchor::AnchorAsCharacter);
+        anchor->setHorizontalRel(KoShapeAnchor::HChar);
+        anchor->setHorizontalPos(KoShapeAnchor::HLeft);
+        anchor->setVerticalRel(KoShapeAnchor::VBaseline);
+        anchor->setVerticalPos(KoShapeAnchor::VTop);
+        shape->setAnchor(anchor);
+
+        m_canvas->addCommand(new KWShapeCreateCommand(kwdocument(), shape));
+        editor->insertInlineObject(new KoAnchorInlineObject(anchor));
+
+        KoSelection *selection = m_canvas->shapeManager()->selection();
+        selection->deselectAll();
+        selection->select(shape);
+    }
+    m_canvas->setFocus(Qt::OtherFocusReason);
 }
 
 const qreal KWView::AnnotationAreaWidth = 200.0; // only static const integral data members can be initialized within a class

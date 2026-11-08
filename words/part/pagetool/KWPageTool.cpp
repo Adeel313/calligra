@@ -30,6 +30,7 @@
 // calligra includes
 #include <KoCanvasBase.h>
 #include <KoPointerEvent.h>
+#include <KoRibbonIcons.h>
 #include <KoTextDocument.h>
 #include <KoTextEditor.h>
 #include <KoViewConverter.h>
@@ -190,7 +191,7 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
     auto *manualBreak = new QToolButton(pageSetupGroup);
     manualBreak->setObjectName(QStringLiteral("layoutBreaksButton"));
     manualBreak->setText(i18n("Breaks"));
-    manualBreak->setIcon(QIcon::fromTheme(QStringLiteral("insert-page-break")));
+    manualBreak->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("insert-page-break")));
     manualBreak->setAutoRaise(true);
     auto *breaksMenu = new QMenu(manualBreak);
     const auto populateBreaksMenu = [this, breaksMenu] {
@@ -210,7 +211,7 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
 
     auto *lineNumbers = new QToolButton(pageSetupGroup);
     lineNumbers->setText(i18n("Line Numbering"));
-    lineNumbers->setIcon(QIcon::fromTheme(QStringLiteral("format-list-ordered")));
+    lineNumbers->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("format-list-ordered")));
     lineNumbers->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     lineNumbers->setIconSize(QSize(28, 28));
     lineNumbers->setCheckable(true);
@@ -242,7 +243,7 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
 
     auto *hyphenation = new QToolButton(pageSetupGroup);
     hyphenation->setText(i18n("Hyphenation"));
-    hyphenation->setIcon(QIcon::fromTheme(QStringLiteral("format-text-italic")));
+    hyphenation->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("format-text-hyphenation")));
     hyphenation->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     hyphenation->setIconSize(QSize(28, 28));
     hyphenation->setCheckable(true);

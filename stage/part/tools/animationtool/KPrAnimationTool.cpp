@@ -8,6 +8,7 @@
 
 #include "KPrAnimationTool.h"
 #include <KoMainWindow.h>
+#include <KoRibbonIcons.h>
 #include <KoRibbonLayout.h>
 #include <KActionCollection>
 #include <QDockWidget>
@@ -100,7 +101,7 @@ void KPrAnimationTool::configureRibbon(QWidget *transitions, QWidget *animations
             auto *layout = new QVBoxLayout(group);
             auto *button = new QToolButton(group);
             button->setText(i18n("Action"));
-            button->setIcon(QIcon::fromTheme(QStringLiteral("system-run")));
+            button->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("system-run")));
             KoRibbonLayout::configureButton(button, Qt::ToolButtonTextUnderIcon);
             auto *menu = new QMenu(button);
             auto *action = new QWidgetAction(menu);

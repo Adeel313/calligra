@@ -36,6 +36,7 @@ protected:
     KoFilter::ConversionStatus read_defaultTabStop();
     KoFilter::ConversionStatus read_displayBackgroundShape();
     KoFilter::ConversionStatus read_clrSchemeMapping();
+    KoFilter::ConversionStatus read_evenAndOddHeaders();
 
     DocxXmlSettingsReaderContext *m_context;
 

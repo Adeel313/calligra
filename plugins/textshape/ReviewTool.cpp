@@ -6,6 +6,7 @@
  */
 
 #include "ReviewTool.h"
+#include <KoRibbonIcons.h>
 #include <KoRibbonLayout.h>
 #include "AnnotationTextShape.h"
 
@@ -142,7 +143,7 @@ QList<QPointer<QWidget>> ReviewTool::createOptionWidgets()
         }
         const auto updateSpell = [spell] {
             spell->setText(i18n("Spell\ncheck"));
-            spell->setIcon(QIcon::fromTheme(QStringLiteral("tools-check-spelling")));
+            spell->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("tools-check-spelling")));
         };
         updateSpell();
         if (spell->defaultAction()) {
@@ -160,7 +161,7 @@ QList<QPointer<QWidget>> ReviewTool::createOptionWidgets()
 
         auto *language = new QToolButton(proofing);
         language->setObjectName(QStringLiteral("reviewLanguage"));
-        language->setIcon(QIcon::fromTheme(QStringLiteral("preferences-desktop-locale")));
+        language->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("preferences-desktop-locale")));
         language->setAccessibleName(i18n("Proofing language"));
         language->setToolTip(i18n("Set the language of the selected text"));
         const auto updateLanguage = [language](const QTextCharFormat &format) {
@@ -210,8 +211,8 @@ QList<QPointer<QWidget>> ReviewTool::createOptionWidgets()
         auto *hyphenation = new QToolButton(proofing);
         hyphenation->setObjectName(QStringLiteral("reviewHyphenation"));
         hyphenation->setText(i18n("Hyphenation"));
-        hyphenation->setIcon(QIcon::fromTheme(QStringLiteral("format-text-hyphenation"),
-                                              QIcon::fromTheme(QStringLiteral("format-text-direction-ltr"))));
+        hyphenation->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("format-text-hyphenation"),
+                                                         QIcon::fromTheme(QStringLiteral("format-text-direction-ltr"))));
         hyphenation->setToolTip(i18n("Insert optional or nonbreaking hyphens"));
         auto *hyphenMenu = new QMenu(hyphenation);
         if (QAction *optional = action("soft_hyphen")) {
@@ -233,7 +234,7 @@ QList<QPointer<QWidget>> ReviewTool::createOptionWidgets()
         }
         const auto updateCorrection = [autocorrection] {
             autocorrection->setText(i18n("Auto\ncorrection"));
-            autocorrection->setIcon(QIcon::fromTheme(QStringLiteral("tools-wizard")));
+            autocorrection->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("tools-wizard")));
         };
         updateCorrection();
         if (configureCorrection) {

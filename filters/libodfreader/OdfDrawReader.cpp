@@ -359,6 +359,8 @@ void OdfDrawReader::readElementDrawFrame(KoXmlStreamReader &reader)
             readElementDrawObject(reader);
         } else if (tagName == "draw:object-ole") {
             readElementDrawObjectOle(reader);
+        } else if (tagName == "draw:text-box") {
+            readElementDrawTextBox(reader);
         }
         //...  MORE else if () HERE
         else if (tagName == "table:table") {
@@ -374,6 +376,33 @@ void OdfDrawReader::readElementDrawFrame(KoXmlStreamReader &reader)
     }
 
     m_backend->elementDrawFrame(reader, m_context);
+    DEBUGEND();
+}
+
+void OdfDrawReader::readElementDrawTextBox(KoXmlStreamReader &reader)
+{
+    DEBUGSTART();
+    m_backend->elementDrawTextBox(reader, m_context);
+
+    // <draw:text-box> has the following children in ODF 1.2:
+    //   <text:list> 5.3.1
+    //   <text:numbered-paragraph> 5.3.6
+    //   <text:p> 5.1.3
+    //   <text:section> 5.4
+    //   <text:soft-page-break> 5.6
+    //   <table:table> 9.1.2
+    // The text reader already knows all of these, so hand every child to it
+    // instead of skipping the text box contents.
+    OdfTextReader *textReader = m_parent->textReader();
+    while (reader.readNextStartElement()) {
+        if (textReader) {
+            textReader->readTextLevelElement(reader);
+        } else {
+            reader.skipCurrentElement();
+        }
+    }
+
+    m_backend->elementDrawTextBox(reader, m_context);
     DEBUGEND();
 }
 

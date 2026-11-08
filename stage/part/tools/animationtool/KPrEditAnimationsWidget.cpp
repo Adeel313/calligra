@@ -18,6 +18,9 @@
 #include "StageDebug.h"
 #include "animations/KPrShapeAnimation.h"
 
+// Calligra Headers
+#include <KoRibbonIcons.h>
+
 // Qt Headers
 #include <QActionGroup>
 #include <QComboBox>
@@ -67,7 +70,8 @@ KPrEditAnimationsWidget::KPrEditAnimationsWidget(KPrShapeAnimationDocker *docker
     m_durationEdit->setDisplayFormat("H:mm:ss.zzz");
 
     QToolButton *m_buttonPreviewAnimation = new QToolButton();
-    m_buttonPreviewAnimation->setIcon(koIcon("media-playback-start"));
+    m_buttonPreviewAnimation->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("media-playback-start"),
+                                                                 koIcon("media-playback-start")));
     m_buttonPreviewAnimation->setToolTip(i18n("Preview Shape Animation"));
     m_buttonPreviewAnimation->setEnabled(true);
 

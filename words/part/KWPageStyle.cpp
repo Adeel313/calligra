@@ -13,12 +13,14 @@
 #include <KoImageCollection.h>
 #include <KoOdfLoadingContext.h>
 #include <KoPatternBackground.h>
+#include <KoShapeSavingContext.h>
 #include <KoUnit.h>
 #include <KoXmlNS.h>
 #include <KoXmlWriter.h>
 
 #include <QBuffer>
 #include <QColor>
+#include <QImage>
 
 KWPageStylePrivate::~KWPageStylePrivate() = default;
 
@@ -200,7 +202,7 @@ void KWPageStyle::setBackground(QSharedPointer<KoShapeBackground> background)
     d->fullPageBackground = background;
 }
 
-KoGenStyle KWPageStyle::saveOdf() const
+KoGenStyle KWPageStyle::saveOdf(KoShapeSavingContext *context) const
 {
     KoGenStyle pageLayout = d->pageLayout.saveOdf();
     pageLayout.setAutoStyleInStylesDotXml(true);
@@ -221,11 +223,29 @@ KoGenStyle KWPageStyle::saveOdf() const
         break;
     }
 
-    // Save background color if it is set
+    // Save the page background colour or watermark image.
     if (d->fullPageBackground) {
         KoColorBackground *colorBackground = dynamic_cast<KoColorBackground *>(d->fullPageBackground.data());
-        if (colorBackground)
+        if (colorBackground) {
             pageLayout.addProperty("fo:background-color", colorBackground->color().name());
+        } else if (context) {
+            if (auto *pattern = dynamic_cast<KoPatternBackground *>(d->fullPageBackground.data())) {
+                if (pattern->patternData()) {
+                    QBuffer buffer;
+                    buffer.open(QIODevice::WriteOnly);
+                    KoXmlWriter writer(&buffer);
+                    writer.startElement("style:background-image");
+                    writer.addAttribute("xlink:href", context->imageHref(pattern->patternData()));
+                    writer.addAttribute("xlink:type", "simple");
+                    writer.addAttribute("xlink:show", "embed");
+                    writer.addAttribute("xlink:actuate", "onLoad");
+                    writer.addAttribute("style:repeat", "stretch");
+                    writer.endElement();
+                    pageLayout.addChildElement("style:background-image", QString::fromUtf8(buffer.buffer(), buffer.buffer().size()));
+                    context->addDataCenter(pattern->imageCollection());
+                }
+            }
+        }
     }
 
     // save column data
@@ -340,6 +360,14 @@ void KWPageStyle::loadOdf(KoOdfLoadingContext &context, const KoXmlElement &mast
             if (imageCollection != nullptr) {
                 KoImageData *imageData = imageCollection->createImageData(href, context.store());
                 background->setPattern(imageData);
+            }
+            const QString repeat = propBackgroundImage.attributeNS(KoXmlNS::style, "repeat");
+            if (repeat == QLatin1String("stretch")) {
+                background->setRepeat(KoPatternBackground::Stretched);
+            } else if (repeat == QLatin1String("no-repeat")) {
+                background->setRepeat(KoPatternBackground::Original);
+            } else {
+                background->setRepeat(KoPatternBackground::Tiled);
             }
         }
         // TODO load another possible attributes

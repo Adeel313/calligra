@@ -27,12 +27,20 @@
 #include "TabBar.h"
 #include "ToolRegistry.h"
 #include "commands/DefinePrintRangeCommand.h"
+#include "engine/FunctionRepository.h"
 #include "dialogs/PageLayoutDialog.h"
 #include "dialogs/PreferenceDialog.h"
 #include "dialogs/SheetPropertiesDialog.h"
 
 #include <QActionGroup>
+#include <QCheckBox>
 #include <QClipboard>
+#include <QComboBox>
+#include <QGridLayout>
+#include <QLabel>
+#include <QRegularExpression>
+#include <QSpinBox>
+#include <QWidgetAction>
 #include <QInputDialog>
 #include <QKeyEvent>
 #include <QLineEdit>
@@ -65,10 +73,17 @@
 #include <KoAppRibbon.h>
 #include <KoPart.h>
 #include <KoPluginLoader.h>
+#include <KoRibbonIcons.h>
 #include <KoSelection.h>
+#include <KoShapeAlignCommand.h>
 #include <KoShapeController.h>
+#include <KoShapeGroup.h>
+#include <KoShapeGroupCommand.h>
 #include <KoShapeManager.h>
+#include <KoShapeReorderCommand.h>
+#include <KoShapeTransformCommand.h>
 #include <KoTemplateCreateDia.h>
+#include <KoToolBase.h>
 #include <KoToolManager.h>
 #include <KoToolProxy.h>
 #include <KoZoomController.h>
@@ -87,7 +102,9 @@
 #include "core/BindingManager.h"
 #include "core/CellStorage.h"
 #include "core/LoadingInfo.h"
+#include "commands/PageLayoutCommand.h"
 #include "core/Map.h"
+#include "core/PrintSettings.h"
 #include "core/RowFormatStorage.h"
 #include "core/ShapeApplicationData.h"
 #include "core/Sheet.h"
@@ -97,6 +114,7 @@
 #include "ui/Selection.h"
 #include "ui/SheetView.h"
 #include "ui/commands/CopyCommand.h"
+#include "ui/commands/PageBreakCommand.h"
 #include "ui/commands/SheetCommands.h"
 #include "ui/dialogs/ShowDialog.h"
 
@@ -153,6 +171,7 @@ public:
 
     void initActions();
     void adjustActions(bool mode);
+    void updatePageLayoutActions();
 
     // On timeout this will execute the status bar operation (e.g. SUM).
     // This is delayed to speed up the selection.
@@ -180,10 +199,45 @@ public:
     QAction *paperLayout;
     QAction *resetPrintRange;
     KToggleAction *showPageOutline;
+    QAction *pageMarginsMenu;
+    QAction *pageOrientationMenu;
+    QAction *pageSizeMenu;
+    QAction *setPrintArea;
+    QAction *clearPrintArea;
+    QAction *breakRow;
+    QAction *breakColumn;
+    QAction *printTitles;
+    QWidgetAction *pageScaleFit;
+    QWidgetAction *pageSheetOptions;
+    QComboBox *scaleWidth;
+    QComboBox *scaleHeight;
+    QSpinBox *scalePercent;
+    QCheckBox *gridViewCheck;
+    QCheckBox *gridPrintCheck;
+    QCheckBox *headingsViewCheck;
+    QCheckBox *headingsPrintCheck;
+    QActionGroup *pageSizeGroup;
+    QAction *pagePortrait;
+    QAction *pageLandscape;
+
+    // shape arrangement
+    QAction *shapeBringForward;
+    QAction *shapeSendBackward;
+    QAction *shapeAlignLeft;
+    QAction *shapeAlignCenter;
+    QAction *shapeAlignRight;
+    QAction *shapeAlignTop;
+    QAction *shapeAlignMiddle;
+    QAction *shapeAlignBottom;
+    QAction *shapeGroup;
+    QAction *shapeRotateLeft;
+    QAction *shapeRotateRight;
 
     // recalculation
     QAction *recalcWorksheet;
     QAction *recalcWorkbook;
+    KToggleAction *showFormulas;
+    KToggleAction *automaticCalculation;
 
     // protection
     KToggleAction *protectSheet;
@@ -272,6 +326,336 @@ void View::Private::initActions()
     connect(actions->resetPrintRange, &QAction::triggered, view, &View::resetPrintRange);
     actions->resetPrintRange->setToolTip(i18n("Reset the print range in the current sheet"));
 
+    // Page Layout ribbon tab. Each menu is backed by the print settings of the
+    // active sheet, so the controls apply immediately instead of only opening
+    // the page layout dialog.
+    auto applyPrintSettings = [this](auto mutate) {
+        if (!activeSheet) {
+            return;
+        }
+        PrintSettings settings = *activeSheet->printSettings();
+        mutate(settings);
+        doc->addCommand(new PageLayoutCommand(activeSheet, settings));
+        canvas->update();
+        updatePageLayoutActions();
+    };
+
+    auto setMargins = [applyPrintSettings](qreal left, qreal right, qreal top, qreal bottom) {
+        applyPrintSettings([=](PrintSettings &settings) {
+            KoPageLayout layout = settings.pageLayout();
+            layout.leftMargin = left;
+            layout.rightMargin = right;
+            layout.topMargin = top;
+            layout.bottomMargin = bottom;
+            settings.setPageLayout(layout);
+        });
+    };
+
+    QMenu *marginsMenu = new QMenu(i18n("Margins"), view);
+    QAction *normalMargins = marginsMenu->addAction(i18n("Normal"));
+    connect(normalMargins, &QAction::triggered, view, [setMargins] { setMargins(50.4, 50.4, 54, 54); });
+    QAction *narrowMargins = marginsMenu->addAction(i18n("Narrow"));
+    connect(narrowMargins, &QAction::triggered, view, [setMargins] { setMargins(18, 18, 18, 18); });
+    QAction *wideMargins = marginsMenu->addAction(i18n("Wide"));
+    connect(wideMargins, &QAction::triggered, view, [setMargins] { setMargins(72, 72, 72, 72); });
+    marginsMenu->addSeparator();
+    QAction *customMargins = marginsMenu->addAction(i18n("Custom Margins..."));
+    connect(customMargins, &QAction::triggered, view, &View::paperLayoutDlg);
+    actions->pageMarginsMenu = new QAction(KoRibbonIcons::forCommand(QStringLiteral("border_outer")), i18n("Margins"), view);
+    actions->pageMarginsMenu->setMenu(marginsMenu);
+    actions->pageMarginsMenu->setToolTip(i18n("Set the page margins"));
+    ac->addAction("pageMarginsMenu", actions->pageMarginsMenu);
+
+    QMenu *orientationMenu = new QMenu(i18n("Orientation"), view);
+    actions->pagePortrait = orientationMenu->addAction(i18n("Portrait"));
+    actions->pagePortrait->setCheckable(true);
+    connect(actions->pagePortrait, &QAction::triggered, view, [applyPrintSettings] {
+        applyPrintSettings([](PrintSettings &settings) { settings.setPageOrientation(KoPageFormat::Portrait); });
+    });
+    actions->pageLandscape = orientationMenu->addAction(i18n("Landscape"));
+    actions->pageLandscape->setCheckable(true);
+    connect(actions->pageLandscape, &QAction::triggered, view, [applyPrintSettings] {
+        applyPrintSettings([](PrintSettings &settings) { settings.setPageOrientation(KoPageFormat::Landscape); });
+    });
+    actions->pageOrientationMenu = new QAction(KoRibbonIcons::forCommand(QStringLiteral("splitscreen")), i18n("Orientation"), view);
+    actions->pageOrientationMenu->setMenu(orientationMenu);
+    actions->pageOrientationMenu->setToolTip(i18n("Switch between portrait and landscape pages"));
+    ac->addAction("pageOrientationMenu", actions->pageOrientationMenu);
+
+    QMenu *sizeMenu = new QMenu(i18n("Size"), view);
+    actions->pageSizeGroup = new QActionGroup(view);
+    const QList<KoPageFormat::Format> paperSizes = {
+        KoPageFormat::IsoA4Size, KoPageFormat::IsoA3Size, KoPageFormat::IsoA5Size,
+        KoPageFormat::UsLetterSize, KoPageFormat::UsLegalSize, KoPageFormat::IsoB5Size,
+        KoPageFormat::UsExecutiveSize, KoPageFormat::UsTabloidSize};
+    for (KoPageFormat::Format format : paperSizes) {
+        QAction *size = sizeMenu->addAction(KoPageFormat::name(format));
+        size->setCheckable(true);
+        size->setData(int(format));
+        actions->pageSizeGroup->addAction(size);
+        connect(size, &QAction::triggered, view, [applyPrintSettings, format] {
+            applyPrintSettings([format](PrintSettings &settings) { settings.setPageFormat(format); });
+        });
+    }
+    sizeMenu->addSeparator();
+    QAction *moreSizes = sizeMenu->addAction(i18n("More Paper Sizes..."));
+    connect(moreSizes, &QAction::triggered, view, &View::paperLayoutDlg);
+    actions->pageSizeMenu = new QAction(KoRibbonIcons::forCommand(QStringLiteral("width_normal")), i18n("Size"), view);
+    actions->pageSizeMenu->setMenu(sizeMenu);
+    actions->pageSizeMenu->setToolTip(i18n("Choose the paper size"));
+    ac->addAction("pageSizeMenu", actions->pageSizeMenu);
+
+    actions->setPrintArea = new QAction(KoRibbonIcons::forCommand(QStringLiteral("select_all")), i18n("Set Print Area"), view);
+    actions->setPrintArea->setProperty("ribbonIconOnly", true);
+    actions->setPrintArea->setToolTip(i18n("Define the print area from the current selection"));
+    connect(actions->setPrintArea, &QAction::triggered, view, [this] {
+        if (!activeSheet) {
+            return;
+        }
+        DefinePrintRangeCommand *command = new DefinePrintRangeCommand();
+        command->setSheet(activeSheet);
+        command->add(*selection);
+        doc->addCommand(command);
+    });
+    ac->addAction("setPrintArea", actions->setPrintArea);
+
+    actions->clearPrintArea = new QAction(KoRibbonIcons::forCommand(QStringLiteral("delete_sweep")), i18n("Clear Print Area"), view);
+    actions->clearPrintArea->setProperty("ribbonIconOnly", true);
+    actions->clearPrintArea->setToolTip(i18n("Clear the print area of the active sheet"));
+    connect(actions->clearPrintArea, &QAction::triggered, view, &View::resetPrintRange);
+    ac->addAction("clearPrintArea", actions->clearPrintArea);
+
+    auto insertPageBreak = [this](PageBreakCommand::Mode mode) {
+        if (!activeSheet) {
+            return;
+        }
+        PageBreakCommand *command = new PageBreakCommand();
+        command->setSheet(activeSheet);
+        command->setMode(mode);
+        command->setBreak(true);
+        command->add(*selection);
+        command->execute(selection->canvas());
+    };
+    actions->breakRow = new QAction(KoRibbonIcons::forCommand(QStringLiteral("border_bottom")), i18n("Row Break"), view);
+    actions->breakRow->setProperty("ribbonIconOnly", true);
+    actions->breakRow->setToolTip(i18n("Insert a page break before the current row"));
+    connect(actions->breakRow, &QAction::triggered, view, [insertPageBreak] { insertPageBreak(PageBreakCommand::BreakBeforeRow); });
+    ac->addAction("breakRow", actions->breakRow);
+
+    actions->breakColumn = new QAction(KoRibbonIcons::forCommand(QStringLiteral("border_right")), i18n("Column Break"), view);
+    actions->breakColumn->setProperty("ribbonIconOnly", true);
+    actions->breakColumn->setToolTip(i18n("Insert a page break before the current column"));
+    connect(actions->breakColumn, &QAction::triggered, view, [insertPageBreak] { insertPageBreak(PageBreakCommand::BreakBeforeColumn); });
+    ac->addAction("breakColumn", actions->breakColumn);
+
+    actions->printTitles = new QAction(KoRibbonIcons::forCommand(QStringLiteral("print")), i18n("Print Titles"), view);
+    actions->printTitles->setToolTip(i18n("Choose rows and columns repeated on every printed page"));
+    connect(actions->printTitles, &QAction::triggered, view, &View::paperLayoutDlg);
+    ac->addAction("printTitles", actions->printTitles);
+
+    QWidget *scaleWidget = new QWidget(view);
+    auto *scaleLayout = new QGridLayout(scaleWidget);
+    scaleLayout->setContentsMargins(0, 0, 0, 0);
+    scaleLayout->setHorizontalSpacing(4);
+    scaleLayout->setVerticalSpacing(2);
+    auto *widthLabel = new QLabel(i18n("Width:"), scaleWidget);
+    auto *heightLabel = new QLabel(i18n("Height:"), scaleWidget);
+    auto *scaleLabel = new QLabel(i18n("Scale:"), scaleWidget);
+    actions->scaleWidth = new QComboBox(scaleWidget);
+    actions->scaleHeight = new QComboBox(scaleWidget);
+    actions->scalePercent = new QSpinBox(scaleWidget);
+    actions->scaleWidth->addItem(i18n("Automatic"), 0);
+    actions->scaleHeight->addItem(i18n("Automatic"), 0);
+    for (int i = 1; i <= 20; ++i) {
+        actions->scaleWidth->addItem(QString::number(i), i);
+        actions->scaleHeight->addItem(QString::number(i), i);
+    }
+    actions->scaleWidth->setFixedSize(96, 22);
+    actions->scaleHeight->setFixedSize(96, 22);
+    actions->scalePercent->setRange(10, 400);
+    actions->scalePercent->setSuffix(i18n("%"));
+    actions->scalePercent->setFixedSize(96, 22);
+    scaleLayout->addWidget(widthLabel, 0, 0);
+    scaleLayout->addWidget(actions->scaleWidth, 0, 1);
+    scaleLayout->addWidget(heightLabel, 1, 0);
+    scaleLayout->addWidget(actions->scaleHeight, 1, 1);
+    scaleLayout->addWidget(scaleLabel, 2, 0);
+    scaleLayout->addWidget(actions->scalePercent, 2, 1);
+    connect(actions->scaleWidth, QOverload<int>::of(&QComboBox::currentIndexChanged), view, [this, applyPrintSettings](int index) {
+        const int width = actions->scaleWidth->itemData(index).toInt();
+        applyPrintSettings([width](PrintSettings &settings) {
+            QSize limits = settings.pageLimits();
+            limits.setWidth(width);
+            settings.setPageLimits(limits);
+        });
+    });
+    connect(actions->scaleHeight, QOverload<int>::of(&QComboBox::currentIndexChanged), view, [this, applyPrintSettings](int index) {
+        const int height = actions->scaleHeight->itemData(index).toInt();
+        applyPrintSettings([height](PrintSettings &settings) {
+            QSize limits = settings.pageLimits();
+            limits.setHeight(height);
+            settings.setPageLimits(limits);
+        });
+    });
+    connect(actions->scalePercent, QOverload<int>::of(&QSpinBox::valueChanged), view, [applyPrintSettings](int value) {
+        applyPrintSettings([value](PrintSettings &settings) {
+            settings.setZoom(value / 100.0);
+            settings.setPageLimits(QSize(0, 0));
+        });
+    });
+    actions->pageScaleFit = new QWidgetAction(view);
+    actions->pageScaleFit->setDefaultWidget(scaleWidget);
+    ac->addAction("pageScaleFit", actions->pageScaleFit);
+
+    QWidget *optionsWidget = new QWidget(view);
+    auto *optionsLayout = new QGridLayout(optionsWidget);
+    optionsLayout->setContentsMargins(0, 0, 0, 0);
+    optionsLayout->setHorizontalSpacing(12);
+    optionsLayout->setVerticalSpacing(2);
+    auto *gridlinesLabel = new QLabel(i18n("Gridlines"), optionsWidget);
+    auto *headingsLabel = new QLabel(i18n("Headings"), optionsWidget);
+    actions->gridViewCheck = new QCheckBox(i18n("View"), optionsWidget);
+    actions->gridPrintCheck = new QCheckBox(i18n("Print"), optionsWidget);
+    actions->headingsViewCheck = new QCheckBox(i18n("View"), optionsWidget);
+    actions->headingsPrintCheck = new QCheckBox(i18n("Print"), optionsWidget);
+    actions->gridViewCheck->setToolTip(i18n("Show the cell grid on screen"));
+    actions->gridPrintCheck->setToolTip(i18n("Print the cell grid"));
+    actions->headingsViewCheck->setToolTip(i18n("Show column and row headings on screen"));
+    actions->headingsPrintCheck->setToolTip(i18n("Print column and row headings"));
+    optionsLayout->addWidget(gridlinesLabel, 0, 0);
+    optionsLayout->addWidget(headingsLabel, 0, 1);
+    optionsLayout->addWidget(actions->gridViewCheck, 1, 0);
+    optionsLayout->addWidget(actions->headingsViewCheck, 1, 1);
+    optionsLayout->addWidget(actions->gridPrintCheck, 2, 0);
+    optionsLayout->addWidget(actions->headingsPrintCheck, 2, 1);
+    connect(actions->gridViewCheck, &QCheckBox::toggled, view, [this](bool checked) {
+        if (!activeSheet) {
+            return;
+        }
+        SheetPropertiesCommand *command = new SheetPropertiesCommand(activeSheet);
+        command->setShowGrid(checked);
+        doc->addCommand(command);
+    });
+    connect(actions->gridPrintCheck, &QCheckBox::toggled, view, [applyPrintSettings](bool checked) {
+        applyPrintSettings([checked](PrintSettings &settings) { settings.setPrintGrid(checked); });
+    });
+    connect(actions->headingsViewCheck, &QCheckBox::toggled, view, [this](bool checked) {
+        actions->showColumnHeader->setChecked(checked);
+        actions->showRowHeader->setChecked(checked);
+        updatePageLayoutActions();
+    });
+    connect(actions->headingsPrintCheck, &QCheckBox::toggled, view, [applyPrintSettings](bool checked) {
+        applyPrintSettings([checked](PrintSettings &settings) { settings.setPrintHeaders(checked); });
+    });
+    actions->pageSheetOptions = new QWidgetAction(view);
+    actions->pageSheetOptions->setDefaultWidget(optionsWidget);
+    ac->addAction("pageSheetOptions", actions->pageSheetOptions);
+
+    // Shape arrangement commands, available without selecting the shape tool.
+    auto selectedShapes = [this] {
+        KoSelection *selection = canvas->shapeManager()->selection();
+        return selection ? selection->selectedShapes(KoFlake::TopLevelSelection) : QList<KoShape *>();
+    };
+    auto reorderShapes = [this, selectedShapes](KoShapeReorderCommand::MoveShapeType type) {
+        QList<KoShape *> shapes = selectedShapes();
+        if (shapes.isEmpty()) {
+            return;
+        }
+        KoShapeReorderCommand *command = KoShapeReorderCommand::createCommand(shapes, canvas->shapeManager(), type);
+        if (command) {
+            doc->addCommand(command);
+        }
+    };
+    auto alignShapes = [this, selectedShapes](KoShapeAlignCommand::Align alignment) {
+        KoSelection *selection = canvas->shapeManager()->selection();
+        QList<KoShape *> shapes = selectedShapes();
+        if (!selection || shapes.isEmpty()) {
+            return;
+        }
+        QRectF boundingRect;
+        if (shapes.count() == 1) {
+            if (!canvas->resourceManager()->hasResource(KoCanvasResourceManager::PageSize)) {
+                return;
+            }
+            boundingRect = QRectF(QPointF(0, 0), canvas->resourceManager()->sizeResource(KoCanvasResourceManager::PageSize));
+        } else {
+            for (KoShape *shape : shapes) {
+                boundingRect |= shape->boundingRect();
+            }
+        }
+        doc->addCommand(new KoShapeAlignCommand(shapes, alignment, boundingRect));
+        selection->updateSizeAndPosition();
+    };
+    auto rotateShapes = [this, selectedShapes](qreal angle) {
+        KoSelection *selection = canvas->shapeManager()->selection();
+        QList<KoShape *> shapes = selectedShapes();
+        if (!selection || shapes.isEmpty()) {
+            return;
+        }
+        QVector<QTransform> oldStates;
+        QVector<QTransform> newStates;
+        for (KoShape *shape : shapes) {
+            oldStates.append(shape->transformation());
+            shape->rotate(angle);
+            newStates.append(shape->transformation());
+            shape->setTransformation(oldStates.last());
+        }
+        doc->addCommand(new KoShapeTransformCommand(shapes, oldStates, newStates));
+        selection->updateSizeAndPosition();
+    };
+
+    actions->shapeBringForward = new QAction(KoRibbonIcons::forCommand(QStringLiteral("arrow_upward")), i18n("Bring Forward"), view);
+    connect(actions->shapeBringForward, &QAction::triggered, view, [reorderShapes] { reorderShapes(KoShapeReorderCommand::RaiseShape); });
+    ac->addAction("shapeBringForward", actions->shapeBringForward);
+
+    actions->shapeSendBackward = new QAction(KoRibbonIcons::forCommand(QStringLiteral("arrow_downward")), i18n("Send Backward"), view);
+    connect(actions->shapeSendBackward, &QAction::triggered, view, [reorderShapes] { reorderShapes(KoShapeReorderCommand::LowerShape); });
+    ac->addAction("shapeSendBackward", actions->shapeSendBackward);
+
+    auto addShapeAction = [this, ac](const char *name, const QString &text, const QString &icon, const QKeySequence &shortcut = QKeySequence()) {
+        QAction *action = new QAction(KoRibbonIcons::forCommand(icon), text, view);
+        action->setProperty("ribbonIconOnly", true);
+        if (!shortcut.isEmpty()) {
+            action->setShortcut(shortcut);
+        }
+        ac->addAction(QString::fromLatin1(name), action);
+        return action;
+    };
+    actions->shapeAlignLeft = addShapeAction("shapeAlignLeft", i18n("Align Left"), QStringLiteral("format_align_left"));
+    connect(actions->shapeAlignLeft, &QAction::triggered, view, [alignShapes] { alignShapes(KoShapeAlignCommand::HorizontalLeftAlignment); });
+    actions->shapeAlignCenter = addShapeAction("shapeAlignCenter", i18n("Align Center"), QStringLiteral("format_align_center"));
+    connect(actions->shapeAlignCenter, &QAction::triggered, view, [alignShapes] { alignShapes(KoShapeAlignCommand::HorizontalCenterAlignment); });
+    actions->shapeAlignRight = addShapeAction("shapeAlignRight", i18n("Align Right"), QStringLiteral("format_align_right"));
+    connect(actions->shapeAlignRight, &QAction::triggered, view, [alignShapes] { alignShapes(KoShapeAlignCommand::HorizontalRightAlignment); });
+    actions->shapeAlignTop = addShapeAction("shapeAlignTop", i18n("Align Top"), QStringLiteral("vertical_align_top"));
+    connect(actions->shapeAlignTop, &QAction::triggered, view, [alignShapes] { alignShapes(KoShapeAlignCommand::VerticalTopAlignment); });
+    actions->shapeAlignMiddle = addShapeAction("shapeAlignMiddle", i18n("Align Middle"), QStringLiteral("vertical_align_center"));
+    connect(actions->shapeAlignMiddle, &QAction::triggered, view, [alignShapes] { alignShapes(KoShapeAlignCommand::VerticalCenterAlignment); });
+    actions->shapeAlignBottom = addShapeAction("shapeAlignBottom", i18n("Align Bottom"), QStringLiteral("vertical_align_bottom"));
+    connect(actions->shapeAlignBottom, &QAction::triggered, view, [alignShapes] { alignShapes(KoShapeAlignCommand::VerticalBottomAlignment); });
+
+    actions->shapeGroup = new QAction(KoRibbonIcons::forCommand(QStringLiteral("combine_columns")), i18n("Group"), view);
+    connect(actions->shapeGroup, &QAction::triggered, view, [this, selectedShapes] {
+        KoSelection *selection = canvas->shapeManager()->selection();
+        QList<KoShape *> shapes = selectedShapes();
+        if (!selection || shapes.count() < 2) {
+            return;
+        }
+        KoShapeGroup *group = new KoShapeGroup();
+        KUndo2Command *command = new KUndo2Command(kundo2_i18n("Group shapes"));
+        canvas->shapeController()->addShapeDirect(group, command);
+        KoShapeGroupCommand::createCommand(group, shapes, command);
+        doc->addCommand(command);
+        selection->deselectAll();
+        selection->select(group);
+    });
+    ac->addAction("shapeGroup", actions->shapeGroup);
+
+    actions->shapeRotateLeft = addShapeAction("shapeRotateLeft", i18n("Rotate Left 90°"), QStringLiteral("restart_alt"));
+    connect(actions->shapeRotateLeft, &QAction::triggered, view, [rotateShapes] { rotateShapes(-90); });
+    actions->shapeRotateRight = addShapeAction("shapeRotateRight", i18n("Rotate Right 90°"), QStringLiteral("refresh"));
+    connect(actions->shapeRotateRight, &QAction::triggered, view, [rotateShapes] { rotateShapes(90); });
+
     actions->showPageOutline = new KToggleAction(i18n("Page Outline"), view);
     actions->showPageOutline->setToolTip(i18n("Show on the spreadsheet where the page boundary will be"));
     ac->addAction("showPageOutline", actions->showPageOutline);
@@ -292,6 +676,18 @@ void View::Private::initActions()
     actions->recalcWorkbook->setShortcut(QKeySequence(Qt::Key_F9));
     connect(actions->recalcWorkbook, &QAction::triggered, view, &View::recalcWorkBook);
     actions->recalcWorkbook->setToolTip(i18n("Recalculate the value of every cell in all worksheets"));
+
+    actions->showFormulas = new KToggleAction(i18n("Show Formulas"), view);
+    actions->showFormulas->setIcon(koIcon("visibility"));
+    actions->showFormulas->setToolTip(i18n("Display formulas in cells instead of their calculated results"));
+    ac->addAction("showFormulas", actions->showFormulas);
+    connect(actions->showFormulas, &QAction::toggled, view, &View::setShowFormulas);
+
+    actions->automaticCalculation = new KToggleAction(i18n("Automatic Calculation"), view);
+    actions->automaticCalculation->setIcon(koIcon("view-refresh"));
+    actions->automaticCalculation->setToolTip(i18n("Recalculate formulas automatically when their inputs change"));
+    ac->addAction("automaticCalculation", actions->automaticCalculation);
+    connect(actions->automaticCalculation, &QAction::toggled, view, &View::setAutomaticCalculation);
 
     actions->protectSheet = new KToggleAction(i18n("Protect &Sheet..."), view);
     ac->addAction("protectSheet", actions->protectSheet);
@@ -356,6 +752,10 @@ void View::Private::initActions()
     actions->showRowHeader->setToolTip(i18n("Show the row header"));
     ac->addAction("showRowHeader", actions->showRowHeader);
     connect(actions->showRowHeader, &QAction::toggled, view, &View::showRowHeader);
+
+    // Keep the Page Layout headings checkboxes in sync with the Settings menu.
+    connect(actions->showColumnHeader, &QAction::toggled, view, [this] { updatePageLayoutActions(); });
+    connect(actions->showRowHeader, &QAction::toggled, view, [this] { updatePageLayoutActions(); });
 
     actions->showHorizontalScrollBar = new KToggleAction(i18n("Horizontal Scrollbar"), view);
     actions->showHorizontalScrollBar->setToolTip(i18n("Show the horizontal scrollbar"));
@@ -436,12 +836,95 @@ void View::Private::initActions()
     connect(canvas->toolProxy(), &KoToolProxy::selectionChanged, actions->deleteShape, &QAction::setEnabled);
     ac->addAction("edit_delete", actions->deleteShape);
 
+    // -- function library --
+    //
+    // One drop-down per function category, owned by the view so the ribbon's
+    // formula tab keeps them across tool switches. Choosing a function asks
+    // the current cell tool to open its Function dialog for that function.
+    const QStringList functionGroups = FunctionRepository::self()->groups();
+    const QStringList preferredCategories = {QStringLiteral("Financ"), QStringLiteral("Logic"), QStringLiteral("Text"),
+                                             QStringLiteral("Date"), QStringLiteral("Lookup"), QStringLiteral("Math")};
+    for (const QString &group : functionGroups) {
+        const QStringList functionNames = FunctionRepository::self()->functionNames(group);
+        if (functionNames.isEmpty())
+            continue;
+        auto *menu = new QMenu(group, view);
+        for (const QString &functionName : functionNames) {
+            QAction *entry = menu->addAction(functionName);
+            connect(entry, &QAction::triggered, view, [functionName] {
+                KoToolManager *manager = KoToolManager::instance();
+                KoCanvasController *controller = manager->activeCanvasController();
+                KoToolBase *cellTool = controller ? manager->toolById(controller->canvas(), QStringLiteral("KSpreadCellToolId")) : nullptr;
+                QAction *insertFormula = cellTool ? cellTool->action(QStringLiteral("insertFormula")) : nullptr;
+                if (!insertFormula)
+                    return;
+                insertFormula->setProperty("insertFunction", functionName);
+                insertFormula->trigger();
+            });
+        }
+        auto *category = new QAction(group, view);
+        category->setMenu(menu);
+        category->setToolTip(i18n("Insert a function from the %1 category", group));
+        int order = preferredCategories.size();
+        for (int i = 0; i < preferredCategories.size(); ++i) {
+            if (group.contains(preferredCategories.at(i), Qt::CaseInsensitive)) {
+                order = i;
+                break;
+            }
+        }
+        category->setProperty("ribbonCommandOrder", order);
+        const QString id = QStringLiteral("insertFunction") + QString(group).remove(QRegularExpression(QStringLiteral("[^A-Za-z0-9]")));
+        category->setObjectName(id);
+        ac->addAction(id, category);
+    }
+
     // -- special action, only for developers --
     //
 
     ac->addAssociatedWidget(view->canvasWidget());
     for (QAction *action : ac->actions()) {
         action->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    }
+}
+
+void View::Private::updatePageLayoutActions()
+{
+    if (!activeSheet) {
+        return;
+    }
+    const PrintSettings *settings = activeSheet->printSettings();
+
+    const QSignalBlocker gridViewBlocker(actions->gridViewCheck);
+    const QSignalBlocker gridPrintBlocker(actions->gridPrintCheck);
+    const QSignalBlocker headingsViewBlocker(actions->headingsViewCheck);
+    const QSignalBlocker headingsPrintBlocker(actions->headingsPrintCheck);
+    const QSignalBlocker widthBlocker(actions->scaleWidth);
+    const QSignalBlocker heightBlocker(actions->scaleHeight);
+    const QSignalBlocker scaleBlocker(actions->scalePercent);
+
+    actions->gridViewCheck->setChecked(activeSheet->getShowGrid());
+    actions->gridPrintCheck->setChecked(settings->printGrid());
+    actions->headingsViewCheck->setChecked(actions->showColumnHeader->isChecked() && actions->showRowHeader->isChecked());
+    actions->headingsPrintCheck->setChecked(settings->printHeaders());
+
+    const QSize limits = settings->pageLimits();
+    auto setLimitCombo = [](QComboBox *combo, int value) {
+        int index = combo->findData(value);
+        if (index < 0) {
+            combo->addItem(QString::number(value), value);
+            index = combo->count() - 1;
+        }
+        combo->setCurrentIndex(index);
+    };
+    setLimitCombo(actions->scaleWidth, limits.width());
+    setLimitCombo(actions->scaleHeight, limits.height());
+    actions->scalePercent->setValue(qRound(settings->zoom() * 100));
+
+    const KoPageLayout layout = settings->pageLayout();
+    actions->pagePortrait->setChecked(layout.orientation == KoPageFormat::Portrait);
+    actions->pageLandscape->setChecked(layout.orientation == KoPageFormat::Landscape);
+    for (QAction *action : actions->pageSizeGroup->actions()) {
+        action->setChecked(action->data().toInt() == int(layout.format));
     }
 }
 
@@ -1038,6 +1521,19 @@ void View::shapeSelectionChanged()
     const KoSelection *selection = d->canvas->shapeManager()->selection();
     const QList<KoShape *> shapes = selection->selectedShapes(KoFlake::StrippedSelection);
 
+    const bool hasShapes = !shapes.isEmpty();
+    d->actions->shapeBringForward->setEnabled(hasShapes);
+    d->actions->shapeSendBackward->setEnabled(hasShapes);
+    d->actions->shapeAlignLeft->setEnabled(hasShapes);
+    d->actions->shapeAlignCenter->setEnabled(hasShapes);
+    d->actions->shapeAlignRight->setEnabled(hasShapes);
+    d->actions->shapeAlignTop->setEnabled(hasShapes);
+    d->actions->shapeAlignMiddle->setEnabled(hasShapes);
+    d->actions->shapeAlignBottom->setEnabled(hasShapes);
+    d->actions->shapeGroup->setEnabled(shapes.count() > 1);
+    d->actions->shapeRotateLeft->setEnabled(hasShapes);
+    d->actions->shapeRotateRight->setEnabled(hasShapes);
+
     if (shapes.isEmpty()) {
         d->actions->shapeAnchor->setEnabled(false);
         return;
@@ -1232,6 +1728,12 @@ void View::setActiveSheet(Sheet *sheet, bool updateSheet)
         const bool showFormulas = d->activeSheet->getShowFormula();
         stateChanged("show_formulas", showFormulas ? StateNoReverse : StateReverse);
     }
+    d->actions->showFormulas->blockSignals(true);
+    d->actions->showFormulas->setChecked(d->activeSheet->getShowFormula());
+    d->actions->showFormulas->blockSignals(false);
+    d->actions->automaticCalculation->blockSignals(true);
+    d->actions->automaticCalculation->setChecked(d->activeSheet->isAutoCalculationEnabled());
+    d->actions->automaticCalculation->blockSignals(false);
 
     // Restore the old scrolling offset.
     QMap<SheetBase *, QPointF>::ConstIterator it3 = d->savedOffsets.constFind(d->activeSheet);
@@ -1289,6 +1791,15 @@ void View::setActiveSheet(Sheet *sheet, bool updateSheet)
     d->actions->protectDoc->setChecked(doc()->map()->isProtected());
     d->actions->protectDoc->blockSignals(false);
 
+    d->actions->showFormulas->blockSignals(true);
+    d->actions->showFormulas->setChecked(d->activeSheet->getShowFormula());
+    d->actions->showFormulas->blockSignals(false);
+    d->actions->automaticCalculation->blockSignals(true);
+    d->actions->automaticCalculation->setChecked(d->activeSheet->isAutoCalculationEnabled());
+    d->actions->automaticCalculation->blockSignals(false);
+
+    d->updatePageLayoutActions();
+
     d->adjustActions(!d->activeSheet->isProtected());
     const bool protect = d->activeSheet->isProtected();
     stateChanged("sheet_is_protected", protect ? StateNoReverse : StateReverse);
@@ -1328,6 +1839,30 @@ void View::moveSheet(unsigned sheet, unsigned target)
         doc()->map()->moveSheet(vs[sheet], vs[target], true);
 
     d->tabBar->moveTab(sheet, target);
+}
+
+void View::setShowFormulas(bool show)
+{
+    if (!d->activeSheet || d->activeSheet->getShowFormula() == show)
+        return;
+
+    auto *command = new SheetPropertiesCommand(d->activeSheet);
+    command->setShowFormula(show);
+    doc()->addCommand(command);
+    stateChanged("show_formulas", show ? StateNoReverse : StateReverse);
+    sheetView(d->activeSheet)->invalidate();
+    d->canvas->update();
+}
+
+void View::setAutomaticCalculation(bool enabled)
+{
+    if (!d->activeSheet || d->activeSheet->isAutoCalculationEnabled() == enabled)
+        return;
+
+    auto *command = new SheetPropertiesCommand(d->activeSheet);
+    command->setAutoCalculationEnabled(enabled);
+    doc()->addCommand(command);
+    doc()->map()->calculationSettings()->setAutoCalculationEnabled(enabled);
 }
 
 void View::sheetProperties()
@@ -2182,6 +2717,14 @@ void View::handleDamages(const QList<Damage *> &damages)
                 paintMode = Everything;
             }
             if (changes.testFlag(SheetDamage::PropertiesChanged)) {
+                d->actions->showFormulas->blockSignals(true);
+                d->actions->showFormulas->setChecked(d->activeSheet->getShowFormula());
+                d->actions->showFormulas->blockSignals(false);
+                d->actions->automaticCalculation->blockSignals(true);
+                d->actions->automaticCalculation->setChecked(d->activeSheet->isAutoCalculationEnabled());
+                d->actions->automaticCalculation->blockSignals(false);
+                const bool showFormulas = d->activeSheet->getShowFormula();
+                stateChanged("show_formulas", showFormulas ? StateNoReverse : StateReverse);
                 sheetView(d->activeSheet)->invalidate();
                 paintMode = Everything;
             }

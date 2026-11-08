@@ -7,6 +7,7 @@
 #ifndef CALLIGRA_SHEETS_PAGE_BREAK_COMMAND
 #define CALLIGRA_SHEETS_PAGE_BREAK_COMMAND
 
+#include "../sheets_ui_export.h"
 #include "AbstractRegionCommand.h"
 
 namespace Calligra
@@ -18,7 +19,7 @@ namespace Sheets
  * \ingroup Commands
  * \brief Sets/Unsets manual page breaks.
  */
-class PageBreakCommand : public AbstractRegionCommand
+class CALLIGRA_SHEETS_UI_EXPORT PageBreakCommand : public AbstractRegionCommand
 {
 public:
     explicit PageBreakCommand(KUndo2Command *parent = nullptr);

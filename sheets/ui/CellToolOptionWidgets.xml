@@ -4,21 +4,34 @@
     <group>
       <action name="font" />
       <action name="fontSize" />
+      <action name="increaseFontSize" />
+      <action name="decreaseFontSize" />
     </group>
     <group>
       <action name="bold" />
       <action name="italic" />
       <action name="underline" />
+      <action name="strikeOut" />
     </group>
     <group>
-      <action name="increaseFontSize" />
-      <action name="decreaseFontSize" />
-    </group>
-    <group>
+      <menu name="Borders" icon="format-border">
+        <action name="borderAll" />
+        <action name="borderOutline" />
+        <action name="borderRemove" />
+        <action name="borderLeft" />
+        <action name="borderTop" />
+        <action name="borderRight" />
+        <action name="borderBottom" />
+        <action name="borderColor" />
+      </menu>
+      <action name="backgroundColor" />
       <action name="textColor" />
     </group>
   </optionWidget>
   <optionWidget name="Alignment">
+    <!-- Two rows of groups, like the office ribbon: horizontal alignment and
+         vertical alignment on the first row, text direction/indent/merge on
+         the second. -->
     <group>
       <action name="alignLeft" />
       <action name="alignCenter" />
@@ -30,47 +43,30 @@
       <action name="alignBottom" />
     </group>
     <group>
-      <action name="wrapText" />
       <action name="changeAngle" />
+      <action name="wrapText" />
       <action name="verticalText" />
     </group>
     <group>
       <action name="decreaseIndentation" />
       <action name="increaseIndentation" />
+      <menu name="Merge" icon="mergecell">
+        <action name="mergeCells" />
+        <action name="mergeCellsHorizontal" />
+        <action name="mergeCellsVertical" />
+        <action name="dissociateCells" />
+      </menu>
     </group>
   </optionWidget>
-  <optionWidget name="Borders">
+  <optionWidget name="Number">
     <group>
-      <action name="borderLeft" />
-      <action name="borderRight" />
-      <action name="borderTop" />
-      <action name="borderBottom" />
-    </group>
-    <group>
-      <action name="borderAll" />
-      <action name="borderOutline" />
-      <action name="borderRemove" />
-    </group>
-    <group>
-      <action name="borderColor" />
-    </group>
-  </optionWidget>
-  <optionWidget name="Number format">
-    <group>
-      <action name="percent" />
+      <action name="numeric" />
       <action name="currency" />
+      <action name="percent" />
     </group>
     <group>
       <action name="increasePrecision" />
       <action name="decreasePrecision" />
-    </group>
-  </optionWidget>
-  <optionWidget name="Merge">
-    <group>
-      <action name="mergeCells" />
-      <action name="mergeCellsHorizontal" />
-      <action name="mergeCellsVertical" />
-      <action name="dissociateCells" />
     </group>
   </optionWidget>
 </optionWidgets>

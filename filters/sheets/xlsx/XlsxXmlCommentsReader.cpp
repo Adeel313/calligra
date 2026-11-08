@@ -87,7 +87,7 @@ KoFilter::ConversionStatus XlsxXmlCommentsReader::readInternal()
     }
     //! @todo find out whether the namespace returned by namespaceUri()
     //!       is exactly the same ref as the element of namespaceDeclarations()
-    if (!namespaces.contains(QXmlStreamNamespaceDeclaration(QString(), MSOOXML::Schemas::spreadsheetml))) {
+    if (!hasNamespace(MSOOXML::Schemas::spreadsheetml)) {
         raiseError(i18n("Namespace \"%1\" not found", QLatin1String(MSOOXML::Schemas::spreadsheetml)));
         return KoFilter::WrongFormat;
     }
@@ -241,13 +241,16 @@ KoFilter::ConversionStatus XlsxXmlCommentsReader::read_comment()
     int authorIdInt = -1;
     STRING_TO_INT(authorId, authorIdInt, "comment@authorId")
     std::unique_ptr<XlsxComment> comment(authorIdInt < 0 ? nullptr : new XlsxComment(authorIdInt));
+    m_currentCommentText.clear();
     while (!atEnd()) {
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             TRY_READ_IF(text)
             ELSE_TRY_READ_IF(commentPr)
-            ELSE_WRONG_FORMAT
+            // Producers wrap the properties in mc:AlternateContent (e.g.
+            // LibreOffice), so unknown children must not abort the comment.
+            SKIP_UNKNOWN
         }
     }
     if (comment) {

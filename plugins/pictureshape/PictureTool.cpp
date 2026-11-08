@@ -263,7 +263,6 @@ void PictureTool::mouseMoveEvent(KoPointerEvent *event)
 
 void PictureTool::mousePressEvent(KoPointerEvent *event)
 {
-    qWarning() << "[DRAGDBG] PictureTool press, selected shape=" << (m_pictureshape ? m_pictureshape->shapeId() : QString("none")); // DRAGDBG temporary
     if (event->button() == Qt::RightButton) {
         event->ignore();
     }

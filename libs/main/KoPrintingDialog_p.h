@@ -124,6 +124,9 @@ public:
         if (!stop && shapeManager) {
             shapeManager->paint(*painter, zoomer, true);
         }
+        if (!stop) {
+            parent->printPagePost(page.toInt(), *painter);
+        }
         painter->restore(); // state before page preparation
 
         if (parent->property("blocking").toBool()) {

@@ -28,15 +28,18 @@ public:
     XlsxXmlDocumentReaderContext(XlsxImport &_import,
                                  MSOOXML::DrawingMLTheme *_themes,
                                  const QVector<QString> &_sharedStrings,
-                                 const XlsxComments &_comments,
+                                 XlsxComments &_comments,
                                  const XlsxStyles &_styles,
+                                 QVector<QString> &_colorIndices,
                                  MSOOXML::MsooXmlRelationships &_relationships,
                                  const QString &_file,
                                  const QString &_path);
     XlsxImport *import;
     MSOOXML::DrawingMLTheme *themes;
     const QVector<QString> *sharedStrings;
-    const XlsxComments *comments;
+    //! Filled from each sheet's comments part while the sheets are read.
+    XlsxComments *comments;
+    QVector<QString> *colorIndices;
     const XlsxStyles *styles;
     QString file, path;
 

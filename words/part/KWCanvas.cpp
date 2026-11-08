@@ -185,7 +185,14 @@ void KWCanvas::mouseReleaseEvent(QMouseEvent *e)
 
 void KWCanvas::mouseDoubleClickEvent(QMouseEvent *e)
 {
-    m_toolProxy->mouseDoubleClickEvent(e, m_viewMode->viewToDocument(e->position().toPoint() + m_documentOffset, m_viewConverter));
+    const QPointF documentPoint = m_viewMode->viewToDocument(e->position().toPoint() + m_documentOffset, m_viewConverter);
+    // Like in Word a double click into the header or footer of a page starts
+    // editing it, which is the only way to reach an empty one.
+    if (e->button() == Qt::LeftButton && m_view->startEditingHeaderFooterAt(documentPoint)) {
+        e->setAccepted(true);
+        return;
+    }
+    m_toolProxy->mouseDoubleClickEvent(e, documentPoint);
 }
 
 bool KWCanvas::event(QEvent *e)

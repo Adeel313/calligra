@@ -109,9 +109,20 @@ protected:
     bool expectEl(const char *qualifiedElementName);
     bool expectEl(const QString &qualifiedElementName);
     bool expectEl(const QList<QByteArray> &qualifiedElementNames);
+    //! Returns true if the current element is \a qualifiedElementName.
+    /*! The qualified name is compared first. If it does not match, the element is
+        still accepted when its namespace URI equals the well known URI for the prefix
+        of \a qualifiedElementName and its local name matches, so that parts which bind
+        these namespaces as the default namespace (no prefix) are read as well. */
+    bool isElement(const char *qualifiedElementName) const;
+    bool isElement(const QString &qualifiedElementName) const;
     bool expectElEnd(const QString &qualifiedElementName);
     bool expectElEnd(const char *qualifiedElementName);
     bool expectNS(const char *nsName);
+
+    //! Checks whether @p nsName is declared on the current element (under any prefix).
+    //! Strict OOXML URIs are matched against their transitional equivalents.
+    bool hasNamespace(const char *nsName) const;
     void raiseElNotFoundError(const char *elementName);
     void raiseAttributeNotFoundError(const char *attrName);
     void raiseNSNotFoundError(const char *nsName);

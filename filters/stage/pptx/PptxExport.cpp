@@ -229,6 +229,19 @@ QString imageContentType(const QString &suffix)
     return QStringLiteral("image/png");
 }
 
+// Returns the embeddable picture of an image background (master or layout
+// background pictures), or false when the background is not a picture.
+bool pictureBackground(const QSharedPointer<KoShapeBackground> &background, QByteArray &data, QString &suffix)
+{
+    auto *pattern = background ? dynamic_cast<KoPatternBackground *>(background.data()) : nullptr;
+    KoImageData *image = pattern ? pattern->patternData() : nullptr;
+    if (!image || !isEmbeddableImageSuffix(image->suffix().toLower())) return false;
+    QBuffer buffer(&data);
+    if (!buffer.open(QIODevice::WriteOnly) || !image->saveData(buffer)) return false;
+    suffix = image->suffix().toLower();
+    return !data.isEmpty();
+}
+
 QByteArray shapeImage(KoShape *shape)
 {
     if (!shape) return {};
@@ -943,6 +956,22 @@ void writeTransition(QXmlStreamWriter &xml, KPrPage *page)
     xml.writeEndElement();
 }
 
+// Writes the p:bg of a master or layout whose picture is stored in ppt/media
+// and referenced through relationship rId3 of the part's .rels file.
+void writePictureBackground(QXmlStreamWriter &xml)
+{
+    xml.writeStartElement(QStringLiteral("p:bg"));
+    xml.writeStartElement(QStringLiteral("p:bgPr"));
+    xml.writeStartElement(QStringLiteral("a:blipFill"));
+    xml.writeEmptyElement(QStringLiteral("a:blip"));
+    xml.writeAttribute(QStringLiteral("r:embed"), QStringLiteral("rId3"));
+    xml.writeStartElement(QStringLiteral("a:stretch"));
+    xml.writeEmptyElement(QStringLiteral("a:fillRect"));
+    xml.writeEndElement(); xml.writeEndElement();
+    xml.writeEmptyElement(QStringLiteral("a:effectLst"));
+    xml.writeEndElement(); xml.writeEndElement();
+}
+
 QByteArray slideXml(const QList<SlideObject> &objects, bool hidden, KPrPage *page)
 {
     return xmlPart([&](QXmlStreamWriter &xml) {
@@ -1111,6 +1140,16 @@ KoFilter::ConversionStatus PptxExport::convert(const QByteArray &from, const QBy
     }
     const bool hasNotes = std::any_of(notesRelationshipIds.cbegin(), notesRelationshipIds.cend(), [](int id) { return id > 0; });
 
+    // The exported master and layout use the first master page's picture
+    // background (for example, a template image), so the picture survives.
+    QByteArray masterPictureData;
+    QString masterPictureSuffix;
+    if (auto *firstPage = pages.isEmpty() ? nullptr : dynamic_cast<KoPAPage *>(pages.first())) {
+        if (KoPAMasterPage *masterPage = firstPage->masterPage())
+            pictureBackground(masterPage->background(), masterPictureData, masterPictureSuffix);
+    }
+    const bool hasMasterPicture = !masterPictureData.isEmpty();
+
     std::unique_ptr<KoStore> store(KoStore::createStore(m_chain->outputFile(), KoStore::Write, QByteArray(), KoStore::Zip));
     if (!store) return CreationError;
     auto write = [&](const QString &name, const QByteArray &data) {
@@ -1139,6 +1178,7 @@ KoFilter::ConversionStatus PptxExport::convert(const QByteArray &from, const QBy
                 if (object.imageId) imageSuffixes.insert(object.imageSuffix);
             }
         }
+        if (hasMasterPicture) imageSuffixes.insert(masterPictureSuffix);
         for (const QString &suffix : imageSuffixes) {
             xml.writeEmptyElement(QStringLiteral("Default")); xml.writeAttribute(QStringLiteral("Extension"), suffix); xml.writeAttribute(QStringLiteral("ContentType"), imageContentType(suffix));
         }
@@ -1180,32 +1220,41 @@ KoFilter::ConversionStatus PptxExport::convert(const QByteArray &from, const QBy
         xml.writeEndElement();
     }))) return CreationError;
 
-    if (!write(QStringLiteral("ppt/slideMasters/slideMaster1.xml"), xmlPart([](QXmlStreamWriter &xml) {
+    if (!write(QStringLiteral("ppt/slideMasters/slideMaster1.xml"), xmlPart([&](QXmlStreamWriter &xml) {
         xml.writeStartElement(QStringLiteral("p:sldMaster")); xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/presentationml/2006/main"), QStringLiteral("p")); xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/main"), QStringLiteral("a")); xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships"), QStringLiteral("r"));
-        xml.writeStartElement(QStringLiteral("p:cSld")); startShapeTree(xml);
+        xml.writeStartElement(QStringLiteral("p:cSld"));
+        if (hasMasterPicture) writePictureBackground(xml);
+        startShapeTree(xml);
         xml.writeEndElement(); // spTree
         xml.writeEndElement(); // cSld
         xml.writeStartElement(QStringLiteral("p:clrMap")); for (const auto &pair : {qMakePair(QStringLiteral("bg1"), QStringLiteral("lt1")), qMakePair(QStringLiteral("tx1"), QStringLiteral("dk1")), qMakePair(QStringLiteral("bg2"), QStringLiteral("lt2")), qMakePair(QStringLiteral("tx2"), QStringLiteral("dk2")), qMakePair(QStringLiteral("accent1"), QStringLiteral("accent1")), qMakePair(QStringLiteral("accent2"), QStringLiteral("accent2")), qMakePair(QStringLiteral("accent3"), QStringLiteral("accent3")), qMakePair(QStringLiteral("accent4"), QStringLiteral("accent4")), qMakePair(QStringLiteral("accent5"), QStringLiteral("accent5")), qMakePair(QStringLiteral("accent6"), QStringLiteral("accent6")), qMakePair(QStringLiteral("hlink"), QStringLiteral("hlink")), qMakePair(QStringLiteral("folHlink"), QStringLiteral("folHlink"))}) xml.writeAttribute(pair.first, pair.second); xml.writeEndElement();
         xml.writeStartElement(QStringLiteral("p:sldLayoutIdLst")); xml.writeEmptyElement(QStringLiteral("p:sldLayoutId")); xml.writeAttribute(QStringLiteral("id"), QStringLiteral("2147483649")); xml.writeAttribute(QStringLiteral("r:id"), QStringLiteral("rId1")); xml.writeEndElement(); xml.writeEmptyElement(QStringLiteral("p:txStyles")); xml.writeEndElement();
     }))) return CreationError;
 
-    if (!write(QStringLiteral("ppt/slideMasters/_rels/slideMaster1.xml.rels"), xmlPart([](QXmlStreamWriter &xml) {
+    if (!write(QStringLiteral("ppt/slideMasters/_rels/slideMaster1.xml.rels"), xmlPart([&](QXmlStreamWriter &xml) {
         xml.writeStartElement(QStringLiteral("Relationships")); xml.writeDefaultNamespace(QStringLiteral("http://schemas.openxmlformats.org/package/2006/relationships"));
         xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId1")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../slideLayouts/slideLayout1.xml"));
-        xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId2")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../theme/theme1.xml")); xml.writeEndElement();
+        xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId2")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../theme/theme1.xml"));
+        if (hasMasterPicture) { xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId3")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../media/master-image1.%1").arg(masterPictureSuffix)); }
+        xml.writeEndElement();
     }))) return CreationError;
 
-    if (!write(QStringLiteral("ppt/slideLayouts/slideLayout1.xml"), xmlPart([](QXmlStreamWriter &xml) {
-        xml.writeStartElement(QStringLiteral("p:sldLayout")); xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/presentationml/2006/main"), QStringLiteral("p")); xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/main"), QStringLiteral("a")); xml.writeAttribute(QStringLiteral("type"), QStringLiteral("blank"));
-        xml.writeStartElement(QStringLiteral("p:cSld")); startShapeTree(xml);
+    if (!write(QStringLiteral("ppt/slideLayouts/slideLayout1.xml"), xmlPart([&](QXmlStreamWriter &xml) {
+        xml.writeStartElement(QStringLiteral("p:sldLayout")); xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/presentationml/2006/main"), QStringLiteral("p")); xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/main"), QStringLiteral("a")); xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships"), QStringLiteral("r")); xml.writeAttribute(QStringLiteral("type"), QStringLiteral("blank"));
+        xml.writeStartElement(QStringLiteral("p:cSld"));
+        if (hasMasterPicture) writePictureBackground(xml);
+        startShapeTree(xml);
         xml.writeEndElement(); // spTree
         xml.writeEndElement(); // cSld
         xml.writeStartElement(QStringLiteral("p:clrMapOvr")); xml.writeEmptyElement(QStringLiteral("a:masterClrMapping")); xml.writeEndElement(); xml.writeEndElement();
     }))) return CreationError;
 
-    if (!write(QStringLiteral("ppt/slideLayouts/_rels/slideLayout1.xml.rels"), xmlPart([](QXmlStreamWriter &xml) {
-        xml.writeStartElement(QStringLiteral("Relationships")); xml.writeDefaultNamespace(QStringLiteral("http://schemas.openxmlformats.org/package/2006/relationships")); xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId1")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../slideMasters/slideMaster1.xml")); xml.writeEndElement();
+    if (!write(QStringLiteral("ppt/slideLayouts/_rels/slideLayout1.xml.rels"), xmlPart([&](QXmlStreamWriter &xml) {
+        xml.writeStartElement(QStringLiteral("Relationships")); xml.writeDefaultNamespace(QStringLiteral("http://schemas.openxmlformats.org/package/2006/relationships")); xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId1")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../slideMasters/slideMaster1.xml"));
+        if (hasMasterPicture) { xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId3")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../media/master-image1.%1").arg(masterPictureSuffix)); }
+        xml.writeEndElement();
     }))) return CreationError;
+    if (hasMasterPicture && !writeMedia(QStringLiteral("ppt/media/master-image1.%1").arg(masterPictureSuffix), masterPictureData)) return CreationError;
     if (!write(QStringLiteral("ppt/theme/theme1.xml"), themeXml())) return CreationError;
 
     for (int i = 0; i < pages.size(); ++i) {

@@ -30,7 +30,18 @@ ActionDialog *InsertFormula::createDialog(QWidget *canvasWidget)
     if (!tool->createEditor())
         return nullptr; // Nothing if we don't have the editor.
 
-    return new FormulaDialog(canvasWidget, m_selection, tool->editor());
+    // The ribbon's function library asks for a function by setting a property
+    // on this action before triggering it.
+    QString expression = m_function;
+    if (QAction *insertAction = action()) {
+        const QString requested = insertAction->property("insertFunction").toString();
+        if (!requested.isEmpty()) {
+            insertAction->setProperty("insertFunction", QVariant());
+            if (expression.isEmpty())
+                expression = requested;
+        }
+    }
+    return new FormulaDialog(canvasWidget, m_selection, tool->editor(), expression);
 }
 
 void InsertFormula::onEditorDeleted()

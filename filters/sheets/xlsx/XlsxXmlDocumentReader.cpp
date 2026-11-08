@@ -34,8 +34,9 @@
 XlsxXmlDocumentReaderContext::XlsxXmlDocumentReaderContext(XlsxImport &_import,
                                                            MSOOXML::DrawingMLTheme *_themes,
                                                            const QVector<QString> &_sharedStrings,
-                                                           const XlsxComments &_comments,
+                                                           XlsxComments &_comments,
                                                            const XlsxStyles &_styles,
+                                                           QVector<QString> &_colorIndices,
                                                            MSOOXML::MsooXmlRelationships &_relationships,
                                                            const QString &_file,
                                                            const QString &_path)
@@ -44,6 +45,7 @@ XlsxXmlDocumentReaderContext::XlsxXmlDocumentReaderContext(XlsxImport &_import,
     , themes(_themes)
     , sharedStrings(&_sharedStrings)
     , comments(&_comments)
+    , colorIndices(&_colorIndices)
     , styles(&_styles)
     , file(_file)
     , path(_path)
@@ -122,7 +124,7 @@ KoFilter::ConversionStatus XlsxXmlDocumentReader::readInternal()
     }
     //! @todo find out whether the namespace returned by namespaceUri()
     //!       is exactly the same ref as the element of namespaceDeclarations()
-    if (!namespaces.contains(QXmlStreamNamespaceDeclaration(QString(), MSOOXML::Schemas::spreadsheetml))) {
+    if (!hasNamespace(MSOOXML::Schemas::spreadsheetml)) {
         raiseError(i18n("Namespace \"%1\" not found", QLatin1String(MSOOXML::Schemas::spreadsheetml)));
         return KoFilter::WrongFormat;
     }
@@ -293,6 +295,20 @@ KoFilter::ConversionStatus XlsxXmlDocumentReader::read_sheet()
     QString filepath = m_context->relationships->target(m_context->path, m_context->file, r_id);
     MSOOXML::Utils::splitPathAndFile(filepath, &path, &file);
     qCDebug(lcXlsxImport) << "path:" << path << "file:" << file;
+
+    // Comments are stored in a separate part referenced by the sheet's relationships;
+    // the file name is not fixed (Excel writes xl/comments1.xml, other producers use
+    // e.g. xl/comments/comment1.xml).
+    const QString commentsTarget = m_context->relationships->targetForType(path, file, QLatin1String(MSOOXML::Relationships::comments));
+    if (!commentsTarget.isEmpty()) {
+        XlsxXmlCommentsReader commentsReader(this);
+        XlsxXmlCommentsReaderContext commentsContext(*m_context->comments, m_context->themes, *m_context->colorIndices);
+        QString commentsErrorMessage;
+        const KoFilter::ConversionStatus status = m_context->import->loadAndParseDocument(&commentsReader, commentsTarget, commentsErrorMessage, &commentsContext);
+        if (status != KoFilter::OK) {
+            qCWarning(lcXlsxImport) << "Could not read comments part" << commentsTarget << commentsErrorMessage;
+        }
+    }
 
     // Loading potential ole replacements
     VmlDrawingReader vmlreader(this);

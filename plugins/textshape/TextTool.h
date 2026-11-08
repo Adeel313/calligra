@@ -332,6 +332,11 @@ private:
     void runUrl(KoPointerEvent *event, QString &url);
     void useTableBorderCursor();
 
+    QWidget *ensureMiniToolbar();
+    void showMiniToolbar();
+    void hideMiniToolbar();
+    void positionMiniToolbar();
+
     QMimeData *generateMimeData() const;
 
     TextEditingPluginContainer *textEditingPluginContainer();
@@ -403,6 +408,7 @@ private:
 
     bool m_delayedEnsureVisible;
     TextToolSelection *m_toolSelection;
+    QPointer<QWidget> m_miniToolbar;
 
     KoPointedAt m_tableDragInfo;
     bool m_tableDraggedOnce;

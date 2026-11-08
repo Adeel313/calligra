@@ -72,6 +72,42 @@ public:
     QMap<QString, QString> colorMap;
 };
 
+namespace
+{
+void writeDocumentMetadata(KoOdfWriters *writers, const QMap<QString, QVariant> &properties)
+{
+    if (!writers || !writers->meta) {
+        return;
+    }
+    const auto text = [&properties](const char *key) {
+        const QString qualified = QString::fromLatin1(key);
+        if (properties.contains(qualified)) {
+            return properties.value(qualified).toString();
+        }
+        // MsooXmlImport stores document properties by local tag name.
+        return properties.value(qualified.section(QLatin1Char(':'), -1)).toString();
+    };
+    const auto addText = [writers](const char *element, const QString &value) {
+        if (!value.isEmpty()) {
+            writers->meta->startElement(element);
+            writers->meta->addTextNode(value);
+            writers->meta->endElement();
+        }
+    };
+
+    addText("dc:title", text("dc:title"));
+    addText("dc:subject", text("dc:subject"));
+    addText("dc:description", text("dc:description"));
+    addText("meta:keyword", text("cp:keywords"));
+    addText("meta:initial-creator", text("dc:creator"));
+    addText("dc:creator", text("cp:lastModifiedBy").isEmpty() ? text("dc:creator") : text("cp:lastModifiedBy"));
+    addText("meta:creation-date", text("dcterms:created"));
+    addText("dc:date", text("dcterms:modified"));
+    addText("meta:editing-cycles", text("cp:revision"));
+    addText("dc:language", text("dc:language"));
+}
+}
+
 DocxImport::DocxImport(QObject *parent, const QVariantList &)
     : MSOOXML::MsooXmlImport(QLatin1String("text"), parent)
     , d(new Private)
@@ -126,6 +162,8 @@ bool DocxImport::acceptsDestinationMimeType(const QByteArray &mime) const
 
 KoFilter::ConversionStatus DocxImport::parseParts(KoOdfWriters *writers, MSOOXML::MsooXmlRelationships *relationships, QString &errorMessage)
 {
+    writeDocumentMetadata(writers, documentProperties());
+
     writers->body->addAttribute("text:use-soft-page-breaks", "true");
 
     // 0. parse settings.xml

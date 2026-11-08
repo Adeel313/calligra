@@ -20,6 +20,7 @@
 
 // Qt
 #include <QButtonGroup>
+#include <QCoreApplication>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
@@ -235,6 +236,10 @@ KoStrokeConfigWidget::KoStrokeConfigWidget(QWidget *parent)
     d->spacer = new QWidget();
     d->spacer->setObjectName("SpecialSpacer");
     mainLayout->addWidget(d->spacer);
+    // The Sheets ribbon shows the line controls in two flat rows.
+    if (QCoreApplication::applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive)) {
+        d->spacer->hide();
+    }
 
     // set sensitive defaults
     d->lineStyle->setLineStyle(Qt::SolidLine);

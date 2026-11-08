@@ -7,10 +7,14 @@
 
 #include <OdfDrawReaderBackend.h>
 
-#include <QHash>
+#include <QBuffer>
 #include <QByteArray>
+#include <QHash>
+#include <QScopedPointer>
 #include <QSizeF>
+#include <QString>
 
+class KoXmlWriter;
 class OdfReaderContext;
 class OdfReaderDocxContext;
 
@@ -26,6 +30,7 @@ public:
     void elementDrawPath(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void elementDrawLine(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void elementDrawRect(KoXmlStreamReader &reader, OdfReaderContext *context) override;
+    void elementDrawTextBox(KoXmlStreamReader &reader, OdfReaderContext *context) override;
 
 private:
     struct EmbeddedImage {
@@ -41,11 +46,18 @@ private:
     struct PresetShape {
         QString preset;
         QString text;
+        //! Content already converted to WordprocessingML paragraphs and tables.
+        //! Used for text boxes, whose contents can hold tables and formatting
+        //! that the plain text member cannot express.
+        QByteArray richText;
         QString fill;
         QString stroke;
         bool flipH = false;
         bool flipV = false;
     };
+
+    //! Writes the text box of the enclosing draw:frame as a Word text box.
+    void writeTextBoxDrawing(const QString &name);
     void writePrimitive(KoXmlStreamReader &reader, const QString &preset, bool line);
     QHash<QString, PresetShape> m_presetShapes;
     void writeDrawing(const EmbeddedImage &drawing, bool chart = false, const QString &sourcePath = QString(), const PresetShape *shape = nullptr);
@@ -69,6 +81,21 @@ private:
     QHash<QString, QByteArray> m_imageData;
     int m_nextImageId = 1;
     int m_nextDrawingId = 1;
+
+    //! Converted content of the <draw:text-box> of the frame being read.
+    QByteArray m_frameTextBoxContent;
+    QString m_frameName;
+    QString m_frameFill;
+    QString m_frameStroke;
+    //! True once the current frame produced a drawing, so a text box is only
+    //! added for frames that have nothing else to show.
+    bool m_frameDrewDrawing = false;
+    //! Buffers the converted text box content while the text backend runs.
+    QBuffer m_textBoxIO;
+    QScopedPointer<KoXmlWriter> m_textBoxWriter;
+    KoXmlWriter *m_suspendedWriter = nullptr;
+    bool m_suspendedInsideParagraph = false;
+    bool m_suspendedInsideRun = false;
 };
 
 #endif

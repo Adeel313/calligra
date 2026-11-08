@@ -780,7 +780,6 @@ bool KWCanvasBase::isPictureShapeSelected() const
 void KWCanvasBase::preferShapeHandlingForPictures(bool pictureWasSelectedBefore)
 {
     KoToolManager *toolManager = KoToolManager::instance();
-    qWarning() << "[DRAGDBG] preferShape before=" << pictureWasSelectedBefore << "active=" << toolManager->activeToolId() << "pictureSelected=" << isPictureShapeSelected(); // DRAGDBG temporary
     if (pictureWasSelectedBefore) {
         // The user may have explicitly activated the Picture editing tab; don't kick
         // them out of it when they click on the picture they are working on.
@@ -794,7 +793,6 @@ void KWCanvasBase::preferShapeHandlingForPictures(bool pictureWasSelectedBefore)
         return;
     if (!isPictureShapeSelected())
         return;
-    qWarning() << "[DRAGDBG] preferShape -> switching to InteractionTool"; // DRAGDBG temporary
     toolManager->switchToolRequested(KoInteractionTool_ID);
 }
 

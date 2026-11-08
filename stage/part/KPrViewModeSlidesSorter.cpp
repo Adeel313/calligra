@@ -17,6 +17,8 @@
 #include "KPrView.h"
 #include "StageDebug.h"
 
+#include <KoRibbonIcons.h>
+
 // Qt Headers
 #include <QComboBox>
 #include <QContextMenuEvent>
@@ -79,21 +81,21 @@ KPrViewModeSlidesSorter::KPrViewModeSlidesSorter(KoPAView *view, KoPACanvasBase 
     slideShowsLabel->setBuddy(m_customSlideShowsList);
 
     m_buttonAddCustomSlideShow = new QToolButton();
-    m_buttonAddCustomSlideShow->setIcon(koIcon("list-add"));
+    m_buttonAddCustomSlideShow->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("list-add"), koIcon("list-add")));
     m_buttonAddCustomSlideShow->setToolTip(i18n("Add a new custom slide show"));
 
     m_buttonDelCustomSlideShow = new QToolButton();
-    m_buttonDelCustomSlideShow->setIcon(koIcon("list-remove"));
+    m_buttonDelCustomSlideShow->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("list-remove"), koIcon("list-remove")));
     m_buttonDelCustomSlideShow->setEnabled(false);
     m_buttonDelCustomSlideShow->setToolTip(i18n("Delete current custom slide show"));
 
     m_buttonAddSlideToCurrentShow = new QToolButton();
-    m_buttonAddSlideToCurrentShow->setIcon(koIcon("arrow-down"));
+    m_buttonAddSlideToCurrentShow->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("arrow-down"), koIcon("arrow-down")));
     m_buttonAddSlideToCurrentShow->setToolTip(i18n("Add slides to current custom slide show"));
     m_buttonAddSlideToCurrentShow->setEnabled(false);
 
     m_buttonDelSlideFromCurrentShow = new QToolButton();
-    m_buttonDelSlideFromCurrentShow->setIcon(koIcon("arrow-up"));
+    m_buttonDelSlideFromCurrentShow->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("arrow-up"), koIcon("arrow-up")));
     m_buttonDelSlideFromCurrentShow->setToolTip(i18n("Remove slides from current custom slide show"));
     m_buttonDelSlideFromCurrentShow->setEnabled(false);
 

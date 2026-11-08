@@ -165,6 +165,12 @@ KoImageData *KoPatternBackground::patternData()
     return d->imageData;
 }
 
+KoImageCollection *KoPatternBackground::imageCollection() const
+{
+    Q_D(const KoPatternBackground);
+    return d->imageCollection;
+}
+
 QImage KoPatternBackground::pattern() const
 {
     Q_D(const KoPatternBackground);

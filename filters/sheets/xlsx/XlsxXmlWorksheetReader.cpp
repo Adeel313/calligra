@@ -293,7 +293,7 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::readInternal()
     }
     //! @todo find out whether the namespace returned by namespaceUri()
     //!       is exactly the same ref as the element of namespaceDeclarations()
-    if (!namespaces.contains(QXmlStreamNamespaceDeclaration("", MSOOXML::Schemas::spreadsheetml))) {
+    if (!hasNamespace(MSOOXML::Schemas::spreadsheetml)) {
         raiseError(i18n("Namespace \"%1\" not found", QLatin1String(MSOOXML::Schemas::spreadsheetml)));
         return KoFilter::WrongFormat;
     }
@@ -1763,21 +1763,33 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_f()
 KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_v()
 {
     READ_PROLOGUE
-    readNext();
-
-    // It is possible to have empty <v/> element
-    if (name() == QLatin1StringView("v") && isEndElement()) {
-        READ_EPILOGUE
+    QString value;
+    bool hasInlineString = false;
+    while (!atEnd()) {
+        readNext();
+        BREAK_IF_END_OF(CURRENT_EL)
+        if (isCharacters()) {
+            value += text();
+        } else if (isStartElement() && name() == QLatin1String("is")) {
+            // Some writers nest an inline string (<is>) inside <v>.
+            KoFilter::ConversionStatus status = read_is();
+            if (status != KoFilter::OK) {
+                return status;
+            }
+            hasInlineString = true;
+        } else if (isStartElement()) {
+            skipCurrentElement();
+        }
     }
 
-    m_value = text().toString();
-    m_value.replace('&', "&amp;");
-    m_value.replace('<', "&lt;");
-    m_value.replace('>', "&gt;");
-    m_value.replace('\\', "&apos;");
-    m_value.replace('"', "&quot;");
-
-    readNext();
+    if (!hasInlineString) {
+        m_value = value;
+        m_value.replace('&', "&amp;");
+        m_value.replace('<', "&lt;");
+        m_value.replace('>', "&gt;");
+        m_value.replace('\\', "&apos;");
+        m_value.replace('"', "&quot;");
+    }
     READ_EPILOGUE
 }
 

@@ -9,6 +9,7 @@
 #include "BibliographyTemplate.h"
 #include "ReferencesTool.h"
 #include <KoBibliographyInfo.h>
+#include <KoRibbonIcons.h>
 #include <KoTextEditor.h>
 
 #include <QAction>
@@ -26,15 +27,21 @@ SimpleCitationBibliographyWidget::SimpleCitationBibliographyWidget(ReferencesToo
 
     m_templateGenerator = new BibliographyTemplate(KoTextDocument(m_referenceTool->editor()->document()).styleManager());
 
-    widget.addCitation->setDefaultAction(tool->action("insert_citation"));
+    QAction *citation = tool->action("insert_citation");
+    citation->setIcon(KoRibbonIcons::forCommand(QStringLiteral("format_list_bulleted")));
+    widget.addCitation->setDefaultAction(citation);
     connect(widget.addCitation, &QAbstractButton::clicked, this, &SimpleCitationBibliographyWidget::doneWithFocus);
 
-    widget.addBibliography->setDefaultAction(tool->action("insert_bibliography"));
+    QAction *bibliography = tool->action("insert_bibliography");
+    bibliography->setIcon(KoRibbonIcons::forCommand(QStringLiteral("library_add")));
+    widget.addBibliography->setDefaultAction(bibliography);
     connect(widget.addBibliography, &QAbstractButton::clicked, this, &SimpleCitationBibliographyWidget::doneWithFocus);
     connect(widget.addBibliography, &FormattingButton::aboutToShowMenu, this, &SimpleCitationBibliographyWidget::prepareTemplateMenu);
     connect(widget.addBibliography, &FormattingButton::itemTriggered, this, &SimpleCitationBibliographyWidget::applyTemplate);
 
-    widget.configureBibliography->setDefaultAction(tool->action("configure_bibliography"));
+    QAction *configure = tool->action("configure_bibliography");
+    configure->setIcon(KoRibbonIcons::forCommand(QStringLiteral("settings")));
+    widget.configureBibliography->setDefaultAction(configure);
     connect(widget.configureBibliography, &QAbstractButton::clicked, this, &SimpleCitationBibliographyWidget::doneWithFocus);
 }
 

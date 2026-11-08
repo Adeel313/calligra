@@ -86,6 +86,7 @@ set(kowidgets_LIB_SRCS
     KoModeBox.cpp
     KoModeBoxDocker.cpp
     KoModeBoxFactory.cpp
+    KoRibbonIcons.cpp
 
     KoDocumentInfoDlg.cpp
     KoDocumentInfoPropsPage.cpp

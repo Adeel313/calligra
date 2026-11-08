@@ -10,6 +10,8 @@
 
 #include "flake_export.h"
 
+#include <QUrl>
+
 class KoShape;
 class KoXmlElement;
 class KoShapeLoadingContext;
@@ -241,6 +243,13 @@ public:
     /// Set placement strategy which is used to position shape linked to text anchor
     /// We take owner ship and will make sure the strategy is deleted
     void setPlacementStrategy(PlacementStrategy *placementStrategy);
+
+    /**
+     * Name of the QTextDocument resource that marks a text document as the
+     * contents of a page header or footer.  Shapes anchored in such a document
+     * belong to that header/footer and have to stay inside it.
+     */
+    static QUrl headerFooterTextDocumentResource();
 
 private:
     class Private;

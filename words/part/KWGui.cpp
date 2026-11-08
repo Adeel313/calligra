@@ -11,24 +11,32 @@
 #include "KWDocument.h"
 #include "KWPage.h"
 #include "KWPageManager.h"
+#include "KWPageStyle.h"
 #include "KWView.h"
 #include "Words.h"
 #include "frames/KWFrame.h"
 #include "frames/KWFrameSet.h"
+#include "frames/KWTextFrameSet.h"
 
 #include <KActionCollection>
 #include <KLocalizedString>
 #include <KoCanvasControllerWidget.h>
 #include <KoCanvasResourceManager.h>
+#include <KoColorBackground.h>
+#include <KoDocumentResourceManager.h>
+#include <KoPatternBackground.h>
 #include <KoProperties.h>
 #include <KoShapeController.h>
 #include <KoShapeFactoryBase.h>
 #include <KoShapeRegistry.h>
 #include <KoDockerManager.h>
 #include <KoFlake.h>
+#include <KoAppRibbon.h>
 #include <KoModeBoxFactory.h>
 #include <KoParameterShape.h>
 #include <KoParameterToPathCommand.h>
+#include <KoParagraphStyle.h>
+#include <KoRibbonIcons.h>
 #include <KoRuler.h>
 #include <KoRibbonLayout.h>
 #include <KoZoomController.h>
@@ -38,6 +46,7 @@
 #include <KoShape.h>
 #include <KoShapeManager.h>
 #include <KoShapeTransformCommand.h>
+#include <KoStyleManager.h>
 #include <KoToolManager.h>
 #include <KoToolBase.h>
 #include <KoText.h>
@@ -50,6 +59,10 @@
 #include <QApplication>
 #include <QDialog>
 #include <QCheckBox>
+#include <QColorDialog>
+#include <QComboBox>
+#include <QDialogButtonBox>
+#include <QDoubleSpinBox>
 #include <QFrame>
 #include <QFileDialog>
 #include <QImageReader>
@@ -60,10 +73,13 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QInputDialog>
+#include <QImage>
 #include <QListWidget>
 #include <QMainWindow>
 #include <QMenu>
 #include <QMenuBar>
+#include <QPainter>
+#include <QPushButton>
 #include <QScrollBar>
 #include <QSizePolicy>
 #include <QStyle>
@@ -82,6 +98,8 @@
 #include <functional>
 #include <memory>
 #include <algorithm>
+
+#include <kundo2command.h>
 
 static QMenu *findMenu(QMainWindow *mainWindow, const QString &menuName, const QString &menuTitle)
 {
@@ -125,9 +143,187 @@ struct RibbonGroup {
     QString title;
     QList<QPair<QString, QString>> actions;
     Layout layout = LargeButtons;
+    /// Optional preview strip placed beside the group's buttons.
+    QWidget *gallery = nullptr;
 };
 
 using ActionFinder = std::function<QAction *(const QString &)>;
+
+// Page-level appearance changes keep the page style's background and layout
+// together. KWPageStylePropertiesCommand detaches its style, which clears the
+// background pointer, so use a command that updates both properties directly.
+class PageStyleAppearanceCommand final : public KUndo2Command
+{
+public:
+    PageStyleAppearanceCommand(KWDocument *document,
+                               const KWPageStyle &style,
+                               const KoPageLayout &layoutBefore,
+                               const KoPageLayout &layoutAfter,
+                               const QSharedPointer<KoShapeBackground> &backgroundBefore,
+                               const QSharedPointer<KoShapeBackground> &backgroundAfter)
+        : KUndo2Command(kundo2_i18n("Change Page Design"))
+        , m_document(document)
+        , m_style(style)
+        , m_layoutBefore(layoutBefore)
+        , m_layoutAfter(layoutAfter)
+        , m_backgroundBefore(backgroundBefore)
+        , m_backgroundAfter(backgroundAfter)
+    {
+    }
+
+    void redo() override
+    {
+        KUndo2Command::redo();
+        apply(m_layoutAfter, m_backgroundAfter);
+    }
+
+    void undo() override
+    {
+        KUndo2Command::undo();
+        apply(m_layoutBefore, m_backgroundBefore);
+    }
+
+private:
+    void apply(const KoPageLayout &layout, const QSharedPointer<KoShapeBackground> &background)
+    {
+        m_style.setPageLayout(layout);
+        m_style.setBackground(background);
+        if (m_document) {
+            m_document->updatePagesForStyle(m_style);
+            m_document->firePageSetupChanged();
+        }
+    }
+
+    KWDocument *m_document;
+    KWPageStyle m_style;
+    KoPageLayout m_layoutBefore;
+    KoPageLayout m_layoutAfter;
+    QSharedPointer<KoShapeBackground> m_backgroundBefore;
+    QSharedPointer<KoShapeBackground> m_backgroundAfter;
+};
+
+static int paragraphStylePriority(const KoParagraphStyle *style)
+{
+    QString normalized = style->name().toCaseFolded();
+    normalized.remove(QLatin1Char(' '));
+    normalized.remove(QLatin1Char('_'));
+    normalized.remove(QLatin1Char('-'));
+    if (normalized == QLatin1String("standard") || normalized == QLatin1String("normal")
+        || normalized == QLatin1String("defaultparagraphstyle") || normalized == QLatin1String("textbody")) {
+        return 0;
+    }
+    int level = style->outlineLevel();
+    if (level < 1 || level > 9) {
+        if (normalized.startsWith(QLatin1String("heading")) && normalized.size() == 8 && normalized.at(7).isDigit()) {
+            level = normalized.at(7).digitValue();
+        } else if (normalized.startsWith(QLatin1String("head")) && normalized.size() == 5 && normalized.at(4).isDigit()) {
+            level = normalized.at(4).digitValue();
+        }
+    }
+    if (level >= 1 && level <= 9) {
+        return level + 1;
+    }
+    if (normalized == QLatin1String("title")) {
+        return 11;
+    }
+    if (normalized == QLatin1String("subtitle")) {
+        return 12;
+    }
+    return 20;
+}
+
+// A compact strip of paragraph-style previews for the Design tab.  The
+// thumbnails use each style's own font and colour, and clicking one applies
+// that style to the current paragraph.
+static QWidget *createStyleGallery(KWDocument *document, KWCanvas *canvas, QWidget *parent)
+{
+    auto *gallery = new QListWidget(parent);
+    gallery->setObjectName(QStringLiteral("ribbonThemeGallery"));
+    gallery->setViewMode(QListView::IconMode);
+    gallery->setFlow(QListView::LeftToRight);
+    gallery->setWrapping(false);
+    gallery->setMovement(QListView::Static);
+    gallery->setResizeMode(QListView::Adjust);
+    gallery->setSelectionMode(QAbstractItemView::SingleSelection);
+    gallery->setFrameShape(QFrame::NoFrame);
+    gallery->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    gallery->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    gallery->setIconSize(QSize(72, 40));
+    gallery->setGridSize(QSize(88, 62));
+    gallery->setFixedHeight(66);
+    gallery->setMinimumWidth(470);
+    gallery->setMaximumWidth(620);
+
+    auto *styleManager = document
+        ? document->resourceManager()->resource(KoText::StyleManager).value<KoStyleManager *>()
+        : nullptr;
+    if (!styleManager) {
+        return gallery;
+    }
+
+    QList<KoParagraphStyle *> styles = styleManager->paragraphStyles();
+    std::sort(styles.begin(), styles.end(), [](const KoParagraphStyle *a, const KoParagraphStyle *b) {
+        const int priorityA = paragraphStylePriority(a);
+        const int priorityB = paragraphStylePriority(b);
+        if (priorityA != priorityB) {
+            return priorityA < priorityB;
+        }
+        return QString::localeAwareCompare(a->name(), b->name()) < 0;
+    });
+    for (KoParagraphStyle *style : std::as_const(styles)) {
+        if (!style
+            || style->name().trimmed().startsWith(QLatin1String("Bibliography"), Qt::CaseInsensitive)
+            || style->name().trimmed().startsWith(QLatin1String("Contents"), Qt::CaseInsensitive)
+            || paragraphStylePriority(style) >= 20) {
+            continue;
+        }
+        QPixmap preview(72, 40);
+        preview.fill(Qt::transparent);
+        QPainter painter(&preview);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(QColor(216, 216, 216));
+        painter.setBrush(QColor(255, 255, 255));
+        painter.drawRoundedRect(QRectF(0.5, 0.5, 71.0, 39.0), 3, 3);
+
+        QFont labelFont = painter.font();
+        labelFont.setPointSizeF(5.5);
+        labelFont.setBold(false);
+        painter.setFont(labelFont);
+        painter.setPen(QColor(120, 120, 120));
+        painter.drawText(QRect(4, 1, 64, 9), Qt::AlignLeft | Qt::AlignVCenter,
+                         painter.fontMetrics().elidedText(style->name(), Qt::ElideRight, 64));
+
+        QFont sampleFont = style->font();
+        const qreal stylePointSize = sampleFont.pointSizeF() > 0 ? sampleFont.pointSizeF() : 10.0;
+        sampleFont.setPointSizeF(qBound(7.0, stylePointSize, 13.0));
+        painter.setFont(sampleFont);
+        const QColor textColor = style->foreground().color().isValid() ? style->foreground().color() : QColor(35, 35, 35);
+        painter.setPen(textColor);
+        painter.drawText(QRect(4, 10, 64, 17), Qt::AlignLeft | Qt::AlignVCenter, QStringLiteral("Aa"));
+
+        painter.setFont(labelFont);
+        painter.setPen(QColor(155, 155, 155));
+        painter.drawText(QRect(4, 29, 64, 7), Qt::AlignLeft | Qt::AlignVCenter, QStringLiteral("The quick brown fox"));
+        painter.end();
+
+        auto *item = new QListWidgetItem(QIcon(preview), style->name(), gallery);
+        item->setData(Qt::UserRole, style->styleId());
+        item->setToolTip(i18n("Apply the %1 style", style->name()));
+        item->setTextAlignment(Qt::AlignHCenter);
+    }
+
+    const QPointer<KWCanvas> canvasGuard = canvas;
+    QObject::connect(gallery, &QListWidget::itemClicked, gallery, [canvasGuard, styleManager](QListWidgetItem *item) {
+        KoTextEditor *editor = canvasGuard ? KoTextEditor::getTextEditorFromCanvas(canvasGuard) : nullptr;
+        if (!editor) {
+            return;
+        }
+        if (KoParagraphStyle *style = styleManager->paragraphStyle(item->data(Qt::UserRole).toInt())) {
+            editor->setStyle(style);
+        }
+    });
+    return gallery;
+}
 
 // Tool activation replaces identically named actions in the view's action
 // collection. A ribbon button must follow that replacement, rather than keep
@@ -284,9 +480,11 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
             button->setObjectName(actionName + QStringLiteral("RibbonButton"));
             if (action->icon().isNull()) {
                 static const QMap<QString, QString> commandIcons = {
-                    {QStringLiteral("format_stylist"), QStringLiteral("format-text-bold")},
+                    {QStringLiteral("format_stylist"), QStringLiteral("preferences-desktop-theme")},
+                    {QStringLiteral("format_textcolor"), QStringLiteral("format-text-color")},
                     {QStringLiteral("format_font"), QStringLiteral("preferences-desktop-font")},
                     {QStringLiteral("format_paragraph"), QStringLiteral("format-justify-left")},
+                    {QStringLiteral("page_color"), QStringLiteral("format-color-fill")},
                     {QStringLiteral("insert_annotation"), QStringLiteral("comment-new")},
                     {QStringLiteral("insert_header"), QStringLiteral("insert-text-frame")},
                     {QStringLiteral("insert_footer"), QStringLiteral("insert-text-frame")},
@@ -303,19 +501,6 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
             if (action->menu()) {
                 button->setPopupMode(actionName == QLatin1String("add_shape") || action->property("ribbonMenuOnly").toBool()
                                          ? QToolButton::InstantPopup : QToolButton::MenuButtonPopup);
-            }
-            if (actionName == QLatin1String("edit_find") || actionName == QLatin1String("edit_select_all")) {
-                auto *menu = new QMenu(button);
-                const QStringList names = actionName == QLatin1String("edit_find")
-                    ? QStringList{QStringLiteral("edit_find"), QStringLiteral("edit_findnext"), QStringLiteral("edit_findprevious")}
-                    : QStringList{QStringLiteral("edit_select_all"), QStringLiteral("edit_selectcurrentframe"), QStringLiteral("edit_delete")};
-                for (const QString &name : names) {
-                    if (QAction *command = findAction(name)) {
-                        menu->addAction(command);
-                    }
-                }
-                button->setMenu(menu);
-                button->setPopupMode(QToolButton::MenuButtonPopup);
             }
             KoRibbonLayout::configureButton(button, large ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonTextBesideIcon);
             const int compactIndex = buttonIndex - largeCount;
@@ -335,7 +520,17 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
             group->deleteLater();
             continue;
         }
-        groupLayout->addWidget(buttons, 1);
+        if (groupInfo.gallery) {
+            auto *content = new QWidget(group);
+            auto *contentLayout = new QHBoxLayout(content);
+            contentLayout->setContentsMargins(0, 0, 0, 0);
+            contentLayout->setSpacing(6);
+            contentLayout->addWidget(buttons);
+            contentLayout->addWidget(groupInfo.gallery);
+            groupLayout->addWidget(content, 1);
+        } else {
+            groupLayout->addWidget(buttons, 1);
+        }
         if (showGroupTitles) {
             auto *title = new QLabel(groupInfo.title, group);
             title->setProperty("ribbonGroupTitle", true);
@@ -510,6 +705,37 @@ static void populateFilePageLater(QWidget *page, KoMainWindow *mainWindow, KActi
     });
 }
 
+static void populateQuickAccess(QToolBar *toolbar, KoMainWindow *mainWindow, KActionCollection *viewActions)
+{
+    static const QStringList actionNames = {QStringLiteral("file_new"),
+                                            QStringLiteral("file_open"),
+                                            QStringLiteral("file_save"),
+                                            QStringLiteral("edit_undo"),
+                                            QStringLiteral("edit_redo"),
+                                            QStringLiteral("file_print")};
+    for (const QString &name : actionNames) {
+        if (QAction *action = findFileAction(mainWindow, viewActions, name)) {
+            if (!toolbar->actions().contains(action)) {
+                toolbar->addAction(action);
+            }
+        }
+    }
+}
+
+static void populateQuickAccessLater(QToolBar *toolbar, KoMainWindow *mainWindow, KActionCollection *viewActions, int attemptsLeft)
+{
+    if (!toolbar || !mainWindow || attemptsLeft <= 0) {
+        return;
+    }
+    populateQuickAccess(toolbar, mainWindow, viewActions);
+    if (toolbar->actions().size() >= 6) {
+        return;
+    }
+    QTimer::singleShot(100, toolbar, [toolbar, mainWindow, viewActions, attemptsLeft] {
+        populateQuickAccessLater(toolbar, mainWindow, viewActions, attemptsLeft - 1);
+    });
+}
+
 KWGui::KWGui(const QString &viewMode, KWView *parent)
     : QWidget(parent)
     , m_view(parent)
@@ -603,10 +829,12 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
                      {{QStringLiteral("edit_find"), i18n("Search")},
                       {QStringLiteral("edit_replace"), i18n("Replace")},
                       {QStringLiteral("edit_findnext"), i18n("Search again")},
+                      {QStringLiteral("edit_findprevious"), i18n("Search previous")},
                       {QStringLiteral("ribbon_go_to_page"), i18n("Go to")}},
                      50, RibbonGroup::LargeAndStacked);
         addHomeGroup(i18n("Selection"),
-                     {{QStringLiteral("edit_select_all"), i18n("Select all")}},
+                     {{QStringLiteral("edit_select_all"), i18n("Select all")},
+                      {QStringLiteral("edit_selectcurrentframe"), i18n("Select current frame")}},
                      60, RibbonGroup::LargeButtons);
 
         // Microsoft Office 2026 style ribbon pages: Insert, Draw and Design
@@ -650,6 +878,8 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
                 continue;
             }
             auto *action = new QAction(QIcon::fromTheme(entry.iconName), entry.label, this);
+            // The shared ribbon icon lookup matches on the action name.
+            action->setObjectName(entry.toolId);
             action->setCheckable(true);
             drawToolGroup->addAction(action);
             const QString toolId = entry.toolId;
@@ -709,6 +939,7 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
             return shapes;
         };
         auto *convertToPathAction = new QAction(QIcon::fromTheme(QStringLiteral("format-convert-to-path")), i18n("Convert to Path"), this);
+        convertToPathAction->setObjectName(QStringLiteral("convert-to-path"));
         const auto updateConvertToPathAction = [collectParametricShapes, convertToPathAction] {
             convertToPathAction->setEnabled(!collectParametricShapes().isEmpty());
         };
@@ -809,7 +1040,7 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
                                     designPage,
                                     false,
                                     false,
-                                    QStringLiteral("ConnectionTool"));
+                                    QStringLiteral("TextToolFactory_ID"));
 
         auto *mailingsPage = new QWidget;
         mailingsPage->setObjectName(QStringLiteral("mailingsRibbonPage"));
@@ -855,22 +1086,7 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
         quickAccess->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
         quickAccess->setStyleSheet(QStringLiteral(
             "#ribbonQuickAccess { color: palette(text); background: palette(base); border: 0; border-radius: 4px; spacing: 2px; }"));
-        const auto findAction = [this](const QString &name) -> QAction * {
-            if (QAction *action = m_view->actionCollection()->action(name)) {
-                return action;
-            }
-            return m_view->mainWindow()->actionCollection()->action(name);
-        };
-        for (const QString &actionName : {QStringLiteral("file_new"),
-                                          QStringLiteral("file_open"),
-                                          QStringLiteral("file_save"),
-                                          QStringLiteral("edit_undo"),
-                                          QStringLiteral("edit_redo"),
-                                          QStringLiteral("file_print")}) {
-            if (QAction *action = findAction(actionName)) {
-                quickAccess->addAction(action);
-            }
-        }
+        populateQuickAccessLater(quickAccess, m_view->mainWindow(), m_view->actionCollection(), 30);
 
         auto *settingsButton = new QToolButton;
         settingsButton->setObjectName(QStringLiteral("ribbonSettings"));
@@ -931,6 +1147,34 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
         modeBox->setAllowedAreas(Qt::TopDockWidgetArea);
         m_view->mainWindow()->addDockWidget(Qt::TopDockWidgetArea, modeBox);
         modeBox->show();
+        // Draw is a contextual tab: it appears only while a document shape is
+        // selected, instead of occupying the ribbon for the whole session.
+        const auto updateDrawTabVisibility = [this, modeBox] {
+            const QList<KoShape *> shapes = m_canvas->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
+            bool shapeSelected = false;
+            for (KoShape *shape : shapes) {
+                const KWFrame *frame = m_view->kwdocument()->frameOfShape(shape);
+                // An object anchored inside text resolves to the text frame;
+                // it is still a real shape, unlike the auto-generated page
+                // and header/footer text frames.
+                if (!frame || frame->shape() != shape
+                    || !Words::isAutoGenerated(KWFrameSet::from(frame->shape()))) {
+                    shapeSelected = true;
+                    break;
+                }
+            }
+            if (QWidget *ribbonBox = modeBox->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
+                QMetaObject::invokeMethod(ribbonBox, "setToolTabVisible", Qt::DirectConnection,
+                                          Q_ARG(QString, QStringLiteral("ConnectionTool")),
+                                          Q_ARG(bool, shapeSelected));
+                if (shapeSelected) {
+                    QMetaObject::invokeMethod(ribbonBox, "showToolTab", Qt::DirectConnection,
+                                              Q_ARG(QString, QStringLiteral("ConnectionTool")));
+                }
+            }
+        };
+        connect(m_canvas->shapeManager()->selection(), &KoSelection::selectionChanged, this, updateDrawTabVisibility);
+        QTimer::singleShot(0, this, updateDrawTabVisibility);
         QTimer::singleShot(0, modeBox, [this, modeBox] {
             m_view->mainWindow()->resizeDocks({modeBox}, {modeBox->sizeHint().height()}, Qt::Vertical);
         });
@@ -939,10 +1183,27 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
 
         populateFilePageLater(filePage, m_view->mainWindow(), m_view->actionCollection(), 20);
 
+        // Give the ribbon commands the shared, colour-tinted icons. The text
+        // tool registers its formatting actions lazily, so refresh them after
+        // startup and whenever the active tool changes.
+        const auto applyRibbonIcons = [view = QPointer<KWView>(m_view)] {
+            if (view) {
+                KoAppRibbon::applyCommandIcons(view);
+            }
+        };
+        applyRibbonIcons();
+        QTimer::singleShot(0, this, applyRibbonIcons);
+        QTimer::singleShot(250, this, applyRibbonIcons);
+        connect(KoToolManager::instance(), &KoToolManager::changedTool, this,
+                [applyRibbonIcons](KoCanvasController *, int) { applyRibbonIcons(); });
+
         auto *insertImage = new QAction(QIcon::fromTheme(QStringLiteral("insert-image")), i18n("Insert Image"), this);
         insertImage->setToolTip(i18n("Choose an image to insert into the document"));
         m_view->actionCollection()->addAction(QStringLiteral("insert_picture"), insertImage);
         connect(insertImage, &QAction::triggered, this, [this] {
+            // Remember the text frame before the file dialog takes focus: the
+            // image belongs at the cursor, not at the page's top-left corner.
+            KWTextFrameSet *targetFrameSet = m_view->currentTextFrameSet();
             QStringList mimeTypes;
             for (const QByteArray &mimeType : QImageReader::supportedMimeTypes()) {
                 mimeTypes.append(QString::fromLatin1(mimeType));
@@ -961,6 +1222,12 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
                 QMessageBox::warning(this, i18n("Insert Image"), i18n("Could not load the selected image: %1", reader.errorString()));
                 return;
             }
+            if (targetFrameSet) {
+                m_view->insertImagesIntoTextFrame(targetFrameSet, QVector<QImage>{image});
+                m_canvas->setFocus(Qt::OtherFocusReason);
+                return;
+            }
+
             KoShapeFactoryBase *factory = KoShapeRegistry::instance()->value(QStringLiteral("PictureShape"));
             if (!factory) {
                 return;
@@ -991,7 +1258,10 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
         const QList<RibbonGroup> insertGroups = {
             {i18n("Pages"), {{QStringLiteral("insert_framebreak"), i18n("Page Break")}}},
             {i18n("Tables"), {{QStringLiteral("insert_table"), i18n("Table")}}},
-            {i18n("Illustrations"), {{QStringLiteral("add_shape"), i18n("Shapes")}, {QStringLiteral("insert_chart"), i18n("Chart")}, {QStringLiteral("insert_picture"), i18n("Insert Image")}}},
+            {i18n("Illustrations"),
+             {{QStringLiteral("insert_picture"), i18n("Pictures")},
+              {QStringLiteral("add_shape"), i18n("Shapes")},
+              {QStringLiteral("insert_chart"), i18n("Chart")}}},
             {i18n("Comments"), {{QStringLiteral("insert_annotation"), i18n("Comment")}}},
             {i18n("Header & Footer"),
              {{QStringLiteral("insert_header"), i18n("Header")},
@@ -1014,30 +1284,220 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
         };
         populateRibbonGroupsLater(drawPage, drawGroups, findDrawAction, true, 20);
 
+        auto *pageColorAction = new QAction(KoRibbonIcons::forCommand(QStringLiteral("page_color")), i18n("Page Color"), this);
+        pageColorAction->setObjectName(QStringLiteral("page_color"));
+        pageColorAction->setToolTip(i18n("Change the background colour of the current page style"));
+        connect(pageColorAction, &QAction::triggered, this, [this] {
+            KWPage page = m_view->currentPage();
+            if (!page.isValid()) {
+                return;
+            }
+            KWPageStyle styleBefore = page.pageStyle();
+            QColor currentColor = Qt::white;
+            if (auto *background = dynamic_cast<KoColorBackground *>(styleBefore.background().data())) {
+                currentColor = background->color();
+            }
+            const QColor color = QColorDialog::getColor(currentColor, this, i18n("Page Color"));
+            if (!color.isValid()) {
+                return;
+            }
+            const QSharedPointer<KoShapeBackground> backgroundBefore = styleBefore.background();
+            const QSharedPointer<KoShapeBackground> backgroundAfter(new KoColorBackground(color));
+            m_view->kwdocument()->addCommand(new PageStyleAppearanceCommand(m_view->kwdocument(), styleBefore,
+                                                                            styleBefore.pageLayout(), styleBefore.pageLayout(),
+                                                                            backgroundBefore, backgroundAfter));
+        });
+        auto *watermarkAction = new QAction(KoRibbonIcons::forCommand(QStringLiteral("watermark")), i18n("Watermark"), this);
+        watermarkAction->setObjectName(QStringLiteral("watermark"));
+        watermarkAction->setToolTip(i18n("Add a text watermark behind the document content"));
+        connect(watermarkAction, &QAction::triggered, this, [this] {
+            KWPage page = m_view->currentPage();
+            if (!page.isValid()) {
+                return;
+            }
+            bool accepted = false;
+            const QString text = QInputDialog::getText(this, i18n("Watermark"),
+                                                       i18n("Watermark text (leave empty to remove):"),
+                                                       QLineEdit::Normal, QStringLiteral("DRAFT"), &accepted);
+            if (!accepted) {
+                return;
+            }
+            KWPageStyle styleBefore = page.pageStyle();
+            const KoPageLayout pageLayout = styleBefore.pageLayout();
+            const QSharedPointer<KoShapeBackground> backgroundBefore = styleBefore.background();
+            QSharedPointer<KoShapeBackground> backgroundAfter;
+            QColor baseColor = Qt::white;
+            if (auto *background = dynamic_cast<KoColorBackground *>(styleBefore.background().data())) {
+                baseColor = background->color();
+            }
+            if (text.trimmed().isEmpty()) {
+                backgroundAfter = QSharedPointer<KoShapeBackground>(new KoColorBackground(baseColor));
+            } else {
+                const int imageWidth = 1000;
+                const int imageHeight = qBound(400, qRound(imageWidth * pageLayout.height / qMax(1.0, pageLayout.width)), 2400);
+                QImage watermark(imageWidth, imageHeight, QImage::Format_ARGB32_Premultiplied);
+                watermark.fill(baseColor);
+                QPainter painter(&watermark);
+                painter.setRenderHint(QPainter::Antialiasing);
+                QFont font = painter.font();
+                font.setBold(true);
+                font.setPointSizeF(imageWidth / 7.0);
+                painter.setFont(font);
+                painter.setPen(baseColor.lightness() < 128 ? QColor(255, 255, 255, 80) : QColor(128, 128, 128, 80));
+                painter.translate(imageWidth / 2.0, imageHeight / 2.0);
+                painter.rotate(-45);
+                painter.drawText(QRectF(-imageWidth, -imageHeight, imageWidth * 2.0, imageHeight * 2.0),
+                                 Qt::AlignCenter, text.trimmed());
+                painter.end();
+
+                auto *pattern = new KoPatternBackground(m_view->kwdocument()->resourceManager()->imageCollection());
+                pattern->setPattern(watermark);
+                pattern->setRepeat(KoPatternBackground::Stretched);
+                pattern->setReferencePoint(KoPatternBackground::Center);
+                pattern->setPatternDisplaySize(QSizeF(pageLayout.width, pageLayout.height));
+                backgroundAfter = QSharedPointer<KoShapeBackground>(pattern);
+            }
+            m_view->kwdocument()->addCommand(new PageStyleAppearanceCommand(m_view->kwdocument(), styleBefore,
+                                                                            pageLayout, pageLayout,
+                                                                            backgroundBefore, backgroundAfter));
+        });
+
+        auto *pageBordersAction = new QAction(KoRibbonIcons::forCommand(QStringLiteral("page_borders")), i18n("Page Borders"), this);
+        pageBordersAction->setObjectName(QStringLiteral("page_borders"));
+        pageBordersAction->setToolTip(i18n("Set a border around the pages"));
+        connect(pageBordersAction, &QAction::triggered, this, [this] {
+            KWPage page = m_view->currentPage();
+            if (!page.isValid()) {
+                return;
+            }
+            KWPageStyle styleBefore = page.pageStyle();
+            const KoPageLayout pageLayout = styleBefore.pageLayout();
+
+            QDialog dialog(this);
+            dialog.setWindowTitle(i18n("Page Borders"));
+            auto *dialogLayout = new QVBoxLayout(&dialog);
+            auto *enabled = new QCheckBox(i18n("Show page border"), &dialog);
+            enabled->setChecked(pageLayout.border.hasBorder());
+            dialogLayout->addWidget(enabled);
+
+            auto *options = new QWidget(&dialog);
+            auto *optionsLayout = new QGridLayout(options);
+            optionsLayout->addWidget(new QLabel(i18n("Style:"), options), 0, 0);
+            auto *styleCombo = new QComboBox(options);
+            styleCombo->addItem(i18n("Solid"), KoBorder::BorderSolid);
+            styleCombo->addItem(i18n("Dashed"), KoBorder::BorderDashed);
+            styleCombo->addItem(i18n("Dotted"), KoBorder::BorderDotted);
+            styleCombo->addItem(i18n("Double"), KoBorder::BorderDouble);
+            const int currentStyle = styleCombo->findData(pageLayout.border.hasBorder()
+                                                               ? pageLayout.border.borderStyle(KoBorder::TopBorder)
+                                                               : KoBorder::BorderSolid);
+            styleCombo->setCurrentIndex(currentStyle >= 0 ? currentStyle : 0);
+            optionsLayout->addWidget(styleCombo, 0, 1);
+
+            optionsLayout->addWidget(new QLabel(i18n("Width:"), options), 1, 0);
+            auto *widthSpin = new QDoubleSpinBox(options);
+            widthSpin->setRange(0.25, 12.0);
+            widthSpin->setSingleStep(0.25);
+            widthSpin->setSuffix(i18n(" pt"));
+            widthSpin->setValue(pageLayout.border.hasBorder()
+                                    ? pageLayout.border.borderWidth(KoBorder::TopBorder) : 1.0);
+            optionsLayout->addWidget(widthSpin, 1, 1);
+
+            optionsLayout->addWidget(new QLabel(i18n("Colour:"), options), 2, 0);
+            auto *colorButton = new QPushButton(options);
+            QColor borderColor = pageLayout.border.hasBorder()
+                ? pageLayout.border.borderColor(KoBorder::TopBorder) : QColor(Qt::black);
+            if (!borderColor.isValid()) {
+                borderColor = Qt::black;
+            }
+            const auto updateColorButton = [colorButton](const QColor &color) {
+                colorButton->setText(color.name());
+                colorButton->setStyleSheet(QStringLiteral("background-color: %1;").arg(color.name()));
+            };
+            updateColorButton(borderColor);
+            connect(colorButton, &QPushButton::clicked, &dialog, [&borderColor, &dialog, updateColorButton] {
+                const QColor color = QColorDialog::getColor(borderColor, &dialog, i18n("Border Colour"));
+                if (color.isValid()) {
+                    borderColor = color;
+                    updateColorButton(color);
+                }
+            });
+            optionsLayout->addWidget(colorButton, 2, 1);
+            dialogLayout->addWidget(options);
+            connect(enabled, &QCheckBox::toggled, options, &QWidget::setEnabled);
+            options->setEnabled(enabled->isChecked());
+
+            auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+            connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+            connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+            dialogLayout->addWidget(buttons);
+            if (dialog.exec() != QDialog::Accepted) {
+                return;
+            }
+
+            KoPageLayout newLayout = pageLayout;
+            const bool showBorder = enabled->isChecked();
+            const auto borderStyle = static_cast<KoBorder::BorderStyle>(styleCombo->currentData().toInt());
+            const qreal borderWidth = widthSpin->value();
+            for (KoBorder::BorderSide side : {KoBorder::TopBorder, KoBorder::LeftBorder, KoBorder::BottomBorder, KoBorder::RightBorder}) {
+                newLayout.border.setBorderStyle(side, showBorder ? borderStyle : KoBorder::BorderNone);
+                newLayout.border.setBorderWidth(side, showBorder ? borderWidth : 0.0);
+                if (showBorder) {
+                    newLayout.border.setBorderColor(side, borderColor);
+                }
+            }
+            if (newLayout == pageLayout) {
+                return;
+            }
+            const QSharedPointer<KoShapeBackground> backgroundBefore = styleBefore.background();
+            m_view->kwdocument()->addCommand(new PageStyleAppearanceCommand(m_view->kwdocument(), styleBefore,
+                                                                            pageLayout, newLayout,
+                                                                            backgroundBefore, backgroundBefore));
+        });
+
+        const ActionFinder findDesignAction = [findRibbonAction, pageColorAction, watermarkAction, pageBordersAction](const QString &name) {
+            if (name == QLatin1String("page_color")) {
+                return pageColorAction;
+            }
+            if (name == QLatin1String("watermark")) {
+                return watermarkAction;
+            }
+            if (name == QLatin1String("page_borders")) {
+                return pageBordersAction;
+            }
+            return findRibbonAction(name);
+        };
+        QWidget *styleGallery = createStyleGallery(m_view->kwdocument(), m_canvas, designPage);
         const QList<RibbonGroup> designGroups = {
             {i18n("Document Formatting"),
-             {{QStringLiteral("format_stylist"), i18n("Styles")},
+             {{QStringLiteral("format_stylist"), i18n("Themes")},
+              {QStringLiteral("format_textcolor"), i18n("Colors")},
               {QStringLiteral("format_font"), i18n("Fonts")},
-              {QStringLiteral("format_paragraph"), i18n("Paragraph Spacing")}}},
-            {i18n("Page Background"), {{QStringLiteral("border_backgroundcolor"), i18n("Page Color")}}},
+              {QStringLiteral("format_paragraph"), i18n("Paragraph Spacing")}},
+             RibbonGroup::LargeButtons,
+             styleGallery},
+            {i18n("Page Background"),
+             {{QStringLiteral("watermark"), i18n("Watermark")},
+              {QStringLiteral("page_color"), i18n("Page Color")},
+              {QStringLiteral("page_borders"), i18n("Page Borders")}}},
         };
-        populateRibbonGroupsLater(designPage, designGroups, findRibbonAction, true, 20);
+        populateRibbonGroupsLater(designPage, designGroups, findDesignAction, true, 20);
 
         // Microsoft Office 2026 style groups of the Mailings tab.
         const QList<RibbonGroup> mailingsGroups = {
             {i18n("Start Mail Merge"),
              {{QStringLiteral("mailmerge_select_recipients"), i18n("Select Recipients")},
-              {QStringLiteral("mailmerge_edit_recipients"), i18n("Edit Recipient List")}}, RibbonGroup::LargeAndStacked},
+              {QStringLiteral("mailmerge_edit_recipients"), i18n("Edit Recipient List")}}},
             {i18n("Write & Insert Fields"),
              {{QStringLiteral("mailmerge_insert_field"), i18n("Insert Merge Field")},
               {QStringLiteral("mailmerge_greeting_line"), i18n("Greeting Line")},
-              {QStringLiteral("mailmerge_highlight"), i18n("Highlight Fields")}}, RibbonGroup::LargeAndStacked},
+              {QStringLiteral("mailmerge_highlight"), i18n("Highlight Fields")}}},
             {i18n("Preview Results"),
              {{QStringLiteral("mailmerge_preview"), i18n("Preview Results")},
               {QStringLiteral("mailmerge_first"), i18n("First")},
               {QStringLiteral("mailmerge_prev"), i18n("Previous")},
               {QStringLiteral("mailmerge_next"), i18n("Next")},
-              {QStringLiteral("mailmerge_last"), i18n("Last")}}, RibbonGroup::PreviewNavigation},
+              {QStringLiteral("mailmerge_last"), i18n("Last")}}},
             {i18n("Finish"), {{QStringLiteral("mailmerge_finish"), i18n("Edit Individual Documents")}}},
         };
         populateRibbonGroupsLater(mailingsPage, mailingsGroups, findRibbonAction, true, 20);
@@ -1046,6 +1506,8 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
         const auto viewActions = std::make_shared<QMap<QString, QAction *>>();
         const auto addViewAction = [this, viewActions](const QString &name, const QString &text, const QString &icon) {
             auto *command = new QAction(QIcon::fromTheme(icon), text, this);
+            // The shared ribbon icon lookup matches on the action name.
+            command->setObjectName(name);
             viewActions->insert(name, command);
             return command;
         };
@@ -1111,18 +1573,6 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
         }
         zoomMenuAction->setMenu(zoomMenu);
         zoomMenuAction->setProperty("ribbonMenuOnly", true);
-        auto *grid = addViewAction(QStringLiteral("ribbon_grid_guides"), i18n("Grid and\nguides"), QStringLiteral("view-grid"));
-        auto *gridMenu = new QMenu(viewPage);
-        connect(gridMenu, &QMenu::aboutToShow, viewPage, [gridMenu, findRibbonAction] {
-            gridMenu->clear();
-            for (const QString &name : {QStringLiteral("view_grid"), QStringLiteral("view_snaptogrid"), QStringLiteral("view_show_guides")}) {
-                if (QAction *command = findRibbonAction(name)) {
-                    gridMenu->addAction(command);
-                }
-            }
-        });
-        grid->setMenu(gridMenu);
-        grid->setProperty("ribbonMenuOnly", true);
         auto *sidebars = addViewAction(QStringLiteral("ribbon_sidebars"), i18n("Sidebars"), QStringLiteral("view-sidetree"));
         auto *sidebarMenu = new QMenu(viewPage);
         connect(sidebarMenu, &QMenu::aboutToShow, viewPage, [this, sidebarMenu, modeBox] {
@@ -1167,10 +1617,12 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
              {{QStringLiteral("view_fieldshadings"), i18n("Shade fields")},
               {QStringLiteral("view_formattingchars"), i18n("Formatting marks")},
               {QStringLiteral("view_frameborders"), i18n("Text boundaries")}}, RibbonGroup::Stacked},
-            {i18n("View"),
-             {{QStringLiteral("ribbon_grid_guides"), i18n("Grid and\nguides")},
+            {i18n("Show"),
+             {{QStringLiteral("view_grid"), i18n("Gridlines")},
+              {QStringLiteral("view_snaptogrid"), i18n("Snap to grid")},
+              {QStringLiteral("view_show_guides"), i18n("Guides")},
               {QStringLiteral("ribbon_horizontal_ruler"), i18n("Horiz. ruler")},
-              {QStringLiteral("ribbon_vertical_ruler"), i18n("Vert. ruler")}}, RibbonGroup::LargeAndStacked},
+              {QStringLiteral("ribbon_vertical_ruler"), i18n("Vert. ruler")}}, RibbonGroup::Stacked},
             {i18n("Zoom"),
              {{QStringLiteral("ribbon_set_zoom"), i18n("Set\nzoom")},
               {QStringLiteral("ribbon_zoom_menu"), i18n("Zoom")},

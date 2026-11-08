@@ -198,7 +198,15 @@ void DocxDrawReaderBackend::elementDrawFrame(KoXmlStreamReader &reader, OdfReade
     Q_UNUSED(context);
     if (reader.isStartElement()) {
         m_frameHasChart = false;
+        m_frameTextBoxContent.clear();
+        m_frameDrewDrawing = false;
+        m_frameFill.clear();
+        m_frameStroke.clear();
         const auto attributes = reader.attributes();
+        m_frameName = attributes.value(QStringLiteral("draw:name")).toString();
+        if (m_frameName.isEmpty()) {
+            m_frameName = QStringLiteral("Text Box");
+        }
         const qreal width = KoUnit::parseValue(attributes.value(QStringLiteral("svg:width")).toString(), 144.0);
         const qreal height = KoUnit::parseValue(attributes.value(QStringLiteral("svg:height")).toString(), 96.0);
         m_frameSize = QSizeF(qMax<qreal>(1.0, width), qMax<qreal>(1.0, height));
@@ -218,6 +226,12 @@ void DocxDrawReaderBackend::elementDrawFrame(KoXmlStreamReader &reader, OdfReade
                 m_frameWrapContour = properties->attribute(QStringLiteral("style:wrap-contour")) == QLatin1String("true");
                 m_frameWrapContourMode = properties->attribute(QStringLiteral("style:wrap-contour-mode"));
                 m_frameClip = properties->attribute(QStringLiteral("fo:clip"));
+                // Kept for text boxes, which need the frame's own fill and
+                // outline instead of a picture or a primitive shape's ones.
+                const QString fillType = properties->attribute(QStringLiteral("draw:fill"));
+                m_frameFill = fillType == QLatin1String("none") ? QString() : properties->attribute(QStringLiteral("draw:fill-color"));
+                const QString strokeType = properties->attribute(QStringLiteral("draw:stroke"));
+                m_frameStroke = strokeType == QLatin1String("none") ? QString() : properties->attribute(QStringLiteral("svg:stroke-color"));
             }
         }
         m_framePosX = KoUnit::parseValue(attributes.value(QStringLiteral("svg:x")).toString(), 0.0);
@@ -252,6 +266,14 @@ void DocxDrawReaderBackend::elementDrawFrame(KoXmlStreamReader &reader, OdfReade
             }
         }
     } else {
+        // A frame whose only content is a text box, as produced for a floating
+        // table, has no image or primitive shape of its own.  Unless one of
+        // those was written, the converted text box content ends up as a Word
+        // text box here; otherwise everything inside it would be dropped.
+        if (!m_frameTextBoxContent.isEmpty() && !m_frameDrewDrawing) {
+            writeTextBoxDrawing(m_frameName);
+        }
+        m_frameTextBoxContent.clear();
         m_frameSize = QSizeF();
         m_framePosX = 0.0;
         m_framePosY = 0.0;
@@ -385,9 +407,11 @@ void DocxDrawReaderBackend::elementDrawPath(KoXmlStreamReader &reader, OdfReader
     }
     PresetShape shape = m_presetShapes.value(shapeKey(reader.attributes()));
     if (!shape.preset.startsWith(QLatin1String("ooxml-"))) {
-        warnDocx << "Cannot export custom shape without losing its geometry";
-        m_chartError = true;
-        return;
+        // A custom geometry with no DrawingML preset cannot be written as a
+        // preset shape. Keep its text and position as a rectangle text box
+        // instead of failing the whole export; the outline is not preserved.
+        warnDocx << "Custom shape has no DrawingML preset; exporting it as a rectangle text box";
+        shape.preset = QStringLiteral("ooxml-rect");
     }
     shape.preset.remove(0, 6);
     elementDrawFrame(reader, context);
@@ -471,8 +495,56 @@ void DocxDrawReaderBackend::elementDrawRect(KoXmlStreamReader &reader, OdfReader
     writePrimitive(reader, QStringLiteral("rect"), false);
 }
 
+void DocxDrawReaderBackend::elementDrawTextBox(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    Q_UNUSED(context);
+    if (!m_context) {
+        return;
+    }
+
+    if (reader.isStartElement()) {
+        // Convert the text box contents with the text backend that produces
+        // the document body, but into a separate buffer: a text box is a self
+        // contained block of paragraphs and tables, and must not be written
+        // into the paragraph or table cell that holds the frame.
+        m_textBoxIO.close();
+        m_textBoxIO.setData(QByteArray());
+        m_textBoxIO.open(QIODevice::WriteOnly);
+        m_textBoxWriter.reset(new KoXmlWriter(&m_textBoxIO));
+        m_suspendedWriter = m_context->setDocumentWriter(m_textBoxWriter.data());
+        m_suspendedInsideParagraph = m_context->m_insideParagraph;
+        m_suspendedInsideRun = m_context->m_insideRun;
+        m_context->m_insideParagraph = false;
+        m_context->m_insideRun = false;
+    } else {
+        m_context->setDocumentWriter(m_suspendedWriter);
+        m_suspendedWriter = nullptr;
+        m_context->m_insideParagraph = m_suspendedInsideParagraph;
+        m_context->m_insideRun = m_suspendedInsideRun;
+        m_textBoxWriter.reset();
+        m_textBoxIO.close();
+        const QByteArray content = m_textBoxIO.data();
+        if (!content.trimmed().isEmpty()) {
+            m_frameTextBoxContent = content;
+        }
+    }
+}
+
+void DocxDrawReaderBackend::writeTextBoxDrawing(const QString &name)
+{
+    PresetShape shape;
+    shape.preset = QStringLiteral("rect");
+    shape.richText = m_frameTextBoxContent;
+    shape.fill = m_frameFill;
+    shape.stroke = m_frameStroke;
+    EmbeddedImage drawing;
+    drawing.name = name;
+    writeDrawing(drawing, false, QString(), &shape);
+}
+
 void DocxDrawReaderBackend::writeDrawing(const EmbeddedImage &image, bool chart, const QString &sourcePath, const PresetShape *shape)
 {
+    m_frameDrewDrawing = true;
     const qint64 cx = qMax<qint64>(12700, qRound64(m_frameSize.width() * EmusPerPoint));
     const qint64 cy = qMax<qint64>(12700, qRound64(m_frameSize.height() * EmusPerPoint));
     KoXmlWriter *writer = m_context->m_documentWriter;
@@ -615,7 +687,16 @@ void DocxDrawReaderBackend::writeDrawing(const EmbeddedImage &image, bool chart,
         fill(shape->stroke);
         writer->endElement();
         writer->endElement(); // spPr
-        if (!shape->text.isEmpty()) {
+        if (!shape->richText.isEmpty()) {
+            // Already converted paragraphs and tables, e.g. the contents of a
+            // draw:text-box.  They are written as they are, so tables keep
+            // their rows, cells and formatting instead of being flattened.
+            writer->startElement("wps:txbx");
+            writer->startElement("w:txbxContent");
+            writer->addCompleteElement(shape->richText.constData());
+            writer->endElement();
+            writer->endElement();
+        } else if (!shape->text.isEmpty()) {
             writer->startElement("wps:txbx");
             writer->startElement("w:txbxContent");
             for (const QString &paragraph : shape->text.split(QLatin1Char('\n'))) {

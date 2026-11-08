@@ -171,7 +171,10 @@ KoFilter::ConversionStatus MsooXmlRelationshipsReader::read_Relationship()
     m_context->rels->insert(d->pathAndFile + Id, targetPath);
     // debugMsooXml << "added target" << Target << "for type" << Type << "path=" << fixedPath << "key=" << targetKey(m_context->path + '/' + m_context->file,
     // Type);
-    m_context->targetsForTypes->insert(targetKey(m_context->path + '/' + m_context->file, Type), targetPath);
+    // Strict documents use purl.oclc.org relationship types; store them under the
+    // transitional type so that targetForType() lookups work for both dialects.
+    m_context->targetsForTypes->insert(
+        targetKey(m_context->path + '/' + m_context->file, MSOOXML::Utils::canonicalNamespace(Type)), targetPath);
 
     readNext();
     READ_EPILOGUE

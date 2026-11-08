@@ -8,6 +8,7 @@
 #include <QDockWidget>
 #include <QEvent>
 #include <QPointer>
+#include <KoRibbonIcons.h>
 #include <KoRibbonLayout.h>
 
 // Stage Headers
@@ -115,7 +116,7 @@ KPrShapeAnimationDocker::KPrShapeAnimationDocker(QWidget *parent)
     m_editAnimation = new QToolButton();
     m_editAnimation->setText(i18n("Edit animation"));
     m_editAnimation->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    m_editAnimation->setIcon(koIcon("edit_animation"));
+    m_editAnimation->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("edit_animation"), koIcon("edit_animation")));
     m_editAnimation->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     m_editAnimation->setToolTip(i18n("Edit animation"));
     m_editAnimation->setEnabled(false);
@@ -130,7 +131,7 @@ KPrShapeAnimationDocker::KPrShapeAnimationDocker(QWidget *parent)
     m_editAnimation->setPopupMode(QToolButton::InstantPopup);
 
     m_buttonAddAnimation = new QToolButton();
-    m_buttonAddAnimation->setIcon(koIcon("list-add"));
+    m_buttonAddAnimation->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("list-add"), koIcon("list-add")));
     m_buttonAddAnimation->setToolTip(i18n("Add new animation"));
 
     m_addMenu = new DialogMenu(this);
@@ -141,7 +142,7 @@ KPrShapeAnimationDocker::KPrShapeAnimationDocker(QWidget *parent)
     m_buttonAddAnimation->setPopupMode(QToolButton::InstantPopup);
 
     m_buttonRemoveAnimation = new QToolButton();
-    m_buttonRemoveAnimation->setIcon(koIcon("list-remove"));
+    m_buttonRemoveAnimation->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("list-remove"), koIcon("list-remove")));
     m_buttonRemoveAnimation->setEnabled(false);
     m_buttonRemoveAnimation->setToolTip(i18n("Remove animation"));
     hlayout->addWidget(m_buttonAddAnimation);
@@ -149,17 +150,17 @@ KPrShapeAnimationDocker::KPrShapeAnimationDocker(QWidget *parent)
 
     QLabel *orderLabel = new QLabel(i18n("Order: "));
     m_buttonAnimationOrderUp = new QToolButton();
-    m_buttonAnimationOrderUp->setIcon(koIcon("arrow-up"));
+    m_buttonAnimationOrderUp->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("arrow-up"), koIcon("arrow-up")));
     m_buttonAnimationOrderUp->setToolTip(i18n("Move animation up"));
     m_buttonAnimationOrderUp->setEnabled(false);
 
     m_buttonAnimationOrderDown = new QToolButton();
-    m_buttonAnimationOrderDown->setIcon(koIcon("arrow-down"));
+    m_buttonAnimationOrderDown->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("arrow-down"), koIcon("arrow-down")));
     m_buttonAnimationOrderDown->setToolTip(i18n("Move animation down"));
     m_buttonAnimationOrderDown->setEnabled(false);
 
     m_buttonPreviewAnimation = new QToolButton();
-    m_buttonPreviewAnimation->setIcon(koIcon("media-playback-start"));
+    m_buttonPreviewAnimation->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("media-playback-start"), koIcon("media-playback-start")));
     m_buttonPreviewAnimation->setToolTip(i18n("Preview Shape Animation"));
     m_buttonPreviewAnimation->setEnabled(false);
 

@@ -63,6 +63,7 @@ set(wordsprivate_LIB_SRCS
     dialogs/KWDocumentColumns.cpp
     dialogs/KWStartupWidget.cpp
     dialogs/KWPageSettingsDialog.cpp
+    dialogs/KWPrintDialog.cpp
     dialogs/KWPrintingDialog.cpp
     dialogs/KWCreateBookmarkDialog.cpp
     dialogs/KWSelectBookmarkDialog.cpp

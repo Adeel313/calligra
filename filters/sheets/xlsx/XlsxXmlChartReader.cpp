@@ -486,12 +486,12 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read(MSOOXML::MsooXmlReaderContex
             ELSE_TRY_READ_IF(legend)
             ELSE_TRY_READ_IF(spPr)
             ELSE_TRY_READ_IF(txPr)
-            if (qualifiedName() == QLatin1String(QUALIFIED_NAME(autoTitleDeleted))) {
+            if (isElement(QUALIFIED_NAME(autoTitleDeleted))) {
                 const QXmlStreamAttributes attrs(attributes());
                 TRY_READ_ATTR_WITHOUT_NS(val)
                 m_autoTitleDeleted = MSOOXML::Utils::convertBooleanAttr(val, true);
             }
-            if (qualifiedName() == QLatin1String(QUALIFIED_NAME(style))) {
+            if (isElement(QUALIFIED_NAME(style))) {
                 const QXmlStreamAttributes attrs(attributes());
                 TRY_READ_ATTR_WITHOUT_NS(val)
                 m_context->m_chart->m_style = val.toInt();
@@ -539,7 +539,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_txPr()
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement())
-            if (qualifiedName() == QLatin1StringView("a:p"))
+            if (isElement("a:p"))
                 read_p();
     }
     READ_EPILOGUE
@@ -553,10 +553,10 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_p()
     // READ_PROLOGUE
     while (!atEnd()) {
         readNext();
-        if (isEndElement() && qualifiedName() == QLatin1String("a:p"))
+        if (isEndElement() && isElement("a:p"))
             break;
         if (isStartElement())
-            if (qualifiedName() == QLatin1StringView("a:pPr"))
+            if (isElement("a:pPr"))
                 read_pPr();
         // TRY_READ_IF_NS(a,pPr);
     }
@@ -571,10 +571,10 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_pPr()
     // READ_PROLOGUE
     while (!atEnd()) {
         readNext();
-        if (isEndElement() && qualifiedName() == QLatin1String("a:pPr"))
+        if (isEndElement() && isElement("a:pPr"))
             break;
         if (isStartElement())
-            if (qualifiedName() == QLatin1StringView("a:defRPr"))
+            if (isElement("a:defRPr"))
                 read_defRPr();
     }
     // READ_EPILOGUE
@@ -594,7 +594,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_defRPr()
         m_context->m_chart->m_textSize = size / 100.0;
     }
     while (!atEnd()) {
-        if (isEndElement() && qualifiedName() == QLatin1String("a:defRPr"))
+        if (isEndElement() && isElement("a:defRPr"))
             break;
         readNext();
         // BREAK_IF_END_OF(CURRENT_EL)
@@ -630,7 +630,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_valAx()
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
-            if (qualifiedName() == QLatin1String(QUALIFIED_NAME(axPos))) {
+            if (isElement(QUALIFIED_NAME(axPos))) {
                 //                   const QXmlStreamAttributes attrs(attributes());
                 //                   TRY_READ_ATTR_WITHOUT_NS(val)
                 //                   if ( val == QLatin1String( "b" ) ){
@@ -639,9 +639,9 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_valAx()
                 //                   else if ( val == QLatin1String( "l" ) ){
                 //                   }
                 //             }
-            } else if (qualifiedName() == QLatin1String(QUALIFIED_NAME(majorGridlines))) {
+            } else if (isElement(QUALIFIED_NAME(majorGridlines))) {
                 axis->m_majorGridlines = KoChart::Axis::Gridline(KoChart::LineFormat(KoChart::LineFormat::Solid));
-            } else if (qualifiedName() == QLatin1String(QUALIFIED_NAME(numFmt))) {
+            } else if (isElement(QUALIFIED_NAME(numFmt))) {
                 const QXmlStreamAttributes attrs(attributes());
                 axis->m_numberFormat = attrs.value("formatCode").toString();
             }
@@ -664,14 +664,14 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_catAx()
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
-            if (qualifiedName() == QLatin1String(QUALIFIED_NAME(axPos))) {
+            if (isElement(QUALIFIED_NAME(axPos))) {
                 //                   const QXmlStreamAttributes attrs(attributes());
                 //                   TRY_READ_ATTR_WITHOUT_NS(val)
                 //                   if ( val == QLatin1String( "b" ) ){
                 //                   }
                 //                   else if ( val == QLatin1String( "l" ) ){
                 //                   }
-            } else if (qualifiedName() == QLatin1String(QUALIFIED_NAME(majorGridlines))) {
+            } else if (isElement(QUALIFIED_NAME(majorGridlines))) {
                 axis->m_majorGridlines = KoChart::Axis::Gridline(KoChart::LineFormat(KoChart::LineFormat::Solid));
             }
             ELSE_TRY_READ_IF(scaling)
@@ -692,17 +692,17 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_scaling()
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             const QXmlStreamAttributes attrs(attributes());
-            if (qualifiedName() == QLatin1String(QUALIFIED_NAME(orientation))) {
+            if (isElement(QUALIFIED_NAME(orientation))) {
                 TRY_READ_ATTR_WITHOUT_NS(val)
                 axis->m_reversed = (val == QLatin1String("maxMin"));
-            } else if (qualifiedName() == QLatin1String(QUALIFIED_NAME(logBase))) {
+            } else if (isElement(QUALIFIED_NAME(logBase))) {
                 TRY_READ_ATTR_WITHOUT_NS(val)
                 axis->m_logarithmic = (val.toDouble() >= 2.);
-            } else if (qualifiedName() == QLatin1String(QUALIFIED_NAME(max))) {
+            } else if (isElement(QUALIFIED_NAME(max))) {
                 TRY_READ_ATTR_WITHOUT_NS(val)
                 axis->m_maximum = val.toDouble();
                 axis->m_autoMaximum = false;
-            } else if (qualifiedName() == QLatin1String(QUALIFIED_NAME(min))) {
+            } else if (isElement(QUALIFIED_NAME(min))) {
                 TRY_READ_ATTR_WITHOUT_NS(val)
                 axis->m_minimum = val.toDouble();
                 axis->m_autoMinimum = false;
@@ -966,17 +966,17 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_chartText_Tx()
         BREAK_IF_END_OF(CURRENT_EL)
         switch (state) {
         case Start:
-            if (qualifiedName() == QLatin1String(QUALIFIED_NAME(strRef)))
+            if (isElement(QUALIFIED_NAME(strRef)))
                 state = isStartElement() ? InStrRef : Start;
-            else if (qualifiedName() == QLatin1String(QUALIFIED_NAME(rich)))
+            else if (isElement(QUALIFIED_NAME(rich)))
                 state = isStartElement() ? InRichText : Start;
             break;
         case InStrRef: // plaintext within a series
             //                if (isStartElement() && !m_currentSeriesData->m_datasetValue.contains(KoChart::Value::SeriesLegendOrTrendlineName)) {
-            //                    if (qualifiedName() == QLatin1String(QUALIFIED_NAME(f))) {
+            //                    if (isElement(QUALIFIED_NAME(f))) {
             //                        KoChart::Value* v = new KoChart::Value(KoChart::Value::SeriesLegendOrTrendlineName, KoChart::Value::CellRange,
             //                        readElementText()); m_currentSeriesData->m_datasetValue[v->m_dataId] = v;
-            //                    } else if (qualifiedName() == QLatin1String(QUALIFIED_NAME(v))) {
+            //                    } else if (isElement(QUALIFIED_NAME(v))) {
             //                        KoChart::Value* v = new KoChart::Value(KoChart::Value::SeriesLegendOrTrendlineName, KoChart::Value::TextOrValue,
             //                        readElementText()); m_currentSeriesData->m_datasetValue[v->m_dataId] = v;
             //                    }
@@ -995,15 +995,15 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_chartText_Tx()
                 readNext();
                 switch (s) {
                 case Rich:
-                    if (isStartElement() && qualifiedName() == QLatin1String("a:p"))
+                    if (isStartElement() && isElement("a:p"))
                         s = Paragraph;
                     break;
                 case Paragraph:
-                    if (qualifiedName() == QLatin1String("a:r")) // text run
+                    if (isElement("a:r")) // text run
                         s = isStartElement() ? TextRun : Rich;
                     break;
                 case TextRun:
-                    if (qualifiedName() == QLatin1String("a:t")) {
+                    if (isElement("a:t")) {
                         if (isStartElement()) {
                             if (!result.isEmpty())
                                 result += ' '; // concat multiple strings into one result
@@ -1138,13 +1138,13 @@ void XlsxXmlChartReader::read_showDataLabel()
 {
     if (m_currentSeries) {
         const QXmlStreamAttributes attrs(attributes());
-        if (qualifiedName() == QLatin1StringView("c:showVal")) {
+        if (isElement("c:showVal")) {
             m_currentSeries->m_showDataLabelValues = MSOOXML::Utils::convertBooleanAttr(attrs.value("val").toString(), true);
-        } else if (qualifiedName() == QLatin1StringView("c:showPercent")) {
+        } else if (isElement("c:showPercent")) {
             m_currentSeries->m_showDataLabelPercent = MSOOXML::Utils::convertBooleanAttr(attrs.value("val").toString(), true);
-        } else if (qualifiedName() == QLatin1StringView("c:showCatName")) {
+        } else if (isElement("c:showCatName")) {
             m_currentSeries->m_showDataLabelCategory = MSOOXML::Utils::convertBooleanAttr(attrs.value("val").toString(), true);
-        } else if (qualifiedName() == QLatin1StringView("c:showSerName")) {
+        } else if (isElement("c:showSerName")) {
             m_currentSeries->m_showDataLabelSeries = MSOOXML::Utils::convertBooleanAttr(attrs.value("val").toString(), true);
         }
     }
@@ -1246,7 +1246,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_dLbls()
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             TRY_READ_IF(dLbl)
-            else if (qualifiedName() == QLatin1String(QUALIFIED_NAME(numFmt)))
+            else if (isElement(QUALIFIED_NAME(numFmt)))
             {
                 const QXmlStreamAttributes attrs(attributes());
                 m_currentSeries->m_numberFormat = attrs.value("formatCode").toString();
@@ -1319,15 +1319,15 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_spPr()
         else if (isEndElement())
             --level;
 
-        if (qualifiedName() == QLatin1StringView("a:solidFill") || qualifiedName() == QLatin1StringView("a:pattFill")
-            || qualifiedName() == QLatin1StringView("a:gradFill")) {
+        if (isElement("a:solidFill") || isElement("a:pattFill")
+            || isElement("a:gradFill")) {
             if (level == 1)
                 state = isStartElement() ? InFill : Start;
-        } else if (qualifiedName() == QLatin1StringView("a:noFill")) {
+        } else if (isElement("a:noFill")) {
             m_currentShapeProperties->lineFill.setType(KoChart::Fill::None);
             if (level == 1)
                 state = isStartElement() ? NoFill : Start;
-        } else if ((state == NoFill || state == InFill) && qualifiedName() == QLatin1StringView("a:srgbClr")) {
+        } else if ((state == NoFill || state == InFill) && isElement("a:srgbClr")) {
             const QXmlStreamAttributes attrs(attributes());
             TRY_READ_ATTR_WITHOUT_NS(val)
             if (!val.isEmpty() && !m_context->m_chart->m_areaFormat) {
@@ -1344,7 +1344,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_spPr()
                 }
             }
             state = Start; // job done
-        } else if (qualifiedName() == QLatin1StringView("a:srgbClr")) {
+        } else if (isElement("a:srgbClr")) {
             if (isStartElement()) {
                 const QXmlStreamAttributes attrs(attributes());
                 TRY_READ_ATTR_WITHOUT_NS(val)
@@ -1363,7 +1363,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_spPr()
                     }
                 }
             }
-        } else if (qualifiedName() == QLatin1StringView("a:alpha")) {
+        } else if (isElement("a:alpha")) {
             const QXmlStreamAttributes attrs(attributes());
             TRY_READ_ATTR_WITHOUT_NS(val)
             if (!val.isEmpty()) {
@@ -1379,7 +1379,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_spPr()
                     }
                 }
             }
-        } else if (qualifiedName() == QLatin1StringView("a:gsLst")) {
+        } else if (isElement("a:gsLst")) {
             if (isStartElement()) {
                 readingGradient = true;
                 gradient = new KoChart::Gradient;
@@ -1395,7 +1395,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_spPr()
                 }
                 gradient = nullptr;
             }
-        } else if (qualifiedName() == QLatin1StringView("a:gs") && readingGradient) {
+        } else if (isElement("a:gs") && readingGradient) {
             if (isStartElement()) {
                 readingGradientStop = true;
                 const QXmlStreamAttributes attrs(attributes());
@@ -1409,7 +1409,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_spPr()
                 readingGradientStop = false;
                 currentStop.reset();
             }
-        } else if (qualifiedName() == QLatin1StringView("a:schemeClr") && readingGradientStop) {
+        } else if (isElement("a:schemeClr") && readingGradientStop) {
             if (isStartElement()) {
                 const QXmlStreamAttributes attrs(attributes());
                 TRY_READ_ATTR_WITHOUT_NS(val)
@@ -1417,22 +1417,22 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_spPr()
                     currentStop.referenceColor = val;
             } else if (isEndElement()) {
             }
-        } else if (qualifiedName() == QLatin1StringView("a:tint") && readingGradientStop) {
+        } else if (isElement("a:tint") && readingGradientStop) {
             const QXmlStreamAttributes attrs(attributes());
             TRY_READ_ATTR_WITHOUT_NS(val)
             if (!val.isEmpty())
                 currentStop.tintVal = val.toDouble() / 1000.0;
-        } else if (qualifiedName() == QLatin1StringView("a:satMod") && readingGradientStop) {
+        } else if (isElement("a:satMod") && readingGradientStop) {
             const QXmlStreamAttributes attrs(attributes());
             TRY_READ_ATTR_WITHOUT_NS(val)
             if (!val.isEmpty())
                 currentStop.satVal = val.toDouble() / 1000.0;
-        } else if (qualifiedName() == QLatin1StringView("a:lin") && readingGradient) {
+        } else if (isElement("a:lin") && readingGradient) {
             const QXmlStreamAttributes attrs(attributes());
             TRY_READ_ATTR_WITHOUT_NS(ang)
             if (!ang.isEmpty())
                 gradient->angle = ang.toDouble() / 60000.0;
-        } else if (qualifiedName() == QLatin1StringView("a:noFill")) {
+        } else if (isElement("a:noFill")) {
             m_currentShapeProperties->lineFill.setType(KoChart::Fill::None);
         }
     }
@@ -2681,7 +2681,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_marker()
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
-            if (!gotSymbol && qualifiedName() == QLatin1StringView("c:symbol")) {
+            if (!gotSymbol && isElement("c:symbol")) {
                 const QXmlStreamAttributes attrs(attributes());
                 TRY_READ_ATTR_WITHOUT_NS(val);
                 m_context->m_chart->m_markerType = markerType(val);
@@ -2713,7 +2713,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_serMarker()
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
-            if (qualifiedName() == QLatin1StringView("c:symbol")) {
+            if (isElement("c:symbol")) {
                 const QXmlStreamAttributes attrs(attributes());
                 TRY_READ_ATTR_WITHOUT_NS(val);
                 m_currentSeries->m_markerType = markerType(val);
@@ -3034,7 +3034,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_pt()
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
-            if (qualifiedName() == QLatin1String(QUALIFIED_NAME(v))) {
+            if (isElement(QUALIFIED_NAME(v))) {
                 d->m_currentPtCache->append(readElementText());
             }
         }

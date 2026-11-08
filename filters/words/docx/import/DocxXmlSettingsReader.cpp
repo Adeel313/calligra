@@ -71,7 +71,7 @@ KoFilter::ConversionStatus DocxXmlSettingsReader::read(MSOOXML::MsooXmlReaderCon
 
     //! @todo find out whether the namespace returned by namespaceUri()
     //!       is exactly the same ref as the element of namespaceDeclarations()
-    if (!namespaces.contains(QXmlStreamNamespaceDeclaration("w", MSOOXML::Schemas::wordprocessingml))) {
+    if (!hasNamespace(MSOOXML::Schemas::wordprocessingml)) {
         raiseError(i18n("Namespace \"%1\" not found", QLatin1String(MSOOXML::Schemas::wordprocessingml)));
         return KoFilter::WrongFormat;
     }
@@ -143,7 +143,7 @@ KoFilter::ConversionStatus DocxXmlSettingsReader::read(MSOOXML::MsooXmlReaderCon
  - embedSystemFonts (Embed Common System Fonts) §17.8.3.7
  - embedTrueTypeFonts (Embed TrueType Fonts) §17.8.3.8
  - endnotePr (Document-Wide Endnote Properties) §17.11.4
- - evenAndOddHeaders (Different Even/Odd Page Headers and Footers) §17.10.1
+ - [done] evenAndOddHeaders (Different Even/Odd Page Headers and Footers) §17.10.1
  - footnotePr (Document-Wide Footnote Properties) §17.11.12
  - forceUpgrade (Upgrade Document on Open) §17.15.1.48
  - formsDesign (Structured Document Tag Placeholder Text Should be Resaved) §17.15.1.49
@@ -205,6 +205,7 @@ KoFilter::ConversionStatus DocxXmlSettingsReader::read_settings()
             TRY_READ_IF(defaultTabStop)
             ELSE_TRY_READ_IF(displayBackgroundShape)
             ELSE_TRY_READ_IF(clrSchemeMapping)
+            ELSE_TRY_READ_IF(evenAndOddHeaders)
             SKIP_UNKNOWN
         }
     }
@@ -255,6 +256,32 @@ KoFilter::ConversionStatus DocxXmlSettingsReader::read_displayBackgroundShape()
     TRY_READ_ATTR(val)
 
     m_context->documentSettings["displayBackgroundShape"] = val;
+
+    readNext();
+    READ_EPILOGUE
+}
+
+#undef CURRENT_EL
+#define CURRENT_EL evenAndOddHeaders
+//! w:evenAndOddHeaders handler (Different Even/Odd Page Headers and Footers)
+/*!
+
+ Parent elements:
+ - [done] settings (§17.15.1.78)
+
+ Child elements:
+ - none
+*/
+KoFilter::ConversionStatus DocxXmlSettingsReader::read_evenAndOddHeaders()
+{
+    READ_PROLOGUE
+
+    const QXmlStreamAttributes attrs(attributes());
+    TRY_READ_ATTR(val)
+    if (val.isEmpty()) {
+        val = QStringLiteral("true");
+    }
+    m_context->documentSettings["evenAndOddHeaders"] = val;
 
     readNext();
     READ_EPILOGUE

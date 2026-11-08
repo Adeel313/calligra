@@ -626,25 +626,12 @@ KoFilter::ConversionStatus XlsxImport::parseParts(KoOdfWriters *writers, MSOOXML
 
     reportProgress(35);
 
-    // 4. parse comments
+    // 4. parse document; the comments parts are found through the sheet
+    // relationships while the sheets are read
+    reportProgress(40);
     XlsxComments comments;
     {
-        XlsxXmlCommentsReader commentsReader(writers);
-        XlsxXmlCommentsReaderContext context(comments, &themes, colorContext.colorIndices);
-        RETURN_IF_ERROR(loadAndParseDocumentFromFileIfExists(
-            //! @todo only support "xl/comments1.xml" filename for comments?
-            "xl/comments1.xml",
-            &commentsReader,
-            writers,
-            errorMessage,
-            &context))
-    }
-
-    reportProgress(40);
-
-    // 5. parse document
-    {
-        XlsxXmlDocumentReaderContext context(*this, &themes, sharedStrings, comments, styles, *relationships, "workbook.xml", "xl");
+        XlsxXmlDocumentReaderContext context(*this, &themes, sharedStrings, comments, styles, colorContext.colorIndices, *relationships, "workbook.xml", "xl");
         XlsxXmlDocumentReader documentReader(writers);
         RETURN_IF_ERROR(loadAndParseDocument(d->mainDocumentContentType(), &documentReader, writers, errorMessage, &context))
     }

@@ -15,7 +15,10 @@ TIFF images, comments, hyperlinks, explicit spaces and line breaks, and maps a
 broad subset of paragraph and character formatting (fonts, sizes, bold, italic,
 underline variants, strikethrough, small caps, caps, letter spacing, text
 scaling, super/subscript, colors, character and paragraph background, paragraph
-borders, alignment, indentation, spacing, and heading outline levels). The first
+borders, alignment, indentation, spacing, and heading outline levels). Page
+borders are written as w:pgBorders, and ODF page background images are exported
+as behind-text images in the section header so Word and LibreOffice display them
+as watermarks. The first
 paragraph's selected master page (or the first master page when none
 is selected) is exported from styles.xml as word/header1.xml and
 word/footer1.xml (including their images and tables), and the matching w:sectPr

@@ -1254,12 +1254,6 @@ KoInteractionStrategy *DefaultTool::createStrategy(KoPointerEvent *event)
     bool editableShape = editableShapesCount(select->selectedShapes());
     KoShape::AllowedInteractions interactions = allowedInteractions(select->selectedShapes());
 
-    { // DRAGDBG temporary instrumentation
-        KoShape *dbgShape = shapeManager->shapeAt(event->point);
-        qWarning() << "[DRAGDBG] DefaultTool createStrategy shapeAt=" << (dbgShape ? dbgShape->shapeId() : QString("none")) << "handle=" << (int)handle
-                   << "editable=" << editableShape << "selectedCount=" << select->count() << "pos=" << (dbgShape ? dbgShape->position() : QPointF());
-    }
-
     if (event->buttons() & Qt::MiddleButton) {
         // change the hot selection position when middle clicking on a handle
         KoFlake::Position newHotPosition = m_hotPosition;

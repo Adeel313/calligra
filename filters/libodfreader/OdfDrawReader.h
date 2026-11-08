@@ -92,6 +92,7 @@ protected:
     DECLARE_READER_FUNCTION(DrawImage);
     DECLARE_READER_FUNCTION(DrawObject);
     DECLARE_READER_FUNCTION(DrawObjectOle);
+    DECLARE_READER_FUNCTION(DrawTextBox); // ODF 1.2  10.4.3
 
     // ----------------------------------------------------------------
     // Other functions

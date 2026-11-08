@@ -78,6 +78,7 @@ public:
     DECLARE_BACKEND_FUNCTION(DrawImage);
     DECLARE_BACKEND_FUNCTION(DrawObject);
     DECLARE_BACKEND_FUNCTION(DrawObjectOle);
+    DECLARE_BACKEND_FUNCTION(DrawTextBox); // ODF 1.2  10.4.3
 
 private:
     class Private;

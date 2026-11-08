@@ -54,6 +54,7 @@
 #include <QStyleOptionTabWidgetFrame>
 #include <QTabBar>
 #include <QTextLayout>
+#include <QTimer>
 #include <QToolButton>
 #include <QAction>
 #include <QDynamicPropertyChangeEvent>
@@ -114,6 +115,7 @@ public:
     QList<QString> lastShownCodes;
     QList<CustomPage> customPages;
     QList<ToolTabWidget> toolTabWidgets;
+    QHash<QString, bool> toolTabVisibility;
     int activeId;
     QTabBar *tabBar;
     QStackedWidget *stack;
@@ -294,7 +296,7 @@ void KoModeBox::setOrientation(Qt::Orientation orientation)
         || usesCustomRibbonPages(applicationName));
     setObjectName(wordRibbon ? QStringLiteral("wordsRibbon") : QStringLiteral("modeBox"));
     if (wordRibbon) {
-        d->stack->setMinimumHeight(128);
+        d->stack->setMinimumHeight(applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive) ? 0 : 128);
         QPalette ribbonPalette = palette();
         ribbonPalette.setColor(QPalette::Window, ribbonPalette.color(QPalette::Base));
         setPalette(ribbonPalette);
@@ -405,10 +407,132 @@ void KoModeBox::primeToolOptions(const QString &toolId)
     for (const QPointer<QWidget> &widget : widgets) {
         if (widget) {
             widget->setProperty("ribbonTargetPage", QString());
+            if (applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive)) {
+                if (QWidget *spacer = widget->findChild<QWidget *>(QStringLiteral("SpecialSpacer"))) {
+                    spacer->show();
+                }
+            }
         }
     }
     d->lastOptionWidgets = widgets;
     d->pageOptionWidgets[d->activeId] = widgets;
+}
+
+// Office ribbons give the labels up when the window gets narrow instead of
+// clipping the groups. Keep the command labels while the page fits and fall
+// back to icon-only buttons (their labels stay in the tooltips) when it does
+// not, so a tab never runs past its right edge.
+void KoModeBox::updateRibbonCompactness(QWidget *page)
+{
+    if (!page || d->orientation != Qt::Horizontal) {
+        return;
+    }
+    QWidget *viewport = page->parentWidget() ? page->parentWidget()->parentWidget() : nullptr;
+    auto *scrollArea = qobject_cast<QScrollArea *>(viewport);
+    if (!scrollArea) {
+        return;
+    }
+    const int available = scrollArea->viewport()->width();
+    if (available <= 0) {
+        return;
+    }
+    fitRibbonBand();
+
+    // Measure the page with labels once; the value is discarded whenever the
+    // page gains or loses a group (see the ChildAdded handling below).
+    if (!page->property("ribbonLabelledWidth").isValid()) {
+        if (QLayout *layout = page->layout()) {
+            layout->invalidate();
+            layout->activate();
+        }
+        page->setProperty("ribbonLabelledWidth", page->minimumSizeHint().width());
+    }
+    const int labelledWidth = page->property("ribbonLabelledWidth").toInt();
+    const bool compact = labelledWidth > available;
+    if (page->property("ribbonCompact").toBool() == compact && page->property("ribbonCompactSet").toBool()) {
+        return;
+    }
+    page->setProperty("ribbonCompactSet", true);
+    page->setProperty("ribbonCompact", compact);
+
+    const auto buttons = page->findChildren<QToolButton *>();
+    for (QToolButton *button : buttons) {
+        if (!button->property("ribbonCompactable").toBool()) {
+            continue;
+        }
+        if (compact) {
+            // configureButton() pins the minimum to the size hint including
+            // the caption; drop that so the icon-only button can shrink.
+            button->setToolButtonStyle(Qt::ToolButtonIconOnly);
+            button->setMinimumSize(QSize(0, 0));
+            button->ensurePolished();
+            button->setMinimumSize(button->sizeHint());
+        } else {
+            KoRibbonLayout::configureButton(button, Qt::ToolButtonTextBesideIcon);
+        }
+    }
+    if (QLayout *layout = page->layout()) {
+        layout->invalidate();
+        layout->activate();
+    }
+}
+
+// A stacked ribbon sizes itself to its tallest page, so one contextual tab
+// with tall shape controls used to make every tab taller. Sheets keeps the
+// band at the height of its two command rows instead; controls that need more
+// room scroll inside their own tab.
+void KoModeBox::fitRibbonBand()
+{
+    if (d->orientation != Qt::Horizontal || !applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive)) {
+        return;
+    }
+    int band = 0;
+    for (const Private::CustomPage &customPage : std::as_const(d->customPages)) {
+        if (!customPage.page || customPage.page->objectName() == QLatin1String("sheetsShapeFormatPage")) {
+            continue;
+        }
+        // Pages report the height their groups really need, including every
+        // group caption.
+        if (QLayout *pageLayout = customPage.page->layout()) {
+            pageLayout->invalidate();
+            pageLayout->activate();
+        }
+        band = qMax(band, qMax(customPage.page->sizeHint().height(),
+                              customPage.page->minimumSizeHint().height()));
+    }
+    if (band > 0) {
+        band += 10; // the page's layout margins, plus room under the captions
+    }
+    if (band <= 0 || (d->stack->minimumHeight() == band && d->stack->maximumHeight() == band)) {
+        return;
+    }
+    for (const Private::CustomPage &customPage : std::as_const(d->customPages)) {
+        auto *wrapper = qobject_cast<QScrollArea *>(customPage.wrapper);
+        if (!wrapper) {
+            continue;
+        }
+        wrapper->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        wrapper->setMinimumHeight(band);
+        wrapper->setMaximumHeight(band);
+    }
+    d->stack->setMinimumHeight(band);
+    d->stack->setMaximumHeight(band);
+
+    // The docker keeps the height it was given at startup, which would leave
+    // an empty strip below the compact band.
+    if (QLayout *boxLayout = layout()) {
+        boxLayout->activate();
+    }
+    auto *dock = qobject_cast<QDockWidget *>(parentWidget());
+    if (!dock) {
+        return;
+    }
+    const int height = sizeHint().height();
+    dock->setMinimumHeight(0);
+    dock->setMaximumHeight(height);
+    if (auto *window = qobject_cast<QMainWindow *>(dock->parentWidget())) {
+        window->resizeDocks({dock}, {height}, Qt::Vertical);
+    }
 }
 
 // Show a ribbon page by its object name and make it the current tab.
@@ -432,6 +556,7 @@ void KoModeBox::showRibbonPage(const QString &objectName)
         if (!defaultTool.isEmpty()) {
             primeToolOptions(defaultTool);
         }
+        updateRibbonCompactness(customPage.page);
         break;
     }
 }
@@ -515,6 +640,7 @@ void KoModeBox::addCustomPage(const QString &title,
     wrapper->setWidget(page);
     wrapper->setFrameShape(QFrame::NoFrame);
     wrapper->setFocusPolicy(Qt::NoFocus);
+    wrapper->viewport()->installEventFilter(this);
 
     d->customPages.append({title, toolTip, icon, page, wrapper, beforeToolTabs, afterToolTabs, anchor});
     page->installEventFilter(this);
@@ -524,6 +650,28 @@ void KoModeBox::addCustomPage(const QString &title,
 
 bool KoModeBox::eventFilter(QObject *watched, QEvent *event)
 {
+    if (event->type() == QEvent::Resize) {
+        for (const auto &customPage : std::as_const(d->customPages)) {
+            auto *scrollArea = qobject_cast<QScrollArea *>(customPage.wrapper);
+            if (scrollArea && scrollArea->viewport() == watched) {
+                updateRibbonCompactness(customPage.page);
+                break;
+            }
+        }
+    } else if (event->type() == QEvent::ChildAdded) {
+        // The page grew (or lost) a group, so its labelled width is stale.
+        // Re-measure after the new group's layout and its controls are complete.
+        for (const auto &customPage : std::as_const(d->customPages)) {
+            if (customPage.page == watched) {
+                QWidget *page = customPage.page;
+                page->setProperty("ribbonLabelledWidth", QVariant());
+                QTimer::singleShot(0, this, [this, page] {
+                    updateRibbonCompactness(page);
+                });
+                break;
+            }
+        }
+    }
     if (event->type() == QEvent::DynamicPropertyChange
         && static_cast<QDynamicPropertyChangeEvent *>(event)->propertyName() == "ribbonContextActive") {
         for (const auto &customPage : std::as_const(d->customPages)) {
@@ -599,6 +747,83 @@ void KoModeBox::addWidgetToToolTab(const QString &toolId, QWidget *widget)
             }
         }
         break;
+    }
+}
+
+void KoModeBox::setToolTabVisible(const QString &toolId, bool visible)
+{
+    QList<QString> ids{toolId};
+    if (isCombinedShapeTool(toolId)) {
+        ids.clear();
+        for (KoToolAction *toolAction : std::as_const(d->toolActions)) {
+            if (isCombinedShapeTool(toolAction->id())) {
+                ids.append(toolAction->id());
+            }
+        }
+    }
+    for (const QString &id : std::as_const(ids)) {
+        d->toolTabVisibility.insert(id, visible);
+    }
+
+    const bool combineShapeTools = d->orientation == Qt::Horizontal
+        && applicationName.contains(QLatin1String("words"), Qt::CaseInsensitive);
+    int homeGroupId = -1;
+    for (const KoToolAction *toolAction : std::as_const(d->toolActions)) {
+        if (toolAction->id() == QLatin1String("TextToolFactory_ID")) {
+            homeGroupId = ribbonGroupId(toolAction, d->toolActions, combineShapeTools);
+            break;
+        }
+    }
+    for (const KoToolAction *toolAction : std::as_const(d->toolActions)) {
+        if (!ids.contains(toolAction->id())) {
+            continue;
+        }
+        const int groupId = ribbonGroupId(toolAction, d->toolActions, combineShapeTools);
+        for (int i = 0; i < d->tabBar->count(); ++i) {
+            if (d->tabBar->tabData(i).toInt() != groupId) {
+                continue;
+            }
+            const bool wasCurrent = d->tabBar->currentIndex() == i;
+            d->tabBar->setTabVisible(i, visible);
+            if (wasCurrent && !visible) {
+                int fallbackIndex = -1;
+                for (int next = 0; next < d->tabBar->count(); ++next) {
+                    if (d->tabBar->isTabVisible(next)) {
+                        if (fallbackIndex < 0) {
+                            fallbackIndex = next;
+                        }
+                        if (homeGroupId >= 0 && d->tabBar->tabData(next).toInt() == homeGroupId) {
+                            fallbackIndex = next;
+                            break;
+                        }
+                    }
+                }
+                if (fallbackIndex >= 0) {
+                    d->tabBar->setCurrentIndex(fallbackIndex);
+                    d->stack->setCurrentIndex(fallbackIndex);
+                }
+            }
+            break;
+        }
+    }
+}
+
+void KoModeBox::showToolTab(const QString &toolId)
+{
+    const bool combineShapeTools = d->orientation == Qt::Horizontal
+        && applicationName.contains(QLatin1String("words"), Qt::CaseInsensitive);
+    for (const KoToolAction *toolAction : std::as_const(d->toolActions)) {
+        if (toolAction->id() != toolId) {
+            continue;
+        }
+        const int groupId = ribbonGroupId(toolAction, d->toolActions, combineShapeTools);
+        for (int i = 0; i < d->tabBar->count(); ++i) {
+            if (d->tabBar->tabData(i).toInt() == groupId && d->tabBar->isTabVisible(i)) {
+                d->tabBar->setCurrentIndex(i);
+                return;
+            }
+        }
+        return;
     }
 }
 
@@ -829,14 +1054,23 @@ void KoModeBox::addItem(KoToolAction *toolAction)
             : toolAction->toolTip();
         d->tabBar->setTabToolTip(index, tabToolTip);
         d->tabBar->setTabData(index, groupId);
+        if (!d->toolTabVisibility.value(toolAction->id(), true)) {
+            d->tabBar->setTabVisible(index, false);
+        }
     } else if (d->iconMode == IconAndText) {
         const int index = d->tabBar->addTab(createTextIcon(toolAction), QString());
         d->tabBar->setTabToolTip(index, toolAction->toolTip());
         d->tabBar->setTabData(index, groupId);
+        if (!d->toolTabVisibility.value(toolAction->id(), true)) {
+            d->tabBar->setTabVisible(index, false);
+        }
     } else {
         const int index = d->tabBar->addTab(createSimpleIcon(toolAction), QString());
         d->tabBar->setTabToolTip(index, toolAction->toolTip());
         d->tabBar->setTabData(index, groupId);
+        if (!d->toolTabVisibility.value(toolAction->id(), true)) {
+            d->tabBar->setTabVisible(index, false);
+        }
     }
     d->tabBar->blockSignals(false);
     ScrollArea *sa = new ScrollArea();
@@ -921,7 +1155,7 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
             return;
         }
         if (officeWordRibbon && isCombinedShapeTool(toolAction->id())) {
-            // The combined Draw tab is inserted immediately after Insert.
+            // The combined Draw tab is added at the end of the ribbon below.
         } else {
             addItem(toolAction);
         }
@@ -940,15 +1174,6 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
             // e.g. Insert directly after Home in Words.
             if (!(officeWordRibbon && isCombinedShapeTool(toolAction->id()))) {
                 appendCustomPages(false, false, toolAction->id());
-            }
-            if (officeWordRibbon && toolAction->id() == QLatin1String("TextToolFactory_ID")) {
-                // Word's ribbon order is Home, Insert, Draw, Design, Layout.
-                // Shape tools stay grouped into one tab, with the Design page
-                // anchored immediately after that combined tab.
-                for (KoToolAction *shapeTool : std::as_const(contextualShapeTools)) {
-                    addItem(shapeTool);
-                }
-                appendCustomPages(false, false, QStringLiteral("ConnectionTool"));
             }
             continue;
         } else if (!toolAction->section().contains("dynamic") && !toolAction->section().contains("main")) {
@@ -978,6 +1203,14 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
     appendLeftoverCustomPages();
     // Keep View and Help after the standard tabs.
     appendCustomPages(false, true);
+    // Draw is a contextual tab at the end of the ribbon. It is hidden until
+    // a shape is selected, but keeps its drawing and formatting controls.
+    if (officeWordRibbon) {
+        for (KoToolAction *shapeTool : std::as_const(contextualShapeTools)) {
+            addItem(shapeTool);
+        }
+        appendCustomPages(false, false, QStringLiteral("ConnectionTool"));
+    }
 
     // Restore the active tool's tab
     int activePageId = d->activeId;
@@ -990,7 +1223,7 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
         }
     }
     for (int i = 0; i < d->tabBar->count(); ++i) {
-        if (d->tabBar->tabData(i).toInt() == activePageId) {
+        if (d->tabBar->tabData(i).toInt() == activePageId && d->tabBar->isTabVisible(i)) {
             d->tabBar->setCurrentIndex(i);
             d->stack->setCurrentIndex(i);
             break;
@@ -1033,6 +1266,11 @@ void KoModeBox::routeOfficeOptions(const QString &toolId, const QList<QPointer<Q
     for (QWidget *widget : widgets) {
         if (!widget || widget->property("ribbonManagedExternally").toBool())
             continue;
+        if (spreadsheet) {
+            if (QWidget *spacer = widget->findChild<QWidget *>(QStringLiteral("SpecialSpacer"))) {
+                spacer->hide();
+            }
+        }
         const QString target = widget->property("ribbonTargetPage").toString();
         for (const auto &customPage : std::as_const(d->customPages)) {
             if (!customPage.page || customPage.page->objectName() != (target.isEmpty() ? defaultPage : target))
@@ -1494,6 +1732,7 @@ void KoModeBox::toolSelected(int index)
                 const QString defaultTool = customPage.page->property("ribbonDefaultTool").toString();
                 if (!defaultTool.isEmpty())
                     primeToolOptions(defaultTool);
+                updateRibbonCompactness(customPage.page);
                 break;
             }
         }

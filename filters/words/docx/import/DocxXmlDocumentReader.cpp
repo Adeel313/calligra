@@ -35,6 +35,7 @@
 #include <MsooXmlTableStyle.h>
 
 #include <QRandomGenerator>
+#include <QRegularExpression>
 
 #define MSOOXML_CURRENT_NS "w"
 #define MSOOXML_CURRENT_CLASS DocxXmlDocumentReader
@@ -152,6 +153,10 @@ void DocxXmlDocumentReader::init()
     m_currentVMLProperties.insideGroup = false;
     m_outputFrames = true;
     m_currentNumId.clear();
+    m_openListNumId.clear();
+    m_openListLevel = 0;
+    m_openItemLevel = 0;
+    m_openListWriter = nullptr;
     m_prevListLevel = 0;
     m_previousParagraphBottomMargin = 0;
     m_widowControl = true;
@@ -191,7 +196,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read(MSOOXML::MsooXmlReaderCon
     }
     //! @todo find out whether the namespace returned by namespaceUri()
     //!       is exactly the same ref as the element of namespaceDeclarations()
-    if (!namespaces.contains(QXmlStreamNamespaceDeclaration("w", MSOOXML::Schemas::wordprocessingml))) {
+    if (!hasNamespace(MSOOXML::Schemas::wordprocessingml)) {
         raiseError(i18n("Namespace \"%1\" not found", QLatin1String(MSOOXML::Schemas::wordprocessingml)));
         return KoFilter::WrongFormat;
     }
@@ -285,7 +290,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_body()
             ELSE_TRY_READ_IF(del)
             ELSE_TRY_READ_IF(ins)
             ELSE_TRY_READ_IF(sdt)
-            ELSE_TRY_READ_IF(sectPr)
+            ELSE_TRY_READ_IF(sectPr) // final section properties of the body
             ELSE_TRY_READ_IF(tbl)
             ELSE_TRY_READ_IF(bookmarkStart)
             ELSE_TRY_READ_IF(bookmarkEnd)
@@ -294,6 +299,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_body()
         }
     }
 
+    closeOpenList();
     READ_EPILOGUE
 }
 
@@ -333,6 +339,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_body()
 //! @todo support all elements
 KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
 {
+    closeOpenList();
     READ_PROLOGUE
 
     m_footerActive = false;
@@ -465,8 +472,16 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     KoGenStyle *sectionStyle = mainStyles->styleForModification(m_currentSectionStyleName, m_currentSectionStyleFamily);
     // There might not be a style to modify if the document is completely empty
     if (sectionStyle) {
+        // A section break has to start the following section on a new page.
+        // For a table that starts a section this cannot be expressed: the
+        // table itself follows the previous content, and a page break on the
+        // table style would push the whole table onto a second page, leaving
+        // an empty first page behind.  In particular the final section
+        // properties of a body that begins with a table would otherwise move
+        // that table one page down.
+        const bool startsSectionWithTable = m_currentSectionStyleFamily == QLatin1String("table");
         sectionStyle->addAttribute("style:master-page-name", currentMasterPageName);
-        sectionStyle->addProperty("fo:break-before", sectionContinuous ? "auto" : "page");
+        sectionStyle->addProperty("fo:break-before", (sectionContinuous || startsSectionWithTable) ? "auto" : "page");
         if (m_sectionPageNumberStart > 0) {
             sectionStyle->addProperty("style:page-number", QString::number(m_sectionPageNumberStart));
         }
@@ -609,6 +624,38 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_textDirection()
 
  No child elements.
 */
+//! Converts a w:pgMar length into points. Accepts twips (plain integers, as in
+//! ECMA-376 Transitional) and universal measures such as "72pt" or "2.54cm" (Strict).
+static qreal pgMarToPoints(const QString &value, const QString &debugElement)
+{
+    if (value.isEmpty()) {
+        return 0.0;
+    }
+    bool ok = false;
+    const qreal twips = value.toDouble(&ok);
+    if (ok) {
+        return TWIP_TO_POINT(twips);
+    }
+    static const QRegularExpression measure(QStringLiteral("^\\s*([0-9]*\\.?[0-9]+)\\s*(cm|mm|in|pt|pc|pi)\\s*$"));
+    const QRegularExpressionMatch m = measure.match(value);
+    if (!m.hasMatch()) {
+        debugDocx << "Unsupported page margin value" << value << "for" << debugElement;
+        return 0.0;
+    }
+    const qreal number = m.captured(1).toDouble();
+    const QString unit = m.captured(2);
+    if (unit == QLatin1String("cm")) {
+        return number * 72.0 / 2.54;
+    } else if (unit == QLatin1String("mm")) {
+        return number * 72.0 / 25.4;
+    } else if (unit == QLatin1String("in")) {
+        return number * 72.0;
+    } else if (unit == QLatin1String("pc") || unit == QLatin1String("pi")) {
+        return number * 12.0;
+    }
+    return number; // pt
+}
+
 //! @todo support all elements
 KoFilter::ConversionStatus DocxXmlDocumentReader::read_pgMar()
 {
@@ -617,38 +664,30 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pgMar()
 
     TRY_READ_ATTR(right)
     if (!right.isEmpty()) {
-        int rightNum = 0;
-        STRING_TO_INT(right, rightNum, QString("w:right"));
-        m_pageMargins.insert(MarginRight, TWIP_TO_POINT(rightNum));
+        m_pageMargins.insert(MarginRight, pgMarToPoints(right, QString("w:right")));
     }
     TRY_READ_ATTR(left)
     if (!left.isEmpty()) {
-        int leftNum = 0;
-        STRING_TO_INT(left, leftNum, QString("w:left"));
-        m_pageMargins.insert(MarginLeft, TWIP_TO_POINT(leftNum));
+        m_pageMargins.insert(MarginLeft, pgMarToPoints(left, QString("w:left")));
     }
 
     TRY_READ_ATTR(footer)
     TRY_READ_ATTR(header)
     TRY_READ_ATTR(top)
     TRY_READ_ATTR(bottom)
-    int topNum = 0;
-    int bottomNum = 0;
-    int headerNum = 0;
-    int footerNum = 0;
-    topNum = top.toInt();
-    bottomNum = bottom.toInt();
-    headerNum = header.toInt();
-    footerNum = footer.toInt();
+    const qreal topNum = pgMarToPoints(top, QString("w:top"));
+    const qreal bottomNum = pgMarToPoints(bottom, QString("w:bottom"));
+    const qreal headerNum = pgMarToPoints(header, QString("w:header"));
+    const qreal footerNum = pgMarToPoints(footer, QString("w:footer"));
     if (!m_headerActive) {
-        m_pageMargins.insert(MarginTop, TWIP_TO_POINT(topNum));
+        m_pageMargins.insert(MarginTop, topNum);
     } else {
-        m_pageMargins.insert(MarginTop, TWIP_TO_POINT(headerNum));
+        m_pageMargins.insert(MarginTop, headerNum);
     }
     if (!m_footerActive) {
-        m_pageMargins.insert(MarginBottom, TWIP_TO_POINT(bottomNum));
+        m_pageMargins.insert(MarginBottom, bottomNum);
     } else {
-        m_pageMargins.insert(MarginBottom, TWIP_TO_POINT(footerNum));
+        m_pageMargins.insert(MarginBottom, footerNum);
     }
 
     QBuffer headerBuffer;
@@ -2232,6 +2271,135 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_txbxContent()
     READ_EPILOGUE
 }
 
+QString DocxXmlDocumentReader::createListStyleForLevel(int level)
+{
+    // A DOCX numbering definition describes all levels together. Exporting
+    // only the level used by this paragraph would leave lower levels undefined
+    // in the ODF style, and a later DOCX export would then produce a numId
+    // without a level 0 (which Word/LO render as decimal). Keep the whole
+    // definition in the style so nested lists keep their bullet/number format.
+    const int maxLevel = qMax(level, m_currentBulletList.size());
+    QString levelsXml;
+    for (int currentLevel = 1; currentLevel <= maxLevel; ++currentLevel) {
+        MSOOXML::Utils::ParagraphBulletProperties properties;
+        if (currentLevel == m_currentListLevel + 1) {
+            properties = m_currentBulletProperties;
+        } else if (currentLevel <= m_currentBulletList.size()) {
+            properties = m_currentBulletList.at(currentLevel - 1);
+        } else {
+            properties = m_currentBulletProperties;
+        }
+        properties.m_level = currentLevel;
+        levelsXml += properties.convertToListProperties(*mainStyles, MSOOXML::Utils::DocxFilter);
+    }
+
+    KoGenStyle listStyle(KoGenStyle::ListAutoStyle);
+    if (m_moveToStylesXml) {
+        listStyle.setAutoStyleInStylesDotXml(true);
+    }
+    listStyle.addChildElement("list-style-properties", levelsXml);
+    const QString name = mainStyles->insert(listStyle, QString());
+    Q_ASSERT(!name.isEmpty());
+    return name;
+}
+
+void DocxXmlDocumentReader::closeOpenList()
+{
+    KoXmlWriter *writer = m_openListWriter ? m_openListWriter : body;
+    while (m_openItemLevel > 0) {
+        if (writer) {
+            writer->endElement(); // text:list-item
+            writer->endElement(); // text:list
+        }
+        --m_openItemLevel;
+    }
+    m_openListLevel = 0;
+    m_openListNumId.clear();
+    m_openListWriter = nullptr;
+}
+
+void DocxXmlDocumentReader::prepareListForParagraph()
+{
+    if (!m_listFound) {
+        closeOpenList();
+        return;
+    }
+
+    const int level = m_currentListLevel + 1;
+    const bool numbering = m_currentBulletProperties.m_type
+        == MSOOXML::Utils::ParagraphBulletProperties::NumberType;
+
+    auto startLevel = [this, level, numbering](int listLevel, bool continuing) {
+        m_openListWriter = body;
+        body->startElement("text:list");
+        body->addAttribute("text:style-name", createListStyleForLevel(listLevel));
+
+        QString key;
+        QString xmlId;
+        if (listLevel == 1 && numbering) {
+            key = m_currentNumId + QString(".lvl0");
+            xmlId = key;
+            xmlId.append(QString("_%1").arg(m_numIdXmlId[key].first)).prepend("lst");
+            xmlId.append(QString("_%1").arg(QRandomGenerator::global()->generate()));
+            body->addAttribute("xml:id", xmlId);
+            if (continuing && !m_numIdXmlId[key].second.isEmpty()) {
+                body->addAttribute("text:continue-list", m_numIdXmlId[key].second);
+            }
+            m_numIdXmlId[key].first++;
+            m_numIdXmlId[key].second = xmlId;
+        }
+
+        body->startElement("text:list-item");
+        if (numbering && !(listLevel == 1 && continuing)) {
+            const MSOOXML::Utils::ParagraphBulletProperties *properties = &m_currentBulletProperties;
+            if (listLevel != level && listLevel <= m_currentBulletList.size()) {
+                properties = &m_currentBulletList.at(listLevel - 1);
+            }
+            if (!properties->startValue().isEmpty()) {
+                body->addAttribute("text:start-value", properties->startValue());
+            }
+        }
+        m_openListLevel = listLevel;
+        m_openItemLevel = listLevel;
+    };
+
+    const bool sameList = (m_openListLevel > 0 && m_openListNumId == m_currentNumId);
+    if (!sameList) {
+        closeOpenList();
+        bool continuing = false;
+        if (numbering) {
+            const QString key = m_currentNumId + QString(".lvl0");
+            continuing = m_numIdXmlId.contains(key) && !m_numIdXmlId.value(key).second.isEmpty();
+        }
+        for (int listLevel = 1; listLevel <= level; ++listLevel) {
+            startLevel(listLevel, listLevel == 1 && continuing);
+        }
+        m_openListNumId = m_currentNumId;
+        if (numbering) {
+            m_continueListNum[m_currentNumId] = qMakePair(m_currentListLevel, false);
+        }
+        return;
+    }
+
+    if (level > m_openItemLevel) {
+        for (int listLevel = m_openListLevel + 1; listLevel <= level; ++listLevel) {
+            startLevel(listLevel, false);
+        }
+    } else if (level == m_openItemLevel) {
+        m_openListWriter->endElement(); // text:list-item of the previous paragraph
+        m_openListWriter->startElement("text:list-item");
+    } else {
+        while (m_openItemLevel > level) {
+            m_openListWriter->endElement(); // text:list-item
+            m_openListWriter->endElement(); // text:list
+            --m_openItemLevel;
+            --m_openListLevel;
+        }
+        m_openListWriter->endElement(); // text:list-item of the previous parent
+        m_openListWriter->startElement("text:list-item");
+    }
+}
+
 #undef CURRENT_EL
 #define CURRENT_EL p
 //! [1] p handler (Paragraph) ECMA-376, WML 17.3.1.22, p. 251,
@@ -2497,96 +2665,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
                         m_currentBulletProperties.setBulletSizePt(percent * base / 100);
                     }
 
-                    // update automatic numbering info
-                    if (m_currentBulletProperties.m_type == MSOOXML::Utils::ParagraphBulletProperties::NumberType) {
-                        bool listOpen = false;
-
-                        if (m_continueListNum.contains(m_currentNumId)) {
-                            listOpen = true;
-                        } else if (!m_currentBulletProperties.startOverride()) {
-                            // TODO: The most recent one is required to check
-                            // against the correct prevListLevel.
-                            //
-                            // Check if any of the lists that inherit numbering
-                            // from the abstract numbering definition was opened.
-                            QStringList numIDs = m_context->m_abstractNumIDs.keys(m_context->m_abstractNumIDs[m_currentNumId]);
-                            QStringList::const_iterator i;
-                            for (i = numIDs.constBegin(); i != numIDs.constEnd(); ++i) {
-                                if (m_continueListNum.contains(*i)) {
-                                    listOpen = true;
-                                    m_currentNumId = *i;
-                                    break;
-                                }
-                            }
-                        }
-                        if (listOpen) {
-                            if (m_currentListLevel <= m_continueListNum[m_currentNumId].first) {
-                                m_continueListNum[m_currentNumId].second = true;
-                            } else {
-                                m_continueListNum[m_currentNumId].second = false;
-
-                                QString key;
-                                int i = m_continueListNum[m_currentNumId].first;
-                                while (i > m_currentListLevel) {
-                                    key = m_currentNumId;
-                                    key.append(QString(".lvl%1").arg(i));
-                                    m_numIdXmlId.remove(key);
-                                    --i;
-                                }
-                            }
-                        }
-                    }
-
-                    m_currentListStyle = KoGenStyle(KoGenStyle::ListAutoStyle);
-                    if (m_moveToStylesXml) {
-                        m_currentListStyle.setAutoStyleInStylesDotXml(true);
-                    }
-
-                    m_currentListStyle.addChildElement("list-style-properties",
-                                                       m_currentBulletProperties.convertToListProperties(*mainStyles, MSOOXML::Utils::DocxFilter));
-
-                    QString listStyleName = mainStyles->insert(m_currentListStyle, QString());
-                    Q_ASSERT(!listStyleName.isEmpty());
-                    // TODO: continue an opened list based on this information
-                    //                     m_usedListStyles.insertMulti(m_currentNumId, listStyleName);
-
-                    // Start a new list
-                    body->startElement("text:list");
-                    body->addAttribute("text:style-name", listStyleName);
-
-                    // continue numbering if applicable
-                    if (m_currentBulletProperties.m_type == MSOOXML::Utils::ParagraphBulletProperties::NumberType) {
-                        QString key = m_currentNumId;
-                        key.append(QString(".lvl%1").arg(m_currentListLevel));
-
-                        // Keeping the id readable for debugging purpose
-                        QString xmlId = key;
-                        xmlId.append(QString("_%1").arg(m_numIdXmlId[key].first)).prepend("lst");
-                        xmlId.append(QString("_%1").arg(QRandomGenerator::global()->generate()));
-                        body->addAttribute("xml:id", xmlId);
-
-                        if (m_continueListNum.contains(m_currentNumId)) {
-                            if (m_continueListNum[m_currentNumId].second) {
-                                body->addAttribute("text:continue-list", m_numIdXmlId[key].second);
-                            }
-                        }
-                        m_numIdXmlId[key].first++;
-                        m_numIdXmlId[key].second = xmlId;
-                    }
-                    body->startElement("text:list-item");
-                    for (int i = 0; i < m_currentListLevel; ++i) {
-                        body->startElement("text:list");
-                        body->startElement("text:list-item");
-                    }
-                    // restart numbering if applicable
-                    if (m_currentBulletProperties.m_type == MSOOXML::Utils::ParagraphBulletProperties::NumberType) {
-                        if (!m_continueListNum.contains(m_currentNumId)
-                            || (m_continueListNum.contains(m_currentNumId) && !m_continueListNum[m_currentNumId].second)) {
-                            body->addAttribute("text:start-value", m_currentBulletProperties.startValue());
-                        }
-                        m_continueListNum[m_currentNumId] = qMakePair(m_currentListLevel, false);
-                    }
-                    m_currentParagraphStyle.addAttribute("style:list-style-name", listStyleName);
+                    prepareListForParagraph();
+                } else {
+                    closeOpenList();
                 }
 
                 if (m_startToc) {
@@ -2632,12 +2713,6 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
                 // insert the bookmark-start/bookmark-end XML snippet
                 if (!m_bookmarkSnippet.isEmpty()) {
                     body->addCompleteElement(m_bookmarkSnippet.toUtf8());
-                }
-
-                // insert the floating table XML snippet
-                if (!m_floatingTable.isEmpty()) {
-                    body->addCompleteElement(m_floatingTable.toUtf8());
-                    m_floatingTable.clear();
                 }
 
                 QString paragraphXml;
@@ -2690,11 +2765,11 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
                     m_endToc = false;
                 }
 
-                if (m_listFound) {
-                    for (int i = 0; i <= m_currentListLevel; ++i) {
-                        body->endElement(); // text:list-item
-                        body->endElement(); // text:list
-                    }
+                // The list stays open: the next paragraph either appends a
+                // sibling item or starts a nested list. It is closed when a
+                // non-list paragraph/block or the end of the container arrives.
+                if (m_listFound && (m_headerActive || m_footerActive)) {
+                    closeOpenList();
                 }
                 debugDocx << "/text:p";
             }
@@ -5635,6 +5710,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
 
     READ_PROLOGUE
 
+    closeOpenList();
     // save current state of lists processing
     saveState();
 
@@ -5710,20 +5786,11 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
         }
     }
 
-    // Floating Table
-    if (!m_currentDrawStyleName.isEmpty()) {
-        body->startElement("draw:frame");
-        body->addAttribute("draw:style-name", m_currentDrawStyleName.toUtf8());
-        body->addAttribute("text:anchor-type", "paragraph");
-        body->addAttributePt("svg:width", TWIP_TO_POINT(m_svgWidth));
-        if (m_svgX != 0) {
-            body->addAttributePt("svg:x", TWIP_TO_POINT(m_svgX));
-        }
-        if (m_svgY != 0) {
-            body->addAttributePt("svg:y", TWIP_TO_POINT(m_svgY));
-        }
-        body->startElement("draw:text-box");
-    }
+    // A floating table (w:tblpPr) is still a table, and a table in a text box
+    // cannot grow past the box, so it would have to be clipped when read back.
+    // Keep it a table in the text flow: the width, alignment and borders of
+    // the table style are preserved and the rows paginate normally.  Only the
+    // floating offset of the table is dropped.
 
     m_table->setTableStyle(m_tableMainStyle);
 
@@ -5743,14 +5810,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     delete m_currentLocalTableStyles;
     delete m_currentDefaultCellStyle;
 
-    // Floating Table
-    if (!m_currentDrawStyleName.isEmpty()) {
-        body->endElement(); // draw:text-box
-        body->endElement(); // draw:frame
-        body = buffer.releaseWriter(m_floatingTable);
-    } else {
-        body = buffer.releaseWriter();
-    }
+    body = buffer.releaseWriter();
 
     // restore previous state of lists processing
     restoreState();
@@ -6270,6 +6330,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tc()
                 KoXmlWriter newBody(&buffer, oldBody->indentLevel() + 1);
                 body = &newBody;
                 TRY_READ(p)
+                closeOpenList();
 
                 KoRawCellChild *textChild = new KoRawCellChild(buffer.data());
                 cell->appendChild(textChild);

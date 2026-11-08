@@ -21,6 +21,7 @@
 #include <KLocalizedString>
 
 #include <QCheckBox>
+#include <QCoreApplication>
 
 #include <math.h>
 
@@ -46,6 +47,13 @@ KoShadowConfigWidget::KoShadowConfigWidget(QWidget *parent)
     d->widget.shadowAngle->setMaximum(360.0);
     d->widget.shadowVisible->setChecked(false);
     visibilityChanged();
+
+    // The Sheets ribbon keeps its controls in two rows: a smaller angle dial
+    // and no expanding spacer keeps the Shadow group as flat as its neighbours.
+    if (QCoreApplication::applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive)) {
+        d->widget.shadowAngle->setMaximumSize(28, 28);
+        d->widget.SpecialSpacer->hide();
+    }
 
     d->actionShadowColor = new KoColorPopupAction(this);
     d->actionShadowColor->setCurrentColor(QColor(0, 0, 0, 192)); // some reasonable default for shadow

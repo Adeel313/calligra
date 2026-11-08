@@ -74,7 +74,7 @@ KoFilter::ConversionStatus DocxXmlFontTableReader::read(MSOOXML::MsooXmlReaderCo
     }
     //! @todo find out whether the namespace returned by namespaceUri()
     //!       is exactly the same ref as the element of namespaceDeclarations()
-    if (!namespaces.contains(QXmlStreamNamespaceDeclaration("w", MSOOXML::Schemas::wordprocessingml))) {
+    if (!hasNamespace(MSOOXML::Schemas::wordprocessingml)) {
         raiseError(i18n("Namespace \"%1\" not found", QLatin1String(MSOOXML::Schemas::wordprocessingml)));
         return KoFilter::WrongFormat;
     }
@@ -120,6 +120,11 @@ KoFilter::ConversionStatus DocxXmlFontTableReader::read_fonts()
                 debugDocx << "added font face:" << m_currentFontFace.name();
                 m_context->styles->insertFontFace(m_currentFontFace);
                 m_currentFontFace = KoFontFace();
+            }
+            // mc:AlternateContent only carries alternative font markup (e.g. wpc
+            // extensions); the font table needs none of it, so skip the whole block.
+            else if (qualifiedName() == QLatin1StringView("mc:AlternateContent")) {
+                skipCurrentElement();
             }
             ELSE_WRONG_FORMAT
         }

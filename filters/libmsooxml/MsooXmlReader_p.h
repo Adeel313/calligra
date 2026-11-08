@@ -100,21 +100,21 @@
     return KoFilter::OK;
 
 #define BREAK_IF_END_OF_QSTRING(name)                                                                                                                          \
-    /*debugMsooXml << "BREAK_IF_END_OF" << name << "found:" << qualifiedName();*/                                                                              \
-    if (isEndElement() && qualifiedName() == name) {                                                                                                           \
+    /*debugMsooXml << "BREAK_IF_END_OF" << name << "found:" << qualifiedName();*/                                                                             \
+    if (isEndElement() && isElement(name)) {                                                                                                                   \
         break;                                                                                                                                                 \
     }
 
-#define BREAK_IF_END_OF(name) BREAK_IF_END_OF_QSTRING(QLatin1String(QUALIFIED_NAME(name)))
+#define BREAK_IF_END_OF(name) BREAK_IF_END_OF_QSTRING(QUALIFIED_NAME(name))
 
-#define BREAK_IF_END_OF_WITH_NS(ns, name) BREAK_IF_END_OF_QSTRING(QLatin1String(JOIN(STRINGIFY(ns) ":", name)))
+#define BREAK_IF_END_OF_WITH_NS(ns, name) BREAK_IF_END_OF_QSTRING(JOIN(STRINGIFY(ns) ":", name))
 
 // inline bool aaaa(const char * aa) { debugMsooXml << "aa" << aa; return true; }
 
-#define QUALIFIED_NAME_IS(name) (qualifiedName() == QLatin1String(QUALIFIED_NAME(name)))
+#define QUALIFIED_NAME_IS(name) (isElement(QUALIFIED_NAME(name)))
 
 #define TRY_READ_IF_INTERNAL(name, qname, context)                                                                                                             \
-    if (qualifiedName() == QLatin1String(qname)) {                                                                                                             \
+    if (isElement(qname)) {                                                                                                                                    \
         if (!isStartElement()) { /* sanity check */                                                                                                            \
             raiseError(i18n("Start element \"%1\" expected, found \"%2\"", QLatin1String(STRINGIFY(name)), tokenString()));                                    \
             return KoFilter::WrongFormat;                                                                                                                      \
@@ -143,7 +143,7 @@
 #define ELSE_TRY_READ_IF_NS_IN_CONTEXT(ns, name) else TRY_READ_IF_NS_IN_CONTEXT_INTERNAL(ns, name, PASS_CONTEXT(name))
 
 #define TRY_READ_IF_NS_INTERNAL(ns, name)                                                                                                                      \
-    if (qualifiedName() == QLatin1String(JOIN(STRINGIFY(ns) ":", name))) {                                                                                     \
+    if (isElement(JOIN(STRINGIFY(ns) ":", name))) {                                                                                                            \
         /*debugMsooXml << "TRY_READ_IF_NS " JOIN(STRINGIFY(ns) ":", name) " started";*/                                                                        \
         TRY_READ(name);                                                                                                                                        \
         /*debugMsooXml << "TRY_READ_IF_NS " JOIN(STRINGIFY(ns) ":", name) " finished";*/                                                                       \

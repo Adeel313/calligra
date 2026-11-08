@@ -9,6 +9,7 @@
 #include "KPrPresentationToolWidget.h"
 
 #include <KoIcon.h>
+#include <KoRibbonIcons.h>
 
 #include <QPaintEvent>
 #include <QPainter>
@@ -26,9 +27,9 @@ KPrPresentationToolWidget::KPrPresentationToolWidget(QWidget *parent)
     m_uiWidget.blackButton->setIconSize(size);
     // Set the buttons Icon
     // TODO add tooltip
-    m_uiWidget.penButton->setIcon(koIcon("draw-freehand"));
-    m_uiWidget.highLightButton->setIcon(koIcon("highlight-pointer-spot"));
-    m_uiWidget.blackButton->setIcon(koIcon("pause-to-black-screen"));
+    m_uiWidget.penButton->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("draw-freehand"), koIcon("draw-freehand")));
+    m_uiWidget.highLightButton->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("highlight-pointer-spot"), koIcon("highlight-pointer-spot")));
+    m_uiWidget.blackButton->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("pause-to-black-screen"), koIcon("pause-to-black-screen")));
 }
 
 void KPrPresentationToolWidget::paintEvent(QPaintEvent *event)

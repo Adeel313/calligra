@@ -24,6 +24,7 @@
 
 #include <QButtonGroup>
 #include <QComboBox>
+#include <QTextDocument>
 
 const int KWAnchoringProperties::vertRels[4][20] = {{// KoShapeAnchor::AnchorAsCharacter
                                                      KoShapeAnchor::VBaseline,
@@ -517,6 +518,20 @@ void KWAnchoringProperties::save(KUndo2Command *macro, KWCanvas *canvas)
                 }
             } else if (type != KoShapeAnchor::AnchorPage) {
                 container = anchor->shape()->parent();
+            }
+
+            // Shapes inside a header or footer stay anchored in that text.
+            // A page anchor would make them document level shapes that are
+            // written outside of the header and therefore "leave" it as soon
+            // as the document is reloaded.
+            if (type == KoShapeAnchor::AnchorPage && anchor->textLocation()) {
+                const QTextDocument *anchorDocument = anchor->textLocation()->document();
+                if (anchorDocument
+                    && anchorDocument->resource(QTextDocument::UserResource, KoShapeAnchor::headerFooterTextDocumentResource()).toBool()
+                    && anchor->shape()->parent()) {
+                    type = KoShapeAnchor::AnchorParagraph;
+                    container = anchor->shape()->parent();
+                }
             }
 
             // if there was no textshape found then we have no choice but to anchor to page.

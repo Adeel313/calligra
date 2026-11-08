@@ -472,6 +472,8 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
                             else if (!value.isNumber()) xml.writeAttribute(QStringLiteral("t"), QStringLiteral("inlineStr"));
                         } else if (value.isBoolean()) {
                             xml.writeAttribute(QStringLiteral("t"), QStringLiteral("b"));
+                        } else if (value.isString()) {
+                            xml.writeAttribute(QStringLiteral("t"), QStringLiteral("str"));
                         }
                         if (cell.isFormula()) {
                             const QString formula = excelFormula(cell.userInput());
@@ -482,6 +484,8 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
                                 xml.writeTextElement(QStringLiteral("v"), QString::number(value.asFloat(), 'g', 15));
                             } else if (value.isBoolean()) {
                                 xml.writeTextElement(QStringLiteral("v"), value.asBoolean() ? QStringLiteral("1") : QStringLiteral("0"));
+                            } else if (value.isString()) {
+                                xml.writeTextElement(QStringLiteral("v"), value.asString());
                             }
                         } else if (value.isNumber()) {
                             xml.writeTextElement(QStringLiteral("v"), QString::number(value.asFloat(), 'g', 15));
@@ -550,7 +554,6 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
                     xml.writeAttribute(QStringLiteral("priority"), QString::number(priority++));
                     const auto dxfIt = conditionalStyleIds.constFind(condition.styleName);
                     if (dxfIt != conditionalStyleIds.cend()) xml.writeAttribute(QStringLiteral("dxfId"), QString::number(dxfIt.value()));
-                    if (condition.cond == Validity::Between) xml.writeAttribute(QStringLiteral("operator"), QStringLiteral("between"));
                     QString formula = formulaRule ? excelFormula(condition.value1.asString()) : conditionFormula(condition.value1);
                     if (!formula.isEmpty()) xml.writeTextElement(QStringLiteral("formula"), formula);
                     if (condition.cond == Validity::Between || condition.cond == Validity::Different) {

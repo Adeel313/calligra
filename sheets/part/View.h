@@ -198,6 +198,8 @@ public Q_SLOTS:
     void recalcWorkSheet();
     void paperLayoutDlg();
     void resetPrintRange();
+    void setShowFormulas(bool show);
+    void setAutomaticCalculation(bool enabled);
     void togglePageOutline(bool);
     void toggleProtectSheet(bool);
     void toggleProtectDoc(bool);

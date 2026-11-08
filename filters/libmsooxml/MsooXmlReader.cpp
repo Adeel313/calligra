@@ -18,6 +18,8 @@
 
 #include <KLocalizedString>
 
+#include <cstring>
+
 QDebug operator<<(QDebug dbg, const QXmlStreamReader &reader)
 {
     dbg.nospace() << "QXmlStreamReader(";
@@ -193,10 +195,85 @@ bool MsooXmlReader::expectElNameEnd(const char *elementName)
     return true;
 }
 
+//! Well known namespace prefixes used by the OOXML markup.
+namespace
+{
+struct PrefixNamespace {
+    const char *prefix;
+    const char *uri;
+};
+
+const char *namespaceUriForPrefix(const QString &prefix)
+{
+    static const PrefixNamespace knownNamespaces[] = {
+        {"a", MSOOXML::Schemas::drawingml::main},
+        {"c", MSOOXML::Schemas::drawingml::chart},
+        {"cdr", MSOOXML::Schemas::drawingml::chartDrawing},
+        {"dgm", MSOOXML::Schemas::drawingml::diagram},
+        {"lc", MSOOXML::Schemas::drawingml::lockedCanvas},
+        {"pic", MSOOXML::Schemas::drawingml::picture},
+        {"wp", MSOOXML::Schemas::drawingml::wordprocessingDrawing},
+        {"xdr", MSOOXML::Schemas::drawingml::spreadsheetDrawing},
+        {"m", MSOOXML::Schemas::officeDocument::math},
+        {"p", MSOOXML::Schemas::presentationml},
+        {"w", MSOOXML::Schemas::wordprocessingml},
+        {"mc", "http://schemas.openxmlformats.org/markup-compatibility/2006"},
+        {"o", "urn:schemas-microsoft-com:office:office"},
+        {"v", "urn:schemas-microsoft-com:vml"},
+    };
+
+    for (const PrefixNamespace &knownNamespace : knownNamespaces) {
+        if (prefix == QLatin1String(knownNamespace.prefix)) {
+            return knownNamespace.uri;
+        }
+    }
+    return nullptr;
+}
+} // namespace
+
+bool MsooXmlReader::isElement(const char *qualifiedElementName) const
+{
+    if (qualifiedName() == QLatin1String(qualifiedElementName)) {
+        return true;
+    }
+
+    const char *colon = strchr(qualifiedElementName, ':');
+    if (!colon || colon == qualifiedElementName) {
+        return false;
+    }
+    const char *uri = namespaceUriForPrefix(QString::fromLatin1(qualifiedElementName, colon - qualifiedElementName));
+    if (!uri) {
+        return false;
+    }
+    return name() == QLatin1String(colon + 1)
+        && MSOOXML::Utils::canonicalNamespace(namespaceUri()) == QLatin1String(uri);
+}
+
+bool MsooXmlReader::isElement(const QString &qualifiedElementName) const
+{
+    if (qualifiedName() == qualifiedElementName) {
+        return true;
+    }
+
+    // Producers are free to bind a namespace as the default namespace instead of
+    // using the conventional prefix, in which case the element has no prefix at
+    // all. Accept that form as long as the namespace URI and local name match.
+    const int colon = qualifiedElementName.indexOf(QLatin1Char(':'));
+    if (colon <= 0) {
+        return false;
+    }
+    const char *uri = namespaceUriForPrefix(qualifiedElementName.left(colon));
+    if (!uri) {
+        return false;
+    }
+    return name() == QStringView(qualifiedElementName).mid(colon + 1)
+        && MSOOXML::Utils::canonicalNamespace(namespaceUri()) == QLatin1String(uri);
+}
+
 bool MsooXmlReader::expectEl(const char *qualifiedElementName)
 {
     // debugMsooXml << qualifiedElementName << "found:" << qualifiedName();
-    if (!isStartElement() || qualifiedName() != QLatin1String(qualifiedElementName)) {
+    if (!isStartElement() || !isElement(qualifiedElementName)) {
         raiseElNotFoundError(qualifiedElementName);
         return false;
     }
@@ -206,7 +283,7 @@ bool MsooXmlReader::expectEl(const char *qualifiedElementName)
 bool MsooXmlReader::expectEl(const QString &qualifiedElementName)
 {
     // debugMsooXml << qualifiedElementName << "found:" << qualifiedName();
-    if (!isStartElement() || qualifiedName() != qualifiedElementName) {
+    if (!isStartElement() || !isElement(qualifiedElementName)) {
         raiseElNotFoundError(qualifiedElementName.toLatin1());
         return false;
     }
@@ -217,7 +294,7 @@ bool MsooXmlReader::expectEl(const QList<QByteArray> &qualifiedElementNames)
 {
     if (isStartElement()) {
         foreach (const QByteArray &qualifiedElementName, qualifiedElementNames) {
-            if (qualifiedName().toString() == qualifiedElementName) {
+            if (isElement(QString::fromLatin1(qualifiedElementName))) {
                 // debugMsooXml << qualifiedElementNames << "found:" << qualifiedName();
                 return true;
             }
@@ -237,7 +314,7 @@ bool MsooXmlReader::expectElEnd(const QString &qualifiedElementName)
 {
     // debugMsooXml << qualifiedElementName << "found:" << qualifiedName();
     //    debugMsooXml << kBacktrace();
-    if (!isEndElement() || qualifiedName() != qualifiedElementName) {
+    if (!isEndElement() || !isElement(qualifiedElementName)) {
         raiseError(i18n("Expected closing of element \"%1\"", qualifiedElementName));
         return false;
     }
@@ -249,11 +326,26 @@ bool MsooXmlReader::expectElEnd(const char *qualifiedElementName)
     return expectElEnd(QLatin1String(qualifiedElementName));
 }
 
+bool MsooXmlReader::hasNamespace(const char *nsName) const
+{
+    const QString expected = MSOOXML::Utils::canonicalNamespace(QString::fromLatin1(nsName));
+    const QXmlStreamNamespaceDeclarations declarations = namespaceDeclarations();
+    for (const QXmlStreamNamespaceDeclaration &declaration : declarations) {
+        if (MSOOXML::Utils::canonicalNamespace(declaration.namespaceUri()) == expected) {
+            return true;
+        }
+    }
+    // Namespace declarations are not necessarily repeated on the root element
+    // when a producer binds the vocabulary as the default namespace.
+    return MSOOXML::Utils::canonicalNamespace(namespaceUri()) == expected;
+}
+
 bool MsooXmlReader::expectNS(const char *nsName)
 {
     const QLatin1String nsNameString(nsName);
-    debugMsooXml << namespaceUri() << (namespaceUri().compare(nsNameString) == 0);
-    if (0 != namespaceUri().compare(nsNameString)) {
+    const QString documentNamespace = MSOOXML::Utils::canonicalNamespace(namespaceUri());
+    debugMsooXml << namespaceUri() << (documentNamespace == nsNameString);
+    if (0 != documentNamespace.compare(nsNameString)) {
         raiseNSNotFoundError(nsName);
         return false;
     }

@@ -1023,7 +1023,12 @@ QTextBlock &KoTextWriter::Private::saveList(QTextBlock &block, QHash<QTextList *
             headingLevel = blockFormat.intProperty(KoParagraphStyle::OutlineLevel);
             numberedParagraphLevel = blockFormat.intProperty(KoParagraphStyle::ListLevel);
             textList = block.textList();
-        } while ((textDocument.list(block) == list) && (KoList::level(block) >= topListLevel));
+            // A nested level can belong to another KoList instance even when it
+            // is a child of this list. Keep writing it inside the current
+            // text:list instead of starting a new top-level list (which would
+            // restart the parent numbering).
+        } while (((textDocument.list(block) == list) || (KoList::level(block) > topListLevel))
+                 && (KoList::level(block) >= topListLevel));
     }
 
     if (listStarted) {

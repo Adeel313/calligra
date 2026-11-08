@@ -125,6 +125,11 @@ install(TARGETS komain ${KDE_INSTALL_TARGETS_DEFAULT_ARGS} )
 # TODO: with the new embedded JSON data for plugins there is no schema ATM to define extended properties
 # calligradocker.desktop
 
+# Command icons of the ribbon (Material Symbols, Apache-2.0, see the README
+# next to the files). Sheets, Words and Stage share this set.
+file(GLOB KO_RIBBON_ICONS ${CMAKE_CURRENT_SOURCE_DIR}/icons/ribbon/*.svg)
+install(FILES ${KO_RIBBON_ICONS} DESTINATION ${KDE_INSTALL_DATADIR}/calligra/icons/ribbon)
+
 install(FILES calligra_shell.rc DESTINATION ${KDE_INSTALL_DATADIR}/calligra )
 
 if (APPLE)

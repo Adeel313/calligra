@@ -540,6 +540,13 @@ void KWDocument::initEmpty()
         styleManagerVariant.setValue(styleManager);
         resourceManager()->setResource(KoText::StyleManager, styleManagerVariant);
     }
+    // Start new documents with single line spacing.  Without an explicit
+    // value the text layout adds its word-processing leading, which looks
+    // tighter than the "1.0" line-spacing choice in the UI.
+    KoParagraphStyle *defaultParagraph = styleManager->defaultParagraphStyle();
+    defaultParagraph->setLineHeightPercent(100);
+    defaultParagraph->setLineSpacingFromFont(true);
+
     // Microsoft Office style built-in paragraph styles.  The heading styles
     // carry their outline level so they behave like Word's built-in Heading
     // styles and sort like the Office styles gallery (Normal, Heading 1,
@@ -548,6 +555,8 @@ void KWDocument::initEmpty()
     parag->setName(i18n("Normal"));
     parag->setFontPointSize(12);
     parag->setFontWeight(QFont::Normal);
+    parag->setLineHeightPercent(100);
+    parag->setLineSpacingFromFont(true);
     styleManager->add(parag);
 
     parag = new KoParagraphStyle();

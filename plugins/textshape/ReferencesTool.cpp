@@ -246,12 +246,14 @@ QList<QPointer<QWidget>> ReferencesTool::createOptionWidgets()
     if (qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
         KoRibbonLayout::arrange(m_stocw, {m_stocw->findChild<QToolButton *>(QStringLiteral("addToC"))}, {});
         KoRibbonLayout::arrange(m_sfenw,
-                               {m_sfenw->findChild<QToolButton *>(QStringLiteral("addFootnote"))},
-                               {m_sfenw->findChild<QToolButton *>(QStringLiteral("addEndnote"))});
+                               {m_sfenw->findChild<QToolButton *>(QStringLiteral("addFootnote")),
+                                m_sfenw->findChild<QToolButton *>(QStringLiteral("addEndnote"))},
+                               {});
         KoRibbonLayout::arrange(m_scbw,
-                               {m_scbw->findChild<QToolButton *>(QStringLiteral("addCitation"))},
-                               {m_scbw->findChild<QToolButton *>(QStringLiteral("configureBibliography")),
-                                m_scbw->findChild<QToolButton *>(QStringLiteral("addBibliography"))});
+                               {m_scbw->findChild<QToolButton *>(QStringLiteral("addCitation")),
+                                m_scbw->findChild<QToolButton *>(QStringLiteral("configureBibliography")),
+                                m_scbw->findChild<QToolButton *>(QStringLiteral("addBibliography"))},
+                               {});
         // Links belong to Insert; keep the same bookmark and link menus.
         m_slw->setProperty("ribbonTargetPage", QStringLiteral("insertRibbonPage"));
         KoRibbonLayout::arrange(m_slw,

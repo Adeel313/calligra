@@ -522,7 +522,13 @@ void KoMainWindow::setRootDocument(KoDocument *doc, KoPart *part, bool deletePre
 
     if (doc && !d->dockWidgetVisibilityMap.isEmpty()) {
         foreach (QDockWidget *dockWidget, d->dockWidgetsMap) {
-            dockWidget->setVisible(d->dockWidgetVisibilityMap.value(dockWidget));
+            // Docks created by the new view were not present when the old
+            // document's visibility was saved.  Leave those docks at their
+            // own default instead of hiding them with a missing map entry.
+            const auto it = d->dockWidgetVisibilityMap.constFind(dockWidget);
+            if (it != d->dockWidgetVisibilityMap.constEnd()) {
+                dockWidget->setVisible(*it);
+            }
         }
     }
 
@@ -1739,6 +1745,19 @@ KoComponentData KoMainWindow::componentData() const
 QDockWidget *KoMainWindow::createDockWidget(KoDockFactoryBase *factory)
 {
     QDockWidget *dockWidget = nullptr;
+
+    // The mode box belongs to the view, not to the main window.  When an empty
+    // document is replaced by an opened document the old view is still alive
+    // while the new view is constructed.  Reusing its mode box would leave the
+    // new view's ribbon pages and quick-access widget detached from the old
+    // actions, so replace the box instead of returning the stale one.
+    const QString dockId = factory->id();
+    if (dockId == QLatin1String("ModeBox") && d->dockWidgetsMap.contains(dockId)) {
+        QDockWidget *oldModeBox = d->dockWidgetsMap.take(dockId);
+        d->dockWidgets.removeAll(oldModeBox);
+        removeDockWidget(oldModeBox);
+        delete oldModeBox;
+    }
 
     if (!d->dockWidgetsMap.contains(factory->id())) {
         dockWidget = factory->createDockWidget();
