@@ -39,3 +39,18 @@ plugins/textediting/autocorrection/libs/autotests/data/empty-generated.xml
 
 # Extracted optional ONLYOFFICE runtime
 /onlyoffice-runtime/
+
+# Local build tree and the throwaway install prefix used for testing
+/destdir/
+/qtwebengine-*/
+/core
+
+# Local scratch data, logs and dumps
+/.cloud-attachments/
+/big_samples/
+/test_files/
+/aqtinstall.log
+/Untitled.docx
+
+# LibreOffice lock files
+.~lock.*#
