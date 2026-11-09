@@ -133,6 +133,7 @@ private:
     void showDataEditor();
     void changeChartType(ChartType type, ChartSubtype subtype);
     QMenu *createChartTypeMenu(QWidget *parent);
+    QWidget *createOptionsGroup(QWidget *page);
     QWidget *createLayoutsGroup(QWidget *page);
     QWidget *createStylesGroup(QWidget *page);
     QWidget *createDataGroup(QWidget *page);
@@ -145,6 +146,10 @@ private:
     void applyQuickLayout(int layout);
     void setDataLabels(bool show);
     void setMajorGridLines(bool show);
+    void bindOptionPanels();
+
+    // The chart panels shown in the tab, in the order of their buttons.
+    QList<QWidget *> m_optionPanels;
 
     class Private;
     Private *const d;

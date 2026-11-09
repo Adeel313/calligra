@@ -1100,8 +1100,8 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
         auto *tableFormat = stagePage(i18n("Table Layout"), QStringLiteral("stageTableFormatPage"));
         tableFormat->setProperty("ribbonContextActive", false);
         // Chart Tools, shown while a chart is selected. The chart plugin fills
-        // the page.
-        auto *chartDesign = stagePage(i18n("Chart Design"), QStringLiteral("stageChartDesignPage"));
+        // the page with both the design commands and the chart options.
+        auto *chartDesign = stagePage(i18n("Chart Format / Design"), QStringLiteral("stageChartDesignPage"));
         chartDesign->setProperty("ribbonContextActive", false);
         stagePage(i18n("Help"), QStringLiteral("stageHelpPage"), {QStringLiteral("help")});
     } else {

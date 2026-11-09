@@ -21,6 +21,7 @@
 #include <QTabWidget>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <QWidgetAction>
 
 // KF5
 #include <KLocalizedString>
@@ -35,6 +36,7 @@
 #include <KoSelection.h>
 #include <KoShapeManager.h>
 #include <KoTextShapeData.h>
+#include <KoToolManager.h>
 #include <KoViewConverter.h>
 
 // KChart
@@ -135,6 +137,11 @@ void ChartTool::shapeSelectionChanged()
     // FIXME: could probably be done in KoToolBase (or wherever appropriate)
 
     if (!d->shape) {
+        return;
+    }
+    // The chart panels of Stage bind the tool to a chart without activating it,
+    // and they must not switch tools behind the user's back.
+    if (!KoToolManager::instance()->activeToolId().startsWith(QLatin1String("ChartToolFactory"))) {
         return;
     }
     QList<KoShape *> lst = canvas()->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
@@ -580,6 +587,7 @@ void ChartTool::configureRibbon(QWidget *page)
         layout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     }
     // Inserted right to left so the tab keeps the order of PowerPoint.
+    layout->insertWidget(0, createOptionsGroup(page));
     layout->insertWidget(0, createTypeGroup(page));
     layout->insertWidget(0, createDataGroup(page));
     layout->insertWidget(0, createStylesGroup(page));
@@ -613,6 +621,56 @@ QList<Axis *> ChartTool::chartAxes(ChartShape *chart) const
         return {};
     }
     return chart->plotArea()->axes();
+}
+
+// The chart panels of the tool (titles, legend and plot area) opened from the
+// tab itself, so every chart option is in the same place.
+QWidget *ChartTool::createOptionsGroup(QWidget *page)
+{
+    QWidget *content = nullptr;
+    QWidget *group = ribbonGroup(page, i18n("Chart Elements"), 50, &content);
+    QHBoxLayout *layout = ribbonRow(content);
+    for (QWidget *panel : optionWidgets()) {
+        if (!panel) {
+            continue;
+        }
+        // The panel belongs to this tab now; the mode box must not move it to
+        // a tool page as well.
+        panel->setProperty("ribbonManagedExternally", true);
+        QToolButton *button = ribbonMenuButton(content, panel->windowTitle(), QStringLiteral("tune"), new QMenu(content));
+        auto *action = new QWidgetAction(button->menu());
+        action->setDefaultWidget(panel);
+        button->menu()->addAction(action);
+        // The panels are filled from the chart when they are opened, not on
+        // every selection change, so looking at a chart changes nothing.
+        connect(button->menu(), &QMenu::aboutToShow, group, [this] { bindOptionPanels(); });
+        layout->addWidget(button);
+        m_optionPanels.append(panel);
+    }
+    return group;
+}
+
+void ChartTool::bindOptionPanels()
+{
+    ChartShape *chart = currentChart();
+    // The panels drive the slots of this tool, and those work on the chart the
+    // tool edits. Stage shows the panels without activating the tool, so keep
+    // the chart they are bound to here as well.
+    d->shape = chart;
+    for (QWidget *widget : std::as_const(m_optionPanels)) {
+        auto *panel = dynamic_cast<ConfigWidgetBase *>(widget);
+        if (!panel) {
+            continue;
+        }
+        if (!chart) {
+            panel->deactivate();
+            continue;
+        }
+        if (panel->chart != chart) {
+            panel->open(chart);
+        }
+        panel->updateData();
+    }
 }
 
 QWidget *ChartTool::createLayoutsGroup(QWidget *page)
