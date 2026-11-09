@@ -58,7 +58,13 @@ void KoShapePropertyWidget::addPlaceholder()
     label->setEnabled(false);
     label->setContentsMargins(0, 0, 0, 6);
     d->mainLayout->addWidget(label);
+    Q_EMIT propertiesChanged(false);
 };
+
+bool KoShapePropertyWidget::hasProperties() const
+{
+    return d->currentPanel != nullptr;
+}
 
 void KoShapePropertyWidget::setCanvas(KoCanvasBase *canvas)
 {
@@ -148,6 +154,7 @@ void KoShapePropertyWidget::addWidgetForShape(KoShape *shape)
             }
             d->mainLayout->addWidget(d->currentPanel);
             connect(d->currentPanel, &KoShapeConfigWidgetBase::propertyChanged, this, &KoShapePropertyWidget::shapePropertyChanged);
+            Q_EMIT propertiesChanged(true);
         } else {
             addPlaceholder();
         }

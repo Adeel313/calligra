@@ -956,6 +956,7 @@ QTextBlock &KoTextWriter::Private::saveList(QTextBlock &block, QHash<QTextList *
 
     if (!headingLevel) {
         do {
+            const int iterationStartBlock = block.blockNumber();
             if (numberedParagraphLevel) {
                 TagInformation paraTagInformation;
                 paraTagInformation.setTagName("text:numbered-paragraph");
@@ -1019,6 +1020,9 @@ QTextBlock &KoTextWriter::Private::saveList(QTextBlock &block, QHash<QTextList *
                 closeTagRegion();
             }
             block = block.next();
+            if (!block.isValid()) {
+                break;
+            }
             blockFormat = block.blockFormat();
             headingLevel = blockFormat.intProperty(KoParagraphStyle::OutlineLevel);
             numberedParagraphLevel = blockFormat.intProperty(KoParagraphStyle::ListLevel);
@@ -1027,6 +1031,18 @@ QTextBlock &KoTextWriter::Private::saveList(QTextBlock &block, QHash<QTextList *
             // is a child of this list. Keep writing it inside the current
             // text:list instead of starting a new top-level list (which would
             // restart the parent numbering).
+            //
+            // That widened condition can also be true for the very block this
+            // iteration started from: a sub-list which resolves to no nested
+            // items is closed again with a previous() (see above), so next()
+            // lands back on the same block. Without a progress check the loop
+            // would re-emit that block forever, growing the document until the
+            // save appears to hang. Stop the list here instead and hand the
+            // block back: the caller writes it as a normal paragraph, so no
+            // content is skipped and the loop cannot spin.
+            if (block.blockNumber() <= iterationStartBlock) {
+                break;
+            }
         } while (((textDocument.list(block) == list) || (KoList::level(block) > topListLevel))
                  && (KoList::level(block) >= topListLevel));
     }

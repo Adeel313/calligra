@@ -371,6 +371,22 @@ void KoTableStyle::setMasterPageName(const QString &name)
     setProperty(MasterPageName, name);
 }
 
+QPointF KoTableStyle::tableOffset() const
+{
+    return QPointF(value(TableOffsetX).toReal(), value(TableOffsetY).toReal());
+}
+
+void KoTableStyle::setTableOffset(const QPointF &offset)
+{
+    if (offset.isNull()) {
+        remove(TableOffsetX);
+        remove(TableOffsetY);
+        return;
+    }
+    setProperty(TableOffsetX, offset.x());
+    setProperty(TableOffsetY, offset.y());
+}
+
 Qt::Alignment KoTableStyle::alignmentFromString(const QString &align)
 {
     Qt::Alignment alignment = Qt::AlignLeft;
@@ -466,6 +482,14 @@ void KoTableStyle::loadOdfProperties(KoStyleStack &styleStack)
 
     if (styleStack.hasProperty(KoXmlNS::table, "display")) {
         setVisible(styleStack.property(KoXmlNS::table, "display") == "true");
+    }
+
+    // A table that has been dragged away from its place in the text flow keeps
+    // the offset it was moved by.
+    if (styleStack.hasProperty(KoXmlNS::calligra, "table-offset-x") || styleStack.hasProperty(KoXmlNS::calligra, "table-offset-y")) {
+        QPointF offset(KoUnit::parseValue(styleStack.property(KoXmlNS::calligra, "table-offset-x"), 0.0),
+                       KoUnit::parseValue(styleStack.property(KoXmlNS::calligra, "table-offset-y"), 0.0));
+        setTableOffset(offset);
     }
 
     // Width
@@ -647,6 +671,10 @@ void KoTableStyle::saveOdf(KoGenStyle &style)
             style.addProperty("style:writing-mode", KoText::directionToString(textDirection()), KoGenStyle::TableType);
         } else if (key == KoTableStyle::Shadow) {
             style.addProperty("style:shadow", shadow().saveOdf());
+        } else if (key == KoTableStyle::TableOffsetX) {
+            style.addProperty("calligra:table-offset-x", QString::number(value(TableOffsetX).toReal()) + "pt", KoGenStyle::TableType);
+        } else if (key == KoTableStyle::TableOffsetY) {
+            style.addProperty("calligra:table-offset-y", QString::number(value(TableOffsetY).toReal()) + "pt", KoGenStyle::TableType);
         }
     }
 }

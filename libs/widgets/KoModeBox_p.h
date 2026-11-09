@@ -178,8 +178,9 @@ private:
 
     /// Show command labels while the page fits, icons only when it would overflow.
     void updateRibbonCompactness(QWidget *page);
-    /// Keep the Sheets ribbon at the height of its command rows.
-    void fitRibbonBand();
+    /// Fit the ribbon band to its command rows, so a tall contextual tab cannot
+    /// leave a blank strip under the other tabs.
+    void fitRibbonBand(QWidget *page = nullptr);
     enum IconMode {
         IconAndText,
         IconOnly

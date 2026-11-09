@@ -17,6 +17,8 @@ class TextTool;
 class KoStyleManager;
 class KoTableCellStyle;
 class KoColor;
+class QComboBox;
+class QToolButton;
 
 class SimpleTableWidget : public QWidget
 {
@@ -30,6 +32,9 @@ public Q_SLOTS:
     void emitTableBorderDataUpdated(int i = 0);
     void restartPainting();
     void setBorderColor(const KoColor &);
+    /// Fills the table style options and the style gallery from the table the
+    /// cursor is in.
+    void updateTableState();
 
 Q_SIGNALS:
     void doneWithFocus();
@@ -37,8 +42,18 @@ Q_SIGNALS:
 
 private:
     void fillBorderButton(const QColor &color);
+    QWidget *createTableStylesGroup();
+    QToolButton *createShadingButton(QWidget *parent);
+    QWidget *createBordersGroup();
+    QWidget *createTablePropertiesGroup();
+    void fillStyleGallery();
 
     Ui::SimpleTableWidget widget;
+    QList<QToolButton *> m_styleButtons;
+    QWidget *m_styleButtonContainer = nullptr;
+    QComboBox *m_borderWeight = nullptr;
+    QToolButton *m_penColor = nullptr;
+    QToolButton *m_bordersButton = nullptr;
     KoStyleManager *m_styleManager;
     bool m_blockSignals;
     bool m_comboboxHasBidiItems;

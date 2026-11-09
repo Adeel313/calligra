@@ -374,6 +374,18 @@ void KoShapeCollectionMenu::loadDefaultShapes()
     KConfigGroup cfg = KSharedConfig::openConfig()->group("KoShapeCollection");
     quickShapes = cfg.readEntry("QuickShapes", quickShapes);
 
+    // Shapes that the Insert tab of Stage and Words creates as objects of their
+    // own; the gallery used to collect them under "Text and Other Shapes".
+    const QString galleryApp = qApp->applicationName();
+    const bool insertTabShapes = galleryApp.contains(QLatin1String("words"), Qt::CaseInsensitive)
+        || galleryApp.contains(QLatin1String("stage"), Qt::CaseInsensitive);
+    const QStringList insertTabShapeIds{
+        QStringLiteral("FormulaShapeID"), QStringLiteral("ArtisticText"),
+        QStringLiteral("StateShape"),
+        QStringLiteral("ThreedShape"), QStringLiteral("VectorShapeID"),
+        QStringLiteral("WebShape"), QStringLiteral("TextShapeID"),
+        QStringLiteral("PictureShape")};
+
     const auto keys = KoShapeRegistry::instance()->keys();
     for (const QString &id : keys) {
         KoShapeFactoryBase *factory = KoShapeRegistry::instance()->value(id);
@@ -391,6 +403,11 @@ void KoShapeCollectionMenu::loadDefaultShapes()
         }
         // don't show hidden factories
         if (factory->hidden()) {
+            continue;
+        }
+        // Stage and Words offer these shape types as buttons on the Insert tab,
+        // so their presetless factory entries do not belong in the gallery.
+        if (insertTabShapes && insertTabShapeIds.contains(factory->id())) {
             continue;
         }
         // don't show stencil factories for now, exclusively available by StencilBox

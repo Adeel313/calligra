@@ -57,6 +57,8 @@
 #include <QTextList>
 #include <QTextTable>
 #include <QTextCursor>
+#include <KoTableColumnAndRowStyleManager.h>
+#include <KoTableColumnStyle.h>
 #include <QTextDocumentFragment>
 #include <QXmlStreamWriter>
 
@@ -749,11 +751,28 @@ void writeObjectXml(QXmlStreamWriter &xml, const SlideObject &object, int imageR
         xml.writeStartElement(QStringLiteral("a:tbl")); xml.writeEmptyElement(QStringLiteral("a:tblPr"));
         xml.writeStartElement(QStringLiteral("a:tblGrid"));
         const auto widths = table->format().columnWidthConstraints();
+        // The reader stores the source column widths as table column styles, not as
+        // QTextTableFormat constraints, so read them from there before falling back
+        // to equal columns. Without this the proportions of the original table are
+        // lost and its cells no longer line up with the reference rendering.
+        KoTableColumnAndRowStyleManager columnStyles = KoTableColumnAndRowStyleManager::getManager(table);
+        QVector<qreal> columnWidths;
+        qreal columnWidthSum = 0;
+        bool uniformColumnWidths = true;
+        for (int col = 0; col < table->columns(); ++col) {
+            const KoTableColumnStyle columnStyle = columnStyles.columnStyle(col);
+            const qreal columnWidth = columnStyle.hasProperty(KoTableColumnStyle::ColumnWidth) ? columnStyle.columnWidth() : 0.0;
+            columnWidths.append(columnWidth);
+            columnWidthSum += columnWidth;
+            if (columnWidth <= 0) uniformColumnWidths = false;
+        }
         for (int col = 0; col < table->columns(); ++col) {
             qint64 width = cx / table->columns();
             if (col < widths.size()) {
                 if (widths[col].type() == QTextLength::PercentageLength) width = qRound64(cx * widths[col].rawValue() / 100.0);
                 else if (widths[col].type() == QTextLength::FixedLength) width = qRound64(widths[col].rawValue() * 12700.0);
+            } else if (uniformColumnWidths && columnWidthSum > 0) {
+                width = qRound64(cx * columnWidths[col] / columnWidthSum);
             }
             xml.writeEmptyElement(QStringLiteral("a:gridCol")); xml.writeAttribute(QStringLiteral("w"), QString::number(qMax<qint64>(1, width)));
         }

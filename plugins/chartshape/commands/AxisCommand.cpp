@@ -17,8 +17,9 @@
 using namespace KoChart;
 using namespace KChart;
 
-AxisCommand::AxisCommand(Axis *axis, ChartShape *chart)
-    : m_chart(chart)
+AxisCommand::AxisCommand(Axis *axis, ChartShape *chart, KUndo2Command *parent)
+    : KUndo2Command(parent)
+    , m_chart(chart)
     , m_axis(axis)
 {
     m_newShowLabels = m_axis->showLabels();

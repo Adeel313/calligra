@@ -67,6 +67,8 @@ set( calligrastageprivate_LIB_SRCS
      KPrSlidesManagerView.cpp
      KPrCustomSlideShowsModel.cpp
      KPrSlidesSorterItemDelegate.cpp
+     KPrDesignTab.cpp
+     KPrFormatTab.cpp
      KPrPageLayoutWidget.cpp
      KPrPageTransition.cpp
 

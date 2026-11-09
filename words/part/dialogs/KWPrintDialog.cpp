@@ -178,12 +178,12 @@ public:
                     button->hide();
             }
         }
-        auto *optionsScroll = new QScrollArea(this);
-        optionsScroll->setFrameShape(QFrame::NoFrame);
-        optionsScroll->setWidgetResizable(true);
-        optionsScroll->setWidget(m_options);
-        optionsScroll->setMinimumWidth(440);
-        contentLayout->addWidget(optionsScroll, 3);
+        m_optionsScroll = new QScrollArea(this);
+        m_optionsScroll->setFrameShape(QFrame::NoFrame);
+        m_optionsScroll->setWidgetResizable(true);
+        m_optionsScroll->setWidget(m_options);
+        m_optionsScroll->setMinimumWidth(440);
+        contentLayout->addWidget(m_optionsScroll, 3);
         mainLayout->addLayout(contentLayout, 1);
 
         auto *previewUpdate = new QTimer(this);
@@ -247,6 +247,17 @@ public:
         m_printJob->setProperty("blocking", false);
     }
 
+    /// The options page belongs to the KWPrintDialog the caller owns, so it
+    /// must not be deleted with this window.
+    void releaseOptionsPage()
+    {
+        if (m_optionsScroll) {
+            m_optionsScroll->takeWidget();
+        }
+        m_options->setParent(nullptr);
+        m_options->hide();
+    }
+
     void reject() override
     {
         m_printJob->setProperty("blocking", false);
@@ -272,6 +283,7 @@ private:
     }
 
     QPrintDialog *m_options;
+    QScrollArea *m_optionsScroll = nullptr;
     KoPrintJob *m_printJob;
     QPrintPreviewWidget *m_preview = nullptr;
     QLabel *m_pageLabel = nullptr;
@@ -282,7 +294,10 @@ int KWPrintDialog::exec()
 {
 #if defined(Q_OS_UNIX) && !defined(Q_OS_MACOS)
     KWPrintDialogWindow window(this, m_printJob, parentWidget());
-    return window.exec();
+    const int result = window.exec();
+    // The window owns nothing that outlives it, least of all this dialog.
+    window.releaseOptionsPage();
+    return result;
 #else
     return QPrintDialog::exec();
 #endif

@@ -243,6 +243,51 @@ QTextCursor *KoTextEditor::cursor()
     return &(d->caret);
 }
 
+const QTextTable *KoTextEditor::tableAtCursor(bool includeBlankParagraphsBefore) const
+{
+    if (const QTextTable *table = currentTable()) {
+        return table;
+    }
+    if (!includeBlankParagraphsBefore) {
+        return nullptr;
+    }
+
+    QTextDocument *doc = document();
+    if (!doc) {
+        return nullptr;
+    }
+    const int pos = position();
+
+    // Qt reports a cursor that sits on a table's first position as being
+    // outside the table, and a table at the start of a document is preceded by
+    // blank paragraphs the cursor can be in. Both look like the first cell on
+    // screen, so report the table for them as well. The run of blank
+    // paragraphs in front of the table counts as well, otherwise typing one
+    // space there would make the table tools disappear again.
+    int blankRunStart = -1;
+    for (auto it = doc->rootFrame()->begin(); !it.atEnd(); ++it) {
+        if (QTextFrame *frame = it.currentFrame()) {
+            if (const QTextTable *table = dynamic_cast<const QTextTable *>(frame)) {
+                const int firstPos = table->firstPosition();
+                if (pos <= firstPos && (blankRunStart >= 0 ? pos >= blankRunStart : pos == firstPos)) {
+                    return table;
+                }
+            }
+            blankRunStart = -1;
+        } else {
+            const QTextBlock block = it.currentBlock();
+            if (block.text().trimmed().isEmpty()) {
+                if (blankRunStart < 0) {
+                    blankRunStart = block.position();
+                }
+            } else {
+                blankRunStart = -1;
+            }
+        }
+    }
+    return nullptr;
+}
+
 const QTextCursor KoTextEditor::constCursor() const
 {
     return QTextCursor(d->caret);

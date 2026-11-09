@@ -11,6 +11,7 @@
 #include "koodf2_export.h"
 
 #include <QColor>
+#include <QPointF>
 
 /**
  * \class KoTblStyle
@@ -90,6 +91,10 @@ public:
     void setDisplay(bool display);
     bool display() const;
 
+    /// Offset of a table that was dragged away from its place in the text flow.
+    void setTableOffset(const QPointF &offset);
+    QPointF tableOffset() const;
+
     enum KeepWithNext {
         AutoKeepWithNext,
         AlwaysKeepWithNext
@@ -139,6 +144,7 @@ private:
     WritingMode m_writingMode;
 
     bool m_display;
+    QPointF m_tableOffset;
     // TODO style:page-number
     // TODO style:shadow
     // TODO style:background-image

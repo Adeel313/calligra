@@ -30,7 +30,6 @@ set ( textshape_SRCS
     TextTool.cpp
     TextEditingPluginContainer.cpp
     TextToolFactory.cpp
-    ShrinkToFitShapeContainer.cpp
     SimpleRootAreaProvider.cpp
     AnnotationTextShape.cpp
     AnnotationTextShapeFactory.cpp
@@ -198,7 +197,7 @@ endif()
 
 install(TARGETS calligra_shape_text DESTINATION ${KDE_INSTALL_PLUGINDIR}/calligra/shapes)
 
-add_executable(TestTextFit EXCLUDE_FROM_ALL tests/TestTextFit.cpp TextShape.cpp SimpleRootAreaProvider.cpp ShrinkToFitShapeContainer.cpp)
+add_executable(TestTextFit EXCLUDE_FROM_ALL tests/TestTextFit.cpp TextShape.cpp SimpleRootAreaProvider.cpp)
 target_include_directories(TestTextFit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(TestTextFit PRIVATE kotext kotextlayout komain)
 if(BUILD_TESTING)

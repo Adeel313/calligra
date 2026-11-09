@@ -1204,8 +1204,10 @@ QList<QPointer<QWidget>> DefaultTool::createOptionWidgets()
     defaultArrange->setProperty("ribbonGroupOrder", 30);
     widgets.append(defaultArrange);
     // The Words Draw tab shows the drawing and shape-formatting groups only;
-    // the X/Y position and width/height fields are not needed there.
-    if (!qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+    // the X/Y position and width/height fields are not needed there, and the
+    // Stage Format tab is built from its own compact galleries without them.
+    if (!qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)
+        && !qApp->applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)) {
         DefaultToolWidget *defaultTool = new DefaultToolWidget(this);
         defaultTool->setWindowTitle(i18n("Geometry"));
         defaultTool->setProperty("ribbonGroupOrder", 40);

@@ -38,6 +38,7 @@ class KoColor;
 class KoColorPopupAction;
 class KoParagraphStyle;
 class KoStyleManager;
+class KoTableStyle;
 class KoTextEditor;
 class UndoTextCommand;
 
@@ -141,6 +142,55 @@ public:
 
     QRectF textRect(QTextCursor &cursor) const;
 
+    /// The format of the table the cursor is in, or an empty format when the
+    /// cursor is not inside a table.
+    QTextTableFormat currentTableFormat() const;
+    /// True when the cursor is inside a table.
+    bool cursorInTable() const;
+
+    /// Shades the selected cells (or the cell under the cursor) with \a brush.
+    void setTableCellBackground(const QBrush &brush);
+
+    /// Applies \a style, a named table style, to the table the cursor is in.
+    void applyTableStyle(KoTableStyle *style);
+
+    /// The looks offered by the Table Styles gallery of the table tab.
+    enum TableLook { PlainLook, GridLook, LightGridLook, BandedLook, HeaderLook, EmphasisLook };
+
+    /// Applies one of the built in table looks: shading and borders for the
+    /// whole table, as one undoable change.
+    void applyTableLook(int look);
+
+    /// The border presets offered by the Borders dropdown of the table tab.
+    enum TableBorderPreset { AllBorders, OutsideBorders, InsideBorders, NoBorders };
+
+    /// Opens the dialog that changes the table's alignment and width.
+    void formatTable();
+
+    /// Aligns the table under the cursor within the text area.
+    void setTableAlignment(Qt::Alignment alignment);
+
+    /// Applies one of the border presets (all, outside, inside or none) to the
+    /// selected cells, or to the whole table when nothing is selected.
+    void applyTableBorderPreset(int preset);
+
+    /// The pen that the border tools and the border painter use.
+    KoBorder::BorderData tableBorderPen() const;
+    /// Changes the pen the border tools and the border painter use.
+    void setTableBorderPen(const KoBorder::BorderData &data);
+    /// Turns the border painter on or off; while it is on, clicking a cell
+    /// edge paints the pen's border onto it.
+    void setTableBorderPainterActive(bool active);
+
+    /// Shows the handle that moves the table the cursor is in, or hides it when
+    /// the cursor is not in a table.
+    void updateTableHandle();
+    /// Called by the handle when it is dragged; the delta is in widget pixels.
+    void beginTableHandleDrag();
+    void dragTableHandle(const QPoint &deltaPixels);
+    void endTableHandleDrag();
+
+
 protected:
     virtual void createActions();
     TextShape *textShape()
@@ -173,6 +223,8 @@ Q_SIGNALS:
     void blockFormatChanged(const QTextBlockFormat &format);
     /// emitted every time a caret move leads to a different paragraph format being under the caret
     void blockChanged(const QTextBlock &block);
+    /// emitted when the table under the cursor, or its formatting, may have changed
+    void tableStateChanged();
 
 private Q_SLOTS:
     /// inserts new paragraph and includes it into the new section
@@ -253,6 +305,8 @@ private Q_SLOTS:
     void formatParagraph();
     /// select all text in the current document.
     void selectAll();
+    /// select the whole table the cursor is in.
+    void selectTable();
     /// show the style manager
     void showStyleManager(int styleId = -1);
     /// change color of a selected text
@@ -360,6 +414,8 @@ private:
     int m_prevMouseSelectionStart, m_prevMouseSelectionEnd;
 
     QTimer m_caretTimer;
+    /// Keeps the table move handle on the corner of the table it belongs to.
+    QTimer m_tableHandleTimer;
     bool m_caretTimerState;
     QAction *m_actionPasteAsText;
     QAction *m_actionFormatPainter = nullptr;
@@ -417,6 +473,24 @@ private:
     qreal m_dx;
     qreal m_dy;
     bool m_tablePenMode;
+
+    /// The table the user pressed inside of with the whole table selected. A
+    /// mouse move beyond the drag distance turns this into a table move.
+    bool m_tableMovePending;
+
+    /// The widget that is dragged to move the table the cursor is in.
+    QPointer<QWidget> m_tableHandle;
+    QTextCursor m_tableHandleCursor;
+    QPointF m_tableHandleStart;
+    bool m_tableHandleDragging;
+    /// True while the mouse is actually dragging a table to a new position.
+    bool m_tableMoveMode;
+    /// Cursor pointing inside the table being moved, so the table can be looked
+    /// up again even after the document has been relaid out.
+    QTextCursor m_tableMoveCursor;
+    /// Press position and table offset at the time of the press, in document points.
+    QPointF m_tableMoveOrigin;
+    QPointF m_tableMoveStart;
     KoBorder::BorderData m_tablePenBorderData;
     mutable QRectF m_lastImMicroFocus;
 

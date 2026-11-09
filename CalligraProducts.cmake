@@ -113,7 +113,6 @@ calligra_define_product(OKULAR_GENERATOR_ODT "Plugin for Okular adding support f
 
 # more plugins
 calligra_define_product(PLUGIN_COLORENGINES "Colorengine plugins"  REQUIRES LIB_CALLIGRA)
-calligra_define_product(PLUGIN_MUSICSHAPE "Music shape plugin"  REQUIRES LIB_CALLIGRA)
 calligra_define_product(PLUGIN_ARTISTICTEXTSHAPE "Artistic shape plugin" REQUIRES LIB_CALLIGRA)
 calligra_define_product(PLUGIN_DOCKERS "Default dockers plugin" REQUIRES LIB_CALLIGRA)
 calligra_define_product(PLUGIN_TEXTEDITING "Textediting plugins"  REQUIRES LIB_CALLIGRA)
@@ -334,7 +333,6 @@ calligra_define_productset(BRAINDUMP "Full Braindump (for Desktop)"
         PLUGIN_DEFAULTTOOLS
         PLUGIN_DOCKERS
         PLUGIN_FORMULASHAPE
-        PLUGIN_MUSICSHAPE
         PLUGIN_PATHSHAPES
         PLUGIN_PICTURESHAPE
         PLUGIN_PLUGINSHAPE

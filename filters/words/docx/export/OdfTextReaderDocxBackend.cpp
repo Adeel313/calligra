@@ -34,6 +34,7 @@
 #endif
 
 static bool toTwipsValue(const QString &value, qint64 *twips);
+static bool toTwipsOffset(const QString &value, qint64 *twips);
 static QByteArray sectionProperties(const QByteArray &base, int columns, int gapTwips);
 
 // ================================================================
@@ -419,6 +420,21 @@ void OdfTextReaderDocxBackend::elementTextIndexBody(KoXmlStreamReader &reader, O
 }
 
 // Converts an ODF length value to twips.
+// Like toTwipsValue, but a table offset is a signed position: dragging a table
+// into the margin moves it by a negative amount, which must survive the export.
+static bool toTwipsOffset(const QString &value, qint64 *twips)
+{
+    if (value.isEmpty()) {
+        return false;
+    }
+    const qreal points = KoUnit::parseValue(value, qQNaN());
+    if (qIsNaN(points)) {
+        return false;
+    }
+    *twips = qRound64(points * 20.0);
+    return true;
+}
+
 static bool toTwipsValue(const QString &value, qint64 *twips)
 {
     if (value.isEmpty()) {
@@ -741,6 +757,23 @@ void OdfTextReaderDocxBackend::elementTableTable(KoXmlStreamReader &reader, OdfR
 
         writer->startElement("w:tbl");
         writer->startElement("w:tblPr");
+
+        // A table that was dragged away from its place in the text flow is a
+        // floating table for Word: it needs an explicit position (w:tblpPr).
+        if (tableProperties) {
+            qint64 offsetX = 0;
+            qint64 offsetY = 0;
+            const bool hasOffsetX = toTwipsOffset(tableProperties->attribute("calligra:table-offset-x"), &offsetX);
+            const bool hasOffsetY = toTwipsOffset(tableProperties->attribute("calligra:table-offset-y"), &offsetY);
+            if (hasOffsetX || hasOffsetY) {
+                writer->startElement("w:tblpPr");
+                writer->addAttribute("w:horzAnchor", "margin");
+                writer->addAttribute("w:vertAnchor", "text");
+                writer->addAttribute("w:tblpX", static_cast<int>(offsetX));
+                writer->addAttribute("w:tblpY", static_cast<int>(offsetY));
+                writer->endElement(); // w:tblpPr
+            }
+        }
 
         // ODF tables can express their width either absolutely (style:width)
         // or relative to the text area (style:rel-width).  Word knows both.

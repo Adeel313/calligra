@@ -119,12 +119,24 @@ protected:
 private:
     void shapeChanged(ChangeType type, KoShape *shape = nullptr) override;
 
+    /**
+     * Keeps text that sits on a shape (custom shape, callout, ...) inside that
+     * shape. Such a text shape has no ShrinkToFitShapeContainer, so the text
+     * itself is scaled after every relayout, which also covers editing the text
+     * and resizing the shape.
+     */
+    void applyAutofit();
+
     KoTextShapeData *m_textShapeData;
     KoPageProvider *m_pageProvider;
     KoImageCollection *m_imageCollection;
     QRegion m_paintRegion;
     bool m_clip;
     KoTextDocumentLayout *m_layout;
+    bool m_fittingAutofit = false;
+    // Scale currently applied to the document's font sizes by applyAutofit().
+    // The sizes loaded from the document are the reference (1.0).
+    qreal m_appliedAutofit = 1.0;
 };
 
 #endif

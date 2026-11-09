@@ -15,6 +15,8 @@
 #include "ChartShape.h"
 
 class QAction;
+class QMenu;
+class QWidget;
 
 namespace KoChart
 {
@@ -45,6 +47,15 @@ public:
     void deactivate() override;
     /// reimplemented from superclass
     QList<QPointer<QWidget>> createOptionWidgets() override;
+
+    /**
+     * Fill the "Chart Design" ribbon page of Stage.
+     *
+     * Stage owns the tab and calls this once, when the ribbon exists. The
+     * commands follow the chart that is selected at the time they are used, so
+     * the page works while the tool moves from one chart to the next.
+     */
+    Q_INVOKABLE void configureRibbon(QWidget *page);
 
 private Q_SLOTS:
     void setChartType(KoChart::ChartType type, KoChart::ChartSubtype subtype);
@@ -115,6 +126,26 @@ private Q_SLOTS:
     void shapeSelectionChanged();
 
 private:
+    // The chart the ribbon commands work on: the active chart, or the chart in
+    // the selection while the ribbon is built before the first activation.
+    ChartShape *currentChart() const;
+    QList<Axis *> chartAxes(ChartShape *chart) const;
+    void showDataEditor();
+    void changeChartType(ChartType type, ChartSubtype subtype);
+    QMenu *createChartTypeMenu(QWidget *parent);
+    QWidget *createLayoutsGroup(QWidget *page);
+    QWidget *createStylesGroup(QWidget *page);
+    QWidget *createDataGroup(QWidget *page);
+    QWidget *createTypeGroup(QWidget *page);
+    QMenu *createAddElementMenu(QWidget *parent);
+    QMenu *createQuickLayoutMenu(QWidget *parent);
+    QMenu *createColorSchemeMenu(QWidget *parent);
+    void applyColorScheme(int scheme);
+    void applyStylePreset(int style);
+    void applyQuickLayout(int layout);
+    void setDataLabels(bool show);
+    void setMajorGridLines(bool show);
+
     class Private;
     Private *const d;
 };

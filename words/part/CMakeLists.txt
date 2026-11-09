@@ -68,6 +68,8 @@ set(wordsprivate_LIB_SRCS
     dialogs/KWCreateBookmarkDialog.cpp
     dialogs/KWSelectBookmarkDialog.cpp
     dialogs/KWConfigureDialog.cpp
+    dialogs/QRCodeDialog.cpp
+    QRCodeGenerator.cpp
 
     dockers/KWStatisticsDocker.cpp
     dockers/KWStatisticsWidget.cpp

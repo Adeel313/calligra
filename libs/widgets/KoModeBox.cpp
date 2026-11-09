@@ -46,6 +46,7 @@
 #include <QPainter>
 #include <QProxyStyle>
 #include <QRect>
+#include <QScopedValueRollback>
 #include <QScrollBar>
 #include <QSignalBlocker>
 #include <QSet>
@@ -127,6 +128,12 @@ public:
     /// Set when the ribbon's structure (tabs, custom pages, icon mode) has
     /// changed and the next updateShownTools() call must rebuild it.
     bool ribbonDirty = true;
+    /// Tab that was current before a contextual page activated itself, so the
+    /// ribbon can go back there when the context ends.
+    int contextReturnIndex = -1;
+    /// A band resize re-lays out the page, which can come back here while the
+    /// contextual tab is being measured; the outer call owns the height.
+    bool fittingRibbonBand = false;
 };
 
 QString KoModeBox::applicationName;
@@ -436,7 +443,7 @@ void KoModeBox::updateRibbonCompactness(QWidget *page)
     if (available <= 0) {
         return;
     }
-    fitRibbonBand();
+    fitRibbonBand(page);
 
     // Measure the page with labels once; the value is discarded whenever the
     // page gains or loses a group (see the ChildAdded handling below).
@@ -481,24 +488,37 @@ void KoModeBox::updateRibbonCompactness(QWidget *page)
 // with tall shape controls used to make every tab taller. Sheets keeps the
 // band at the height of its two command rows instead; controls that need more
 // room scroll inside their own tab.
-void KoModeBox::fitRibbonBand()
+void KoModeBox::fitRibbonBand(QWidget *page)
 {
-    if (d->orientation != Qt::Horizontal || !applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive)) {
+    if (d->orientation != Qt::Horizontal || d->fittingRibbonBand) {
         return;
     }
+    QScopedValueRollback<bool> fitting(d->fittingRibbonBand, true);
     int band = 0;
-    for (const Private::CustomPage &customPage : std::as_const(d->customPages)) {
-        if (!customPage.page || customPage.page->objectName() == QLatin1String("sheetsShapeFormatPage")) {
-            continue;
+    const bool sheetsRibbon = applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive);
+    if (sheetsRibbon) {
+        for (const Private::CustomPage &customPage : std::as_const(d->customPages)) {
+            if (!customPage.page || customPage.page->objectName() == QLatin1String("sheetsShapeFormatPage")) {
+                continue;
+            }
+            // Pages report the height their groups really need, including every
+            // group caption.
+            if (QLayout *pageLayout = customPage.page->layout()) {
+                pageLayout->invalidate();
+                pageLayout->activate();
+            }
+            band = qMax(band, qMax(customPage.page->sizeHint().height(),
+                                  customPage.page->minimumSizeHint().height()));
         }
-        // Pages report the height their groups really need, including every
-        // group caption.
-        if (QLayout *pageLayout = customPage.page->layout()) {
+    } else if (page) {
+        // Words and Stage follow the page that is shown. Their contextual tabs
+        // carry tall control groups, and measuring only that page keeps the
+        // short tabs compact instead of padding them to the tallest one.
+        if (QLayout *pageLayout = page->layout()) {
             pageLayout->invalidate();
             pageLayout->activate();
         }
-        band = qMax(band, qMax(customPage.page->sizeHint().height(),
-                              customPage.page->minimumSizeHint().height()));
+        band = qMax(page->sizeHint().height(), page->minimumSizeHint().height());
     }
     if (band > 0) {
         band += 10; // the page's layout margins, plus room under the captions
@@ -684,20 +704,36 @@ bool KoModeBox::eventFilter(QObject *watched, QEvent *event)
             }
             const QVariant context = watched->property("ribbonContextActive");
             const bool visible = !context.isValid() || context.toBool();
+            const bool wasVisible = d->tabBar->isTabVisible(index);
             const bool returnToTool = !visible && d->tabBar->currentIndex() == index;
             const QSignalBlocker blocker(d->tabBar);
             d->tabBar->setTabVisible(index, visible);
+            if (visible && !wasVisible) {
+                // A contextual tab like Table Layout is appended after the tool
+                // tabs, so it normally sits outside the visible width of the
+                // bar. Selecting it scrolls it into view as well as showing its
+                // page, which is what Office does when the cursor enters one.
+                d->contextReturnIndex = d->tabBar->currentIndex();
+                d->tabBar->setCurrentIndex(index);
+            }
             if (returnToTool) {
                 // Hiding contextual controls must not activate another tool
-                // or move the cursor. Return to the current tool's ribbon.
-                if (usesCustomRibbonPages(applicationName)) {
-                    showRibbonPage(applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive)
-                        ? QStringLiteral("sheetsHomePage") : QStringLiteral("stageHomePage"));
-                }
-                for (int i = 0; i < d->tabBar->count(); ++i) {
-                    if (d->tabBar->isTabVisible(i) && d->tabBar->tabData(i).toInt() == d->activeId) {
-                        d->tabBar->setCurrentIndex(i);
-                        break;
+                // or move the cursor. Return to the ribbon the user came from.
+                const int returnIndex = d->contextReturnIndex;
+                d->contextReturnIndex = -1;
+                if (returnIndex >= 0 && returnIndex < d->tabBar->count()
+                    && returnIndex != index && d->tabBar->isTabVisible(returnIndex)) {
+                    d->tabBar->setCurrentIndex(returnIndex);
+                } else {
+                    if (usesCustomRibbonPages(applicationName)) {
+                        showRibbonPage(applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive)
+                            ? QStringLiteral("sheetsHomePage") : QStringLiteral("stageHomePage"));
+                    }
+                    for (int i = 0; i < d->tabBar->count(); ++i) {
+                        if (d->tabBar->isTabVisible(i) && d->tabBar->tabData(i).toInt() == d->activeId) {
+                            d->tabBar->setCurrentIndex(i);
+                            break;
+                        }
                     }
                 }
             }
@@ -728,8 +764,11 @@ void KoModeBox::addWidgetToToolTab(const QString &toolId, QWidget *widget)
                 group->setProperty("ribbonRoutedGroup", true);
                 auto *groupLayout = new QVBoxLayout(group);
                 groupLayout->setContentsMargins(4, 1, 4, 1);
-                groupLayout->addWidget(widget, 0, Qt::AlignTop);
-                groupLayout->addStretch();
+                // The commands sit in the middle of the space above the group
+                // title, so groups of different heights still line up.
+                groupLayout->addStretch(1);
+                groupLayout->addWidget(widget, 0, Qt::AlignVCenter);
+                groupLayout->addStretch(1);
                 auto *title = new QLabel(widget->windowTitle(), group);
                 title->setProperty("ribbonGroupTitle", true);
                 title->setMinimumHeight(18);
@@ -1234,6 +1273,23 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
         d->tabBar->setCurrentIndex(customIndex);
         d->stack->setCurrentIndex(customIndex);
     }
+    // A contextual tab can already be active while the ribbon is built, for
+    // example when the document opens with the cursor inside a table. Its
+    // property does not change once the tabs exist, so select it here like the
+    // change handler would have done.
+    for (const auto &customPage : std::as_const(d->customPages)) {
+        if (!customPage.wrapper || !customPage.page->property("ribbonContextActive").toBool()) {
+            continue;
+        }
+        const int contextIndex = d->stack->indexOf(customPage.wrapper);
+        if (contextIndex < 0 || !d->tabBar->isTabVisible(contextIndex) || d->tabBar->currentIndex() == contextIndex) {
+            continue;
+        }
+        d->contextReturnIndex = d->tabBar->currentIndex();
+        d->tabBar->setCurrentIndex(contextIndex);
+        d->stack->setCurrentIndex(contextIndex);
+        break;
+    }
     d->tabBar->blockSignals(false);
 
     if (wasUpdatesEnabled) {
@@ -1331,6 +1387,14 @@ void KoModeBox::routeOfficeOptions(const QString &toolId, const QList<QPointer<Q
                 ++position;
             }
             layout->insertWidget(position, group);
+            // A shape properties panel that only holds its "no properties"
+            // placeholder would be an empty group on the tab, so it follows
+            // whatever the panel currently has to show.
+            if (auto *properties = qobject_cast<KoShapePropertyWidget *>(widget)) {
+                auto applyContent = [group](bool hasProperties) { group->setVisible(hasProperties); };
+                connect(properties, &KoShapePropertyWidget::propertiesChanged, group, applyContent);
+                group->setVisible(properties->hasProperties());
+            }
             widget->show();
             break;
         }
@@ -1454,15 +1518,36 @@ void KoModeBox::setOptionWidgets(const QList<QPointer<QWidget>> &optionWidgetLis
                         auto *group = new QWidget(customPage.page);
                         group->setProperty("ribbonRoutedGroup", true);
                         auto *groupLayout = new QVBoxLayout(group);
-                        groupLayout->setContentsMargins(8, 0, 8, 0);
-                        groupLayout->addWidget(widget, 0, Qt::AlignTop);
-                        groupLayout->addStretch();
+                        groupLayout->setContentsMargins(3, 0, 3, 0);
+                        // Centre the commands in the space above the group title
+                        // so all groups line up on their middle.
+                        groupLayout->addStretch(1);
+                        groupLayout->addWidget(widget, 0, Qt::AlignVCenter);
+                        groupLayout->addStretch(1);
                         auto *title = new QLabel(widget->windowTitle(), group);
                         title->setProperty("ribbonGroupTitle", true);
                         title->setMinimumHeight(18);
                         title->setAlignment(Qt::AlignCenter);
+                        if (widget->property("ribbonItalicTitle").toBool()) {
+                            QFont captionFont = title->font();
+                            captionFont.setItalic(true);
+                            title->setFont(captionFont);
+                        }
                         groupLayout->addWidget(title);
-                        targetLayout->insertWidget(qMax(0, targetLayout->count() - 1), group);
+                        const int groupIndex = qMax(0, targetLayout->count() - 1);
+                        targetLayout->insertWidget(groupIndex, group);
+                        // Pages that ask to be filled spread their groups over
+                        // the whole width instead of leaving a gap at the end.
+                        if (customPage.page->property("ribbonFillWidth").toBool()) {
+                            targetLayout->setStretch(groupIndex, 1);
+                            for (int i = 0; i < targetLayout->count(); ++i) {
+                                if (QLayoutItem *item = targetLayout->itemAt(i)) {
+                                    if (item->spacerItem()) {
+                                        item->spacerItem()->changeSize(0, 0, QSizePolicy::Minimum, QSizePolicy::Minimum);
+                                    }
+                                }
+                            }
+                        }
                         widget->show();
                     }
                     break;
@@ -1530,11 +1615,12 @@ void KoModeBox::setOptionWidgets(const QList<QPointer<QWidget>> &optionWidgetLis
                 palette.setColor(QPalette::WindowText, foregroundColor);
                 sectionTitle->setPalette(palette);
             }
-            groupLayout->addWidget(widget, 0, Qt::AlignTop);
+            groupLayout->addStretch(1);
+            groupLayout->addWidget(widget, 0, Qt::AlignVCenter);
+            groupLayout->addStretch(1);
             widget->show();
 
             if (sectionTitle) {
-                groupLayout->addStretch(1);
                 groupLayout->addWidget(sectionTitle);
             }
             group->setMinimumHeight(ribbonGroupContentHeight + (sectionTitle ? 18 : 0));

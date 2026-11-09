@@ -56,6 +56,8 @@
 #include <KoTextDrag.h>
 #include <KoTextEditingPlugin.h>
 #include <KoTextEditingRegistry.h>
+#include <KoTableCellStyle.h>
+#include <KoTableStyle.h>
 #include <KoTextEditor.h>
 #include <KoTextLayoutRootArea.h>
 #include <KoTextOdfSaveHelper.h>
@@ -72,6 +74,11 @@
 
 #include <QAction>
 #include <QActionGroup>
+#include <QComboBox>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QFormLayout>
+#include <QSpinBox>
 #include <QBitmap>
 #include <QDesktopServices>
 #include <QDrag>
@@ -105,6 +112,112 @@
 
 #include <algorithm>
 
+/// The small square on the top left corner of a table that a table is dragged
+/// by, like the handle Word shows. It is a real widget on the canvas, so it
+/// receives its own mouse events and needs no canvas coordinate conversion.
+class TableMoveHandle : public QWidget
+{
+public:
+    explicit TableMoveHandle(QWidget *parent, TextTool *tool)
+        : QWidget(parent)
+        , m_tool(tool)
+    {
+        setCursor(Qt::SizeAllCursor);
+        setToolTip(i18n("Drag to move the table"));
+        setAttribute(Qt::WA_NoMousePropagation, true);
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        Q_UNUSED(event)
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        const QRectF box = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
+        painter.setPen(QPen(Qt::white, 1));
+        painter.setBrush(m_hovered || m_dragging ? QColor(0, 120, 215) : QColor(96, 96, 96));
+        painter.drawRoundedRect(box, 2, 2);
+
+        const QPointF centre = box.center();
+        painter.setPen(QPen(Qt::white, 1));
+        painter.drawLine(centre - QPointF(3.0, 0), centre + QPointF(3.0, 0));
+        painter.drawLine(centre - QPointF(0, 3.0), centre + QPointF(0, 3.0));
+        painter.drawLine(centre + QPointF(3.0, 0), centre + QPointF(1.5, -1.5));
+        painter.drawLine(centre + QPointF(3.0, 0), centre + QPointF(1.5, 1.5));
+        painter.drawLine(centre - QPointF(3.0, 0), centre - QPointF(1.5, 1.5));
+        painter.drawLine(centre - QPointF(3.0, 0), centre - QPointF(1.5, -1.5));
+        painter.drawLine(centre + QPointF(0, 3.0), centre + QPointF(1.5, 1.5));
+        painter.drawLine(centre + QPointF(0, 3.0), centre + QPointF(-1.5, 1.5));
+        painter.drawLine(centre - QPointF(0, 3.0), centre - QPointF(1.5, -1.5));
+        painter.drawLine(centre - QPointF(0, 3.0), centre - QPointF(-1.5, 1.5));
+    }
+
+    void enterEvent(QEnterEvent *event) override
+    {
+        Q_UNUSED(event)
+        m_hovered = true;
+        update();
+    }
+
+    void leaveEvent(QEvent *event) override
+    {
+        Q_UNUSED(event)
+        m_hovered = false;
+        update();
+    }
+
+    void mousePressEvent(QMouseEvent *event) override
+    {
+        if (event->button() != Qt::LeftButton) {
+            QWidget::mousePressEvent(event);
+            return;
+        }
+        m_dragging = true;
+        m_pressGlobal = event->globalPosition().toPoint();
+        m_startPos = pos();
+        if (m_tool) {
+            m_tool->beginTableHandleDrag();
+        }
+        update();
+        event->accept();
+    }
+
+    void mouseMoveEvent(QMouseEvent *event) override
+    {
+        if (!m_dragging) {
+            QWidget::mouseMoveEvent(event);
+            return;
+        }
+        const QPoint delta = event->globalPosition().toPoint() - m_pressGlobal;
+        move(m_startPos + delta);
+        if (m_tool) {
+            m_tool->dragTableHandle(delta);
+        }
+        event->accept();
+    }
+
+    void mouseReleaseEvent(QMouseEvent *event) override
+    {
+        if (!m_dragging || event->button() != Qt::LeftButton) {
+            QWidget::mouseReleaseEvent(event);
+            return;
+        }
+        m_dragging = false;
+        if (m_tool) {
+            m_tool->endTableHandleDrag();
+        }
+        update();
+        event->accept();
+    }
+
+private:
+    TextTool *m_tool;
+    QPoint m_pressGlobal;
+    QPoint m_startPos;
+    bool m_dragging = false;
+    bool m_hovered = false;
+};
+
 class TextToolSelection : public KoToolSelection
 {
 public:
@@ -123,6 +236,168 @@ public:
     }
 
     QPointer<KoTextEditor> m_editor;
+};
+
+/// Moves a table back to the place the text flow gives it, or to the position
+/// the user dragged it to. Used both while dragging and for undo/redo.
+static void applyTableOffset(const QTextCursor &cursor, const QPointF &offset)
+{
+    QTextTable *table = cursor.currentTable();
+    if (!table) {
+        return;
+    }
+    QTextTableFormat format = table->format();
+    format.setProperty(KoTableStyle::TableOffsetX, offset.x());
+    format.setProperty(KoTableStyle::TableOffsetY, offset.y());
+    table->setFormat(format);
+}
+
+static QPointF tableOffset(const QTextTable *table)
+{
+    const QTextTableFormat format = table->format();
+    return QPointF(format.property(KoTableStyle::TableOffsetX).toReal(), format.property(KoTableStyle::TableOffsetY).toReal());
+}
+
+/// True when the current selection spans exactly the given table, which is what
+/// "Select Table" creates and what the table wide commands work on.
+static bool selectionIsWholeTable(KoTextEditor *editor, const QTextTable *table)
+{
+    if (!editor || !editor->hasSelection() || !table) {
+        return false;
+    }
+    const int start = qMin(editor->position(), editor->anchor());
+    const int end = qMax(editor->position(), editor->anchor());
+    // The cursor cannot be placed behind the last cell, so a selection of the
+    // whole table starts before the table and reaches into its last cell.
+    const QTextTableCell lastCell = table->cellAt(table->rows() - 1, table->columns() - 1);
+    if (lastCell.isValid() && end >= lastCell.firstPosition() && start <= table->firstPosition()) {
+        return true;
+    }
+    return start == table->firstPosition() && end == table->lastPosition();
+}
+
+class TableOffsetCommand : public KUndo2Command
+{
+public:
+    TableOffsetCommand(const QTextCursor &cursor, const QPointF &oldOffset, const QPointF &newOffset)
+        : KUndo2Command(kundo2_i18n("Move Table"))
+        , m_cursor(cursor)
+        , m_oldOffset(oldOffset)
+        , m_newOffset(newOffset)
+    {
+    }
+
+    void undo() override
+    {
+        applyTableOffset(m_cursor, m_oldOffset);
+    }
+
+    void redo() override
+    {
+        applyTableOffset(m_cursor, m_newOffset);
+    }
+
+private:
+    QTextCursor m_cursor;
+    QPointF m_oldOffset;
+    QPointF m_newOffset;
+};
+
+/// A cursor that stays inside \a table, so commands can find the table again
+/// after the document has been laid out and repainted.
+static QTextCursor tableCursor(QTextDocument *document, const QTextTable *table)
+{
+    QTextCursor cursor(document);
+    const QTextTableCell cell = table->cellAt(0, 0);
+    cursor.setPosition(cell.isValid() ? cell.firstPosition() : table->firstPosition());
+    return cursor;
+}
+
+/// Applies a new table format to one table, for undo/redo.
+class TableFormatChangeCommand : public KUndo2Command
+{
+public:
+    TableFormatChangeCommand(const QTextCursor &cursor,
+                             const QTextTableFormat &before,
+                             const QTextTableFormat &after,
+                             const KUndo2MagicString &text)
+        : KUndo2Command(text)
+        , m_cursor(cursor)
+        , m_before(before)
+        , m_after(after)
+    {
+    }
+
+    void undo() override
+    {
+        apply(m_before);
+    }
+
+    void redo() override
+    {
+        apply(m_after);
+    }
+
+private:
+    void apply(const QTextTableFormat &format)
+    {
+        if (QTextTable *table = m_cursor.currentTable()) {
+            table->setFormat(format);
+        }
+    }
+
+    QTextCursor m_cursor;
+    QTextTableFormat m_before;
+    QTextTableFormat m_after;
+};
+
+/// Applies new formats to a set of table cells, for undo/redo.
+class TableCellsFormatCommand : public KUndo2Command
+{
+public:
+    struct CellChange {
+        int row;
+        int column;
+        QTextCharFormat before;
+        QTextCharFormat after;
+    };
+
+    TableCellsFormatCommand(const QTextCursor &cursor, const QList<CellChange> &changes, const KUndo2MagicString &text)
+        : KUndo2Command(text)
+        , m_cursor(cursor)
+        , m_changes(changes)
+    {
+    }
+
+    void undo() override
+    {
+        for (const CellChange &change : std::as_const(m_changes)) {
+            apply(change, change.before);
+        }
+    }
+
+    void redo() override
+    {
+        for (const CellChange &change : std::as_const(m_changes)) {
+            apply(change, change.after);
+        }
+    }
+
+private:
+    void apply(const CellChange &change, const QTextCharFormat &format)
+    {
+        QTextTable *table = m_cursor.currentTable();
+        if (!table || change.row >= table->rows() || change.column >= table->columns()) {
+            return;
+        }
+        QTextTableCell cell = table->cellAt(change.row, change.column);
+        if (cell.isValid()) {
+            cell.setFormat(format);
+        }
+    }
+
+    QTextCursor m_cursor;
+    QList<CellChange> m_changes;
 };
 
 static bool hit(const QKeySequence &input, KStandardShortcut::StandardShortcut shortcut)
@@ -275,6 +550,7 @@ TextTool::TextTool(KoCanvasBase *canvas)
     , m_allowResourceManagerUpdates(true)
     , m_prevCursorPosition(-1)
     , m_caretTimer(this)
+    , m_tableHandleTimer(this)
     , m_caretTimerState(true)
     , m_currentCommand(nullptr)
     , m_currentCommandHasChildren(false)
@@ -286,10 +562,18 @@ TextTool::TextTool(KoCanvasBase *canvas)
     , m_toolSelection(nullptr)
     , m_tableDraggedOnce(false)
     , m_tablePenMode(false)
+    , m_tableMovePending(false)
+    , m_tableHandleDragging(false)
+    , m_tableMoveMode(false)
+    , m_tableMoveOrigin()
+    , m_tableMoveStart()
     , m_lastImMicroFocus(QRectF(0, 0, 0, 0))
     , m_drag(nullptr)
 {
     setTextMode(true);
+
+    m_tableHandleTimer.setInterval(200);
+    connect(&m_tableHandleTimer, &QTimer::timeout, this, &TextTool::updateTableHandle);
 
     createActions();
 
@@ -622,9 +906,30 @@ void TextTool::createActions()
         addAction("split_tablecells", action);
         connect(action, &QAction::triggered, this, &TextTool::splitTableCells);
 
+        const auto addTableAlignment = [this](const QString &name, const QString &label, const QString &icon, Qt::Alignment alignment) {
+            auto *align = new QAction(QIcon::fromTheme(icon), label, this);
+            align->setToolTip(label);
+            addAction(name, align);
+            connect(align, &QAction::triggered, this, [this, alignment] { setTableAlignment(alignment); });
+        };
+        addTableAlignment(QStringLiteral("table_align_left"), i18n("Align Table Left"), QStringLiteral("format-justify-left"), Qt::AlignLeft);
+        addTableAlignment(QStringLiteral("table_align_center"), i18n("Align Table Center"), QStringLiteral("format-justify-center"), Qt::AlignHCenter);
+        addTableAlignment(QStringLiteral("table_align_right"), i18n("Align Table Right"), QStringLiteral("format-justify-right"), Qt::AlignRight);
+
+        action = new QAction(koIcon("insert-table"), i18n("Table Properties..."), this);
+        action->setToolTip(i18n("Change the alignment and width of the table"));
+        addAction("format_table", action);
+        connect(action, &QAction::triggered, this, &TextTool::formatTable);
+
+        action = new QAction(koIcon("edit-select-all"), i18n("Select Table"), this);
+        action->setToolTip(i18n("Select the whole table the cursor is in"));
+        addAction("select_table", action);
+        connect(action, &QAction::triggered, this, &TextTool::selectTable);
+
         action = new QAction(koIcon("borderpainter"), "", this);
         action->setToolTip(i18n("Select a border style and paint that style onto a table"));
         addAction("activate_borderpainter", action);
+
     }
 
     action = new QAction(i18n("Paragraph..."), this);
@@ -701,6 +1006,11 @@ TextTool::TextTool(MockCanvas *canvas) // constructor for our unit tests;
     , m_delayedEnsureVisible(false)
     , m_tableDraggedOnce(false)
     , m_tablePenMode(false)
+    , m_tableMovePending(false)
+    , m_tableHandleDragging(false)
+    , m_tableMoveMode(false)
+    , m_tableMoveOrigin()
+    , m_tableMoveStart()
 {
     // we could init some vars here, but we probably don't have to
     QLocale::setDefault(QLocale("en"));
@@ -1224,8 +1534,22 @@ void TextTool::mousePressEvent(KoPointerEvent *event)
     KoPointedAt pointedAt = hitTest(event->point);
     m_tableDraggedOnce = false;
     m_clickWithinSelection = false;
+    m_tableMovePending = false;
+    m_tableMoveMode = false;
     if (pointedAt.position != -1) {
         m_tablePenMode = false;
+
+        // Pressing inside a table that is selected as a whole prepares a move of
+        // that table. The move only starts once the mouse has travelled the drag
+        // distance, so a plain click still puts the caret in the clicked cell.
+        if (event->button() == Qt::LeftButton && pointedAt.table && pointedAt.tableHit == KoPointedAt::None
+            && selectionIsWholeTable(m_textEditor.data(), pointedAt.table)) {
+            m_tableMovePending = true;
+            m_tableMoveCursor = QTextCursor(pointedAt.table->firstCursorPosition());
+            m_tableMoveOrigin = m_textShape->convertScreenPos(event->point);
+            m_tableMoveStart = tableOffset(pointedAt.table);
+            m_draggingOrigin = event->point;
+        }
 
         if ((event->button() == Qt::LeftButton) && !shiftPressed && m_textEditor.data()->hasSelection()
             && m_textEditor.data()->isWithinSelection(pointedAt.position)) {
@@ -1358,6 +1682,106 @@ void TextTool::setShapeData(KoTextShapeData *data)
     }
 }
 
+void TextTool::updateTableHandle()
+{
+    if (m_tableHandleDragging) {
+        return;
+    }
+    QWidget *host = canvas() ? canvas()->canvasWidget() : nullptr;
+    if (!host || m_textEditor.isNull() || !m_textShape || !m_textShapeData) {
+        if (m_tableHandle) {
+            m_tableHandle->hide();
+        }
+        return;
+    }
+    const QTextTable *table = m_textEditor.data()->tableAtCursor();
+    if (!table) {
+        if (m_tableHandle) {
+            m_tableHandle->hide();
+        }
+        return;
+    }
+
+    QTextCursor cursor(m_textShapeData->document());
+    cursor.setPosition(table->firstPosition());
+    cursor.setPosition(table->lastPosition(), QTextCursor::KeepAnchor);
+    QRectF rect = textRect(cursor);
+    if (!rect.isValid() || rect.isEmpty()) {
+        if (m_tableHandle) {
+            m_tableHandle->hide();
+        }
+        return;
+    }
+
+    rect.moveTop(rect.y() - m_textShapeData->documentOffset());
+    rect = m_textShape->absoluteTransformation(nullptr).mapRect(rect);
+    // The widget sits on the canvas widget, so the canvas offset is already part
+    // of its coordinate system and must not be added again.
+    const QRectF viewRect = canvas()->viewConverter()->documentToView(rect);
+
+    if (!m_tableHandle) {
+        m_tableHandle = new TableMoveHandle(host, this);
+    }
+    const int size = 13;
+    const QPoint corner = viewRect.topLeft().toPoint();
+    m_tableHandle->setGeometry(corner.x() - size, corner.y() - size, size, size);
+    m_tableHandle->show();
+    m_tableHandle->raise();
+}
+
+void TextTool::beginTableHandleDrag()
+{
+    const QTextTable *table = m_textEditor ? m_textEditor.data()->tableAtCursor() : nullptr;
+    if (!table) {
+        return;
+    }
+    m_tableHandleDragging = true;
+    m_tableHandleCursor = QTextCursor(table->firstCursorPosition());
+    m_tableHandleStart = tableOffset(table);
+
+    // Show what is being moved.
+    m_textEditor.data()->setPosition(table->firstPosition());
+    m_textEditor.data()->setPosition(table->lastPosition(), QTextCursor::KeepAnchor);
+    repaintSelection();
+    updateSelectionHandler();
+}
+
+void TextTool::dragTableHandle(const QPoint &deltaPixels)
+{
+    if (!m_tableHandleDragging || !m_tableHandleCursor.currentTable() || !canvas()) {
+        return;
+    }
+    const KoViewConverter *converter = canvas()->viewConverter();
+    const QPointF delta = converter->viewToDocument(QPointF(deltaPixels)) - converter->viewToDocument(QPointF(0, 0));
+
+    // Half a point keeps the movement smooth and limits the relayouting.
+    const QPointF offset(qRound((m_tableHandleStart.x() + delta.x()) * 2.0) / 2.0,
+                         qRound((m_tableHandleStart.y() + delta.y()) * 2.0) / 2.0);
+    applyTableOffset(m_tableHandleCursor, offset);
+
+    if (canvas()->canvasWidget()) {
+        canvas()->canvasWidget()->update();
+    }
+    if (canvas()->canvasItem()) {
+        canvas()->canvasItem()->update();
+    }
+}
+
+void TextTool::endTableHandleDrag()
+{
+    if (!m_tableHandleDragging) {
+        return;
+    }
+    m_tableHandleDragging = false;
+    if (QTextTable *table = m_tableHandleCursor.currentTable()) {
+        const QPointF offset = tableOffset(table);
+        if (offset != m_tableHandleStart) {
+            canvas()->shapeController()->resourceManager()->undoStack()->push(new TableOffsetCommand(m_tableHandleCursor, m_tableHandleStart, offset));
+        }
+    }
+    updateTableHandle();
+}
+
 void TextTool::updateSelectionHandler()
 {
     if (m_textEditor) {
@@ -1373,6 +1797,8 @@ void TextTool::updateSelectionHandler()
     } else {
         hideMiniToolbar();
     }
+
+    updateTableHandle();
 
     KoCanvasResourceManager *p = canvas()->resourceManager();
     m_allowResourceManagerUpdates = false;
@@ -1750,6 +2176,30 @@ void TextTool::mouseMoveEvent(KoPointerEvent *event)
 
         return;
     } else {
+        if (m_tableMovePending && (event->point - m_draggingOrigin).manhattanLength() >= QApplication::startDragDistance()) {
+            m_tableMoveMode = true;
+        }
+        if (m_tableMoveMode) {
+            QTextTable *table = m_tableMoveCursor.currentTable();
+            if (table) {
+                const QPointF delta = m_textShape->convertScreenPos(event->point) - m_tableMoveOrigin;
+                // Half a point is fine grained enough to feel free, and keeps the
+                // amount of relayouting during a drag reasonable.
+                const QPointF offset(qRound((m_tableMoveStart.x() + delta.x()) * 2.0) / 2.0,
+                                     qRound((m_tableMoveStart.y() + delta.y()) * 2.0) / 2.0);
+                if (offset != tableOffset(table)) {
+                    applyTableOffset(m_tableMoveCursor, offset);
+                    m_clickWithinSelection = false;
+                    if (canvas()->canvasWidget()) {
+                        canvas()->canvasWidget()->update();
+                    }
+                    if (canvas()->canvasItem()) {
+                        canvas()->canvasItem()->update();
+                    }
+                }
+            }
+            return;
+        }
         if (m_tableDragInfo.tableHit == KoPointedAt::ColumnDivider) {
             m_tableDragWithShift = event->modifiers() & Qt::ShiftModifier;
             if (m_tableDraggedOnce) {
@@ -1869,6 +2319,29 @@ void TextTool::mouseReleaseEvent(KoPointerEvent *event)
 {
     event->ignore();
     editingPluginEvents();
+
+    if (m_tableMoveMode) {
+        m_tableMoveMode = false;
+        m_tableMovePending = false;
+        QTextTable *table = m_tableMoveCursor.currentTable();
+        if (table) {
+            const QPointF offset = tableOffset(table);
+            if (offset != m_tableMoveStart) {
+                canvas()->shapeController()->resourceManager()->undoStack()->push(new TableOffsetCommand(m_tableMoveCursor, m_tableMoveStart, offset));
+            }
+        }
+        // The table may have been moved outside the area that is painted by the
+        // text shape alone, so update the whole canvas.
+        if (canvas()->canvasWidget()) {
+            canvas()->canvasWidget()->update();
+        }
+        if (canvas()->canvasItem()) {
+            canvas()->canvasItem()->update();
+        }
+        event->accept();
+        return;
+    }
+    m_tableMovePending = false;
 
     m_tableDragInfo.tableHit = KoPointedAt::None;
     if (m_tableDraggedOnce) {
@@ -2371,6 +2844,10 @@ void TextTool::updateActions()
         action("merge_tablecells")->setEnabled(hasTable && notInAnnotation);
         action("split_tablecells")->setEnabled(hasTable && notInAnnotation);
         action("activate_borderpainter")->setEnabled(hasTable && notInAnnotation);
+        action("format_table")->setEnabled(hasTable && notInAnnotation);
+        action("table_align_left")->setEnabled(hasTable && notInAnnotation);
+        action("table_align_center")->setEnabled(hasTable && notInAnnotation);
+        action("table_align_right")->setEnabled(hasTable && notInAnnotation);
     }
     action("insert_annotation")->setEnabled(notInAnnotation);
 
@@ -2378,6 +2855,7 @@ void TextTool::updateActions()
     Q_EMIT blockChanged(textEditor->block());
     Q_EMIT charFormatChanged(cf, textEditor->blockCharFormat());
     Q_EMIT blockFormatChanged(bf);
+    Q_EMIT tableStateChanged();
 }
 
 void TextTool::updateStyleManager()
@@ -2395,6 +2873,7 @@ void TextTool::activate(ToolActivation toolActivation, const QSet<KoShape *> &sh
 {
     Q_UNUSED(toolActivation);
     m_caretTimer.start();
+    m_tableHandleTimer.start();
     m_caretTimerState = true;
     foreach (KoShape *shape, shapes) {
         TextShape *textShape = dynamic_cast<TextShape *>(shape);
@@ -2450,6 +2929,10 @@ void TextTool::activate(ToolActivation toolActivation, const QSet<KoShape *> &sh
 void TextTool::deactivate()
 {
     hideMiniToolbar();
+    m_tableHandleTimer.stop();
+    if (m_tableHandle) {
+        m_tableHandle->hide();
+    }
     m_actionFormatPainter->setChecked(false);
     m_caretTimer.stop();
     m_caretTimerState = false;
@@ -2665,6 +3148,8 @@ QList<QPointer<QWidget>> TextTool::createOptionWidgets()
         if (wordsRibbon || stageRibbon) {
             stw->setProperty("ribbonTargetPage", stageRibbon ? QStringLiteral("stageTableFormatPage") : QStringLiteral("tableRibbonPage"));
         }
+        // The compact table commands (rows, columns, merge and select) come
+        // first, followed by the styling groups.
         widgets.append(stw);
         if (officeRibbon) {
             for (QWidget *group : stw->configureRibbon()) {
@@ -3049,6 +3534,421 @@ void TextTool::formatParagraph()
 void TextTool::testSlot(bool on)
 {
     debugTextShape << "signal received. bool:" << on;
+}
+
+void TextTool::selectTable()
+{
+    KoTextEditor *textEditor = m_textEditor.data();
+    if (!textEditor) {
+        return;
+    }
+    const QTextTable *table = textEditor->currentTable();
+    if (!table) {
+        return;
+    }
+    // A cursor spanning the whole frame selects every cell, which is what the
+    // table tab and any follow-up move or copy operation work on.
+    textEditor->setPosition(table->firstPosition());
+    textEditor->setPosition(table->lastPosition(), QTextCursor::KeepAnchor);
+    repaintSelection();
+    updateSelectionHandler();
+    Q_EMIT selectionChanged(true);
+}
+
+QTextTableFormat TextTool::currentTableFormat() const
+{
+    const KoTextEditor *textEditor = m_textEditor.data();
+    if (!textEditor) {
+        return QTextTableFormat();
+    }
+    const QTextTable *table = textEditor->currentTable();
+    return table ? table->format() : QTextTableFormat();
+}
+
+bool TextTool::cursorInTable() const
+{
+    const KoTextEditor *textEditor = m_textEditor.data();
+    return textEditor && textEditor->currentTable();
+}
+
+/// The rows and columns of the cells the editor's selection touches, clamped to
+/// \a table. Without a selection that is the cell under the cursor.
+static void selectedTableCells(KoTextEditor *editor, const QTextTable *table, int *firstRow, int *lastRow, int *firstColumn, int *lastColumn)
+{
+    *firstRow = 0;
+    *lastRow = table->rows() - 1;
+    *firstColumn = 0;
+    *lastColumn = table->columns() - 1;
+    const QTextTableCell cursorCell = table->cellAt(editor->position());
+    int start = editor->position();
+    int end = editor->position();
+    if (editor->hasSelection()) {
+        start = qMin(editor->position(), editor->anchor());
+        end = qMax(editor->position(), editor->anchor()) - 1;
+    }
+    QTextTableCell first = table->cellAt(start);
+    if (!first.isValid()) {
+        first = cursorCell;
+    }
+    QTextTableCell last = table->cellAt(end);
+    if (!last.isValid()) {
+        last = cursorCell;
+    }
+    if (!first.isValid() || !last.isValid()) {
+        return;
+    }
+    *firstRow = qMin(first.row(), last.row());
+    *lastRow = qMax(first.row(), last.row());
+    *firstColumn = qMin(first.column(), last.column());
+    *lastColumn = qMax(first.column(), last.column());
+}
+
+void TextTool::setTableCellBackground(const QBrush &brush)
+{
+    KoTextEditor *textEditor = m_textEditor.data();
+    const QTextTable *table = textEditor ? textEditor->currentTable() : nullptr;
+    if (!table) {
+        return;
+    }
+    int firstRow, lastRow, firstColumn, lastColumn;
+    selectedTableCells(textEditor, table, &firstRow, &lastRow, &firstColumn, &lastColumn);
+    QList<TableCellsFormatCommand::CellChange> changes;
+    for (int row = firstRow; row <= lastRow; ++row) {
+        for (int column = firstColumn; column <= lastColumn; ++column) {
+            const QTextTableCell cell = table->cellAt(row, column);
+            if (!cell.isValid() || cell.rowSpan() != 1 || cell.columnSpan() != 1) {
+                continue;
+            }
+            TableCellsFormatCommand::CellChange change;
+            change.row = row;
+            change.column = column;
+            change.before = cell.format();
+            change.after = change.before;
+            if (brush.style() == Qt::NoBrush) {
+                change.after.clearProperty(KoTableCellStyle::CellBackgroundBrush);
+            } else {
+                change.after.setProperty(KoTableCellStyle::CellBackgroundBrush, QVariant::fromValue(brush));
+            }
+            changes.append(change);
+        }
+    }
+    if (changes.isEmpty()) {
+        return;
+    }
+    textEditor->addCommand(new TableCellsFormatCommand(tableCursor(textEditor->document(), table), changes, kundo2_i18n("Change Table Shading")));
+    Q_EMIT tableStateChanged();
+}
+
+void TextTool::setTableAlignment(Qt::Alignment alignment)
+{
+    KoTextEditor *textEditor = m_textEditor.data();
+    const QTextTable *table = textEditor ? textEditor->currentTable() : nullptr;
+    if (!table) {
+        return;
+    }
+    const QTextTableFormat before = table->format();
+    if (before.alignment() == alignment) {
+        return;
+    }
+    QTextTableFormat after = before;
+    after.setAlignment(alignment);
+    textEditor->addCommand(new TableFormatChangeCommand(tableCursor(textEditor->document(), table), before, after,
+                                                        kundo2_i18n("Change Table Alignment")));
+    Q_EMIT tableStateChanged();
+}
+
+void TextTool::formatTable()
+{
+    KoTextEditor *textEditor = m_textEditor.data();
+    const QTextTable *table = textEditor ? textEditor->currentTable() : nullptr;
+    if (!table) {
+        return;
+    }
+    const QTextTableFormat before = table->format();
+
+    QDialog dialog(nullptr);
+    dialog.setWindowTitle(i18n("Table Properties"));
+    auto *layout = new QFormLayout(&dialog);
+
+    auto *alignment = new QComboBox(&dialog);
+    alignment->addItem(i18n("Left"), int(Qt::AlignLeft));
+    alignment->addItem(i18n("Center"), int(Qt::AlignHCenter));
+    alignment->addItem(i18n("Right"), int(Qt::AlignRight));
+    const Qt::Alignment currentAlignment = before.alignment();
+    alignment->setCurrentIndex(currentAlignment == Qt::AlignHCenter ? 1 : (currentAlignment == Qt::AlignRight ? 2 : 0));
+    layout->addRow(i18n("Alignment:"), alignment);
+
+    auto *width = new QSpinBox(&dialog);
+    width->setRange(10, 100);
+    width->setSuffix(i18n(" %"));
+    width->setValue(before.width().type() == QTextLength::PercentageLength ? int(qRound(before.width().rawValue())) : 100);
+    layout->addRow(i18n("Width:"), width);
+
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    layout->addRow(buttons);
+
+    if (dialog.exec() != QDialog::Accepted) {
+        return;
+    }
+
+    QTextTableFormat after = before;
+    after.setAlignment(Qt::Alignment(alignment->currentData().toInt()));
+    after.setWidth(QTextLength(QTextLength::PercentageLength, width->value()));
+    if (after == before) {
+        return;
+    }
+    textEditor->addCommand(new TableFormatChangeCommand(tableCursor(textEditor->document(), table), before, after,
+                                                        kundo2_i18n("Change Table Properties")));
+    Q_EMIT tableStateChanged();
+}
+
+void TextTool::applyTableStyle(KoTableStyle *style)
+{
+    KoTextEditor *textEditor = m_textEditor.data();
+    const QTextTable *table = textEditor ? textEditor->currentTable() : nullptr;
+    if (!table || !style) {
+        return;
+    }
+    const QTextTableFormat before = table->format();
+    QTextTableFormat after = before;
+    style->applyStyle(after);
+    after.setProperty(KoTableStyle::StyleId, style->styleId());
+    if (before == after) {
+        return;
+    }
+    textEditor->addCommand(new TableFormatChangeCommand(tableCursor(textEditor->document(), table), before, after, kundo2_i18n("Apply Table Style")));
+    Q_EMIT tableStateChanged();
+}
+
+/// Applies a table format and a set of cell formats in one undoable step.
+class TableLookCommand : public KUndo2Command
+{
+public:
+    TableLookCommand(const QTextCursor &cursor,
+                     const QTextTableFormat &formatBefore,
+                     const QTextTableFormat &formatAfter,
+                     const QList<TableCellsFormatCommand::CellChange> &changes)
+        : KUndo2Command(kundo2_i18n("Apply Table Style"))
+        , m_cursor(cursor)
+        , m_formatBefore(formatBefore)
+        , m_formatAfter(formatAfter)
+        , m_changes(changes)
+    {
+    }
+
+    void undo() override
+    {
+        apply(m_formatBefore, true);
+    }
+
+    void redo() override
+    {
+        apply(m_formatAfter, false);
+    }
+
+private:
+    void apply(const QTextTableFormat &format, bool before)
+    {
+        QTextTable *table = m_cursor.currentTable();
+        if (!table) {
+            return;
+        }
+        table->setFormat(format);
+        for (const TableCellsFormatCommand::CellChange &change : std::as_const(m_changes)) {
+            if (change.row >= table->rows() || change.column >= table->columns()) {
+                continue;
+            }
+            QTextTableCell cell = table->cellAt(change.row, change.column);
+            if (cell.isValid()) {
+                cell.setFormat(before ? change.before : change.after);
+            }
+        }
+    }
+
+    QTextCursor m_cursor;
+    QTextTableFormat m_formatBefore;
+    QTextTableFormat m_formatAfter;
+    QList<TableCellsFormatCommand::CellChange> m_changes;
+};
+
+void TextTool::applyTableLook(int look)
+{
+    KoTextEditor *textEditor = m_textEditor.data();
+    const QTextTable *table = textEditor ? textEditor->currentTable() : nullptr;
+    if (!table) {
+        return;
+    }
+
+    // Each look is a header colour, a body colour, a banding colour and the
+    // borders, plus the style options that describe what it does.
+    struct Look {
+        QColor header;
+        QColor body;
+        QColor band;
+        QColor border;
+        qreal borderWidth;
+        bool headerRow;
+        bool bandedRows;
+        bool lastRow;
+        bool firstColumn;
+    };
+    static const Look looks[] = {
+        {QColor(), QColor(), QColor(), QColor(), 0.0, false, false, false, false}, // PlainLook
+        {QColor(), QColor(), QColor(), QColor(0, 0, 0), 0.5, false, false, false, false}, // GridLook
+        {QColor(), QColor(), QColor(), QColor(166, 166, 166), 0.5, false, false, false, false}, // LightGridLook
+        {QColor(217, 226, 243), QColor(), QColor(242, 242, 242), QColor(), 0.0, true, true, false, false}, // BandedLook
+        {QColor(47, 84, 150), QColor(), QColor(217, 226, 243), QColor(), 0.0, true, true, false, false}, // HeaderLook
+        {QColor(214, 220, 228), QColor(), QColor(), QColor(166, 166, 166), 0.5, true, false, true, true}, // EmphasisLook
+    };
+    if (look < 0 || look >= int(std::size(looks))) {
+        return;
+    }
+    const Look &desired = looks[look];
+
+    const QTextTableFormat formatBefore = table->format();
+    QTextTableFormat formatAfter = formatBefore;
+    formatAfter.setProperty(KoTableStyle::UseFirstRowStyles, desired.headerRow);
+    formatAfter.setProperty(KoTableStyle::UseBandingRowStyles, desired.bandedRows);
+    formatAfter.setProperty(KoTableStyle::UseLastRowStyles, desired.lastRow);
+    formatAfter.setProperty(KoTableStyle::UseFirstColumnStyles, desired.firstColumn);
+
+    KoBorder border;
+    KoBorder::BorderData borderData;
+    if (desired.borderWidth > 0.0) {
+        borderData.style = KoBorder::BorderSolid;
+        borderData.outerPen = QPen(desired.border, desired.borderWidth, Qt::SolidLine);
+        border.setBorderData(KoBorder::TopBorder, borderData);
+        border.setBorderData(KoBorder::BottomBorder, borderData);
+        border.setBorderData(KoBorder::LeftBorder, borderData);
+        border.setBorderData(KoBorder::RightBorder, borderData);
+    } else {
+        const KoBorder::BorderData none;
+        border.setBorderData(KoBorder::TopBorder, none);
+        border.setBorderData(KoBorder::BottomBorder, none);
+        border.setBorderData(KoBorder::LeftBorder, none);
+        border.setBorderData(KoBorder::RightBorder, none);
+    }
+
+    QList<TableCellsFormatCommand::CellChange> changes;
+    for (int row = 0; row < table->rows(); ++row) {
+        for (int column = 0; column < table->columns(); ++column) {
+            const QTextTableCell cell = table->cellAt(row, column);
+            if (!cell.isValid() || cell.rowSpan() != 1 || cell.columnSpan() != 1) {
+                continue;
+            }
+            QColor color = desired.body;
+            if (row == 0 && !desired.header.isValid()) {
+                color = desired.body;
+            } else if (row == 0) {
+                color = desired.header;
+            } else if (row == table->rows() - 1 && desired.lastRow) {
+                color = desired.header;
+            } else if (desired.bandedRows && (row % 2) == 1) {
+                color = desired.band;
+            }
+            if (column == 0 && desired.firstColumn && row > 0) {
+                color = color.isValid() ? color.darker(104) : desired.band;
+            }
+
+            TableCellsFormatCommand::CellChange change;
+            change.row = row;
+            change.column = column;
+            change.before = cell.format();
+            change.after = change.before;
+            if (color.isValid()) {
+                change.after.setProperty(KoTableCellStyle::CellBackgroundBrush, QVariant::fromValue(QBrush(color)));
+            } else {
+                change.after.clearProperty(KoTableCellStyle::CellBackgroundBrush);
+            }
+            change.after.setProperty(KoTableCellStyle::Borders, QVariant::fromValue(border));
+            changes.append(change);
+        }
+    }
+
+    textEditor->addCommand(new TableLookCommand(tableCursor(textEditor->document(), table), formatBefore, formatAfter, changes));
+    updateActions();
+    Q_EMIT tableStateChanged();
+}
+
+void TextTool::applyTableBorderPreset(int preset)
+{
+    KoTextEditor *textEditor = m_textEditor.data();
+    const QTextTable *table = textEditor ? textEditor->currentTable() : nullptr;
+    if (!table) {
+        return;
+    }
+    int firstRow, lastRow, firstColumn, lastColumn;
+    selectedTableCells(textEditor, table, &firstRow, &lastRow, &firstColumn, &lastColumn);
+
+    KoBorder::BorderData pen = m_tablePenBorderData;
+    pen.style = KoBorder::BorderSolid;
+    if (pen.outerPen.style() == Qt::NoPen) {
+        pen.outerPen.setStyle(Qt::SolidLine);
+    }
+    if (pen.outerPen.widthF() <= 0.0) {
+        pen.outerPen.setWidthF(0.5);
+    }
+    KoBorder::BorderData none;
+    none.style = KoBorder::BorderNone;
+
+    QList<TableCellsFormatCommand::CellChange> changes;
+    for (int row = firstRow; row <= lastRow; ++row) {
+        for (int column = firstColumn; column <= lastColumn; ++column) {
+            const QTextTableCell cell = table->cellAt(row, column);
+            if (!cell.isValid()) {
+                continue;
+            }
+            TableCellsFormatCommand::CellChange change;
+            change.row = row;
+            change.column = column;
+            change.before = cell.format();
+            change.after = change.before;
+            KoBorder border = change.after.property(KoTableCellStyle::Borders).value<KoBorder>();
+            const bool top = preset == AllBorders || (preset != NoBorders && row == firstRow);
+            const bool bottom = preset == AllBorders || (preset != NoBorders && row == lastRow);
+            const bool left = preset == AllBorders || (preset != NoBorders && column == firstColumn);
+            const bool right = preset == AllBorders || (preset != NoBorders && column == lastColumn);
+            const bool inside = preset != OutsideBorders;
+            border.setBorderData(KoBorder::TopBorder, top ? pen : (inside ? pen : none));
+            border.setBorderData(KoBorder::BottomBorder, bottom ? pen : (inside ? pen : none));
+            border.setBorderData(KoBorder::LeftBorder, left ? pen : (inside ? pen : none));
+            border.setBorderData(KoBorder::RightBorder, right ? pen : (inside ? pen : none));
+            change.after.setProperty(KoTableCellStyle::Borders, QVariant::fromValue(border));
+            changes.append(change);
+        }
+    }
+    if (changes.isEmpty()) {
+        return;
+    }
+    textEditor->addCommand(new TableCellsFormatCommand(tableCursor(textEditor->document(), table), changes, kundo2_i18n("Change Border Formatting")));
+    Q_EMIT tableStateChanged();
+}
+
+KoBorder::BorderData TextTool::tableBorderPen() const
+{
+    return m_tablePenBorderData;
+}
+
+void TextTool::setTableBorderPen(const KoBorder::BorderData &data)
+{
+    m_tablePenBorderData = data;
+    m_tablePenMode = true;
+    useTableBorderCursor();
+}
+
+void TextTool::setTableBorderPainterActive(bool active)
+{
+    if (m_tablePenMode == active) {
+        return;
+    }
+    m_tablePenMode = active;
+    if (active) {
+        useTableBorderCursor();
+    } else {
+        useCursor(Qt::IBeamCursor);
+    }
 }
 
 void TextTool::selectAll()

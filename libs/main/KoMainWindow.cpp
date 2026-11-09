@@ -1326,7 +1326,9 @@ void KoMainWindow::slotFilePrint()
     if (printJob == nullptr)
         return;
     d->applyDefaultSettings(printJob->printer());
-    QPrintDialog *printDialog = rootView()->createPrintDialog(printJob, this);
+    // The dialog may be destroyed together with the window it shows, so keep a
+    // guarded pointer and never delete it twice.
+    QPointer<QPrintDialog> printDialog = rootView()->createPrintDialog(printJob, this);
     if (printDialog && printDialog->exec() == QDialog::Accepted)
         printJob->startPrinting(KoPrintJob::DeleteWhenDone);
     else

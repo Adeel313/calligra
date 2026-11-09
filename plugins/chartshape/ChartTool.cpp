@@ -13,18 +13,25 @@
 #include <QBrush>
 #include <QCheckBox>
 #include <QGridLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QMenu>
 #include <QPainter>
 #include <QPen>
 #include <QTabWidget>
 #include <QToolButton>
+#include <QVBoxLayout>
 
 // KF5
 #include <KLocalizedString>
 
 // Calligra
 #include <KoCanvasBase.h>
+#include <KoFlake.h>
 #include <KoInteractionTool.h>
 #include <KoPointerEvent.h>
+#include <KoRibbonIcons.h>
+#include <KoRibbonLayout.h>
 #include <KoSelection.h>
 #include <KoShapeManager.h>
 #include <KoTextShapeData.h>
@@ -42,7 +49,9 @@
 // KoChart
 #include "AxesConfigWidget.h"
 #include "Axis.h"
+#include "BubbleDataEditor.h"
 #include "ChartDebug.h"
+#include "ChartTableModel.h"
 #include "ChartLayout.h"
 #include "ChartProxyModel.h"
 #include "DataSet.h"
@@ -51,11 +60,15 @@
 #include "Legend.h"
 #include "LegendConfigWidget.h"
 #include "PieConfigWidget.h"
+#include "PieDataEditor.h"
 #include "PlotArea.h"
 #include "PlotAreaConfigWidget.h"
+#include "ScatterDataEditor.h"
 #include "RadarDataSetConfigWidget.h"
 #include "RingConfigWidget.h"
+#include "StockDataEditor.h"
 #include "Surface.h"
+#include "TableEditorDialog.h"
 #include "TitlesConfigWidget.h"
 #include "commands/AddRemoveAxisCommand.h"
 #include "commands/AxisCommand.h"
@@ -278,7 +291,11 @@ QList<QPointer<QWidget>> ChartTool::createOptionWidgets()
     connect(titles->ui.footerPositioning, &QComboBox::currentIndexChanged, this, &ChartTool::setFooterPositioning);
     connect(titles->ui.footerResize, &QComboBox::currentIndexChanged, this, &ChartTool::setFooterResize);
 
-    connect(d->shape, &KoChart::ChartShape::updateConfigWidget, titles, QOverload<>::of(&TitlesConfigWidget::updateData));
+    // The tool may be created before it is activated on a chart, and then the
+    // panels are opened by activate(). Do not connect a chart that is not there.
+    if (d->shape) {
+        connect(d->shape, &KoChart::ChartShape::updateConfigWidget, titles, QOverload<>::of(&TitlesConfigWidget::updateData));
+    }
 
     LegendConfigWidget *legend = new LegendConfigWidget();
     legend->setWindowTitle(i18n("Legend"));
@@ -291,7 +308,9 @@ QList<QPointer<QWidget>> ChartTool::createOptionWidgets()
     connect(legend, &LegendConfigWidget::legendPositionChanged, this, &ChartTool::setLegendPosition);
     connect(legend, &LegendConfigWidget::legendAlignmentChanged, this, &ChartTool::setLegendAlignment);
 
-    connect(d->shape->legend(), &KoChart::Legend::updateConfigWidget, legend, QOverload<>::of(&LegendConfigWidget::updateData));
+    if (d->shape && d->shape->legend()) {
+        connect(d->shape->legend(), &KoChart::Legend::updateConfigWidget, legend, QOverload<>::of(&LegendConfigWidget::updateData));
+    }
 
     PlotAreaConfigWidget *plotarea = new PlotAreaConfigWidget();
     plotarea->setWindowTitle(i18n("Plot Area"));
@@ -390,9 +409,630 @@ QList<QPointer<QWidget>> ChartTool::createOptionWidgets()
     connect(rdataset, &RadarDataSetConfigWidget::datasetShowPercentChanged, this, &ChartTool::setDataSetShowPercent);
     connect(rdataset, &RadarDataSetConfigWidget::datasetShowSymbolChanged, this, &ChartTool::setDataSetShowSymbol);
 
-    connect(d->shape, &ChartShape::updateConfigWidget, plotarea, QOverload<>::of(&PlotAreaConfigWidget::updateData));
+    if (d->shape) {
+        connect(d->shape, &ChartShape::updateConfigWidget, plotarea, QOverload<>::of(&PlotAreaConfigWidget::updateData));
+    }
 
     return widgets;
+}
+
+// ================================================================
+//          The Chart Tools "Design" tab of the Stage ribbon
+
+namespace
+{
+struct ColorScheme {
+    const char *name;
+    const char *colors[6];
+};
+
+// The palettes of the Change Colors gallery.
+const ColorScheme colorSchemes[] = {
+    {QT_TRANSLATE_NOOP("ChartTool", "Colorful"), {"#4472c4", "#ed7d31", "#a5a5a5", "#ffc000", "#5b9bd5", "#70ad47"}},
+    {QT_TRANSLATE_NOOP("ChartTool", "Blue"), {"#1f3864", "#2f5597", "#4472c4", "#8faadc", "#b4c7e7", "#d9e2f3"}},
+    {QT_TRANSLATE_NOOP("ChartTool", "Orange"), {"#843c0c", "#c55a11", "#ed7d31", "#f4b183", "#f8cbad", "#fbe5d6"}},
+    {QT_TRANSLATE_NOOP("ChartTool", "Green"), {"#375623", "#548235", "#70ad47", "#a9d08e", "#c6e0b4", "#e2efda"}},
+    {QT_TRANSLATE_NOOP("ChartTool", "Gray"), {"#262626", "#595959", "#808080", "#a6a6a6", "#bfbfbf", "#d9d9d9"}},
+    {QT_TRANSLATE_NOOP("ChartTool", "Dark"), {"#1f2430", "#2e3b4e", "#4472c4", "#7f9fc4", "#b4c7e7", "#e8eef7"}},
+};
+
+int colorSchemeCount()
+{
+    return int(sizeof(colorSchemes) / sizeof(colorSchemes[0]));
+}
+
+QList<QColor> colorSchemeColors(int scheme)
+{
+    QList<QColor> colors;
+    const ColorScheme &entry = colorSchemes[qBound(0, scheme, colorSchemeCount() - 1)];
+    for (const char *color : entry.colors) {
+        colors.append(QColor(QLatin1String(color)));
+    }
+    return colors;
+}
+
+// The styles of the Chart Styles gallery: a palette together with a layout.
+struct StylePreset {
+    int scheme;
+    bool gridLines;
+    bool valueLabels;
+    bool legend;
+    Position legendPosition;
+};
+
+const StylePreset stylePresets[] = {
+    {0, true, false, true, EndPosition},
+    {0, false, true, true, BottomPosition},
+    {1, true, false, true, BottomPosition},
+    {3, true, false, true, EndPosition},
+    {5, false, true, true, EndPosition},
+    {2, true, true, false, BottomPosition},
+};
+
+int stylePresetCount()
+{
+    return int(sizeof(stylePresets) / sizeof(stylePresets[0]));
+}
+
+// The previews of the chart style gallery: bars in the colors of the style.
+QPixmap chartPreview(const QList<QColor> &colors, bool gridLines, bool valueLabels, const QSize &size)
+{
+    QPixmap pixmap(size);
+    pixmap.fill(Qt::white);
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+    const QRectF plot(3.0, 5.0, size.width() - 6.0, size.height() - 9.0);
+    if (gridLines) {
+        painter.setPen(QPen(QColor(0xd6, 0xdc, 0xe5), 0.7));
+        for (int i = 1; i < 4; ++i) {
+            const qreal y = plot.top() + plot.height() * i / 4.0;
+            painter.drawLine(QPointF(plot.left(), y), QPointF(plot.right(), y));
+        }
+    }
+    const int bars = qMin(3, int(colors.count()));
+    const qreal barWidth = plot.width() / (bars * 2.0 + 1.0);
+    for (int i = 0; i < bars; ++i) {
+        const qreal height = plot.height() * (0.9 - 0.24 * i);
+        const QRectF bar(plot.left() + barWidth * (1.0 + 2.0 * i), plot.bottom() - height, barWidth, height);
+        painter.fillRect(bar, colors.at(i));
+        if (valueLabels) {
+            painter.setPen(QColor(0x44, 0x4a, 0x55));
+            painter.drawText(bar.adjusted(0, -8, 0, -1), Qt::AlignRight | Qt::AlignVCenter, QStringLiteral("1"));
+        }
+    }
+    painter.setPen(QPen(QColor(0x9a, 0xa2, 0xad), 0.7));
+    painter.drawLine(QPointF(plot.left(), plot.bottom()), QPointF(plot.right(), plot.bottom()));
+    return pixmap;
+}
+
+// The preview of a color scheme: the colors side by side.
+QPixmap colorPreview(const QList<QColor> &colors, const QSize &size)
+{
+    QPixmap pixmap(size);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    const qreal width = qreal(size.width()) / qMax(1, int(colors.count()));
+    for (int i = 0; i < colors.count(); ++i) {
+        painter.fillRect(QRectF(i * width, 0, width + 0.5, size.height()), colors.at(i));
+    }
+    return pixmap;
+}
+
+// A labelled ribbon group of Stage: its commands above the caption.
+QWidget *ribbonGroup(QWidget *page, const QString &title, int order, QWidget **content)
+{
+    auto *group = new QWidget(page);
+    group->setProperty("ribbonRoutedGroup", true);
+    group->setProperty("ribbonGroupOrder", order);
+    auto *vertical = new QVBoxLayout(group);
+    vertical->setContentsMargins(3, 0, 3, 0);
+    vertical->setSpacing(0);
+    auto *row = new QWidget(group);
+    vertical->addWidget(row, 0, Qt::AlignTop);
+    vertical->addStretch();
+    auto *caption = new QLabel(title, group);
+    caption->setProperty("ribbonGroupTitle", true);
+    caption->setAlignment(Qt::AlignCenter);
+    caption->setMinimumHeight(15);
+    vertical->addWidget(caption);
+    *content = row;
+    return group;
+}
+
+QToolButton *ribbonButton(QWidget *parent, const QString &text, const QString &iconName)
+{
+    auto *button = new QToolButton(parent);
+    button->setText(text);
+    button->setToolTip(text);
+    button->setIcon(KoRibbonIcons::forThemeIcon(iconName));
+    KoRibbonLayout::configureButton(button, Qt::ToolButtonTextUnderIcon);
+    return button;
+}
+
+QToolButton *ribbonMenuButton(QWidget *parent, const QString &text, const QString &iconName, QMenu *menu)
+{
+    QToolButton *button = ribbonButton(parent, text, iconName);
+    button->setMenu(menu);
+    button->setPopupMode(QToolButton::InstantPopup);
+    return button;
+}
+
+QHBoxLayout *ribbonRow(QWidget *content)
+{
+    auto *layout = new QHBoxLayout(content);
+    layout->setContentsMargins(2, 1, 2, 1);
+    layout->setSpacing(4);
+    layout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    return layout;
+}
+}
+
+void ChartTool::configureRibbon(QWidget *page)
+{
+    if (!page) {
+        return;
+    }
+    auto *layout = qobject_cast<QHBoxLayout *>(page->layout());
+    if (!layout) {
+        layout = new QHBoxLayout(page);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSpacing(0);
+        layout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    }
+    // Inserted right to left so the tab keeps the order of PowerPoint.
+    layout->insertWidget(0, createTypeGroup(page));
+    layout->insertWidget(0, createDataGroup(page));
+    layout->insertWidget(0, createStylesGroup(page));
+    layout->insertWidget(0, createLayoutsGroup(page));
+}
+
+ChartShape *ChartTool::currentChart() const
+{
+    if (d->shape) {
+        return d->shape;
+    }
+    // Stage builds the tab before the first chart is activated, so fall back to
+    // the chart in the canvas selection.
+    if (!canvas() || !canvas()->shapeManager()) {
+        return nullptr;
+    }
+    const QList<KoShape *> selected = canvas()->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
+    for (KoShape *shape : selected) {
+        for (KoShape *candidate = shape; candidate; candidate = candidate->parent()) {
+            if (auto *chart = dynamic_cast<ChartShape *>(candidate)) {
+                return chart;
+            }
+        }
+    }
+    return nullptr;
+}
+
+QList<Axis *> ChartTool::chartAxes(ChartShape *chart) const
+{
+    if (!chart || !chart->plotArea()) {
+        return {};
+    }
+    return chart->plotArea()->axes();
+}
+
+QWidget *ChartTool::createLayoutsGroup(QWidget *page)
+{
+    QWidget *content = nullptr;
+    QWidget *group = ribbonGroup(page, i18n("Chart Layouts"), 10, &content);
+    QHBoxLayout *layout = ribbonRow(content);
+    layout->addWidget(ribbonMenuButton(content, i18n("Add Chart Element"), QStringLiteral("category"), createAddElementMenu(content)));
+    layout->addWidget(ribbonMenuButton(content, i18n("Quick Layout"), QStringLiteral("view_column"), createQuickLayoutMenu(content)));
+    return group;
+}
+
+QWidget *ChartTool::createStylesGroup(QWidget *page)
+{
+    QWidget *content = nullptr;
+    QWidget *group = ribbonGroup(page, i18n("Chart Styles"), 20, &content);
+    QHBoxLayout *layout = ribbonRow(content);
+    layout->addWidget(ribbonMenuButton(content, i18n("Change Colors"), QStringLiteral("format_color_fill"), createColorSchemeMenu(content)));
+
+    // The gallery of the group: the styles side by side, in two rows.
+    auto *gallery = new QWidget(content);
+    auto *grid = new QGridLayout(gallery);
+    grid->setContentsMargins(0, 0, 0, 0);
+    grid->setSpacing(2);
+    for (int style = 0; style < stylePresetCount(); ++style) {
+        const StylePreset &preset = stylePresets[style];
+        auto *button = new QToolButton(gallery);
+        button->setAutoRaise(true);
+        const QList<QColor> colors = colorSchemeColors(preset.scheme).mid(0, 3);
+        button->setIcon(QIcon(chartPreview(colors, preset.gridLines, preset.valueLabels, QSize(34, 22))));
+        button->setIconSize(QSize(34, 22));
+        button->setFixedSize(36, 24);
+        button->setToolTip(i18n("Chart Style %1", style + 1));
+        connect(button, &QToolButton::clicked, this, [this, style] { applyStylePreset(style); });
+        grid->addWidget(button, style / 3, style % 3);
+    }
+    layout->addWidget(gallery, 0, Qt::AlignTop);
+    return group;
+}
+
+QWidget *ChartTool::createDataGroup(QWidget *page)
+{
+    QWidget *content = nullptr;
+    QWidget *group = ribbonGroup(page, i18n("Data"), 30, &content);
+    QHBoxLayout *layout = ribbonRow(content);
+
+    QToolButton *switchButton = ribbonButton(content, i18n("Switch Row/Column"), QStringLiteral("splitscreen"));
+    connect(switchButton, &QToolButton::clicked, this, [this] {
+        ChartShape *chart = currentChart();
+        if (!chart || !chart->proxyModel()) {
+            return;
+        }
+        ChartProxyModel *model = chart->proxyModel();
+        model->setDataDirection(model->dataDirection() == Qt::Horizontal ? Qt::Vertical : Qt::Horizontal);
+        chart->relayout();
+        chart->update();
+    });
+    layout->addWidget(switchButton);
+
+    QToolButton *editButton = ribbonButton(content, i18n("Edit Data"), QStringLiteral("table_chart"));
+    editButton->setToolTip(i18n("Edit the data of the chart"));
+    connect(editButton, &QToolButton::clicked, this, &ChartTool::showDataEditor);
+    layout->addWidget(editButton);
+
+    QToolButton *refreshButton = ribbonButton(content, i18n("Refresh Data"), QStringLiteral("refresh"));
+    connect(refreshButton, &QToolButton::clicked, this, [this] {
+        ChartShape *chart = currentChart();
+        if (!chart || !chart->proxyModel()) {
+            return;
+        }
+        chart->proxyModel()->dataChanged();
+        chart->relayout();
+        chart->update();
+    });
+    layout->addWidget(refreshButton);
+    return group;
+}
+
+QWidget *ChartTool::createTypeGroup(QWidget *page)
+{
+    QWidget *content = nullptr;
+    QWidget *group = ribbonGroup(page, i18n("Type"), 40, &content);
+    QHBoxLayout *layout = ribbonRow(content);
+
+    layout->addWidget(ribbonMenuButton(content, i18n("Change Chart Type"), QStringLiteral("bar_chart"), createChartTypeMenu(content)));
+    return group;
+}
+
+QMenu *ChartTool::createAddElementMenu(QWidget *parent)
+{
+    auto *menu = new QMenu(parent);
+
+    QAction *title = menu->addAction(i18n("Chart Title"));
+    title->setCheckable(true);
+    connect(title, &QAction::triggered, this, [this](bool show) {
+        if (ChartShape *chart = currentChart(); chart && chart->title()) {
+            canvas()->addCommand(new ChartTextShapeCommand(chart->title(), chart, show));
+        }
+    });
+
+    QAction *subTitle = menu->addAction(i18n("Chart Subtitle"));
+    subTitle->setCheckable(true);
+    connect(subTitle, &QAction::triggered, this, [this](bool show) {
+        if (ChartShape *chart = currentChart(); chart && chart->subTitle()) {
+            canvas()->addCommand(new ChartTextShapeCommand(chart->subTitle(), chart, show));
+        }
+    });
+
+    QAction *footer = menu->addAction(i18n("Chart Footer"));
+    footer->setCheckable(true);
+    connect(footer, &QAction::triggered, this, [this](bool show) {
+        if (ChartShape *chart = currentChart(); chart && chart->footer()) {
+            canvas()->addCommand(new ChartTextShapeCommand(chart->footer(), chart, show));
+        }
+    });
+
+    menu->addSeparator();
+
+    QAction *legend = menu->addAction(i18n("Legend"));
+    legend->setCheckable(true);
+    connect(legend, &QAction::triggered, this, [this](bool show) {
+        if (ChartShape *chart = currentChart(); chart && chart->legend()) {
+            canvas()->addCommand(new ChartTextShapeCommand(chart->legend(), chart, show));
+        }
+    });
+
+    QAction *axisTitles = menu->addAction(i18n("Axis Titles"));
+    axisTitles->setCheckable(true);
+    connect(axisTitles, &QAction::triggered, this, [this](bool show) {
+        ChartShape *chart = currentChart();
+        if (!chart) {
+            return;
+        }
+        auto *macro = new KUndo2Command(kundo2_i18n(show ? "Show Axis Titles" : "Hide Axis Titles"));
+        for (Axis *axis : chartAxes(chart)) {
+            auto *command = new AxisCommand(axis, chart, macro);
+            command->setAxisShowTitle(show);
+        }
+        canvas()->addCommand(macro);
+    });
+
+    QAction *labels = menu->addAction(i18n("Data Labels"));
+    labels->setCheckable(true);
+    connect(labels, &QAction::triggered, this, [this](bool show) { setDataLabels(show); });
+
+    QAction *gridLines = menu->addAction(i18n("Major Gridlines"));
+    gridLines->setCheckable(true);
+    connect(gridLines, &QAction::triggered, this, [this](bool show) { setMajorGridLines(show); });
+
+    // The chart changes while the tab stays: refresh the marks when it opens.
+    connect(menu, &QMenu::aboutToShow, this, [this, title, subTitle, footer, legend, axisTitles, labels, gridLines] {
+        const auto setChecked = [](QAction *action, bool checked) {
+            const QSignalBlocker blocker(action);
+            action->setChecked(checked);
+        };
+        ChartShape *chart = currentChart();
+        if (!chart) {
+            for (QAction *action : {title, subTitle, footer, legend, axisTitles, labels, gridLines}) {
+                setChecked(action, false);
+            }
+            return;
+        }
+        setChecked(title, chart->title() && chart->title()->isVisible());
+        setChecked(subTitle, chart->subTitle() && chart->subTitle()->isVisible());
+        setChecked(footer, chart->footer() && chart->footer()->isVisible());
+        setChecked(legend, chart->legend() && chart->legend()->isVisible());
+        bool anyAxisTitle = false;
+        bool anyGridLines = false;
+        for (Axis *axis : chartAxes(chart)) {
+            anyAxisTitle = anyAxisTitle || (axis->title() && axis->title()->isVisible());
+            anyGridLines = anyGridLines || axis->showMajorGrid();
+        }
+        bool anyLabels = false;
+        if (chart->plotArea()) {
+            for (DataSet *dataSet : chart->plotArea()->dataSets()) {
+                anyLabels = anyLabels || dataSet->valueLabelType().number;
+            }
+        }
+        setChecked(axisTitles, anyAxisTitle);
+        setChecked(labels, anyLabels);
+        setChecked(gridLines, anyGridLines);
+        axisTitles->setEnabled(isCartesian(chart->chartType()));
+        gridLines->setEnabled(isCartesian(chart->chartType()));
+    });
+    return menu;
+}
+
+QMenu *ChartTool::createQuickLayoutMenu(QWidget *parent)
+{
+    auto *menu = new QMenu(parent);
+    const char *const layouts[] = {
+        QT_TRANSLATE_NOOP("ChartTool", "Title and Legend"),
+        QT_TRANSLATE_NOOP("ChartTool", "Title and Data Labels"),
+        QT_TRANSLATE_NOOP("ChartTool", "Title, Legend and Data Labels"),
+        QT_TRANSLATE_NOOP("ChartTool", "Title Only"),
+        QT_TRANSLATE_NOOP("ChartTool", "Chart Only"),
+    };
+    for (int layout = 0; layout < int(sizeof(layouts) / sizeof(layouts[0])); ++layout) {
+        QAction *action = menu->addAction(i18n(layouts[layout]));
+        connect(action, &QAction::triggered, this, [this, layout] { applyQuickLayout(layout); });
+    }
+    return menu;
+}
+
+QMenu *ChartTool::createColorSchemeMenu(QWidget *parent)
+{
+    auto *menu = new QMenu(parent);
+    for (int scheme = 0; scheme < colorSchemeCount(); ++scheme) {
+        const ColorScheme &entry = colorSchemes[scheme];
+        QAction *action = menu->addAction(QIcon(colorPreview(colorSchemeColors(scheme), QSize(60, 12))), i18n(entry.name));
+        connect(action, &QAction::triggered, this, [this, scheme] { applyColorScheme(scheme); });
+    }
+    return menu;
+}
+
+QMenu *ChartTool::createChartTypeMenu(QWidget *parent)
+{
+    auto *menu = new QMenu(parent);
+    const auto addType = [this](QMenu *target, ChartType type, ChartSubtype subtype, const QString &label) {
+        QAction *action = target->addAction(ICON2(type, subtype), label);
+        connect(action, &QAction::triggered, this, [this, type, subtype] { changeChartType(type, subtype); });
+    };
+
+    QMenu *bar = menu->addMenu(ICON1(BarChartType), i18n("Bar Chart"));
+    addType(bar, BarChartType, NormalChartSubtype, i18n("Normal"));
+    addType(bar, BarChartType, StackedChartSubtype, i18n("Stacked"));
+    addType(bar, BarChartType, PercentChartSubtype, i18n("Percent"));
+
+    QMenu *line = menu->addMenu(ICON1(LineChartType), i18n("Line Chart"));
+    addType(line, LineChartType, NormalChartSubtype, i18n("Normal"));
+    addType(line, LineChartType, StackedChartSubtype, i18n("Stacked"));
+    addType(line, LineChartType, PercentChartSubtype, i18n("Percent"));
+
+    QMenu *area = menu->addMenu(ICON1(AreaChartType), i18n("Area Chart"));
+    addType(area, AreaChartType, NormalChartSubtype, i18n("Normal"));
+    addType(area, AreaChartType, StackedChartSubtype, i18n("Stacked"));
+    addType(area, AreaChartType, PercentChartSubtype, i18n("Percent"));
+
+    menu->addSeparator();
+    addType(menu, CircleChartType, NoChartSubtype, i18n("Pie Chart"));
+    addType(menu, RingChartType, NoChartSubtype, i18n("Ring Chart"));
+
+    menu->addSeparator();
+    QMenu *radar = menu->addMenu(ICON1(RadarChartType), i18n("Polar Chart"));
+    addType(radar, RadarChartType, NoChartSubtype, i18n("Normal"));
+    addType(radar, FilledRadarChartType, NoChartSubtype, i18n("Filled"));
+
+    menu->addSeparator();
+    addType(menu, ScatterChartType, NoChartSubtype, i18n("Scatter Chart"));
+    addType(menu, BubbleChartType, NoChartSubtype, i18n("Bubble Chart"));
+
+    menu->addSeparator();
+    QMenu *stock = menu->addMenu(ICON1(StockChartType), i18n("Stock Chart"));
+    addType(stock, StockChartType, CandlestickChartSubtype, i18n("Candlestick"));
+    addType(stock, StockChartType, OpenHighLowCloseChartSubtype, i18n("Open-High-Low-Close"));
+    addType(stock, StockChartType, HighLowCloseChartSubtype, i18n("High-Low-Close"));
+    return menu;
+}
+
+void ChartTool::changeChartType(ChartType type, ChartSubtype subtype)
+{
+    ChartShape *chart = currentChart();
+    if (!chart) {
+        return;
+    }
+    auto *command = new ChartTypeCommand(chart);
+    command->setChartType(type, subtype);
+    canvas()->addCommand(command);
+}
+
+void ChartTool::showDataEditor()
+{
+    ChartShape *chart = currentChart();
+    if (!chart || !canvas()) {
+        return;
+    }
+    QWidget *parent = canvas()->canvasWidget();
+    QDialog *editor = nullptr;
+    // Pie, bubble, scatter and stock charts have editors of their own; every
+    // other type is edited in the data table.
+    switch (chart->chartType()) {
+    case CircleChartType: {
+        auto *dialog = new PieDataEditor(parent);
+        if (chart->internalModel()) {
+            dialog->setModel(chart->internalModel());
+        }
+        editor = dialog;
+        break;
+    }
+    case BubbleChartType:
+        editor = new BubbleDataEditor(chart, parent);
+        break;
+    case ScatterChartType:
+        editor = new ScatterDataEditor(chart, parent);
+        break;
+    case StockChartType:
+        editor = new StockDataEditor(chart, parent);
+        break;
+    default: {
+        auto *dialog = new TableEditorDialog;
+        dialog->setProxyModel(chart->proxyModel());
+        if (chart->internalModel()) {
+            dialog->setModel(chart->internalModel());
+        }
+        editor = dialog;
+        break;
+    }
+    }
+    if (!editor) {
+        return;
+    }
+    editor->setAttribute(Qt::WA_DeleteOnClose);
+    editor->show();
+    editor->raise();
+}
+
+void ChartTool::applyColorScheme(int scheme)
+{
+    ChartShape *chart = currentChart();
+    if (!chart || !chart->plotArea()) {
+        return;
+    }
+    const QList<QColor> colors = colorSchemeColors(scheme);
+    const QList<DataSet *> dataSets = chart->plotArea()->dataSets();
+    if (colors.isEmpty() || dataSets.isEmpty()) {
+        return;
+    }
+    auto *macro = new KUndo2Command(kundo2_i18n("Change Chart Colors"));
+    const ChartType type = chart->chartType();
+    if (type == CircleChartType || type == RingChartType) {
+        // Every section of a pie or ring is painted separately.
+        DataSet *dataSet = dataSets.first();
+        for (int section = 0; section < dataSet->size(); ++section) {
+            auto *command = new DatasetCommand(dataSet, chart, section, macro);
+            command->setDataSetBrush(colors.at(section % colors.count()));
+        }
+    } else {
+        for (int i = 0; i < dataSets.count(); ++i) {
+            auto *command = new DatasetCommand(dataSets.at(i), chart, -1, macro);
+            command->setDataSetBrush(colors.at(i % colors.count()));
+        }
+    }
+    canvas()->addCommand(macro);
+}
+
+void ChartTool::setDataLabels(bool show)
+{
+    ChartShape *chart = currentChart();
+    if (!chart || !chart->plotArea()) {
+        return;
+    }
+    const QList<DataSet *> dataSets = chart->plotArea()->dataSets();
+    if (dataSets.isEmpty()) {
+        return;
+    }
+    auto *macro = new KUndo2Command(kundo2_i18n(show ? "Show Data Labels" : "Hide Data Labels"));
+    for (DataSet *dataSet : dataSets) {
+        auto *command = new DatasetCommand(dataSet, chart, -1, macro);
+        command->setDataSetShowNumber(show);
+    }
+    canvas()->addCommand(macro);
+}
+
+void ChartTool::setMajorGridLines(bool show)
+{
+    ChartShape *chart = currentChart();
+    if (!chart) {
+        return;
+    }
+    auto *macro = new KUndo2Command(kundo2_i18n(show ? "Show Gridlines" : "Hide Gridlines"));
+    for (Axis *axis : chartAxes(chart)) {
+        auto *command = new AxisCommand(axis, chart, macro);
+        command->setAxisShowMajorGridLines(show);
+    }
+    canvas()->addCommand(macro);
+}
+
+void ChartTool::applyQuickLayout(int layout)
+{
+    ChartShape *chart = currentChart();
+    if (!chart) {
+        return;
+    }
+    const bool showTitle = layout != 4;
+    const bool showLegend = layout == 0 || layout == 2;
+    const bool showLabels = layout == 1 || layout == 2;
+    if (chart->legend()) {
+        chart->legend()->setLegendPosition(layout == 1 ? BottomPosition : EndPosition);
+    }
+    auto *macro = new KUndo2Command(kundo2_i18n("Change Chart Layout"));
+    if (chart->title()) {
+        new ChartTextShapeCommand(chart->title(), chart, showTitle, macro);
+    }
+    if (chart->legend()) {
+        new ChartTextShapeCommand(chart->legend(), chart, showLegend, macro);
+    }
+    canvas()->addCommand(macro);
+    setDataLabels(showLabels);
+}
+
+void ChartTool::applyStylePreset(int style)
+{
+    ChartShape *chart = currentChart();
+    if (!chart) {
+        return;
+    }
+    const StylePreset &preset = stylePresets[qBound(0, style, stylePresetCount() - 1)];
+    if (chart->legend()) {
+        chart->legend()->setLegendPosition(preset.legendPosition);
+    }
+    auto *macro = new KUndo2Command(kundo2_i18n("Change Chart Style"));
+    if (chart->legend()) {
+        new ChartTextShapeCommand(chart->legend(), chart, preset.legend, macro);
+    }
+    canvas()->addCommand(macro);
+    applyColorScheme(preset.scheme);
+    setMajorGridLines(preset.gridLines);
+    setDataLabels(preset.valueLabels);
+    chart->relayout();
+    chart->update();
 }
 
 void ChartTool::setChartType(ChartType type, ChartSubtype subtype)

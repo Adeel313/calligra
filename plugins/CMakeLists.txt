@@ -9,10 +9,6 @@ if (SHOULD_BUILD_PLUGIN_COLORENGINES)
     add_subdirectory( colorengines )
 endif ()
 
-if (SHOULD_BUILD_PLUGIN_MUSICSHAPE)
-    add_subdirectory( musicshape )
-endif ()
-
 if (TARGET Qt6::WebEngineWidgets)
   add_subdirectory(webshape)
 endif ()

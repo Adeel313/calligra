@@ -20,6 +20,13 @@ public:
 
     void setCanvas(KoCanvasBase *canvas);
 
+    /// True while a shape's settings are shown instead of the placeholder.
+    bool hasProperties() const;
+
+Q_SIGNALS:
+    /// Emitted when the widget gains or loses the shape settings it shows.
+    void propertiesChanged(bool hasProperties);
+
 private:
     void selectionChanged();
     void addWidgetForShape(KoShape *shape);

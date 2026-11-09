@@ -72,6 +72,16 @@ KoTblStyle::KoTblStyle()
 {
 }
 
+void KoTblStyle::setTableOffset(const QPointF &offset)
+{
+    m_tableOffset = offset;
+}
+
+QPointF KoTblStyle::tableOffset() const
+{
+    return m_tableOffset;
+}
+
 KoTblStyle::~KoTblStyle() = default;
 
 void KoTblStyle::setAllowBreakBetweenRows(bool allow)
@@ -267,6 +277,11 @@ void KoTblStyle::prepareStyle(KoGenStyle &style) const
         style.addProperty("fo:break-before", breakStyleMap.value(m_breakBefore));
     }
     style.addProperty("fo:keep-with-next", keepWithNextMap.value(m_keepWithNext));
+
+    if (!m_tableOffset.isNull()) {
+        style.addPropertyPt("calligra:table-offset-x", m_tableOffset.x());
+        style.addPropertyPt("calligra:table-offset-y", m_tableOffset.y());
+    }
 
     style.addPropertyPt("fo:margin-top", m_topMargin);
     style.addPropertyPt("fo:margin-right", m_rightMargin);

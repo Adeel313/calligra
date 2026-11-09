@@ -382,6 +382,11 @@ const CommandIcon commandIcons[] = {
     {"page_insertpage", "note_add"}, {"page_copypage", "content_copy"},
     {"page_deletepage", "delete"}, {"insert_pictures", "image"},
     {"stage_insert_textbox", "text_fields"}, {"import_document", "description"},
+    // Objects offered by the Insert tab of Words and Stage
+    {"insert_formula", "functions"}, {"insert_wordart", "style"},
+    {"insert_stateshape", "fact_check"},
+    {"insert_3dscene", "category"}, {"insert_vectorimage", "polyline"},
+    {"insert_webshape", "link"},
     // Stage: Design and Slide Show
     {"format_masterpage", "dashboard_customize"}, {"format_pagelayout", "fit_screen"},
     {"slideshow_start_from_beginning", "fullscreen"},

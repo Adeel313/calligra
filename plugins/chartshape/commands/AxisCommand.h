@@ -34,7 +34,7 @@ public:
     /**
      * Constructor.
      */
-    AxisCommand(Axis *axis, ChartShape *chart);
+    AxisCommand(Axis *axis, ChartShape *chart, KUndo2Command *parent = nullptr);
 
     /**
      * Destructor.

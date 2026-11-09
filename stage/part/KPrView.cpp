@@ -29,6 +29,7 @@
 
 #include <KoIcon.h>
 
+#include <KoChartInterface.h>
 #include <KoComponentData.h>
 #include <KoDocumentInfo.h>
 #include <KoMainWindow.h>
@@ -57,6 +58,8 @@
 #include "KPrCustomSlideShows.h"
 #include "KPrFactory.h"
 #include "KPrHtmlExport.h"
+#include "KPrDesignTab.h"
+#include "KPrFormatTab.h"
 #include "KPrPageLayoutWidget.h"
 #include "KPrPageSelectStrategyActive.h"
 #include "KPrPicturesImport.h"
@@ -98,6 +101,64 @@ void configurePowerPointPanels(KPrView *view, int attempts = 30)
             "QScrollBar::add-page, QScrollBar::sub-page { background: transparent; border: none; }"
             "QAbstractScrollArea::corner { background: palette(window); border: none; }"));
     }
+    // The Design tab builds its theme and variant galleries from the document,
+    // so it is filled in once the ribbon and the master slides exist.
+    auto *design = window->findChild<QWidget *>(QStringLiteral("stageDesignPage"));
+    if (design && !design->property("stageDesignTabBuilt").toBool()) {
+        design->setProperty("stageDesignTabBuilt", true);
+        new KPrDesignTab(view, design);
+    }
+
+    auto *shapeFormatPage = window->findChild<QWidget *>(QStringLiteral("stageShapeFormatPage"));
+    if (shapeFormatPage && !shapeFormatPage->property("stageFormatTabBuilt").toBool()) {
+        shapeFormatPage->setProperty("stageFormatTabBuilt", true);
+        new KPrFormatTab(view, shapeFormatPage);
+    }
+
+    // Chart Tools: the chart plugin fills the Design page itself, and the page
+    // shows while a chart is selected.
+    auto *chartDesignPage = window->findChild<QWidget *>(QStringLiteral("stageChartDesignPage"));
+    if (chartDesignPage && !chartDesignPage->property("stageChartContextWatched").toBool()) {
+        chartDesignPage->setProperty("stageChartContextWatched", true);
+        KoPACanvasBase *canvas = view->kopaCanvas();
+        KoSelection *selection = canvas ? canvas->shapeManager()->selection() : nullptr;
+        // Creating the tool here is what lets the chart plugin fill the page;
+        // the tool itself is not needed for the commands to work.
+        if (KoToolBase *chartTool = canvas ? KoToolManager::instance()->toolById(canvas, QStringLiteral("ChartToolFactory_ID")) : nullptr) {
+            chartDesignPage->setProperty("stageChartTabBuilt", true);
+            QMetaObject::invokeMethod(chartTool, "configureRibbon", Qt::DirectConnection, Q_ARG(QWidget *, chartDesignPage));
+        }
+        if (selection) {
+            QObject::connect(selection, &KoSelection::selectionChanged, chartDesignPage, [view, chartDesignPage] {
+                KoPACanvasBase *canvas = view->kopaCanvas();
+                if (!canvas) {
+                    return;
+                }
+                bool chartSelected = false;
+                const QList<KoShape *> shapes = canvas->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
+                for (KoShape *shape : shapes) {
+                    // A chart is selected through one of its labels just as often
+                    // as through the chart itself.
+                    for (KoShape *candidate = shape; candidate && !chartSelected; candidate = candidate->parent()) {
+                        chartSelected = candidate->shapeId() == QLatin1String(ChartShapeId);
+                    }
+                    if (chartSelected) {
+                        break;
+                    }
+                }
+                if (chartSelected && !chartDesignPage->property("stageChartTabBuilt").toBool()) {
+                    // The chart plugin may only have been loaded after the view,
+                    // when the first chart was inserted.
+                    if (KoToolBase *chartTool = KoToolManager::instance()->toolById(canvas, QStringLiteral("ChartToolFactory_ID"))) {
+                        chartDesignPage->setProperty("stageChartTabBuilt", true);
+                        QMetaObject::invokeMethod(chartTool, "configureRibbon", Qt::DirectConnection, Q_ARG(QWidget *, chartDesignPage));
+                    }
+                }
+                chartDesignPage->setProperty("ribbonContextActive", chartSelected);
+            });
+        }
+    }
+
     auto *transitions = window->findChild<QWidget *>(QStringLiteral("stageTransitionsPage"));
     auto *animations = window->findChild<QWidget *>(QStringLiteral("stageAnimationsPage"));
     auto *insert = window->findChild<QWidget *>(QStringLiteral("stageInsertPage"));

@@ -173,6 +173,34 @@ bool preparePptxDiagrams(const QString &file)
         // In particular, do not create an empty XML part when none existed.
         if (relationshipsChanged) updates.insert(relpart, rels.toByteArray());
     }
+    // Notes, layouts and masters can carry Office Math as well. Normalize them
+    // the same way so an expression is spelled alike everywhere it appears.
+    for (const QString &directory : {QStringLiteral("ppt/notesSlides"), QStringLiteral("ppt/slideLayouts"), QStringLiteral("ppt/slideMasters")}) {
+        const auto *parts = dynamic_cast<const KArchiveDirectory *>(archive.directory()->entry(directory));
+        if (!parts) continue;
+        for (const QString &name : parts->entries()) {
+            if (!name.endsWith(QLatin1String(".xml"))) continue;
+            const QString part = directory + QLatin1Char('/') + name;
+            const QByteArray bytes = read(part);
+            QXmlStreamReader probe(bytes);
+            bool needsPreparation = false;
+            while (!probe.atEnd()) {
+                probe.readNext();
+                if (!probe.isStartElement()) continue;
+                if ((probe.namespaceUri() == ans && probe.name() == QLatin1String("gradFill"))
+                    || (probe.namespaceUri() == QStringLiteral("http://schemas.microsoft.com/office/drawing/2010/main") && probe.name() == QLatin1String("m"))
+                    || (probe.namespaceUri() == QStringLiteral("http://schemas.openxmlformats.org/markup-compatibility/2006") && probe.name() == QLatin1String("AlternateContent"))) {
+                    needsPreparation = true;
+                    break;
+                }
+            }
+            if (probe.hasError() || !needsPreparation) continue;
+            auto document = parse(bytes);
+            bool changed = preparePptxMath(document);
+            changed = preparePptxGradientRectangles(document) || changed;
+            if (changed) updates.insert(part, document.toByteArray());
+        }
+    }
     archive.close();
     return updates.isEmpty() || rewritePackage(file, updates);
 }

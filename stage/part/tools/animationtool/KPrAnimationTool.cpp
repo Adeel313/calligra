@@ -72,6 +72,21 @@ void KPrAnimationTool::configureRibbon(QWidget *transitions, QWidget *animations
         return;
     }
     auto *window = view->mainWindow();
+    // The ribbon pages are created empty by KoAppRibbon; a layout only exists once
+    // at least one action group could be added to the page. Reuse it when present
+    // and create one otherwise, so the dockers are actually shown and pages without
+    // any groups cannot crash us.
+    const auto addToRibbon = [](QWidget *page, QWidget *child) {
+        if (auto *box = qobject_cast<QBoxLayout *>(page->layout())) {
+            box->addWidget(child, 0, Qt::AlignLeft | Qt::AlignTop);
+        } else if (page->layout()) {
+            page->layout()->addWidget(child);
+        } else {
+            auto *layout = new QHBoxLayout(page);
+            layout->setContentsMargins(0, 0, 0, 0);
+            layout->addWidget(child, 0, Qt::AlignLeft | Qt::AlignTop);
+        }
+    };
     for (QWidget *widget : optionWidgets()) {
         if (!widget) {
             continue;
@@ -79,9 +94,7 @@ void KPrAnimationTool::configureRibbon(QWidget *transitions, QWidget *animations
         widget->setProperty("ribbonManagedExternally", true);
         if (auto *effects = qobject_cast<KPrPageEffectDocker *>(widget)) {
             effects->configureRibbon();
-            auto *layout = new QHBoxLayout(transitions);
-            layout->setContentsMargins(0, 0, 0, 0);
-            layout->addWidget(effects, 0, Qt::AlignLeft | Qt::AlignTop);
+            addToRibbon(transitions, effects);
         } else if (auto *shapeAnimations = qobject_cast<KPrShapeAnimationDocker *>(widget)) {
             auto *pane = new QDockWidget(i18n("Animation Pane"), window);
             pane->setObjectName(QStringLiteral("stageAnimationPane"));
@@ -92,9 +105,7 @@ void KPrAnimationTool::configureRibbon(QWidget *transitions, QWidget *animations
             pane->hide();
             QObject::connect(view, &QObject::destroyed, pane, &QObject::deleteLater);
             view->actionCollection()->addAction(QStringLiteral("stage_animation_pane"), pane->toggleViewAction());
-            auto *layout = new QHBoxLayout(animations);
-            layout->setContentsMargins(0, 0, 0, 0);
-            layout->addWidget(shapeAnimations->createRibbonControls(pane), 0, Qt::AlignLeft | Qt::AlignTop);
+            addToRibbon(animations, shapeAnimations->createRibbonControls(pane));
         } else if (qobject_cast<KPrClickActionDocker *>(widget)) {
             auto *group = new QWidget(insert);
             group->setProperty("ribbonRoutedGroup", true);
@@ -116,7 +127,7 @@ void KPrAnimationTool::configureRibbon(QWidget *transitions, QWidget *animations
             label->setAlignment(Qt::AlignCenter);
             label->setProperty("ribbonGroupTitle", true);
             layout->addWidget(label);
-            insert->layout()->addWidget(group);
+            addToRibbon(insert, group);
         }
     }
 }

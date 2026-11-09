@@ -21,6 +21,7 @@
 #include <KActionCollection>
 #include <KLocalizedString>
 #include <KoCanvasControllerWidget.h>
+#include <KoCreateShapesTool.h>
 #include <KoCanvasResourceManager.h>
 #include <KoColorBackground.h>
 #include <KoDocumentResourceManager.h>
@@ -53,6 +54,9 @@
 #include <KoTextEditor.h>
 #include <KoUnit.h>
 
+#include "QRCodeGenerator.h"
+#include "dialogs/QRCodeDialog.h"
+
 #include <KoMainWindow.h>
 #include <QAction>
 #include <QActionGroup>
@@ -83,6 +87,7 @@
 #include <QScrollBar>
 #include <QSizePolicy>
 #include <QStyle>
+#include <QTextTable>
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
@@ -392,6 +397,20 @@ public:
             }
         });
         QTimer::singleShot(0, this, [this] { update(); });
+
+        // A document that is opened with the cursor already inside a table has
+        // nothing left to trigger the first update: the text shape was selected
+        // and the cursor placed before this object existed. Keep looking for the
+        // editor for a few seconds so the table tab is there from the start.
+        auto *retry = new QTimer(this);
+        retry->setInterval(100);
+        connect(retry, &QTimer::timeout, this, [this, retry] {
+            update();
+            if (m_editor || ++m_retries > 60) {
+                retry->stop();
+            }
+        });
+        retry->start();
     }
 
 private:
@@ -414,7 +433,7 @@ private:
                 }));
             }
         }
-        const bool tableActive = editor && editor->currentTable();
+        const bool tableActive = editor && editor->tableAtCursor();
         const QVariant current = m_page->property("ribbonContextActive");
         if (!current.isValid() || current.toBool() != tableActive) {
             m_page->setProperty("ribbonContextActive", tableActive);
@@ -425,6 +444,7 @@ private:
     QWidget *m_page;
     QPointer<KoTextEditor> m_editor;
     QList<QMetaObject::Connection> m_connections;
+    int m_retries = 0;
 };
 }
 
@@ -1066,6 +1086,8 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
         auto *tablePage = new QWidget;
         tablePage->setObjectName(QStringLiteral("tableRibbonPage"));
         tablePage->setProperty("ribbonContextActive", false);
+        // The table commands spread over the whole ribbon width.
+        tablePage->setProperty("ribbonFillWidth", true);
         modeBoxFactory.addCustomPage(i18n("Table Layout"), QIcon::fromTheme("insert-table"), i18n("Table rows, columns and borders"), tablePage, false, true);
         new TableRibbonContext(m_canvas, tablePage);
 
@@ -1197,6 +1219,26 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
         connect(KoToolManager::instance(), &KoToolManager::changedTool, this,
                 [applyRibbonIcons](KoCanvasController *, int) { applyRibbonIcons(); });
 
+        auto *insertQrCode = new QAction(QIcon::fromTheme(QStringLiteral("insert-qrcode"), QIcon::fromTheme(QStringLiteral("insert-image"))), i18n("Insert QR Code"), this);
+        insertQrCode->setToolTip(i18n("Encode text or a web address as a QR code and insert it at the cursor"));
+        m_view->actionCollection()->addAction(QStringLiteral("insert_qrcode"), insertQrCode);
+        connect(insertQrCode, &QAction::triggered, this, [this] {
+            KWTextFrameSet *targetFrameSet = m_view->currentTextFrameSet();
+            if (!targetFrameSet) {
+                return;
+            }
+            QRCodeDialog dialog(this);
+            if (dialog.exec() != QDialog::Accepted) {
+                return;
+            }
+            const QImage image = dialog.image();
+            if (image.isNull()) {
+                return;
+            }
+            m_view->insertImagesIntoTextFrame(targetFrameSet, QVector<QImage>{image});
+            m_canvas->setFocus(Qt::OtherFocusReason);
+        });
+
         auto *insertImage = new QAction(QIcon::fromTheme(QStringLiteral("insert-image")), i18n("Insert Image"), this);
         insertImage->setToolTip(i18n("Choose an image to insert into the document"));
         m_view->actionCollection()->addAction(QStringLiteral("insert_picture"), insertImage);
@@ -1254,6 +1296,47 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
             m_canvas->setFocus(Qt::OtherFocusReason);
         });
 
+        // Object types that used to hide at the bottom of the Shapes gallery:
+        // each one is a button of its own on the Insert tab.
+        struct InsertShape {
+            const char *action;
+            QString text;
+            const char *shapeId;
+            const char *icon;
+            QString toolTip;
+        };
+        const InsertShape insertShapes[] = {
+            {"insert_formula", i18n("Formula"), "FormulaShapeID", "functions",
+             i18n("Insert a formula and edit it with the formula tools")},
+            {"insert_wordart", i18n("Word Art"), "ArtisticText", "style",
+             i18n("Insert an artistic text shape")},
+            {"insert_stateshape", i18n("State"), "StateShape", "fact_check",
+             i18n("Insert a state shape")},
+            {"insert_3dscene", i18n("3D Scene"), "ThreedShape", "category",
+             i18n("Insert a 3D scene")},
+            {"insert_vectorimage", i18n("Vector Image"), "VectorShapeID", "polyline",
+             i18n("Insert a vector image")},
+            {"insert_webshape", i18n("Web Shape"), "WebShape", "link",
+             i18n("Insert a web page shape")},
+        };
+        for (const InsertShape &shape : insertShapes) {
+            auto *action = new QAction(KoRibbonIcons::forCommand(QLatin1String(shape.icon)), shape.text, this);
+            action->setToolTip(shape.toolTip);
+            m_view->actionCollection()->addAction(QLatin1String(shape.action), action);
+            const QString shapeId = QLatin1String(shape.shapeId);
+            connect(action, &QAction::triggered, this, [this, shapeId] {
+                if (!m_view->koDocument()->isReadWrite()) {
+                    return;
+                }
+                if (KoCreateShapesTool *tool = KoToolManager::instance()->shapeCreatorTool(m_canvas)) {
+                    tool->setShapeId(shapeId);
+                    tool->setShapeProperties(nullptr);
+                    KoToolManager::instance()->switchToolRequested(KoCreateShapesTool_ID);
+                    m_canvas->canvasWidget()->setFocus(Qt::OtherFocusReason);
+                }
+            });
+        }
+
         // Microsoft Office 2026 style groups of the Insert tab.
         const QList<RibbonGroup> insertGroups = {
             {i18n("Pages"), {{QStringLiteral("insert_framebreak"), i18n("Page Break")}}},
@@ -1261,7 +1344,14 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
             {i18n("Illustrations"),
              {{QStringLiteral("insert_picture"), i18n("Pictures")},
               {QStringLiteral("add_shape"), i18n("Shapes")},
-              {QStringLiteral("insert_chart"), i18n("Chart")}}},
+              {QStringLiteral("insert_chart"), i18n("Chart")},
+              {QStringLiteral("insert_formula"), i18n("Formula")},
+              {QStringLiteral("insert_wordart"), i18n("Word Art")},
+              {QStringLiteral("insert_stateshape"), i18n("State")},
+              {QStringLiteral("insert_3dscene"), i18n("3D Scene")},
+              {QStringLiteral("insert_vectorimage"), i18n("Vector Image")},
+              {QStringLiteral("insert_webshape"), i18n("Web Shape")},
+              {QStringLiteral("insert_qrcode"), i18n("QR Code")}}},
             {i18n("Comments"), {{QStringLiteral("insert_annotation"), i18n("Comment")}}},
             {i18n("Header & Footer"),
              {{QStringLiteral("insert_header"), i18n("Header")},

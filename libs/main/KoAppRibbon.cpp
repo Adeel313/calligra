@@ -590,6 +590,7 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
         {"insert_picture", i18n("Pictures"), "insert-image"},
         {"insert_pictures", i18n("Photo Album"), "insert-image"},
         {"add_shape", i18n("Shapes"), "draw-rectangle"},
+        {"insert_formula", i18n("Formula"), "functions"},
         {"insert_chart", i18n("Chart"), "office-chart-bar"},
         {"stage_insert_textbox", i18n("Text Box"), "draw-text"},
         {"insert_specialchar", i18n("Symbol"), "character-set"},
@@ -661,7 +662,6 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
     };
     group("stageHomePage", i18n("Clipboard"), {"edit_paste", "edit_cut", "edit_copy"}, 1);
     group("stageHomePage", i18n("Slides"), {"page_insertpage", "page_copypage", "page_deletepage"}, 1);
-    group("stageHomePage", i18n("Drawing"), {"add_shape"}, 1);
     // Every Edit-menu command has its own button instead of one catch-all menu.
     group("stageHomePage", i18n("Editing"),
           {"edit_delete", "edit_select_all", "edit_deselect_all", "edit_find", "edit_findnext",
@@ -669,13 +669,11 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
     group("stageInsertPage", i18n("Slides"), {"page_insertpage", "import_document"}, 1);
     group("stageInsertPage", i18n("Tables"), {"insert_table"}, 1);
     group("stageInsertPage", i18n("Images"), {"insert_picture", "insert_pictures"}, 1);
-    group("stageInsertPage", i18n("Illustrations"), {"add_shape", "insert_chart"}, 2);
+    group("stageInsertPage", i18n("Illustrations"),
+          {"add_shape", "insert_chart", "insert_formula", "insert_wordart",
+           "insert_stateshape", "insert_3dscene", "insert_vectorimage", "insert_webshape"}, 3);
     group("stageInsertPage", i18n("Text"), {"stage_insert_textbox", "insert_variable"}, 1);
     group("stageInsertPage", i18n("Symbols"), {"insert_specialchar"}, 1);
-    group("stageDrawPage", i18n("Tools"), {"InteractionTool", "KoPencilTool", "CreatePathTool", "ConnectionTool"}, 1);
-    group("stageDrawPage", i18n("Shapes"), {"add_shape", "convert-to-path"}, 1);
-    group("stageDesignPage", i18n("Themes"), {"format_masterpage"}, 1);
-    group("stageDesignPage", i18n("Customize"), {"format_pagelayout"}, 1);
     group("stageSlideShowPage", i18n("Start Slide Show"), {"slideshow_start_from_beginning", "slideshow_start_from_current"}, 2);
     group("stageSlideShowPage", i18n("Set Up"), {"slideshow_configure", "edit_customslideshows", "slideshow_presenterview"}, 1);
     group("stageReviewPage", i18n("Proofing"), {"tools_spelling", "tool_auto_spellcheck", "tool_configure_spellcheck"}, 1);
@@ -708,7 +706,7 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
     const auto updateContext = [=] {
         shapePage->setProperty("ribbonContextActive", !canvas->shapeManager()->selection()->selectedShapes().isEmpty());
         KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(canvas);
-        tablePage->setProperty("ribbonContextActive", editor && editor->currentTable());
+        tablePage->setProperty("ribbonContextActive", editor && editor->tableAtCursor());
     };
     QObject::connect(canvas->shapeManager()->selection(), &KoSelection::selectionChanged, shapePage, updateContext);
     QObject::connect(canvas->resourceManager(), &KoCanvasResourceManager::canvasResourceChanged, tablePage, [=](int, const QVariant &) { updateContext(); });
@@ -1034,6 +1032,49 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
                 canvas->canvasWidget()->setFocus(Qt::OtherFocusReason);
             }
         });
+        // Object types that used to hide at the bottom of the Shapes gallery:
+        // each one is a button of its own on the Insert tab.
+        struct InsertShape {
+            const char *action;
+            QString text;
+            const char *shapeId;
+            const char *icon;
+            QString toolTip;
+        };
+        const InsertShape insertShapes[] = {
+            {"insert_formula", i18n("Formula"), "FormulaShapeID", "functions",
+             i18n("Insert a formula and edit it with the formula tools")},
+            {"insert_wordart", i18n("Word Art"), "ArtisticText", "style",
+             i18n("Insert an artistic text shape")},
+            {"insert_stateshape", i18n("State"), "StateShape", "fact_check",
+             i18n("Insert a state shape")},
+            {"insert_3dscene", i18n("3D Scene"), "ThreedShape", "category",
+             i18n("Insert a 3D scene")},
+            {"insert_vectorimage", i18n("Vector Image"), "VectorShapeID", "polyline",
+             i18n("Insert a vector image")},
+            {"insert_webshape", i18n("Web Shape"), "WebShape", "link",
+             i18n("Insert a web page shape")},
+        };
+        for (const InsertShape &shape : insertShapes) {
+            if (findAction(view, QLatin1String(shape.action))) {
+                continue;
+            }
+            auto *action = new QAction(KoRibbonIcons::forCommand(QLatin1String(shape.icon)), shape.text, view);
+            action->setToolTip(shape.toolTip);
+            view->actionCollection()->addAction(QLatin1String(shape.action), action);
+            const QString shapeId = QLatin1String(shape.shapeId);
+            QObject::connect(action, &QAction::triggered, view, [view, canvas, shapeId] {
+                if (!view->koDocument()->isReadWrite()) {
+                    return;
+                }
+                if (KoCreateShapesTool *tool = KoToolManager::instance()->shapeCreatorTool(canvas)) {
+                    tool->setShapeId(shapeId);
+                    tool->setShapeProperties(nullptr);
+                    KoToolManager::instance()->switchToolRequested(KoCreateShapesTool_ID);
+                    canvas->canvasWidget()->setFocus(Qt::OtherFocusReason);
+                }
+            });
+        }
         const auto stagePage = [&](const QString &title, const QString &id, const QStringList &menus = {}) {
             auto *widget = new QWidget;
             widget->setObjectName(id);
@@ -1046,7 +1087,6 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
         home = stagePage(i18n("Home"), QStringLiteral("stageHomePage"));
         home->setProperty("ribbonDefaultTool", QStringLiteral("InteractionTool"));
         stagePage(i18n("Insert"), QStringLiteral("stageInsertPage"));
-        stagePage(i18n("Draw"), QStringLiteral("stageDrawPage"));
         auto *design = stagePage(i18n("Design"), QStringLiteral("stageDesignPage"));
         design->setProperty("ribbonActivateTool", QStringLiteral("KoPABackgroundTool"));
         stagePage(i18n("Transitions"), QStringLiteral("stageTransitionsPage"));
@@ -1059,6 +1099,10 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
         shapeFormat->setProperty("ribbonContextActive", false);
         auto *tableFormat = stagePage(i18n("Table Layout"), QStringLiteral("stageTableFormatPage"));
         tableFormat->setProperty("ribbonContextActive", false);
+        // Chart Tools, shown while a chart is selected. The chart plugin fills
+        // the page.
+        auto *chartDesign = stagePage(i18n("Chart Design"), QStringLiteral("stageChartDesignPage"));
+        chartDesign->setProperty("ribbonContextActive", false);
         stagePage(i18n("Help"), QStringLiteral("stageHelpPage"), {QStringLiteral("help")});
     } else {
         auto *filePage = addPage(i18n("File"), {}, true);

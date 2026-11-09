@@ -21,6 +21,7 @@
 
 #include <FlakeDebug.h>
 
+#include <QTextBlock>
 #include <QTextCursor>
 #include <QTextDocument>
 
@@ -55,6 +56,30 @@ bool KoTosContainer::loadText(const KoXmlElement &element, KoShapeLoadingContext
 {
     Q_D(const KoTosContainer);
 
+    // Read the autofit settings the importer stored in the shape's style. The
+    // style is not on the stack at this point, so push it for the lookup only.
+    qreal autofitScale = 1.0;
+    int autofitLineSpacingReduction = 0;
+    bool shrinkToFit = false;
+    {
+        KoStyleStack &styleStack = context.odfLoadingContext().styleStack();
+        styleStack.save();
+        if (element.hasAttributeNS(KoXmlNS::presentation, "style-name")) {
+            context.odfLoadingContext().fillStyleStack(element, KoXmlNS::presentation, "style-name", "presentation");
+        } else if (element.hasAttributeNS(KoXmlNS::draw, "style-name")) {
+            context.odfLoadingContext().fillStyleStack(element, KoXmlNS::draw, "style-name", "graphic");
+        }
+        styleStack.setTypeProperties("graphic");
+        if (styleStack.property(KoXmlNS::style, "shrink-to-fit") == "true") {
+            shrinkToFit = true;
+            const qreal fontScale = styleStack.property(KoXmlNS::calligra, "autofit-font-scale").toDouble();
+            if (fontScale > 0 && fontScale < 100000)
+                autofitScale = fontScale / 100000.0;
+            autofitLineSpacingReduction = styleStack.property(KoXmlNS::calligra, "autofit-line-spacing-reduction").toInt();
+        }
+        styleStack.restore();
+    }
+
     KoXmlElement child;
     forEachElement(child, element)
     {
@@ -74,6 +99,24 @@ bool KoTosContainer::loadText(const KoXmlElement &element, KoShapeLoadingContext
             Q_ASSERT(shapeData);
             shapeData->loadStyle(element, context);
             bool loadOdf = shapeData->loadOdf(element, context);
+
+            if (loadOdf && autofitScale < 1.0) {
+                QTextDocument *document = shapeData->document();
+                const bool undoRedoEnabled = document->isUndoRedoEnabled();
+                const bool modified = document->isModified();
+                document->setUndoRedoEnabled(false);
+                KoTextShapeDataBase::scaleFontSizes(document, autofitScale);
+                document->setUndoRedoEnabled(undoRedoEnabled);
+                document->setModified(modified);
+            }
+            if (loadOdf && shrinkToFit) {
+                // The text shape keeps the text inside the shape when it is
+                // resized or its text is edited; see TextShape::applyAutofit.
+                shapeData->setResizeMethod(KoTextShapeDataBase::ShrinkToFitResize);
+            }
+            if (loadOdf && autofitLineSpacingReduction > 0) {
+                shapeData->setAutofitLineSpacingReduction(autofitLineSpacingReduction);
+            }
 
             return loadOdf;
         }

@@ -10,6 +10,8 @@
 
 #include "KWOdfLoader.h"
 
+#include <QTextTable>
+
 #include "KWDocument.h"
 #include "KWOdfSharedLoadingData.h"
 #include "KWPage.h"
@@ -235,8 +237,16 @@ bool KWOdfLoader::load(KoOdfReadStore &odfStore)
     textShapeData.document()->setUndoRedoEnabled(true);
 
     KoTextEditor *editor = KoTextDocument(textShapeData.document()).textEditor();
-    if (editor) // at one point we have to get the position from the odf doc instead.
+    if (editor) { // at one point we have to get the position from the odf doc instead.
         editor->setPosition(0);
+        // A document that starts with a table opens with the cursor in the
+        // blank paragraph in front of it, which looks like the first cell but
+        // is not part of the table. Start in the first cell instead, like Word
+        // does, so the cursor, the typing and the table tools all agree.
+        if (const QTextTable *table = editor->tableAtCursor(true)) {
+            editor->setPosition(table->cellAt(0, 0).firstPosition());
+        }
+    }
 
     if (updater)
         updater->setProgress(90);

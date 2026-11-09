@@ -638,6 +638,9 @@ void PlotAreaConfigWidget::updateData()
 
 void PlotAreaConfigWidget::slotShowTableEditor()
 {
+    if (!chart || !chart->plotArea()) {
+        return;
+    }
     if (!chart->usesInternalModelOnly()) {
         debugChartUiPlotArea << "external";
         switch (chart->chartType()) {
@@ -761,6 +764,10 @@ void PlotAreaConfigWidget::slotShowTableEditor()
 
 void PlotAreaConfigWidget::slotShowCellRegionDialog()
 {
+    // Charts that carry their own data have no cell ranges to choose.
+    if (!d->cellRegionDialog) {
+        return;
+    }
     // Update regions of selected dataset
     int selectedDataSet = d->cellRegionDialog->dataSets->currentIndex();
     ui_dataSetSelectionChanged_CellRegionDialog(selectedDataSet);

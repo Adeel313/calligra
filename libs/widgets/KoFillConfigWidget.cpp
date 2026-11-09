@@ -10,6 +10,8 @@
 #include <QAction>
 #include <QBitmap>
 #include <QButtonGroup>
+#include <QCoreApplication>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QSharedPointer>
@@ -131,10 +133,23 @@ KoFillConfigWidget::KoFillConfigWidget(QWidget *parent)
     , d(new Private())
 {
     setObjectName("Fill widget");
-    QHBoxLayout *layout = new QHBoxLayout(this);
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    // The Stage ribbon has no room for a long row of fill mode buttons, so it
+    // stacks the four of them as a two by two block next to the colour button.
+    const bool compactGrid = QCoreApplication::applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive);
+    auto *layout = new QGridLayout(this);
+    setSizePolicy(compactGrid ? QSizePolicy::Fixed : QSizePolicy::Expanding, QSizePolicy::Fixed);
     layout->setContentsMargins({});
     layout->setSpacing(0);
+
+    int styleCell = 0;
+    auto addStyleButton = [layout, compactGrid, &styleCell](QToolButton *styleButton) {
+        if (compactGrid) {
+            layout->addWidget(styleButton, styleCell / 2, styleCell % 2);
+        } else {
+            layout->addWidget(styleButton, 0, styleCell);
+        }
+        ++styleCell;
+    };
 
     d->group = new QButtonGroup(this);
     d->group->setExclusive(true);
@@ -147,7 +162,7 @@ KoFillConfigWidget::KoFillConfigWidget(QWidget *parent)
     button->setToolTip(i18nc("No stroke or fill", "None"));
     button->setCheckable(true);
     d->group->addButton(button, None);
-    layout->addWidget(button);
+    addStyleButton(button);
 
     // The button for solid fill
     button = new KoGroupButton(KoGroupButton::GroupCenter, this);
@@ -155,7 +170,7 @@ KoFillConfigWidget::KoFillConfigWidget(QWidget *parent)
     button->setToolTip(i18nc("Solid color stroke or fill", "Solid"));
     button->setCheckable(true);
     d->group->addButton(button, Solid);
-    layout->addWidget(button);
+    addStyleButton(button);
 
     // The button for gradient fill
     button = new KoGroupButton(KoGroupButton::GroupCenter, this);
@@ -163,7 +178,7 @@ KoFillConfigWidget::KoFillConfigWidget(QWidget *parent)
     button->setToolTip(i18n("Gradient"));
     button->setCheckable(true);
     d->group->addButton(button, Gradient);
-    layout->addWidget(button);
+    addStyleButton(button);
 
     // The button for pattern fill
     button = new KoGroupButton(KoGroupButton::GroupRight, this);
@@ -171,13 +186,20 @@ KoFillConfigWidget::KoFillConfigWidget(QWidget *parent)
     button->setToolTip(i18n("Pattern"));
     button->setCheckable(true);
     d->group->addButton(button, Pattern);
-    layout->addWidget(button);
+    addStyleButton(button);
 
     connect(d->group, &QButtonGroup::idClicked, this, &KoFillConfigWidget::styleButtonPressed);
 
     d->colorButton = new KoColorPopupButton(this);
-    d->colorButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    layout->addWidget(d->colorButton);
+    if (compactGrid) {
+        // One square swatch beside the two rows of mode buttons.
+        d->colorButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+        d->colorButton->setMinimumWidth(28);
+        layout->addWidget(d->colorButton, 0, 2, 2, 1);
+    } else {
+        d->colorButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        layout->addWidget(d->colorButton, 0, styleCell);
+    }
 
     d->noFillAction = new QAction(nullptr);
 
@@ -207,7 +229,10 @@ KoFillConfigWidget::KoFillConfigWidget(QWidget *parent)
     // Spacer
     d->spacer = new QWidget();
     d->spacer->setObjectName("SpecialSpacer");
-    layout->addWidget(d->spacer);
+    layout->addWidget(d->spacer, 0, compactGrid ? 3 : styleCell + 1);
+    if (compactGrid) {
+        d->spacer->hide();
+    }
 
     KoCanvasController *canvasController = KoToolManager::instance()->activeCanvasController();
     KoSelection *selection = canvasController->canvas()->shapeManager()->selection();

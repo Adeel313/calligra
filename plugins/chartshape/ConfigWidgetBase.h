@@ -89,7 +89,8 @@ public:
     }
 
 public:
-    ChartShape *chart;
+    // Null until open() gets the shape of the tool, so it must not be assumed.
+    ChartShape *chart = nullptr;
 
 private Q_SLOTS:
     void removeSubDialogs(KoChart::ChartType type, KoChart::ChartType prev = LastChartType)

@@ -572,12 +572,22 @@ bool KoTextLayoutArea::layout(FrameIterator *cursor)
             if (!d->blockRects.isEmpty()) {
                 d->blockRects.last().setBottom(d->y);
             }
+            // A table can be dragged away from the place the text flow gives it.
+            // The offset is applied to the whole table area, so cells, borders,
+            // caret positions and selection painting all move with the table.
+            const QTextTableFormat tableFormat = table->format();
+            const QPointF tableOffset(tableFormat.property(KoTableStyle::TableOffsetX).toReal(),
+                                      tableFormat.property(KoTableStyle::TableOffsetY).toReal());
+
             tableArea->setVirginPage(virginPage());
-            tableArea->setReferenceRect(left(), right(), d->y, maximumAllowedBottom());
+            tableArea->setReferenceRect(left() + tableOffset.x(), right() + tableOffset.x(), d->y + tableOffset.y(), maximumAllowedBottom());
             if (tableArea->layoutTable(cursor->tableIterator(table)) == false) {
                 d->endOfArea = new FrameIterator(cursor);
-                d->y = tableArea->bottom();
-                setBottom(d->y + d->footNotesHeight);
+                // The flow position of the table does not include the offset: the
+                // text after the table keeps the place it would have had without it.
+                const qreal tableBottom = tableArea->bottom();
+                d->y = tableBottom - tableOffset.y();
+                setBottom(qMax(d->y, tableBottom) + d->footNotesHeight);
                 // Expand bounding rect so if we have content outside we show it
                 expandBoundingLeft(tableArea->boundingRect().left());
                 expandBoundingRight(tableArea->boundingRect().right());
@@ -589,7 +599,7 @@ bool KoTextLayoutArea::layout(FrameIterator *cursor)
             expandBoundingLeft(tableArea->boundingRect().left());
             expandBoundingRight(tableArea->boundingRect().right());
             d->bottomSpacing = 0;
-            d->y = tableArea->bottom();
+            d->y = tableArea->bottom() - tableOffset.y();
             delete cursor->currentTableIterator;
             cursor->currentTableIterator = nullptr;
         } else if (subFrame) {
@@ -1651,6 +1661,18 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
     qreal breakHeight = 0.0;
     qreal ascent = 0.0;
     qreal descent = 0.0;
+    // The largest font of the line, used to recognise formula-like lines that
+    // mix big glyphs into smaller text.
+    qreal tallestFont = 0.0;
+    // Math is drawn with a font whose ascent and descent are taller than the
+    // sentence's own font even at the same point size. Compressed line spacing
+    // must leave room for it, or the expression overlaps the line above/below.
+    bool hasMathFont = false;
+    const auto noteFont = [&](const QTextCharFormat &format) {
+        tallestFont = qMax(tallestFont, format.fontPointSize());
+        if (format.font().family().contains(QLatin1String("Math"), Qt::CaseInsensitive))
+            hasMathFont = true;
+    };
     const bool useFontProperties = style.value(KoParagraphStyle::LineSpacingFromFont).toBool();
 
     if (cursor->fragmentIterator.atEnd()) { // no text in parag.
@@ -1684,6 +1706,7 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
             fontStretch = fragment.charFormat().property(KoCharacterStyle::FontYStretch).toDouble();
         }
         // read max font height
+        noteFont(fragment.charFormat());
         height = qMax(height, fragment.charFormat().fontPointSize() * fontStretch);
 
         KoInlineObjectExtent pos = d->documentLayout->inlineObjectExtent(fragment);
@@ -1725,6 +1748,7 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
                     fontStretch = fragment.charFormat().property(KoCharacterStyle::FontYStretch).toDouble();
                 }
                 // read max font height
+                noteFont(fragment.charFormat());
                 height = qMax(height, fragment.charFormat().fontPointSize() * fontStretch);
 
                 KoInlineObjectExtent pos = d->documentLayout->inlineObjectExtent(fragment);
@@ -1801,6 +1825,16 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
                     height *= percent / 100.0;
                 }
                 if (!useFontProperties) height *= 1.16; // default word-processing leading
+                // A line that carries math keeps the height its glyphs really
+                // occupy: math fonts have a taller ascent/descent than the
+                // sentence font, and lines mixing in larger formula runs (like
+                // big parentheses or operators) are taller still. Compressed
+                // spacing must not squeeze those into the neighbouring text.
+                const qreal baseFont = style.font().pointSizeF();
+                if (tallestFont > 0.0
+                        && (hasMathFont || (baseFont > 0.0 && tallestFont > baseFont * 1.15))) {
+                    height = qMax(height, tallestFont * 1.2);
+                }
             }
             height += lineSpacing;
         }

@@ -7,6 +7,10 @@
 #include "KoTextShapeDataBase.h"
 #include "KoTextShapeDataBase_p.h"
 
+#include <QTextBlock>
+#include <QTextCursor>
+#include <QTextDocument>
+
 KoTextShapeDataBasePrivate::KoTextShapeDataBasePrivate()
     : document(nullptr)
     , textAlignment(Qt::AlignLeft | Qt::AlignTop)
@@ -94,4 +98,32 @@ void KoTextShapeDataBase::setAutofitLineSpacingReduction(int reduction)
 {
     Q_D(KoTextShapeDataBase);
     d->autofitLineSpacingReduction = reduction;
+}
+
+void KoTextShapeDataBase::scaleFontSizes(QTextDocument *document, qreal factor)
+{
+    if (!document || factor <= 0.0 || qFuzzyCompare(factor, qreal(1.0)))
+        return;
+
+    for (QTextBlock block = document->begin(); block.isValid(); block = block.next()) {
+        // Runs that inherit their size from the paragraph style still have to
+        // scale, so an inherited size falls back to the block or document size.
+        qreal inheritedSize = block.charFormat().fontPointSize();
+        if (inheritedSize <= 0)
+            inheritedSize = document->defaultFont().pointSizeF();
+        for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it) {
+            const QTextFragment fragment = it.fragment();
+            if (!fragment.isValid())
+                continue;
+            QTextCharFormat format = fragment.charFormat();
+            const qreal pointSize = format.fontPointSize() > 0 ? format.fontPointSize() : inheritedSize;
+            if (pointSize <= 0)
+                continue;
+            format.setFontPointSize(qMax(qreal(1.0), pointSize * factor));
+            QTextCursor cursor(document);
+            cursor.setPosition(fragment.position());
+            cursor.setPosition(fragment.position() + fragment.length(), QTextCursor::KeepAnchor);
+            cursor.setCharFormat(format);
+        }
+    }
 }

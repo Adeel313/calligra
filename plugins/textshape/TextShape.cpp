@@ -7,10 +7,10 @@
  * SPDX-License-Identifier: LGPL-2.0-or-later
  */
 #include "TextShape.h"
-#include "ShrinkToFitShapeContainer.h"
 #include "SimpleRootAreaProvider.h"
 #include <KoTextSharedLoadingData.h>
 
+#include <FrameIterator.h>
 #include <KoTextEditor.h>
 #include <KoTextLayoutRootArea.h>
 
@@ -46,6 +46,8 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPen>
+#include <QScopedValueRollback>
+#include <QTextBlock>
 #include <QTextLayout>
 #include <QTextTable>
 
@@ -72,9 +74,94 @@ TextShape::TextShape(KoInlineTextObjectManager *inlineTextObjectManager, KoTextR
     setCollisionDetection(true);
 
     QObject::connect(m_layout, &KoTextDocumentLayout::layoutIsDirty, m_layout, &KoTextDocumentLayout::scheduleLayout);
+    // Shrink-to-fit frames and text on shapes are fitted here whenever the
+    // layout changed (edited text, resized shape). The document is the
+    // connection's context, so it dies with the shape's text data.
+    QObject::connect(m_layout, &KoTextDocumentLayout::finishedLayout, m_textShapeData->document(), [this]() {
+        applyAutofit();
+    });
 }
 
 TextShape::~TextShape() = default;
+
+void TextShape::applyAutofit()
+{
+    if (m_fittingAutofit || m_textShapeData->resizeMethod() != KoTextShapeData::ShrinkToFitResize)
+        return;
+    KoTextLayoutRootArea *rootArea = m_textShapeData->rootArea();
+    if (!rootArea)
+        return;
+
+    QTextDocument *document = m_textShapeData->document();
+    const qreal padding = m_textShapeData->topPadding() + m_textShapeData->bottomPadding();
+    const qreal available = size().height() - padding;
+    if (available <= 0.0)
+        return;
+
+    // Empty paragraphs at the end are an editing artefact, not content; they
+    // must not make the text smaller.
+    QTextBlock lastVisible = document->lastBlock();
+    while (lastVisible.isValid() && lastVisible.text().trimmed().isEmpty() && !lastVisible.textList())
+        lastVisible = lastVisible.previous();
+    if (!lastVisible.isValid())
+        return;
+
+    // Text that did not fit is not laid out at all, so it cannot be measured.
+    // The layout cursor tells whether everything reached the frame.
+    bool overflow = false;
+    if (FrameIterator *next = rootArea->nextStartOfArea()) {
+        if (!next->it.atEnd()) {
+            const QTextBlock stoppedAt = next->it.currentBlock();
+            overflow = stoppedAt.isValid()
+                && stoppedAt.position() < lastVisible.position() + lastVisible.length();
+        }
+    }
+
+    // Measure the text itself: the root area is as tall as the shape, so its
+    // bounds say nothing about how much room the text really needs.
+    qreal required = 0.0;
+    for (QTextBlock block = document->begin(); block.isValid() && block.position() <= lastVisible.position(); block = block.next()) {
+        const QTextLayout *blockLayout = block.layout();
+        if (!blockLayout)
+            continue;
+        for (int i = 0; i < blockLayout->lineCount(); ++i) {
+            required = qMax(required, blockLayout->position().y() + blockLayout->lineAt(i).rect().bottom() - rootArea->top());
+        }
+    }
+    if (required <= 0.0)
+        return;
+
+    qreal target;
+    if (overflow) {
+        // Shrink in bounded steps: the measured height is only a lower bound
+        // when part of the text is missing from the layout.
+        target = m_appliedAutofit * 0.9;
+    } else {
+        const qreal factor = available / required;
+        // Ignore rounding noise, or growing and shrinking would alternate.
+        if (factor >= 0.98 && factor <= 1.06)
+            return;
+        // Grow only in small steps so that a wrapping change cannot make the
+        // text alternate between too large and too small.
+        target = m_appliedAutofit * qBound(qreal(0.9), factor, qreal(1.05));
+    }
+    // The sizes the document was loaded with are an upper bound, mirroring the
+    // scale PowerPoint recorded for the shape.
+    target = qBound(qreal(0.2), target, qreal(1.0));
+    if (qAbs(target - m_appliedAutofit) < 0.005)
+        return;
+
+    QScopedValueRollback<bool> guard(m_fittingAutofit, true);
+    const bool undoRedoEnabled = document->isUndoRedoEnabled();
+    const bool modified = document->isModified();
+    document->setUndoRedoEnabled(false);
+    KoTextShapeDataBase::scaleFontSizes(document, target / m_appliedAutofit);
+    document->setUndoRedoEnabled(undoRedoEnabled);
+    // Fitting is not an edit: keep the document's modified state as it was, so
+    // opening a document does not look like an unsaved change.
+    document->setModified(modified);
+    m_appliedAutofit = target;
+}
 
 void TextShape::paintComponent(QPainter &painter, const KoViewConverter &converter, KoShapePaintingContext &paintContext)
 {
@@ -208,14 +295,7 @@ void TextShape::saveOdf(KoShapeSavingContext &context) const
     QString textHeight = additionalAttribute("fo:min-height");
     const_cast<TextShape *>(this)->removeAdditionalAttribute("fo:min-height");
     writer.startElement("draw:frame");
-    // if the TextShape is wrapped in a shrink to fit container we need to save the geometry of the container as
-    // the geometry of the shape might have been changed.
-    if (ShrinkToFitShapeContainer *stf = dynamic_cast<ShrinkToFitShapeContainer *>(this->parent())) {
-        stf->saveOdfAttributes(context, OdfSize | OdfPosition | OdfTransformation);
-        saveOdfAttributes(context, OdfAdditionalAttributes | OdfMandatories | OdfCommonChildElements);
-    } else {
-        saveOdfAttributes(context, OdfAllAttributes);
-    }
+    saveOdfAttributes(context, OdfAllAttributes);
 
     // ODF presentation tables are direct children of draw:frame. Wrapping
     // them in draw:text-box makes Impress discard them during PPTX export.
@@ -405,8 +485,23 @@ bool TextShape::loadOdfFrame(const KoXmlElement &element, KoShapeLoadingContext 
 bool TextShape::loadOdfFrameElement(const KoXmlElement &element, KoShapeLoadingContext &context)
 {
     bool ok = m_textShapeData->loadOdf(element, context, nullptr, this);
-    if (ok)
-        ShrinkToFitShapeContainer::tryWrapShape(this, element, context);
+    if (ok) {
+        // PowerPoint stores the authored text size and displays it scaled down
+        // until it fits. Apply that scale once; the shape keeps the text fitted
+        // afterwards by scaling the font sizes (see applyAutofit()).
+        const int authoredScale = m_textShapeData->autofitFontScale();
+        if (authoredScale > 0 && authoredScale < 100000) {
+            QTextDocument *document = m_textShapeData->document();
+            const bool undoRedoEnabled = document->isUndoRedoEnabled();
+            const bool modified = document->isModified();
+            document->setUndoRedoEnabled(false);
+            KoTextShapeDataBase::scaleFontSizes(document, authoredScale / 100000.0);
+            document->setUndoRedoEnabled(undoRedoEnabled);
+            document->setModified(modified);
+            // The sizes now carry the scale, so it must not be applied again.
+            m_textShapeData->setAutofitFontScale(0);
+        }
+    }
     return ok;
 }
 

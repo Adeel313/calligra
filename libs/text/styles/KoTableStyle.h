@@ -61,7 +61,9 @@ public:
         UseFirstColumnStyles, ///< table:use-first-column-styles ODF 1.2 19.738
         UseFirstRowStyles, ///< table:use-first-row-styles ODF 1.2 19.739
         UseLastColumnStyles, ///< table:use-last-column-styles ODF 1.2 19.740
-        UseLastRowStyles ///< table:use-last-row-styles ODF 1.2 19.741
+        UseLastRowStyles, ///< table:use-last-row-styles ODF 1.2 19.741
+        TableOffsetX, ///< Horizontal offset of a freely positioned table, in points
+        TableOffsetY ///< Vertical offset of a freely positioned table, in points
     };
 
     /// Constructor
@@ -165,6 +167,11 @@ public:
     QString masterPageName() const;
     /// Set the name of the master-page.
     void setMasterPageName(const QString &name);
+
+    /// Offset of the table relative to the position the text flow would give it.
+    /// A non zero offset means the table has been dragged away from the flow.
+    QPointF tableOffset() const;
+    void setTableOffset(const QPointF &offset);
 
     /// copy all the properties from the other style to this style, effectively duplicating it.
     void copyProperties(const KoTableStyle *style);

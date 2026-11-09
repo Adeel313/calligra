@@ -134,6 +134,15 @@ public:
     /// Sets the PowerPoint autofit line spacing reduction (OOXML units, 1000 = 1%).
     void setAutofitLineSpacingReduction(int reduction);
 
+    /**
+     * Scales the font size of all text in @p document by @p factor.
+     *
+     * Characters that inherit their size from a paragraph style are scaled
+     * from the inherited size, so an autofit never leaves parts of the text
+     * at a different size.
+     */
+    static void scaleFontSizes(QTextDocument *document, qreal factor);
+
 protected:
     /// constructor
     KoTextShapeDataBase(KoTextShapeDataBasePrivate &);

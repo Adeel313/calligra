@@ -141,6 +141,8 @@ protected:
     qreal m_previousParagraphBottomMargin;
     //! Word's default: do not leave a single line of a paragraph alone on a page.
     bool m_widowControl;
+    //! Offset of the floating table (w:tblpPr) currently being read, in points.
+    QPointF m_tableOffset;
     KoFilter::ConversionStatus read_trPr();
     KoFilter::ConversionStatus read_cnfStyle();
     KoFilter::ConversionStatus read_trHeight();

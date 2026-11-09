@@ -4721,6 +4721,14 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tblpPr()
         STRING_TO_INT(tblpY, m_svgY, QString("w:tblpY"));
     }
 
+    // A table positioned relative to the margin and to the surrounding text is
+    // the representation this filter writes for a table that was dragged away
+    // from its place in the flow, so read the position back as that offset.
+    m_tableOffset = QPointF();
+    if (horzAnchor == "margin" && vertAnchor == "text" && tblpXSpec.isEmpty() && tblpYSpec.isEmpty()) {
+        m_tableOffset = QPointF(TWIP_TO_POINT(m_svgX), TWIP_TO_POINT(m_svgY));
+    }
+
     int bottom = 0, left = 0, right = 0, top = 0;
     STRING_TO_INT(bottomFromText, bottom, QString("w:bottomFromText"));
     STRING_TO_INT(leftFromText, left, QString("w:leftFromText"));
@@ -5724,6 +5732,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
 
     m_currentTableStyleName.clear();
     m_currentDrawStyleName.clear();
+    m_tableOffset = QPointF();
 
     m_tableMainStyle = KoTblStyle::create();
     if (m_moveToStylesXml) {
@@ -5791,6 +5800,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     // Keep it a table in the text flow: the width, alignment and borders of
     // the table style are preserved and the rows paginate normally.  Only the
     // floating offset of the table is dropped.
+
+    // Keep the position of a table that was moved away from the text flow.
+    m_tableMainStyle->setTableOffset(m_tableOffset);
 
     m_table->setTableStyle(m_tableMainStyle);
 

@@ -46,6 +46,7 @@ class QTextCharFormat;
 class QTextBlockFormat;
 class QTextDocument;
 class QTextDocumentFragment;
+class QTextTable;
 class QString;
 class QMimeData;
 
@@ -105,6 +106,16 @@ public:
     bool operator>=(const QTextCursor &other) const;
 
     const QTextCursor constCursor() const;
+
+    /**
+     * Return the table the cursor is in, or nullptr when it is not in one.
+     *
+     * With @p includeBlankParagraphsBefore, the blank paragraphs in front of a
+     * table count as being part of it. A document that starts with a table
+     * opens with the cursor in those paragraphs, so the document loader uses
+     * that to start in the first cell instead.
+     */
+    const QTextTable *tableAtCursor(bool includeBlankParagraphsBefore = false) const;
 
 private:
     // for the call to KoTextLoader::loadBody, which has a QTextCursor
