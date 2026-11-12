@@ -155,7 +155,7 @@ void KPrPageEffectDocker::configureRibbon()
         caption->setProperty("ribbonGroupTitle", true);
         caption->setAlignment(Qt::AlignCenter);
         box->addWidget(caption);
-        widget->setMinimumHeight(110);
+        widget->setMinimumHeight(0);
         row->addWidget(widget);
         return content;
     };
@@ -174,8 +174,8 @@ void KPrPageEffectDocker::configureRibbon()
     gallery->setWrapping(false);
     gallery->setMovement(QListView::Static);
     gallery->setIconSize(QSize(48, 32));
-    gallery->setGridSize(QSize(92, 70));
-    gallery->setFixedSize(390, 82);
+    gallery->setGridSize(QSize(92, 64));
+    gallery->setFixedSize(390, 74);
     gallery->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     for (int index = 0; index < m_effectCombo->count(); ++index) {
         QPixmap icon(48, 32);

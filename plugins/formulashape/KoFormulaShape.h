@@ -48,6 +48,15 @@ public:
 
     void updateLayout();
 
+    /**
+     * Show the formula enlarged while it is edited, so its elements are easy
+     * to reach, and back at the size of the surrounding text afterwards.
+     */
+    void setEditing(bool editing);
+    bool isEditing() const;
+    /// @return the factor the formula is drawn with (1.0 outside of editing)
+    qreal editingScale() const;
+
     /// @return The element at the point @p p
     BasicElement *elementAt(const QPointF &p);
 
@@ -95,6 +104,9 @@ private:
 
     /// True if this formula is inline, i.e. not embedded in a formula document.
     bool m_isInline;
+
+    /// True while the formula tool is editing this formula
+    bool m_isEditing = false;
 
     std::unique_ptr<FormulaDocument> m_document;
     KoDocumentResourceManager *m_resourceManager;

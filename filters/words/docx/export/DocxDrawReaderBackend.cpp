@@ -402,6 +402,13 @@ void DocxDrawReaderBackend::elementDrawPath(KoXmlStreamReader &reader, OdfReader
 {
     if (reader.namespaceUri() != KoXmlNS::draw || reader.name() != QLatin1StringView("custom-shape")) { return; }
     if (!reader.isStartElement()) {
+        if (!m_customShapes.isEmpty()) {
+            PresetShape shape = m_customShapes.pop();
+            shape.richText = m_frameTextBoxContent;
+            EmbeddedImage drawing;
+            drawing.name = shape.preset;
+            writeDrawing(drawing, false, QString(), &shape);
+        }
         elementDrawFrame(reader, context);
         return;
     }
@@ -426,9 +433,7 @@ void DocxDrawReaderBackend::elementDrawPath(KoXmlStreamReader &reader, OdfReader
                 : properties->attribute(QStringLiteral("svg:stroke-color"));
         }
     }
-    EmbeddedImage drawing;
-    drawing.name = shape.preset;
-    writeDrawing(drawing, false, QString(), &shape);
+    m_customShapes.push(shape);
 }
 
 void DocxDrawReaderBackend::writePrimitive(KoXmlStreamReader &reader, const QString &preset, bool line)

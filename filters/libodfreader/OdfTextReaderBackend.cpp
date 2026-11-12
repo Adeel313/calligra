@@ -114,3 +114,13 @@ void OdfTextReaderBackend::textVariable(const QString &name, const QString &valu
     Q_UNUSED(name);
     Q_UNUSED(value);
 }
+
+void OdfTextReaderBackend::trackedChanges(KoXmlStreamReader &reader, OdfReaderContext *)
+{
+    reader.skipCurrentElement();
+}
+
+void OdfTextReaderBackend::textChange(KoXmlStreamReader &reader, OdfReaderContext *)
+{
+    reader.skipCurrentElement();
+}

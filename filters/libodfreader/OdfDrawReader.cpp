@@ -208,7 +208,18 @@ void OdfDrawReader::readCommonGraphicsElements(KoXmlStreamReader &reader)
         // Preset shapes are paths with enhanced geometry. Keep the existing
         // backend path callback ABI, and leave geometry/text to that backend.
         m_backend->elementDrawPath(reader, m_context);
-        while (reader.readNextStartElement()) { reader.skipCurrentElement(); }
+        m_backend->elementDrawTextBox(reader, m_context);
+        while (reader.readNextStartElement()) {
+            if (reader.namespaceUri() == QLatin1String("urn:oasis:names:tc:opendocument:xmlns:drawing:1.0")
+                && reader.name() == QLatin1String("enhanced-geometry")) {
+                reader.skipCurrentElement();
+            } else if (m_parent->textReader()) {
+                m_parent->textReader()->readTextLevelElement(reader);
+            } else {
+                reader.skipCurrentElement();
+            }
+        }
+        m_backend->elementDrawTextBox(reader, m_context);
         m_backend->elementDrawPath(reader, m_context);
     } else if (tagName == "draw:ellipse") {
         readElementDrawEllipse(reader);

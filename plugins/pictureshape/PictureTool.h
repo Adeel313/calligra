@@ -42,7 +42,7 @@ public:
 
 protected:
     /// reimplemented from KoToolBase
-    QWidget *createOptionWidget() override;
+    QList<QPointer<QWidget>> createOptionWidgets() override;
 
 private Q_SLOTS:
     void colorModeChanged(int cmbBoxIndex);

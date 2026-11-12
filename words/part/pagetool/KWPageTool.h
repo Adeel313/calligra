@@ -7,10 +7,21 @@
 #ifndef KWPAGETOOL_H
 #define KWPAGETOOL_H
 
+#include <KoPageFormat.h>
 #include <KoToolBase.h>
+
+#include <QMarginsF>
+#include <QPointer>
+
+#include <functional>
 
 class KWCanvas;
 class KWDocument;
+class KUndo2MagicString;
+class KWPageSetupGallery;
+struct PageSetupState;
+struct KoPageLayout;
+struct KoColumns;
 
 class KWPageTool : public KoToolBase
 {
@@ -41,12 +52,25 @@ private:
     KWCanvas *getCanvas() const;
     KWDocument *getDocument() const;
 
+    /// The page setup of the page the cursor is on, as the gallery shows it.
+    PageSetupState pageSetupState() const;
+    /// Let the gallery follow the page setup of the current page.
+    void refreshPageSetupGallery();
+    /// Change the page style of the current page as @p change describes.
+    void applyPageSetup(const std::function<void(KoPageLayout &layout, KoColumns &columns)> &change,
+                        const KUndo2MagicString &text);
+    void applyMargins(const QMarginsF &margins);
+    void applyOrientation(KoPageFormat::Orientation orientation);
+    void applyPageFormat(KoPageFormat::Format format);
+    void applyColumns(int count);
+
 protected:
     QList<QPointer<QWidget>> createOptionWidgets() override;
 
 private:
     KWCanvas *m_canvas;
     KWDocument *m_document;
+    QPointer<KWPageSetupGallery> m_gallery;
 };
 
 #endif

@@ -188,7 +188,17 @@ bool KWOdfLoader::load(KoOdfReadStore &odfStore)
 
     // load text:page-sequence
     KoXmlElement pageSequence = KoXml::namedItemNS(body, KoXmlNS::text, "page-sequence");
-    if (!pageSequence.isNull()) {
+    // text:page-sequence describes the pages of a text-less DTP document; the
+    // ODF specification does not allow it next to text:p or text:h. Older
+    // versions wrote one anyway when the main text frame was missing, which put
+    // every paragraph one page down and left the first page empty. Ignore it
+    // when the document has flow text of its own.
+    const bool hasFlowText = !KoXml::namedItemNS(body, KoXmlNS::text, "p").isNull()
+        || !KoXml::namedItemNS(body, KoXmlNS::text, "h").isNull()
+        || !KoXml::namedItemNS(body, KoXmlNS::text, "list").isNull()
+        || !KoXml::namedItemNS(body, KoXmlNS::text, "section").isNull()
+        || !KoXml::namedItemNS(body, KoXmlNS::text, "table").isNull();
+    if (!pageSequence.isNull() && !hasFlowText) {
         KWPageManager *pageManager = m_document->pageManager();
         KoXmlElement page;
         forEachElement(page, pageSequence)

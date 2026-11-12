@@ -59,7 +59,8 @@ public:
         Date, ///< Restrict to dates
         Integer, ///< Restrict to integers
         TextLength, ///< Restrict text length
-        List ///< Restrict to lists
+        List, ///< Restrict to lists
+        Formula ///< Restrict to cells for which a formula is true
     };
 
     enum Type {

@@ -6,33 +6,47 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>246</width>
-    <height>290</height>
+    <width>420</width>
+    <height>52</height>
    </rect>
   </property>
-  <layout class="QHBoxLayout">
-   <item column="0">
-    <widget class="QLabel" name="label">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="latexLayout">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>LaTeX:</string>
+       </property>
+       <property name="buddy">
+        <cstring>latexEdit</cstring>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="latexEdit">
+       <property name="minimumSize">
+        <size>
+         <width>120</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="placeholderText">
+        <string>e.g. \frac{a}{b}</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="errorLabel">
      <property name="text">
-      <string>Font:</string>
-     </property>
-     <property name="buddy">
-      <cstring>fontComboBox</cstring>
+      <string/>
      </property>
     </widget>
    </item>
-   <item  column="1">
-    <widget class="KoFontComboBox" name="fontComboBox" />
-   </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>KoFontComboBox</class>
-   <extends>QComboBox</extends>
-   <header>KoFontComboBox.h</header>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

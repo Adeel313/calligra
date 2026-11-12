@@ -419,6 +419,13 @@ bool Odf::loadSheet(Sheet *sheet,
     if (sheetElement.attributeNS(KoXmlNS::table, "protected", QString()) == "true") {
         loadProtection(sheet, sheetElement);
     }
+
+    static const QString calligraNS = QStringLiteral("http://www.calligra.org/2002/sheets");
+    if (sheetElement.hasAttributeNS(calligraNS, "freeze-rows") || sheetElement.hasAttributeNS(calligraNS, "freeze-columns")) {
+        const int frozenRows = sheetElement.attributeNS(calligraNS, "freeze-rows", QString()).toInt();
+        const int frozenColumns = sheetElement.attributeNS(calligraNS, "freeze-columns", QString()).toInt();
+        sheet->setFreezePoint(QPoint(frozenColumns + 1, frozenRows + 1));
+    }
     return true;
 }
 
@@ -688,13 +695,36 @@ void Odf::loadMasterLayoutPage(Sheet *sheet, KoStyleStack &styleStack)
     if (styleStack.hasProperty(KoXmlNS::style, "print-orientation")) {
         pageLayout.orientation = (styleStack.property(KoXmlNS::style, "print-orientation") == "landscape") ? KoPageFormat::Landscape : KoPageFormat::Portrait;
     }
-    if (styleStack.hasProperty(KoXmlNS::style, "scale-to-pages")) {
+    // Derive the paper format from the size, print jobs need it to select the printer page size.
+    if (pageLayout.width > 0.0 && pageLayout.height > 0.0) {
+        pageLayout.orientation = pageLayout.width > pageLayout.height ? KoPageFormat::Landscape : KoPageFormat::Portrait;
+        pageLayout.format = pageLayout.orientation == KoPageFormat::Landscape
+            ? KoPageFormat::guessFormat(POINT_TO_MM(pageLayout.height), POINT_TO_MM(pageLayout.width))
+            : KoPageFormat::guessFormat(POINT_TO_MM(pageLayout.width), POINT_TO_MM(pageLayout.height));
+    }
+    // style:scale-to-X and style:scale-to-Y carry the page limits per direction, as
+    // written by LibreOffice and Calligra. A missing direction is unlimited.
+    bool hasPageLimits = false;
+    int limitX = 0;
+    int limitY = 0;
+    if (styleStack.hasProperty(KoXmlNS::style, "scale-to-X")) {
+        bool ok = false;
+        limitX = styleStack.property(KoXmlNS::style, "scale-to-X").toInt(&ok);
+        hasPageLimits = hasPageLimits || (ok && limitX > 0);
+    }
+    if (styleStack.hasProperty(KoXmlNS::style, "scale-to-Y")) {
+        bool ok = false;
+        limitY = styleStack.property(KoXmlNS::style, "scale-to-Y").toInt(&ok);
+        hasPageLimits = hasPageLimits || (ok && limitY > 0);
+    }
+    if (hasPageLimits) {
+        sheet->printSettings()->setPageLimits(QSize(limitX, limitY));
+    } else if (styleStack.hasProperty(KoXmlNS::style, "scale-to-pages")) {
         bool ok = false;
         const int pages = styleStack.property(KoXmlNS::style, "scale-to-pages").toInt(&ok);
         if (ok && pages > 0) {
-            // ODF stores the total page count, while Sheets tracks horizontal
-            // and vertical limits separately. Retain the count as a bounded
-            // width with one page of height.
+            // ODF's style:scale-to-pages is a total page count; without a per-axis
+            // limit the sheet has to fit into that many pages in both directions.
             sheet->printSettings()->setPageLimits(QSize(pages, 1));
         }
     } else if (styleStack.hasProperty(KoXmlNS::style, "scale-to")) {
@@ -1076,6 +1106,16 @@ bool Odf::saveSheet(Sheet *sheet, OdfSavingContext &tableContext)
             debugSheetsODF << region;
             xmlWriter.addAttribute("table:print-ranges", saveRegion(region.name()));
         }
+    }
+
+    // OpenDocument has no frozen-pane attribute. Calligra keeps the freeze
+    // point on the table itself, in its own namespace, so that it survives an
+    // ODS round trip and can be mapped to the pane of a spreadsheet format.
+    const QPoint freeze = sheet->freezePoint();
+    if (freeze.x() > 1 || freeze.y() > 1) {
+        xmlWriter.addAttribute("xmlns:calligra", "http://www.calligra.org/2002/sheets");
+        xmlWriter.addAttribute("calligra:freeze-columns", freeze.x() - 1);
+        xmlWriter.addAttribute("calligra:freeze-rows", freeze.y() - 1);
     }
 
     // flake
@@ -1785,10 +1825,16 @@ QString Odf::savePageLayout(PrintSettings *settings, KoGenStyles &mainStyles, bo
     pageLayout.addProperty("style:print-page-order", pageOrder);
 
     // 15.2.16 Scale
-    // FIXME handle cases where only one direction is limited
-    if (settings->pageLimits().width() > 0 && settings->pageLimits().height() > 0) {
-        const int pages = settings->pageLimits().width() * settings->pageLimits().height();
-        pageLayout.addProperty("style:scale-to-pages", pages);
+    // The per-direction limits are stored as style:scale-to-X/Y (as LibreOffice does),
+    // so that a limit in one direction only survives a save/load round-trip.
+    const QSize pageLimits = settings->pageLimits();
+    if (pageLimits.width() > 0 || pageLimits.height() > 0) {
+        if (pageLimits.width() > 0)
+            pageLayout.addProperty("style:scale-to-X", pageLimits.width());
+        if (pageLimits.height() > 0)
+            pageLayout.addProperty("style:scale-to-Y", pageLimits.height());
+        if (pageLimits.width() > 0 && pageLimits.height() > 0)
+            pageLayout.addProperty("style:scale-to-pages", pageLimits.width() * pageLimits.height());
     } else if (settings->zoom() != 1.0) {
         pageLayout.addProperty("style:scale-to", qRound(settings->zoom() * 100)); // in %
     }

@@ -3115,8 +3115,8 @@ QList<QPointer<QWidget>> TextTool::createOptionWidgets()
         updateActions();
     }
     // Ribbon group labels and order, matching the Microsoft Office Home tab:
-    // Edit, Character, Paragraph, Styles, Search and Selection.
-    scw->setWindowTitle(i18n("Character"));
+    // Clipboard, Font, Paragraph, Styles and Editing.
+    scw->setWindowTitle(i18n("Font"));
     scw->setProperty("ribbonGroupOrder", 20);
     widgets.append(scw);
     spw->setWindowTitle(i18n("Paragraph"));
@@ -3134,10 +3134,9 @@ QList<QPointer<QWidget>> TextTool::createOptionWidgets()
         || qApp->applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive);
     if (officeRibbon) {
         scw->configureRibbon();
-        QWidget *styles = spw->configureRibbon();
-        if (stageRibbon)
-            styles->setProperty("ribbonTargetPage", QStringLiteral("stageShapeFormatPage"));
-        widgets.append(styles);
+        if (QWidget *styles = spw->configureRibbon(!stageRibbon)) {
+            widgets.append(styles);
+        }
     }
 
     bool useAdvancedText =
@@ -3176,9 +3175,13 @@ QList<QPointer<QWidget>> TextTool::createOptionWidgets()
                                    {button("insertSection"), button("configureSection"), button("splitSections")},
                                    {});
         }
-        if (stageRibbon)
-            siw->setProperty("ribbonTargetPage", QStringLiteral("stageInsertPage"));
-        widgets.append(siw);
+        if (stageRibbon) {
+            // Stage's Insert groups already expose table, field and symbol actions.
+            siw->setParent(scw);
+            siw->hide();
+        } else {
+            widgets.append(siw);
+        }
     }
     return widgets;
 }

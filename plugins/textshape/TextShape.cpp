@@ -218,15 +218,19 @@ void TextShape::paintComponent(QPainter &painter, const KoViewConverter &convert
 
     KoTextDocumentLayout::PaintContext pc;
 
-    QAbstractTextDocumentLayout::Selection selection;
-    KoTextEditor *textEditor = KoTextDocument(m_textShapeData->document()).textEditor();
-    selection.cursor = *(textEditor->cursor());
-    QPalette palette = pc.textContext.palette;
-    selection.format.setBackground(palette.brush(QPalette::Highlight));
-    selection.format.setForeground(palette.brush(QPalette::HighlightedText));
-    pc.textContext.selections.append(selection);
+    // The cursor selection is an on-screen decoration: adding it when printing makes Qt paint
+    // every paragraph once more in the highlight colour, so only do it when selections are shown.
+    if (paintContext.showSelections) {
+        QAbstractTextDocumentLayout::Selection selection;
+        KoTextEditor *textEditor = KoTextDocument(m_textShapeData->document()).textEditor();
+        selection.cursor = *(textEditor->cursor());
+        QPalette palette = pc.textContext.palette;
+        selection.format.setBackground(palette.brush(QPalette::Highlight));
+        selection.format.setForeground(palette.brush(QPalette::HighlightedText));
+        pc.textContext.selections.append(selection);
 
-    pc.textContext.selections += KoTextDocument(doc).selections();
+        pc.textContext.selections += KoTextDocument(doc).selections();
+    }
     pc.viewConverter = &converter;
     pc.imageCollection = m_imageCollection;
     pc.showFormattingCharacters = paintContext.showFormattingCharacters;

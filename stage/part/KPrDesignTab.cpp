@@ -37,8 +37,8 @@
 
 namespace
 {
-constexpr int ThemeWidth = 148;
-constexpr int ThemeHeight = 84;
+constexpr int ThemeWidth = 124;
+constexpr int ThemeHeight = 70;
 
 // The slide backgrounds that the variant gallery offers.
 QList<QColor> variantColors()
@@ -100,7 +100,7 @@ KPrDesignTab::KPrDesignTab(KPrView *view, QWidget *page)
         layout = new QHBoxLayout(m_page);
         layout->setContentsMargins(4, 2, 4, 2);
         layout->setSpacing(0);
-        layout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        layout->setAlignment(Qt::AlignLeft);
     }
     layout->addWidget(createThemesGroup());
     layout->addWidget(createVariantsGroup());
@@ -155,7 +155,7 @@ QWidget *KPrDesignTab::createThemesGroup()
         auto *button = new QToolButton(group);
         button->setAutoRaise(true);
         button->setArrowType(arrow);
-        button->setFixedSize(20, (ThemeHeight + 12) / 2);
+        button->setFixedSize(28, (ThemeHeight + 12) / 2);
         connect(button, &QToolButton::clicked, this, [this, step] {
             if (m_themesLayout && m_themesLayout->parentWidget()) {
                 // The strip scrolls inside the scroll area; move by one cell.

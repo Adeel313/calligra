@@ -61,6 +61,7 @@ public:
         , columns(sheet)
         , canvasOffsetX(0)
         , canvasOffsetY(0)
+        , freezePoint(1, 1)
     {
     }
 
@@ -104,6 +105,9 @@ public:
 
     int canvasOffsetX;
     int canvasOffsetY;
+
+    // First cell of the scrolling area, (1, 1) if the sheet is not split.
+    QPoint freezePoint;
 };
 
 Sheet::Sheet(Map *map, const QString &sheetName)
@@ -166,6 +170,7 @@ Sheet::Sheet(const Sheet &other)
     d->lcMode = other.d->lcMode;
     d->showColumnNumber = other.d->showColumnNumber;
     d->hideZero = other.d->hideZero;
+    d->freezePoint = other.d->freezePoint;
 
     d->cellStorage = new CellStorage(*other.d->cellStorage, this);
     d->headerFooter = new HeaderFooter(*other.d->headerFooter);
@@ -275,6 +280,16 @@ bool Sheet::getShowGrid() const
 void Sheet::setShowGrid(bool _showGrid)
 {
     d->showGrid = _showGrid;
+}
+
+QPoint Sheet::freezePoint() const
+{
+    return d->freezePoint;
+}
+
+void Sheet::setFreezePoint(const QPoint &point)
+{
+    d->freezePoint = QPoint(qMax(1, point.x()), qMax(1, point.y()));
 }
 
 bool Sheet::getShowFormula() const

@@ -187,7 +187,7 @@ KPrFormatTab::KPrFormatTab(KPrView *view, QWidget *page)
         layout = new QHBoxLayout(m_page);
         layout->setContentsMargins(4, 2, 4, 2);
         layout->setSpacing(0);
-        layout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        layout->setAlignment(Qt::AlignLeft);
     }
     layout->insertWidget(0, createShapeStylesGroup());
     layout->insertWidget(0, createInsertShapesGroup());
@@ -213,7 +213,7 @@ QWidget *KPrFormatTab::createInsertShapesGroup()
     vertical->setContentsMargins(3, 0, 3, 0);
     vertical->setSpacing(0);
     auto *row = new QHBoxLayout;
-    row->setSpacing(2);
+    row->setSpacing(4);
     auto *grid = new QWidget(group);
     auto *gridLayout = new QGridLayout(grid);
     gridLayout->setContentsMargins(0, 0, 0, 0);
@@ -222,9 +222,9 @@ QWidget *KPrFormatTab::createInsertShapesGroup()
     for (const PresetShape &shape : presetShapes) {
         auto *button = new QToolButton(grid);
         button->setAutoRaise(true);
-        button->setIcon(QIcon(presetPixmap(QString::fromLatin1(shape.preset), QSize(20, 20))));
-        button->setIconSize(QSize(20, 20));
-        button->setFixedSize(22, 22);
+        button->setIcon(QIcon(presetPixmap(QString::fromLatin1(shape.preset), QSize(30, 30))));
+        button->setIconSize(QSize(30, 30));
+        button->setFixedSize(36, 36);
         button->setToolTip(QCoreApplication::translate("KPrFormatTab", shape.name));
         const QString preset = QString::fromLatin1(shape.preset);
         connect(button, &QToolButton::clicked, this, [this, preset] { insertShape(preset); });
@@ -243,8 +243,8 @@ QWidget *KPrFormatTab::createInsertShapesGroup()
             more->setIcon(KoRibbonIcons::forCommand(QStringLiteral("category")));
         }
         more->setToolTip(i18n("More shapes"));
-        more->setIconSize(QSize(16, 16));
-        more->setFixedSize(22, 22);
+        more->setIconSize(QSize(26, 26));
+        more->setFixedSize(36, 73);
         row->addWidget(more, 0, Qt::AlignTop);
     }
     vertical->addLayout(row);
@@ -266,13 +266,13 @@ QWidget *KPrFormatTab::createShapeStylesGroup()
     vertical->setContentsMargins(3, 0, 3, 0);
     vertical->setSpacing(0);
     auto *row = new QHBoxLayout;
-    row->setSpacing(2);
+    row->setSpacing(4);
     for (const ShapeStyle &style : shapeStyles) {
         auto *button = new QToolButton(group);
         button->setAutoRaise(true);
-        button->setIcon(QIcon(stylePixmap(style, QSize(30, 22))));
-        button->setIconSize(QSize(30, 22));
-        button->setFixedSize(32, 24);
+        button->setIcon(QIcon(stylePixmap(style, QSize(44, 48))));
+        button->setIconSize(QSize(44, 48));
+        button->setFixedSize(50, 73);
         button->setToolTip(QCoreApplication::translate("KPrFormatTab", style.name));
         const QColor fill = style.fill;
         const QColor stroke = style.stroke;

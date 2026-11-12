@@ -8,11 +8,16 @@
 #include "KoFormulaTool.h"
 
 #include "BasicElement.h"
+#include "ElementFactory.h"
 #include "FormulaDebug.h"
 #include "FormulaEditor.h"
+#include "FormulaElement.h"
+#include "FormulaLinearInput.h"
 #include "FormulaToolEditWidget.h"
-#include "FormulaToolWidget.h"
+#include "FormulaRibbonWidgets.h"
 #include "KoFormulaShape.h"
+#include "RowElement.h"
+#include "TokenElement.h"
 
 #include <KoCanvasBase.h>
 #include <KoIcon.h>
@@ -41,6 +46,8 @@
 #include <KoXmlReader.h>
 #include <KoXmlWriter.h>
 #include <QClipboard>
+
+#include <memory>
 
 KoFormulaTool::KoFormulaTool(KoCanvasBase *canvas)
     : KoToolBase(canvas)
@@ -107,6 +114,11 @@ void KoFormulaTool::activate(ToolActivation toolActivation, const QSet<KoShape *
     }
     // Only for debugging:
     connect(action("write_elementTree"), &QAction::triggered, m_formulaShape->formulaData(), &FormulaData::writeElementTree);
+
+    // Show the formula enlarged while it is being edited.
+    m_formulaShape->setEditing(true);
+
+    Q_EMIT formulaShapeChanged(m_formulaShape);
 }
 
 void KoFormulaTool::deactivate()
@@ -126,6 +138,8 @@ void KoFormulaTool::deactivate()
     if (m_cursorList.count() > 20) { // don't let it grow indefinitely
         delete m_cursorList.takeAt(0);
     }
+    // Editing is over: show the formula at the size of the surrounding text again.
+    m_formulaShape->setEditing(false);
     m_formulaShape = nullptr;
 }
 
@@ -149,6 +163,12 @@ void KoFormulaTool::paint(QPainter &painter, const KoViewConverter &converter)
     // has to come last
     painter.setTransform(m_formulaShape->absoluteTransformation(&converter) * painter.transform());
     KoShape::applyConversion(painter, converter);
+    // While the formula is edited it is shown enlarged; the cursor positions are
+    // in the (unscaled) element coordinates, so the same scale applies to them.
+    const qreal scale = m_formulaShape->editingScale();
+    if (scale != 1.0) {
+        painter.scale(scale, scale);
+    }
     m_formulaShape->formulaRenderer()->paintElement(painter, m_formulaShape->formulaData()->formulaElement(), true);
     m_formulaEditor->paint(painter);
     painter.restore();
@@ -167,6 +187,8 @@ void KoFormulaTool::mousePressEvent(KoPointerEvent *event)
     }
     // transform the global coordinates into shape coordinates
     QPointF p = m_formulaShape->absoluteTransformation(nullptr).inverted().map(event->point);
+    // the elements are laid out unscaled, the shape is only drawn magnified
+    p /= m_formulaShape->editingScale();
     if (event->modifiers() & Qt::ShiftModifier) {
         m_formulaEditor->cursor().setSelecting(true);
     } else {
@@ -186,6 +208,8 @@ void KoFormulaTool::mouseDoubleClickEvent(KoPointerEvent *event)
     }
     // transform the global coordinates into shape coordinates
     QPointF p = m_formulaShape->absoluteTransformation(nullptr).inverted().map(event->point);
+    // the elements are laid out unscaled, the shape is only drawn magnified
+    p /= m_formulaShape->editingScale();
 
     // clear the current selection
     m_formulaEditor->cursor().setSelecting(false);
@@ -208,6 +232,8 @@ void KoFormulaTool::mouseMoveEvent(KoPointerEvent *event)
 
     // transform the global coordinates into shape coordinates
     QPointF p = m_formulaShape->absoluteTransformation(nullptr).inverted().map(event->point);
+    // the elements are laid out unscaled, the shape is only drawn magnified
+    p /= m_formulaShape->editingScale();
     // TODO Implement drag and drop of elements
     m_formulaEditor->cursor().setSelecting(true);
     m_formulaEditor->cursor().setCursorTo(p);
@@ -236,6 +262,15 @@ void KoFormulaTool::keyPressEvent(QKeyEvent *event)
             m_formulaEditor->cursor().setSelecting(false);
         }
     }
+    // An equation editor builds "a/b" or "x^2" up into the fraction or the
+    // superscript as soon as a space ends the expression. Do the same here
+    // instead of inserting a plain space.
+    if (event->key() == Qt::Key_Space && !(event->modifiers() & (Qt::ControlModifier | Qt::AltModifier))
+        && buildUpLinearInput()) {
+        event->accept();
+        return;
+    }
+
     switch (event->key()) // map key to movement or action
     {
     case Qt::Key_Backspace:
@@ -325,14 +360,99 @@ void KoFormulaTool::insertSymbol(const QString &symbol)
     }
 }
 
+bool KoFormulaTool::buildUpLinearInput()
+{
+    if (!m_formulaShape || !m_formulaEditor) {
+        return false;
+    }
+    FormulaCursor &cursor = m_formulaEditor->cursor();
+    if (cursor.hasSelection() || !cursor.insideToken()) {
+        return false;
+    }
+    auto *token = dynamic_cast<TokenElement *>(cursor.currentElement());
+    if (!token) {
+        return false;
+    }
+
+    const QString text = token->text();
+    const int caret = qBound(0, cursor.position(), static_cast<int>(text.length()));
+    const QString typed = text.left(caret);
+    // Only what follows the last space is an expression; everything before it
+    // is ordinary text and stays where it is.
+    const int spacePosition = typed.lastIndexOf(QLatin1Char(' '));
+    const QString prefix = typed.left(spacePosition + 1);
+    const QString expression = typed.mid(spacePosition + 1);
+    if (!FormulaLinearInput::hasLinearSyntax(expression)) {
+        return false;
+    }
+    const QString mathML = FormulaLinearInput::toMathML(expression);
+    if (mathML.isEmpty()) {
+        return false;
+    }
+
+    KoXmlDocument document;
+    if (!document.setContent(mathML, false, nullptr, nullptr, nullptr)) {
+        return false;
+    }
+    auto formula = std::make_unique<FormulaElement>();
+    if (!formula->readMathML(document.documentElement())) {
+        return false;
+    }
+    QList<BasicElement *> builtElements = formula->childElements();
+    if (builtElements.isEmpty()) {
+        return false;
+    }
+    // The elements are handed over to the command, which owns them from here on.
+    for (BasicElement *element : builtElements) {
+        formula->removeChild(element);
+    }
+
+    const auto makeToken = [](const QString &content) {
+        auto element = ElementFactory::createElement(content.isEmpty() || content.at(0).isDigit() ? QStringLiteral("mn") : QStringLiteral("mi"),
+                                                     nullptr);
+        auto *tokenElement = static_cast<TokenElement *>(element.get());
+        tokenElement->insertText(0, content);
+        element.release();
+        return tokenElement;
+    };
+
+    QList<BasicElement *> replacements;
+    if (!prefix.isEmpty()) {
+        replacements.append(makeToken(prefix));
+    }
+    replacements.append(builtElements);
+    const QString rest = text.mid(caret);
+    if (!rest.isEmpty()) {
+        replacements.append(makeToken(rest));
+    }
+
+    auto *row = dynamic_cast<RowElement *>(token->parentElement());
+    const int position = row ? row->childElements().indexOf(token) : -1;
+    if (position < 0) {
+        qDeleteAll(replacements);
+        return false;
+    }
+
+    auto *command = new FormulaCommandReplaceElements(row, position, 1, replacements, false);
+    command->setText(kundo2_i18n("Build up formula"));
+    canvas()->addCommand(new FormulaCommandUpdate(m_formulaShape, command));
+    m_formulaShape->updateLayout();
+    m_formulaShape->update();
+    repaintCursor();
+    return true;
+}
+
 QList<QPointer<QWidget>> KoFormulaTool::createOptionWidgets()
 {
-    auto insertOption = new FormulaToolWidget(this);
-    insertOption->setFormulaTool(this);
+    auto structuresOption = new FormulaStructuresWidget(this);
+    auto symbolsOption = new FormulaSymbolsWidget(this);
 
     auto editOption = new FormulaToolEditWidget(this);
     editOption->setFormulaTool(this);
-    return {insertOption, editOption};
+    structuresOption->setProperty("ribbonGroupOrder", 20);
+    symbolsOption->setProperty("ribbonGroupOrder", 10);
+    editOption->setProperty("ribbonGroupOrder", 30);
+    return {symbolsOption, structuresOption, editOption};
 }
 
 KoFormulaShape *KoFormulaTool::shape()
@@ -424,7 +544,22 @@ void KoFormulaTool::setupActions()
                       "<mtable><mtr><mtd><mrow/></mtd></mtr><mtr><mtd></mtd></mtr></mtable>",
                       koIconNameCStr("vector"));
 
-    addTemplateAction(i18n("Insert subscript"), "insert_subscript", "<msub><mrow><mrow/></mrow><mrow/></msubsup>", koIconNameCStr("rsub"));
+    addTemplateAction(i18n("Insert integral"),
+                      "insert_integral",
+                      "<msubsup><mo>&#x222B;</mo><mrow/><mrow/></msubsup>",
+                      koIconNameCStr("int"));
+    addTemplateAction(i18n("Insert large operator"),
+                      "insert_large_operator",
+                      "<munderover><mo>&#x2211;</mo><mrow/><mrow/></munderover>",
+                      koIconNameCStr("sum"));
+    addTemplateAction(i18n("Insert function"), "insert_function", "<mrow><mi>sin</mi><mrow/></mrow>", koIconNameCStr("func"));
+    addTemplateAction(i18n("Insert accent"),
+                      "insert_accent",
+                      "<mover><mrow><mrow/></mrow><mo>&#x2D9;</mo></mover>",
+                      koIconNameCStr("accent"));
+    addTemplateAction(i18n("Insert operator"), "insert_operator", "<mrow><mo>&#x394;</mo><mrow/></mrow>", koIconNameCStr("operator"));
+
+    addTemplateAction(i18n("Insert subscript"), "insert_subscript", "<msub><mrow><mrow/></mrow><mrow/></msub>", koIconNameCStr("rsub"));
     addTemplateAction(i18n("Insert superscript"), "insert_supscript", "<msup><mrow><mrow/></mrow><mrow/></msup>", koIconNameCStr("rsup"));
     addTemplateAction(i18n("Insert sub- and superscript"),
                       "insert_subsupscript",

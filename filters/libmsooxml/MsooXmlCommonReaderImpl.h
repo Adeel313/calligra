@@ -161,6 +161,10 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_Choice()
     // ordinary shapes and their text when a producer wraps them in an
     // extension choice (and supplies an empty fallback), while unknown
     // extension-only alternatives still use the fallback below.
+    if (m_choiceAccepted) {
+        skipCurrentElement();
+        return KoFilter::OK;
+    }
     if (Requires != "v") {
         bool parsedPresentationShape = false;
         while (!atEnd()) {
@@ -186,6 +190,16 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_Choice()
                 parsedPresentationShape = true;
             } else if (qualifiedName() == QLatin1StringView("p:graphicFrame")) {
                 TRY_READ_IF_NS(p, graphicFrame)
+                parsedPresentationShape = true;
+            } else {
+                skipCurrentElement();
+            }
+#elif defined DOCXXMLDOCREADER_CPP
+            if (qualifiedName() == QLatin1StringView("w:drawing")) {
+                TRY_READ(drawing)
+                parsedPresentationShape = true;
+            } else if (qualifiedName() == QLatin1StringView("w:pict")) {
+                TRY_READ(pict)
                 parsedPresentationShape = true;
             } else {
                 skipCurrentElement();

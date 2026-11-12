@@ -604,7 +604,14 @@ Value func_sumifs(valVector args, ValueCalc *calc, FuncExtra *e)
         calc->getCond(c, Value(condition.last()));
         cond.append(c);
     }
-    CellBase sumRangeStart(e->sheet, e->ranges[2].col1, e->ranges[2].row1);
+    // The first argument is the range to be summed; arguments 2..n are
+    // criteria range/value pairs. Older code looked at ranges[2] here,
+    // which is the first criterion value (usually a string), not a range,
+    // and crashed with an out-of-bounds cell when that argument was not a
+    // reference. Fall back to A1 for non-reference sum ranges.
+    const int col = e->ranges.isEmpty() || e->ranges[0].col1 < 0 ? 0 : e->ranges[0].col1;
+    const int row = e->ranges.isEmpty() || e->ranges[0].row1 < 0 ? 0 : e->ranges[0].row1;
+    CellBase sumRangeStart(e->sheet, col, row);
     return calc->sumIfs(sumRangeStart, c_Range, cond, lim);
 }
 

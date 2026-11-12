@@ -7,12 +7,15 @@
 #include <KoCanvasBase.h>
 #include <KoCanvasResourceManager.h>
 #include <KoCreateShapesTool.h>
+#include <KoChartInterface.h>
+#include <KoFlake.h>
 #include <KoModeBoxFactory.h>
 #include <KoProperties.h>
 #include <KoRibbonIcons.h>
 #include <KoRibbonLayout.h>
 #include <KoSelection.h>
 #include <KoShape.h>
+#include <KoShapeContainer.h>
 #include <KoShapeController.h>
 #include <KoShapeFactoryBase.h>
 #include <KoShapeManager.h>
@@ -20,10 +23,14 @@
 #include <KoToolManager.h>
 #include <KoToolBase.h>
 #include <KoTextEditor.h>
+#include <KoViewConverter.h>
+#include <KoShapePaintingContext.h>
+#include <memory>
 #include <KActionCollection>
 #include <KLocalizedString>
 
 #include <QDialog>
+#include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QFileDialog>
 #include <QGridLayout>
@@ -37,6 +44,7 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPixmap>
 #include <QPointer>
 #include <QSet>
@@ -129,14 +137,19 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
         layout = new QHBoxLayout(page);
         layout->setContentsMargins(4, 2, 4, 2);
         layout->setSpacing(0);
-        layout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        layout->setAlignment(Qt::AlignLeft);
     }
-    auto *group = new QWidget(page);
+    auto *group = new KoRibbonGroupWidget(page);
     group->setProperty("ribbonRoutedGroup", true);
     if (page->objectName() == QLatin1String("stageHomePage") && title == i18n("Slides"))
         group->setObjectName(QStringLiteral("stageSlidesGroup"));
     if (page->objectName() == QLatin1String("stageHomePage")) {
         const QStringList order = {i18n("Clipboard"), i18n("Slides"), i18n("Font"), i18n("Paragraph"), i18n("Drawing"), i18n("Editing"), i18n("More Editing")};
+        group->setProperty("ribbonGroupOrder", (order.indexOf(title) + 1) * 10);
+    }
+    if (page->objectName() == QLatin1String("stageInsertPage")) {
+        const QStringList order = {i18n("Slides"), i18n("Tables"), i18n("Images"), i18n("Illustrations"),
+                                   i18n("Links"), i18n("Comments"), i18n("Text"), i18n("Symbols")};
         group->setProperty("ribbonGroupOrder", (order.indexOf(title) + 1) * 10);
     }
     if (page->objectName() == QLatin1String("sheetsHomePage")) {
@@ -161,13 +174,14 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
     auto *grid = new QGridLayout;
     grid->setContentsMargins(0, 0, 0, 0);
     grid->setSpacing(3);
-    // Sheets keeps the ribbon compact: large commands span both rows, while
-    // the Function Library uses three stacked category rows like the Office
-    // formula ribbon.
+    grid->setAlignment(Qt::AlignTop);
+    // Every ribbon page uses the same two command rows, so one band height
+    // serves all tabs. The Function Library is the exception: it stacks three
+    // category rows like the Office formula ribbon.
     const bool compact = page->objectName().startsWith(QLatin1String("sheets"));
     const bool formulaLibrary = compact && page->objectName() == QLatin1String("sheetsFormulasPage")
         && title == i18n("Function Library");
-    const int rows = formulaLibrary ? 3 : (compact ? 2 : 3);
+    const int rows = formulaLibrary ? 3 : 2;
     const int largeCount = largeButtons < 0 ? (actions.size() <= 4 ? actions.size() : 0) : largeButtons;
     int position = 0;
     for (QAction *action : actions) {
@@ -175,8 +189,27 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
             continue;
         }
         QWidget *control = nullptr;
-        if (auto *widgetAction = qobject_cast<QWidgetAction *>(action); widgetAction && !action->menu()) {
+        if (title == i18n("Show") && action->isCheckable()) {
+            auto *check = new QCheckBox(label(action->text()), group);
+            check->setObjectName(QStringLiteral("ribbon_") + action->objectName());
+            check->setToolTip(action->toolTip());
+            const auto refresh = [check, action] {
+                check->setChecked(action->isChecked());
+                check->setEnabled(action->isEnabled());
+                check->setVisible(action->isVisible());
+            };
+            refresh();
+            QObject::connect(check, &QCheckBox::clicked, action, &QAction::trigger);
+            QObject::connect(action, &QAction::changed, check, refresh);
+            control = check;
+        }
+        if (auto *widgetAction = qobject_cast<QWidgetAction *>(action); widgetAction && !action->menu() && !control) {
             control = widgetAction->requestWidget(group);
+            if (control) {
+                // QWidgetAction keeps its default widget explicitly hidden.
+                // Custom ribbon layouts must show it, as QToolBar would.
+                control->setVisible(action->isVisible());
+            }
         }
         if (!control) {
             auto *view = qobject_cast<KoView *>(page->property("ribbonView").value<QObject *>());
@@ -191,6 +224,12 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
             KoRibbonLayout::configureButton(button, iconOnly ? Qt::ToolButtonIconOnly
                                                             : (large ? Qt::ToolButtonTextUnderIcon
                                                                      : Qt::ToolButtonTextBesideIcon));
+            if (page->objectName() == QLatin1String("stageInsertPage")) {
+                button->setProperty("ribbonPreferredIconSize", large ? QSize(36, 36) : QSize(24, 24));
+                button->setProperty("ribbonPreferredMinimumSize", large ? QSize(72, 76) : QSize(36, 36));
+                button->setIconSize(large ? QSize(36, 36) : QSize(24, 24));
+                button->setMinimumSize(button->sizeHint().expandedTo(large ? QSize(72, 76) : QSize(36, 36)));
+            }
             if (iconOnly) {
                 button->setToolTip(action->text());
             }
@@ -214,15 +253,17 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
             ++position;
         }
     }
-    vertical->addLayout(grid);
-    vertical->addStretch();
+    vertical->addLayout(grid, 1);
+    // The caption belongs directly under the commands it names. Pushing it to
+    // the bottom of the band left a large empty strip in short groups, while
+    // tall groups (the File tab, for example) already read correctly.
     auto *caption = new QLabel(title, group);
     caption->setAlignment(Qt::AlignCenter);
     caption->setProperty("ribbonGroupTitle", true);
     caption->ensurePolished();
     caption->setMinimumHeight(caption->sizeHint().height());
     vertical->addWidget(caption);
-    group->setMinimumHeight(compact ? 0 : 112);
+    group->setMinimumHeight(0);
     int positionInPage = 0;
     const QVariant order = group->property("ribbonGroupOrder");
     while (positionInPage < layout->count() && layout->itemAt(positionInPage)->widget()) {
@@ -274,17 +315,6 @@ void addSheetGroup(KoView *view, QWidget *page, const QString &title, const QStr
     addGroup(page, title, actions, large);
 }
 
-// Show these commands as compact icon-only buttons in the next group that
-// contains them, instead of hiding them in a drop-down.
-void markRibbonIconOnly(KoView *view, const QStringList &names)
-{
-    for (const QString &name : names) {
-        if (QAction *action = findAction(view, name)) {
-            action->setProperty("ribbonIconOnly", true);
-        }
-    }
-}
-
 void addMenu(QWidget *page, QMenu *menu);
 
 QWidget *sheetPage(const QList<Page> &pages, const char *id)
@@ -310,15 +340,179 @@ void populateSheetsFile(KoView *view, QWidget *page)
     }
 }
 
-void populateSheetsInsert(KoView *view, QWidget *page)
+// Create a command that starts the shape tool with one fixed shape type. The
+// Insert tab uses this for text boxes and equations, which Office exposes as
+// their own commands rather than as entries of a generic shape gallery.
+void addShapeCommand(KoView *view, KoCanvasBase *canvas, const QString &name, const QString &text,
+                     const QString &shapeId, const QIcon &icon, const QString &toolTip)
+{
+    if (!view || !canvas || findAction(view, name)) {
+        return;
+    }
+    auto *action = new QAction(icon, text, view);
+    action->setToolTip(toolTip);
+    view->actionCollection()->addAction(name, action);
+    QObject::connect(action, &QAction::triggered, view, [view, canvas, shapeId] {
+        if (!view->koDocument()->isReadWrite()) {
+            return;
+        }
+        if (KoCreateShapesTool *tool = KoToolManager::instance()->shapeCreatorTool(canvas)) {
+            tool->setShapeId(shapeId);
+            tool->setShapeProperties(nullptr);
+            KoToolManager::instance()->switchToolRequested(KoCreateShapesTool_ID);
+            canvas->canvasWidget()->setFocus(Qt::OtherFocusReason);
+        }
+    });
+}
+
+// An inline gallery uses the same factory templates as the full Shapes and
+// Charts menus, including their properties when the user places an object.
+QWidgetAction *sheetInsertGallery(KoView *view, KoCanvasBase *canvas, QWidget *page,
+                                  const QString &shapeId, const QStringList &templateIds,
+                                  const QStringList &labels, QAction *moreAction, bool charts)
+{
+    auto *factory = KoShapeRegistry::instance()->value(shapeId);
+    if (!factory) {
+        return nullptr;
+    }
+    auto *gallery = new QWidget;
+    gallery->setObjectName(charts ? QStringLiteral("sheetsChartPreviewGallery") : QStringLiteral("sheetsShapePreviewGallery"));
+    gallery->setAccessibleName(charts ? i18n("Chart previews") : i18n("Shape previews"));
+    auto *layout = new QGridLayout(gallery);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(2);
+    const auto templates = factory->templates();
+    int count = 0;
+    for (int index = 0; index < templateIds.size(); ++index) {
+        const auto entry = std::find_if(templates.cbegin(), templates.cend(), [&](const KoShapeTemplate &item) {
+            return item.templateId == templateIds[index];
+        });
+        if (entry == templates.cend()) {
+            continue;
+        }
+        const KoShapeTemplate item = *entry;
+        std::unique_ptr<KoShape> shape(factory->createShape(item.properties, canvas->shapeController()->resourceManager()));
+        if (!shape) {
+            continue;
+        }
+        const QSize previewSize = charts ? QSize(60, 42) : QSize(30, 30);
+        QPixmap preview(previewSize * 2);
+        preview.setDevicePixelRatio(2);
+        preview.fill(Qt::transparent);
+        QPainter painter(&preview);
+        painter.setRenderHint(QPainter::Antialiasing);
+        if (charts) {
+            const QSizeF size = shape->size();
+            if (size.width() > 0 && size.height() > 0) {
+                painter.scale(previewSize.width() / size.width(), previewSize.height() / size.height());
+                KoViewConverter converter;
+                KoShapePaintingContext context;
+                shape->paint(painter, converter, context);
+            }
+        } else {
+            const QPainterPath outline = shape->outline();
+            const QRectF bounds = outline.boundingRect();
+            const qreal extent = qMax(bounds.width(), bounds.height());
+            if (extent > 0) {
+                const qreal scale = (previewSize.width() - 5) / extent;
+                painter.translate(previewSize.width() / 2.0, previewSize.height() / 2.0);
+                painter.scale(scale, scale);
+                painter.translate(-bounds.center());
+                painter.setPen(QPen(QColor(QStringLiteral("#345a87")), 1.4 / scale));
+                painter.setBrush(QColor(QStringLiteral("#dce8f7")));
+                painter.drawPath(outline);
+            }
+        }
+        painter.end();
+        auto *button = new QToolButton(gallery);
+        button->setObjectName(QStringLiteral("sheetsInsertPreview_") + item.templateId);
+        button->setIcon(QIcon(preview));
+        button->setIconSize(previewSize);
+        button->setAutoRaise(true);
+        button->setToolTip(item.toolTip.isEmpty() ? item.name : item.toolTip);
+        button->setAccessibleName(item.name);
+        button->setEnabled(view->koDocument()->isReadWrite());
+        if (charts) {
+            button->setText(labels.value(index, item.name));
+            button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+            button->setMinimumSize(68, 76);
+        } else {
+            button->setToolButtonStyle(Qt::ToolButtonIconOnly);
+            button->setFixedSize(36, 36);
+        }
+        QObject::connect(button, &QToolButton::clicked, view, [view, canvas, shapeId, item] {
+            if (!view->koDocument()->isReadWrite()) {
+                return;
+            }
+            if (KoCreateShapesTool *tool = KoToolManager::instance()->shapeCreatorTool(canvas)) {
+                tool->setShapeId(shapeId);
+                tool->setShapeProperties(item.properties);
+                KoToolManager::instance()->switchToolRequested(KoCreateShapesTool_ID);
+                canvas->canvasWidget()->setFocus(Qt::OtherFocusReason);
+            }
+        });
+        layout->addWidget(button, charts ? 0 : count / 6, charts ? count : count % 6);
+        ++count;
+    }
+    if (count == 0) {
+        delete gallery;
+        return nullptr;
+    }
+    if (moreAction) {
+        auto *more = new QToolButton(gallery);
+        more->setDefaultAction(moreAction);
+        more->setMenu(moreAction->menu());
+        more->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        more->setPopupMode(QToolButton::InstantPopup);
+        more->setAutoRaise(true);
+        more->setIconSize(QSize(24, 24));
+        more->setMinimumSize(36, 76);
+        more->setToolTip(charts ? i18n("More charts") : i18n("More shapes"));
+        more->setAccessibleName(more->toolTip());
+        layout->addWidget(more, 0, charts ? count : 6, charts ? 1 : 2, 1);
+    }
+    auto *action = new QWidgetAction(page);
+    action->setDefaultWidget(gallery);
+    return action;
+}
+
+void populateSheetsInsert(KoView *view, KoCanvasBase *canvas, QWidget *page)
 {
     if (!page)
         return;
+    // Office puts text boxes and equations in their own groups. Calligra
+    // reaches both through the shape tool, so expose them as real commands.
+    addShapeCommand(view, canvas, QStringLiteral("insert_textbox"), i18n("Text Box"),
+                    QStringLiteral("TextShapeID"), QIcon::fromTheme(QStringLiteral("insert-text")),
+                    i18n("Insert a text box"));
+    addShapeCommand(view, canvas, QStringLiteral("insert_equation"), i18n("Equation"),
+                    QStringLiteral("FormulaShapeID"), KoRibbonIcons::forCommand(QStringLiteral("functions")),
+                    i18n("Insert an equation"));
+
+    // Follow the office Insert tab: illustrations, charts, links, comments,
+    // text and symbols. The commands that only Calligra has stay at the end.
+    addSheetGroup(view, page, i18n("Pictures"), {"insert_picture"}, 1);
+    if (auto *shapes = sheetInsertGallery(view, canvas, page, QStringLiteral("OfficeShape"),
+                                         {"rect", "roundRect", "ellipse", "triangle", "rightArrow", "line",
+                                          "star5", "wedgeRectCallout", "diamond", "pentagon", "plus", "flowChartProcess"},
+                                         {}, findAction(view, QStringLiteral("add_shape")), false)) {
+        addGroup(page, i18n("Shapes"), {shapes}, 1);
+    } else {
+        addSheetGroup(view, page, i18n("Shapes"), {"add_shape"}, 1);
+    }
+    if (auto *charts = sheetInsertGallery(view, canvas, page, QString::fromLatin1(ChartShapeId),
+                                         {"Bar", "Line", "Area", "Pie", "Ring", "Scatter"},
+                                         {i18n("Column"), i18n("Line"), i18n("Area"), i18n("Pie"), i18n("Doughnut"), i18n("Scatter")},
+                                         findAction(view, QStringLiteral("insert_chart")), true)) {
+        addGroup(page, i18n("Charts"), {charts}, 1);
+    } else {
+        addSheetGroup(view, page, i18n("Charts"), {"insert_chart"}, 1);
+    }
+    addSheetGroup(view, page, i18n("Links"), {"insertHyperlink"}, 1);
+    addSheetGroup(view, page, i18n("Comments"), {"comment"}, 1);
+    addSheetGroup(view, page, i18n("Text"), {"insert_textbox"}, 1);
+    addSheetGroup(view, page, i18n("Symbols"), {"insert_equation", "insertSpecialChar"}, 2);
     addSheetGroup(view, page, i18n("Cells"), {"insertCell", "insertRow", "insertColumn", "insertSheet"}, 1);
-    addSheetGroup(view, page, i18n("Shapes"), {"add_shape"}, 1);
-    addSheetGroup(view, page, i18n("Illustrations"), {"insert_chart", "insert_picture"}, 0);
-    addSheetGroup(view, page, i18n("Text"),
-                  {"insertFormula", "insertMathExpr", "insertSeries", "insertSpecialChar", "insertHyperlink", "comment"});
     addSheetGroup(view, page, i18n("External Data"),
                   {"insertFromClipboard", "insertFromTextfile", "insertFromDatabase"});
 }
@@ -336,12 +530,24 @@ void populateSheetsLayout(KoView *view, QWidget *page)
                    "clearPrintArea", "breakRow", "breakColumn", "printTitles"}, 3);
     addSheetGroup(view, page, i18n("Scale to Fit"), {"pageScaleFit"});
     addSheetGroup(view, page, i18n("Sheet Options"), {"pageSheetOptions"});
-    // Arrange shows every shape operation as its own button; the compact
-    // alignment and rotation icons keep the group narrow.
-    addSheetGroup(view, page, i18n("Arrange"),
-                  {"shapeBringForward", "shapeSendBackward", "shapeAlignLeft", "shapeAlignCenter",
-                   "shapeAlignRight", "shapeAlignTop", "shapeAlignMiddle", "shapeAlignBottom",
-                   "shapeGroup", "shapeRotateLeft", "shapeRotateRight"}, 2);
+    QList<QAction *> arrange;
+    for (const QString &name : {QStringLiteral("shapeBringForward"), QStringLiteral("shapeSendBackward")}) {
+        if (QAction *action = findAction(view, name)) {
+            arrange.append(action);
+        }
+    }
+    if (QAction *align = submenuAction(view, i18n("Align"), "align-horizontal-left",
+                                      {"shapeAlignLeft", "shapeAlignCenter", "shapeAlignRight", "shapeAlignTop", "shapeAlignMiddle", "shapeAlignBottom"})) {
+        arrange.append(align);
+    }
+    if (QAction *group = findAction(view, QStringLiteral("shapeGroup"))) {
+        arrange.append(group);
+    }
+    if (QAction *rotate = submenuAction(view, i18n("Rotate"), "object-rotate-right", {"shapeRotateLeft", "shapeRotateRight"})) {
+        arrange.append(rotate);
+    }
+    addGroup(page, i18n("Arrange"), arrange, 1);
+
 }
 
 void populateSheetsData(KoView *view, QWidget *page)
@@ -354,11 +560,10 @@ void populateSheetsData(KoView *view, QWidget *page)
     addSheetGroup(view, page, i18n("Get & Transform Data"),
                   {"insertFromTextfile", "insertFromDatabase", "insertFromClipboard"}, 1);
 
-    markRibbonIconOnly(view, {"sort", "sortInc", "sortDesc", "autoFilter", "customFilter"});
-    addSheetGroup(view, page, i18n("Sort & Filter"), {"sort", "sortInc", "sortDesc", "autoFilter", "customFilter"});
+    addSheetGroup(view, page, i18n("Sort & Filter"), {"sort", "sortInc", "sortDesc", "autoFilter", "customFilter"}, 1);
 
     addSheetGroup(view, page, i18n("Data Tools"),
-                  {"textToColumns", "validity", "consolidate", "namedAreaDialog"}, 1);
+                  {"textToColumns", "insertSeries", "validity", "consolidate", "namedAreaDialog"}, 1);
     addSheetGroup(view, page, i18n("Forecast"), {"goalSeek"}, 1);
     addSheetGroup(view, page, i18n("Outline"), {"subtotals", "pivot"}, 1);
 }
@@ -550,8 +755,11 @@ void populateSheets(KoView *view, QWidget *home)
         // Excel names the import commands after their source.
         {"insertFromTextfile", i18n("From &Text/CSV")}, {"insertFromDatabase", i18n("From &Database")},
         {"insertFromClipboard", i18n("From &Clipboard")},
-        {"comment", i18n("New Comment")}, {"clearComment", i18n("Delete Comment")},
-        {"add_shape", i18n("Insert Shape")}
+        {"comment", i18n("Comment")}, {"clearComment", i18n("Delete Comment")},
+        {"add_shape", i18n("Shapes")}, {"insert_picture", i18n("Pictures")},
+        {"insertHyperlink", i18n("Link")}, {"insertSpecialChar", i18n("Symbol")},
+        {"insertSeries", i18n("Series")}, {"insert_textbox", i18n("Text Box")},
+        {"insert_equation", i18n("Equation")}
     };
     for (const Label &label : labels) {
         if (QAction *action = findAction(view, QLatin1String(label.id))) {
@@ -561,20 +769,24 @@ void populateSheets(KoView *view, QWidget *home)
     }
 
     addSheetGroup(view, home, i18n("Clipboard"), {"paste", "cut", "copy", "specialPaste"}, 1);
-    addSheetGroup(view, home, i18n("Styles"), {"conditional", "autoFormat", "styleDialog"});
-    addSheetGroup(view, home, i18n("Cells"), {"insertCell", "deleteCell", "cellStyle"});
+    addSheetGroup(view, home, i18n("Styles"), {"conditional", "autoFormat", "styleDialog"}, 1);
+    addSheetGroup(view, home, i18n("Cells"), {"insertCell", "deleteCell", "cellStyle"}, 1);
 
-    // The Editing group shows every command as its own icon button; only the
-    // fill, sort, find and clear families used to be drop-down menus.
-    markRibbonIconOnly(view, {"fillDown", "fillRight", "fillUp", "fillLeft", "sort", "sortInc", "sortDesc",
-                              "autoFilter", "customFilter", "edit_find", "edit_find_next",
-                              "edit_replace", "selectAll", "clearContents", "clearAll", "clearComment",
-                              "clearConditional", "clearHyperlink"});
-    addSheetGroup(view, home, i18n("Editing"),
-                  {"autoSum", "fillDown", "fillRight", "fillUp", "fillLeft", "sort", "sortInc", "sortDesc",
-                   "autoFilter", "customFilter", "edit_find", "edit_find_next", "edit_replace",
-                   "selectAll", "clearContents", "clearAll", "clearComment", "clearConditional",
-                   "clearHyperlink"}, 1);
+    QList<QAction *> editing;
+    if (QAction *sum = findAction(view, QStringLiteral("autoSum"))) {
+        editing.append(sum);
+    }
+    const auto family = [&](const QString &title, const char *icon, const QStringList &names) {
+        if (QAction *menu = submenuAction(view, title, icon, names)) {
+            editing.append(menu);
+        }
+    };
+    family(i18n("Fill"), "format-fill-color", {"fillDown", "fillRight", "fillUp", "fillLeft"});
+    family(i18n("Clear"), "edit-clear", {"clearContents", "clearAll", "clearComment", "clearConditional", "clearHyperlink"});
+    family(i18n("Sort & Filter"), "view-sort-ascending", {"sortInc", "sortDesc", "sort", "autoFilter", "customFilter"});
+    family(i18n("Find & Select"), "edit-find", {"edit_find", "edit_find_next", "edit_replace", "selectAll"});
+    addGroup(home, i18n("Editing"), editing, 1);
+
 }
 
 void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
@@ -590,7 +802,7 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
         {"insert_picture", i18n("Pictures"), "insert-image"},
         {"insert_pictures", i18n("Photo Album"), "insert-image"},
         {"add_shape", i18n("Shapes"), "draw-rectangle"},
-        {"insert_formula", i18n("Formula"), "functions"},
+        {"insert_formula", i18n("Equation"), "functions"},
         {"insert_chart", i18n("Chart"), "office-chart-bar"},
         {"stage_insert_textbox", i18n("Text Box"), "draw-text"},
         {"insert_specialchar", i18n("Symbol"), "character-set"},
@@ -666,14 +878,20 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
     group("stageHomePage", i18n("Editing"),
           {"edit_delete", "edit_select_all", "edit_deselect_all", "edit_find", "edit_findnext",
            "edit_findprevious", "edit_replace"}, 0);
+    auto *object = submenuAction(view, i18n("Object"), "insert-object",
+                                 {QStringLiteral("insert_stateshape"), QStringLiteral("insert_3dscene"),
+                                  QStringLiteral("insert_vectorimage"), QStringLiteral("insert_webshape")});
+    if (object) {
+        view->actionCollection()->addAction(QStringLiteral("stage_insert_object"), object);
+    }
     group("stageInsertPage", i18n("Slides"), {"page_insertpage", "import_document"}, 1);
     group("stageInsertPage", i18n("Tables"), {"insert_table"}, 1);
     group("stageInsertPage", i18n("Images"), {"insert_picture", "insert_pictures"}, 1);
-    group("stageInsertPage", i18n("Illustrations"),
-          {"add_shape", "insert_chart", "insert_formula", "insert_wordart",
-           "insert_stateshape", "insert_3dscene", "insert_vectorimage", "insert_webshape"}, 3);
-    group("stageInsertPage", i18n("Text"), {"stage_insert_textbox", "insert_variable"}, 1);
-    group("stageInsertPage", i18n("Symbols"), {"insert_specialchar"}, 1);
+    group("stageInsertPage", i18n("Illustrations"), {"add_shape", "insert_chart"}, 1);
+    group("stageInsertPage", i18n("Comments"), {"insert_annotation"}, 1);
+    group("stageInsertPage", i18n("Text"),
+          {"stage_insert_textbox", "insert_wordart", "insert_variable", "stage_insert_object"}, 1);
+    group("stageInsertPage", i18n("Symbols"), {"insert_formula", "insert_specialchar"}, 1);
     group("stageSlideShowPage", i18n("Start Slide Show"), {"slideshow_start_from_beginning", "slideshow_start_from_current"}, 2);
     group("stageSlideShowPage", i18n("Set Up"), {"slideshow_configure", "edit_customslideshows", "slideshow_presenterview"}, 1);
     group("stageReviewPage", i18n("Proofing"), {"tools_spelling", "tool_auto_spellcheck", "tool_configure_spellcheck"}, 1);
@@ -835,7 +1053,7 @@ void populate(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages, QWid
         KoAppRibbon::applyCommandIcons(view);
         populateSheets(view, home);
         populateSheetsFile(view, sheetPage(pages, "sheetsFilePage"));
-        populateSheetsInsert(view, sheetPage(pages, "sheetsInsertPage"));
+        populateSheetsInsert(view, canvas, sheetPage(pages, "sheetsInsertPage"));
         populateSheetsLayout(view, sheetPage(pages, "sheetsLayoutPage"));
         populateSheetsData(view, sheetPage(pages, "sheetsDataPage"));
         populateSheetsFormulas(view, sheetPage(pages, "sheetsFormulasPage"));
@@ -848,7 +1066,8 @@ void populate(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages, QWid
             for (const QString &tool : {QStringLiteral("KSpreadCellToolId"), QStringLiteral("InteractionTool"),
                                         QStringLiteral("ConnectionTool"), QStringLiteral("CreatePathTool")})
                 QMetaObject::invokeMethod(box, "primeToolOptions", Qt::DirectConnection, Q_ARG(QString, tool));
-            QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection, Q_ARG(QString, QStringLiteral("sheetsHomePage")));
+            const QString startPage = qEnvironmentVariable("CALLIGRA_RIBBON_PAGE", QStringLiteral("sheetsHomePage"));
+            QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection, Q_ARG(QString, startPage));
         }
         for (const Page &page : pages) {
             if (page.widget->objectName() != QLatin1String("sheetsDrawPage"))
@@ -1101,7 +1320,7 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
         tableFormat->setProperty("ribbonContextActive", false);
         // Chart Tools, shown while a chart is selected. The chart plugin fills
         // the page with both the design commands and the chart options.
-        auto *chartDesign = stagePage(i18n("Chart Format / Design"), QStringLiteral("stageChartDesignPage"));
+        auto *chartDesign = stagePage(i18n("Chart Design"), QStringLiteral("stageChartDesignPage"));
         chartDesign->setProperty("ribbonContextActive", false);
         stagePage(i18n("Help"), QStringLiteral("stageHelpPage"), {QStringLiteral("help")});
     } else {
@@ -1123,6 +1342,10 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
         auto *shapeFormat = addPage(i18n("Shape Format"), {}, false, true);
         shapeFormat->setObjectName(QStringLiteral("sheetsShapeFormatPage"));
         shapeFormat->setProperty("ribbonContextActive", false);
+        // Chart Tools: the chart plugin fills the tab when a chart is selected.
+        auto *chartDesign = addPage(i18n("Chart Design"), {}, false, true);
+        chartDesign->setObjectName(QStringLiteral("sheetsChartDesignPage"));
+        chartDesign->setProperty("ribbonContextActive", false);
         const auto updateContext = [canvas, shapeFormat] {
             shapeFormat->setProperty("ribbonContextActive", !canvas->shapeManager()->selection()->selectedShapes().isEmpty());
         };
@@ -1130,6 +1353,48 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
         QObject::connect(canvas->shapeManager()->selection(), &KoSelection::selectionChanged, draw, [canvas, draw] {
             draw->setProperty("ribbonContextActive", !canvas->shapeManager()->selection()->selectedShapes().isEmpty());
         });
+        const auto updateChartContext = [view, canvas, chartDesign] {
+            bool chartSelected = false;
+            const QList<KoShape *> shapes = canvas->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
+            for (KoShape *shape : shapes) {
+                for (KoShape *candidate = shape; candidate && !chartSelected; candidate = candidate->parent()) {
+                    chartSelected = candidate->shapeId() == QLatin1String(ChartShapeId);
+                }
+                if (chartSelected) {
+                    break;
+                }
+            }
+            // Clicking a chart on the sheet enters its editing tool without
+            // putting the chart into the shape selection.
+            if (!chartSelected && KoToolManager::instance()->activeToolId() == QLatin1String("ChartToolFactory_ID")) {
+                chartSelected = true;
+            }
+            if (chartSelected && !chartDesign->property("chartTabBuilt").toBool()) {
+                // The chart plugin only knows its commands once it is loaded,
+                // and that happens with the first chart of the document.
+                if (KoToolBase *chartTool = KoToolManager::instance()->toolById(canvas, QStringLiteral("ChartToolFactory_ID"))) {
+                    chartDesign->setProperty("chartTabBuilt", true);
+                    QMetaObject::invokeMethod(chartTool, "configureRibbon", Qt::DirectConnection, Q_ARG(QWidget *, chartDesign));
+                }
+            }
+            if (chartDesign->property("ribbonContextActive").toBool() != chartSelected) {
+                chartDesign->setProperty("ribbonContextActive", chartSelected);
+                // Selecting the chart also shows the shape page of the canvas;
+                // bring the chart tab forward once that page switch settled.
+                if (chartSelected) {
+                    QTimer::singleShot(0, chartDesign, [view] {
+                        if (auto *box = view->mainWindow()->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
+                            QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection,
+                                                      Q_ARG(QString, QStringLiteral("sheetsChartDesignPage")));
+                        }
+                    });
+                }
+            }
+        };
+        QObject::connect(canvas->shapeManager()->selection(), &KoSelection::selectionChanged, chartDesign, updateChartContext);
+        QObject::connect(KoToolManager::instance(), &KoToolManager::changedTool, chartDesign,
+                         [updateChartContext](KoCanvasController *, int) { updateChartContext(); });
+        updateChartContext();
         updateContext();
         addPage(i18n("Help"), {}, false, true)->setObjectName(QStringLiteral("sheetsHelpPage"));
     }

@@ -94,6 +94,7 @@ KoFilter::ConversionStatus XlsxXmlTableReader::read_table()
 
     const QXmlStreamAttributes attrs(attributes());
     TRY_READ_ATTR_WITHOUT_NS(ref)
+    TRY_READ_ATTR_WITHOUT_NS(name)
     TRY_READ_ATTR_WITHOUT_NS(headerRowDxfId)
     TRY_READ_ATTR_WITHOUT_NS(dataDxfId)
     TRY_READ_ATTR_WITHOUT_NS(totalsRowDxfId)
@@ -101,6 +102,7 @@ KoFilter::ConversionStatus XlsxXmlTableReader::read_table()
     TRY_READ_ATTR_WITHOUT_NS(headerRowCount)
 
     m_context->referenceArea = ref;
+    m_context->name = name;
     m_context->headerStyleIndex = headerRowDxfId.toInt();
     m_context->dataStyleIndex = dataDxfId.toInt();
     m_context->totalsRowIndex = totalsRowDxfId.toInt();

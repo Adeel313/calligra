@@ -20,6 +20,8 @@ public:
     XlsxXmlTableReaderContext();
 
     QString referenceArea;
+    //! table:name attribute of the table definition.
+    QString name;
     int headerStyleIndex;
     int dataStyleIndex;
     int totalsRowIndex;

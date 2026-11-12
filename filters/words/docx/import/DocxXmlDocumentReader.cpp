@@ -272,6 +272,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_body()
             debugDocx << "NS prefix:" << namespaces[i].prefix() << "uri:" << namespaces[i].namespaceUri();
         }*/
 
+    MSOOXML::Utils::XmlWriteBuffer documentBuffer;
+    body = documentBuffer.setWriter(body);
+    m_trackedChangesXml.clear();
     int counter = 0;
 
     while (!atEnd()) {
@@ -300,6 +303,13 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_body()
     }
 
     closeOpenList();
+    body = documentBuffer.originalWriter();
+    if (!m_trackedChangesXml.isEmpty()) {
+        body->startElement("text:tracked-changes");
+        body->addCompleteElement(m_trackedChangesXml.constData());
+        body->endElement();
+    }
+    documentBuffer.releaseWriter();
     READ_EPILOGUE
 }
 
@@ -1758,15 +1768,20 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_fldChar()
             m_complexCharStatus = InstrExecute;
             const QString command = m_complexCharValue.trimmed().section(QLatin1Char(' '), 0, 0);
             if (command == QLatin1String("PAGE") || command == QLatin1String("NUMPAGES")) {
-                body->startElement(command == QLatin1String("PAGE") ? "text:page-number" : "text:page-count");
-                if (command == QLatin1String("PAGE")) body->addAttribute("text:select-page", "current");
-                body->addTextNode(QStringLiteral("1"));
-                body->endElement();
+                m_pageFieldElement = command == QLatin1String("PAGE") ? QByteArray("text:page-number") : QByteArray("text:page-count");
+                m_pageFieldCache.clear();
                 m_complexCharValue.clear();
                 m_complexCharStatus = NoneAllowed;
                 m_skipPageFieldResult = true;
             }
         } else if (fldCharType == "end") {
+            if (m_skipPageFieldResult && !m_pageFieldElement.isEmpty()) {
+                body->startElement(m_pageFieldElement.constData());
+                if (m_pageFieldElement == "text:page-number") body->addAttribute("text:select-page", "current");
+                body->addTextNode(m_pageFieldCache);
+                body->endElement();
+                m_pageFieldElement.clear();
+            }
             if (m_fieldDepth == m_tocDepth) { m_endToc = true; m_tocDepth = -1; }
             m_fieldDepth = qMax(0, m_fieldDepth - 1);
             m_skipPageFieldResult = false;
@@ -1989,10 +2004,14 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_hyperlink()
         body->startElement("text:a", false);
         body->addAttribute("xlink:type", "simple");
         closeTag = true;
-        if (!anchor.isEmpty()) {
-            body->addAttribute("xlink:href", QString("#%1").arg(anchor));
+        if (!link_target.isEmpty()) {
+            QUrl url(link_target);
+            if (!anchor.isEmpty()) {
+                url.setFragment(anchor);
+            }
+            body->addAttribute("xlink:href", url.toEncoded());
         } else {
-            body->addAttribute("xlink:href", QUrl(link_target).toEncoded());
+            body->addAttribute("xlink:href", QString("#%1").arg(anchor));
         }
 
         // Without an explicit character style the ODF consumer renders the
@@ -2033,6 +2052,23 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_del()
 {
     READ_PROLOGUE
 
+    const QString changeId = QStringLiteral("ct%1").arg(++m_revisionId);
+    const QString author = attributes().value(QStringLiteral("w:author")).toString();
+    const QString date = attributes().value(QStringLiteral("w:date")).toString();
+    QByteArray regionXml;
+    QBuffer regionBuffer(&regionXml);
+    regionBuffer.open(QIODevice::WriteOnly);
+    KoXmlWriter region(&regionBuffer);
+    region.startElement("text:changed-region");
+    region.addAttribute("text:id", changeId);
+    region.startElement("text:deletion");
+    region.startElement("office:change-info");
+    region.startElement("dc:creator"); region.addTextNode(author); region.endElement();
+    region.startElement("dc:date"); region.addTextNode(date); region.endElement();
+    region.endElement();
+    KoXmlWriter *originalBody = body;
+    region.startElement("text:p", false);
+    body = &region;
     m_changeTrackingState.push(DeletedRunContent);
 
     while (!atEnd()) {
@@ -2058,6 +2094,14 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_del()
         m_changeTrackingState.pop();
     }
 
+    body = originalBody;
+    region.endElement(); // text:p
+    body->startElement("text:change");
+    body->addAttribute("text:change-id", changeId);
+    body->endElement();
+    region.endElement(); // deletion/insertion
+    region.endElement(); // changed-region
+    m_trackedChangesXml += regionXml;
     READ_EPILOGUE
 }
 
@@ -2161,6 +2205,23 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_ins()
 {
     READ_PROLOGUE
 
+    const QString changeId = QStringLiteral("ct%1").arg(++m_revisionId);
+    const QString author = attributes().value(QStringLiteral("w:author")).toString();
+    const QString date = attributes().value(QStringLiteral("w:date")).toString();
+    QByteArray regionXml;
+    QBuffer regionBuffer(&regionXml);
+    regionBuffer.open(QIODevice::WriteOnly);
+    KoXmlWriter region(&regionBuffer);
+    region.startElement("text:changed-region");
+    region.addAttribute("text:id", changeId);
+    region.startElement("text:insertion");
+    region.startElement("office:change-info");
+    region.startElement("dc:creator"); region.addTextNode(author); region.endElement();
+    region.startElement("dc:date"); region.addTextNode(date); region.endElement();
+    region.endElement();
+    body->startElement("text:change-start");
+    body->addAttribute("text:change-id", changeId);
+    body->endElement();
     m_changeTrackingState.push(InsertedRunContent);
 
     while (!atEnd()) {
@@ -2186,6 +2247,12 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_ins()
         m_changeTrackingState.pop();
     }
 
+    body->startElement("text:change-end");
+    body->addAttribute("text:change-id", changeId);
+    body->endElement();
+    region.endElement(); // deletion/insertion
+    region.endElement(); // changed-region
+    m_trackedChangesXml += regionXml;
     READ_EPILOGUE
 }
 
@@ -2976,7 +3043,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_r()
         if (isStartElement()) {
             TRY_READ_IF(rPr)
             else if (name() == QLatin1StringView("t") && m_skipPageFieldResult) {
-                skipCurrentElement();
+                m_pageFieldCache += readElementText();
             }
             ELSE_TRY_READ_IF(t)
             ELSE_TRY_READ_IF(ptab)
@@ -3017,24 +3084,6 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_r()
         if (m_context->m_namedDefaultStyles.contains("text")) {
             m_currentTextStyle.setParentName(m_context->m_namedDefaultStyles.value("text"));
         }
-    }
-
-    // inserted/deleted run content, use a different color and
-    // underline/line-through
-    if (!m_changeTrackingState.isEmpty()) {
-        if (m_changeTrackingState.top() == InsertedRunContent) {
-            m_currentTextStyle.addProperty("style:text-underline-mode", "continuous");
-            m_currentTextStyle.addProperty("style:text-underline-style", "solid");
-            m_currentTextStyle.addProperty("style:text-underline-type", "single");
-            m_currentTextStyle.addProperty("style:text-underline-width", "auto");
-        } else {
-            m_currentTextStyle.addProperty("style:text-line-through-mode", "continuous");
-            m_currentTextStyle.addProperty("style:text-line-through-style", "solid");
-            m_currentTextStyle.addProperty("style:text-line-through-type", "single");
-            m_currentTextStyle.addProperty("style:text-line-through-width", "auto");
-        }
-        m_currentTextStyle.addProperty("style:text-underline-color", "#800080");
-        m_currentTextStyle.addProperty("fo:color", "#800080");
     }
 
     // We want to write to the higher body level
@@ -7707,7 +7756,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_wsp()
     const qint64 outerHeight = m_svgHeight;
     preReadSp();
     pushCurrentDrawStyle(new KoGenStyle(KoGenStyle::GraphicAutoStyle, "graphic"));
-    QString text;
+    QByteArray textXml;
+    QString shapePreset;
     while (!atEnd()) {
         readNext();
         if (isEndElement() && name() == QLatin1String("wsp")) { break; }
@@ -7715,23 +7765,39 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_wsp()
         if (name() == QLatin1String("spPr")) {
             const KoFilter::ConversionStatus status = read_spPr();
             if (status != KoFilter::OK) { popCurrentDrawStyle(); return status; }
+            shapePreset = m_contentType;
         } else if (name() == QLatin1String("txbx")) {
+            QBuffer textBuffer(&textXml);
+            textBuffer.open(QIODevice::WriteOnly);
+            KoXmlWriter textWriter(&textBuffer);
+            KoXmlWriter *originalBody = body;
+            const KoGenStyle paragraphStyle = m_currentParagraphStyle;
+            const KoGenStyle textStyle = m_currentTextStyle;
+            const bool insideParagraph = m_insideParagraph;
+            saveState();
+            m_insideParagraph = false;
+            body = &textWriter;
+            KoFilter::ConversionStatus status = KoFilter::OK;
             while (!atEnd()) {
                 readNext();
                 if (isEndElement() && name() == QLatin1String("txbx")) { break; }
-                if (isStartElement() && namespaceUri() == QLatin1String("http://schemas.openxmlformats.org/wordprocessingml/2006/main") && name() == QLatin1String("t")) {
-                    text += readElementText();
-                } else if (isEndElement() && namespaceUri() == QLatin1String("http://schemas.openxmlformats.org/wordprocessingml/2006/main") && name() == QLatin1String("p")) {
-                    text += QLatin1Char('\n');
+                if (isStartElement() && name() == QLatin1String("txbxContent")) {
+                    status = read_txbxContent();
+                    if (status != KoFilter::OK) { break; }
                 }
             }
+            closeOpenList();
+            body = originalBody;
+            restoreState();
+            m_currentParagraphStyle = paragraphStyle;
+            m_currentTextStyle = textStyle;
+            m_insideParagraph = insideParagraph;
+            if (status != KoFilter::OK) { popCurrentDrawStyle(); return status; }
         } else { skipCurrentElement(); }
     }
-    const QString preset = m_contentType;
-    if (!m_context->import->m_shapeHelper.attributes.contains(preset)) {
-        popCurrentDrawStyle();
-        return KoFilter::OK;
-    }
+    // Unknown geometry must not discard a text box's content.
+    const QString preset = m_context->import->m_shapeHelper.attributes.contains(shapePreset)
+        ? shapePreset : QStringLiteral("rect");
     m_svgX = outerX;
     m_svgY = outerY;
     if (outerWidth > 0) { m_svgWidth = outerWidth; }
@@ -7739,13 +7805,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_wsp()
     // read_drawing supplies the positioned custom-shape container. Buffer
     // only its children here, avoiding an invalid shape-inside-frame wrapper.
     m_nativeWordShape = true;
-    if (text.endsWith(QLatin1Char('\n'))) { text.chop(1); }
-    if (!text.isEmpty()) {
-        for (const QString &paragraph : text.split(QLatin1Char('\n'))) {
-            body->startElement("text:p");
-            body->addTextNode(paragraph);
-            body->endElement();
-        }
+    if (!textXml.isEmpty()) {
+        body->addCompleteElement(textXml.constData());
     }
     body->startElement("draw:enhanced-geometry");
     body->addAttribute("draw:type", QStringLiteral("ooxml-") + preset);

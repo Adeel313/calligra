@@ -184,7 +184,7 @@ private:
 };
 }
 
-QWidget *SimpleParagraphWidget::configureRibbon()
+QWidget *SimpleParagraphWidget::configureRibbon(bool includeStyles)
 {
     setObjectName(QStringLiteral("ribbonParagraphGroup"));
     while (QLayoutItem *item = widget.gridLayout->takeAt(0)) {
@@ -259,6 +259,11 @@ QWidget *SimpleParagraphWidget::configureRibbon()
     widget.moreOptions->setAccessibleName(i18n("Paragraph dialog"));
     widget.gridLayout->addWidget(widget.moreOptions, 1, 5);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+
+    widget.paragraphStyleCombo->hide();
+    if (!includeStyles) {
+        return nullptr;
+    }
 
     auto *styles = new QWidget;
     styles->setObjectName(QStringLiteral("ribbonStylesGroup"));

@@ -9,6 +9,8 @@
 #include "ChangeVectorDataCommand.h"
 #include "VectorShape.h"
 
+#include <QApplication>
+#include <KoRibbonLayout.h>
 #include <QFileDialog>
 #include <QGridLayout>
 #include <QToolButton>
@@ -64,6 +66,11 @@ QWidget *VectorTool::createOptionWidget()
     layout->addWidget(button, 0, 0);
     connect(button, &QAbstractButton::clicked, this, &VectorTool::changeUrlPressed);
 
+    if (qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        optionWidget->setWindowTitle(i18n("Change Graphic"));
+        button->setText(i18n("Change Graphic"));
+        KoRibbonLayout::configureButton(button, Qt::ToolButtonTextUnderIcon);
+    }
     return optionWidget;
 }
 

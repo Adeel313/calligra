@@ -528,7 +528,7 @@ QPixmap colorPreview(const QList<QColor> &colors, const QSize &size)
 // A labelled ribbon group of Stage: its commands above the caption.
 QWidget *ribbonGroup(QWidget *page, const QString &title, int order, QWidget **content)
 {
-    auto *group = new QWidget(page);
+    auto *group = new KoRibbonGroupWidget(page);
     group->setProperty("ribbonRoutedGroup", true);
     group->setProperty("ribbonGroupOrder", order);
     auto *vertical = new QVBoxLayout(group);
@@ -546,12 +546,20 @@ QWidget *ribbonGroup(QWidget *page, const QString &title, int order, QWidget **c
     return group;
 }
 
+// The bundled ribbon symbols are named directly ("bar_chart"), while the
+// theme lookup only knows desktop icon names, so try the symbol first.
+QIcon ribbonIcon(const QString &name)
+{
+    const QIcon symbol = KoRibbonIcons::forCommand(name);
+    return symbol.isNull() ? KoRibbonIcons::forThemeIcon(name) : symbol;
+}
+
 QToolButton *ribbonButton(QWidget *parent, const QString &text, const QString &iconName)
 {
     auto *button = new QToolButton(parent);
     button->setText(text);
     button->setToolTip(text);
-    button->setIcon(KoRibbonIcons::forThemeIcon(iconName));
+    button->setIcon(ribbonIcon(iconName));
     KoRibbonLayout::configureButton(button, Qt::ToolButtonTextUnderIcon);
     return button;
 }
@@ -569,7 +577,7 @@ QHBoxLayout *ribbonRow(QWidget *content)
     auto *layout = new QHBoxLayout(content);
     layout->setContentsMargins(2, 1, 2, 1);
     layout->setSpacing(4);
-    layout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    layout->setAlignment(Qt::AlignLeft);
     return layout;
 }
 }
@@ -637,7 +645,17 @@ QWidget *ChartTool::createOptionsGroup(QWidget *page)
         // The panel belongs to this tab now; the mode box must not move it to
         // a tool page as well.
         panel->setProperty("ribbonManagedExternally", true);
-        QToolButton *button = ribbonMenuButton(content, panel->windowTitle(), QStringLiteral("tune"), new QMenu(content));
+        // Each panel button shows the element it edits.
+        const QString className = QLatin1String(panel->metaObject()->className());
+        QString iconName = QStringLiteral("tune");
+        if (className.contains(QLatin1String("Titles"))) {
+            iconName = QStringLiteral("text_fields");
+        } else if (className.contains(QLatin1String("Legend"))) {
+            iconName = QStringLiteral("format_list_bulleted");
+        } else if (className.contains(QLatin1String("PlotArea"))) {
+            iconName = QStringLiteral("border_outer");
+        }
+        QToolButton *button = ribbonMenuButton(content, panel->windowTitle(), iconName, new QMenu(content));
         auto *action = new QWidgetAction(button->menu());
         action->setDefaultWidget(panel);
         button->menu()->addAction(action);
@@ -700,9 +718,9 @@ QWidget *ChartTool::createStylesGroup(QWidget *page)
         auto *button = new QToolButton(gallery);
         button->setAutoRaise(true);
         const QList<QColor> colors = colorSchemeColors(preset.scheme).mid(0, 3);
-        button->setIcon(QIcon(chartPreview(colors, preset.gridLines, preset.valueLabels, QSize(34, 22))));
-        button->setIconSize(QSize(34, 22));
-        button->setFixedSize(36, 24);
+        button->setIcon(QIcon(chartPreview(colors, preset.gridLines, preset.valueLabels, QSize(44, 30))));
+        button->setIconSize(QSize(44, 30));
+        button->setFixedSize(48, 36);
         button->setToolTip(i18n("Chart Style %1", style + 1));
         connect(button, &QToolButton::clicked, this, [this, style] { applyStylePreset(style); });
         grid->addWidget(button, style / 3, style % 3);
@@ -763,7 +781,7 @@ QMenu *ChartTool::createAddElementMenu(QWidget *parent)
 {
     auto *menu = new QMenu(parent);
 
-    QAction *title = menu->addAction(i18n("Chart Title"));
+    QAction *title = menu->addAction(ribbonIcon(QStringLiteral("text_fields")), i18n("Chart Title"));
     title->setCheckable(true);
     connect(title, &QAction::triggered, this, [this](bool show) {
         if (ChartShape *chart = currentChart(); chart && chart->title()) {
@@ -771,7 +789,7 @@ QMenu *ChartTool::createAddElementMenu(QWidget *parent)
         }
     });
 
-    QAction *subTitle = menu->addAction(i18n("Chart Subtitle"));
+    QAction *subTitle = menu->addAction(ribbonIcon(QStringLiteral("format_color_text")), i18n("Chart Subtitle"));
     subTitle->setCheckable(true);
     connect(subTitle, &QAction::triggered, this, [this](bool show) {
         if (ChartShape *chart = currentChart(); chart && chart->subTitle()) {
@@ -779,7 +797,7 @@ QMenu *ChartTool::createAddElementMenu(QWidget *parent)
         }
     });
 
-    QAction *footer = menu->addAction(i18n("Chart Footer"));
+    QAction *footer = menu->addAction(ribbonIcon(QStringLiteral("vertical_align_bottom")), i18n("Chart Footer"));
     footer->setCheckable(true);
     connect(footer, &QAction::triggered, this, [this](bool show) {
         if (ChartShape *chart = currentChart(); chart && chart->footer()) {
@@ -789,7 +807,7 @@ QMenu *ChartTool::createAddElementMenu(QWidget *parent)
 
     menu->addSeparator();
 
-    QAction *legend = menu->addAction(i18n("Legend"));
+    QAction *legend = menu->addAction(ribbonIcon(QStringLiteral("format_list_bulleted")), i18n("Legend"));
     legend->setCheckable(true);
     connect(legend, &QAction::triggered, this, [this](bool show) {
         if (ChartShape *chart = currentChart(); chart && chart->legend()) {
@@ -797,7 +815,7 @@ QMenu *ChartTool::createAddElementMenu(QWidget *parent)
         }
     });
 
-    QAction *axisTitles = menu->addAction(i18n("Axis Titles"));
+    QAction *axisTitles = menu->addAction(ribbonIcon(QStringLiteral("border_bottom")), i18n("Axis Titles"));
     axisTitles->setCheckable(true);
     connect(axisTitles, &QAction::triggered, this, [this](bool show) {
         ChartShape *chart = currentChart();
@@ -812,11 +830,11 @@ QMenu *ChartTool::createAddElementMenu(QWidget *parent)
         canvas()->addCommand(macro);
     });
 
-    QAction *labels = menu->addAction(i18n("Data Labels"));
+    QAction *labels = menu->addAction(ribbonIcon(QStringLiteral("numbers")), i18n("Data Labels"));
     labels->setCheckable(true);
     connect(labels, &QAction::triggered, this, [this](bool show) { setDataLabels(show); });
 
-    QAction *gridLines = menu->addAction(i18n("Major Gridlines"));
+    QAction *gridLines = menu->addAction(ribbonIcon(QStringLiteral("border_all")), i18n("Major Gridlines"));
     gridLines->setCheckable(true);
     connect(gridLines, &QAction::triggered, this, [this](bool show) { setMajorGridLines(show); });
 
@@ -868,8 +886,9 @@ QMenu *ChartTool::createQuickLayoutMenu(QWidget *parent)
         QT_TRANSLATE_NOOP("ChartTool", "Title Only"),
         QT_TRANSLATE_NOOP("ChartTool", "Chart Only"),
     };
+    const char *const layoutIcons[] = {"dashboard_customize", "numbers", "fact_check", "text_fields", "bar_chart"};
     for (int layout = 0; layout < int(sizeof(layouts) / sizeof(layouts[0])); ++layout) {
-        QAction *action = menu->addAction(i18n(layouts[layout]));
+        QAction *action = menu->addAction(ribbonIcon(QLatin1String(layoutIcons[layout])), i18n(layouts[layout]));
         connect(action, &QAction::triggered, this, [this, layout] { applyQuickLayout(layout); });
     }
     return menu;

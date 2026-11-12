@@ -178,6 +178,9 @@ void OdfTextReader::readTextLevelElement(KoXmlStreamReader &reader)
             reader.skipCurrentElement();
         }
     } // draw | dr3d namespace
+    else if (tagName == "text:tracked-changes") {
+        m_backend->trackedChanges(reader, m_context);
+    }
     else if (tagName == "text:h") {
         readElementTextH(reader);
     } else if (tagName == "text:p") {
@@ -877,7 +880,9 @@ void OdfTextReader::readParagraphContents(KoXmlStreamReader &reader)
             }
         } // office namespace
         else if (reader.prefix() == QLatin1StringView("text")) {
-            if (tagName == "text:a") {
+            if (tagName == "text:change" || tagName == "text:change-start" || tagName == "text:change-end") {
+                m_backend->textChange(reader, m_context);
+            } else if (tagName == "text:a") {
                 readElementTextA(reader);
             } else if (tagName == "text:line-break") {
                 readElementTextLineBreak(reader);

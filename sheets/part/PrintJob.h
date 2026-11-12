@@ -9,6 +9,9 @@
 
 #include <KoPrintingDialog.h>
 
+struct KoPageLayout;
+class QPrinter;
+
 namespace Calligra
 {
 namespace Sheets
@@ -21,7 +24,12 @@ class View;
 class PrintJob : public KoPrintingDialog
 {
 public:
-    explicit PrintJob(View *view);
+    /**
+     * @param view the view being printed
+     * @param printAllSheets print every sheet instead of only the active one,
+     *        used by non-interactive exports such as PDF
+     */
+    explicit PrintJob(View *view, bool printAllSheets = false);
     ~PrintJob() override;
 
     int documentFirstPage() const override;
@@ -38,6 +46,9 @@ protected:
     QList<QWidget *> createOptionWidgets() const override;
 
 private:
+    //! Applies a sheet page layout (paper size, orientation, margins) to the printer.
+    static void applyPageLayout(QPrinter &printer, const KoPageLayout &pageLayout);
+
     class Private;
     Private *const d;
 };

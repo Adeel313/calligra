@@ -33,14 +33,20 @@ void KPrPdfPrintJob::startPrinting(RemovePolicy removePolicy)
     zoomHandler.setResolution(m_printer.resolution(), m_printer.resolution());
     m_printer.setFullPage(true);
     const KoPageLayout &firstLayout = m_pages.at(fromPage)->pageLayout();
-    m_printer.setPageSize(QPageSize(QSizeF(firstLayout.width, firstLayout.height), QPageSize::Millimeter));
+    // KoPageLayout sizes are in points; declaring them as millimetres scaled every exported page by 2.83.
+    m_printer.setPageSize(QPageSize(QSizeF(firstLayout.width, firstLayout.height), QPageSize::Point));
     QPainter painter(&m_printer);
 
     for (int i = fromPage; i <= toPage; ++i) {
         KoPAPageBase *page = m_pages.at(i);
         const KoPageLayout &layout = page->pageLayout();
-        m_printer.setPageSize(QPageSize(QSizeF(layout.width, layout.height), QPageSize::Millimeter));
-        QSizeF size = m_printer.pageLayout().paintRect().size();
+        m_printer.setPageSize(QPageSize(QSizeF(layout.width, layout.height), QPageSize::Point));
+        // KoPAUtil::setZoom() compares the page size against layouts in points, so the printable
+        // area has to be in device pixels. Asking for it in the default unit gave millimetres and
+        // scaled every slide down to about a quarter of the page.
+        const qreal dpi = m_printer.resolution();
+        const QRectF paintRect = m_printer.pageLayout().paintRect(QPageLayout::Point);
+        const QSizeF size(paintRect.width() * dpi / 72.0, paintRect.height() * dpi / 72.0);
         painter.save();
         if (i != fromPage) {
             m_printer.newPage();

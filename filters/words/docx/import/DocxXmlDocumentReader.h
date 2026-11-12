@@ -76,6 +76,10 @@ protected:
     bool m_startToc = false;
     bool m_endToc = false;
     bool m_skipPageFieldResult = false;
+    QByteArray m_pageFieldElement;
+    QString m_pageFieldCache;
+    QByteArray m_trackedChangesXml;
+    int m_revisionId = 0;
     bool m_footerActive = false;
     bool m_headerActive = false;
     //! True while the current wp:anchor contained a wrap element.  When it

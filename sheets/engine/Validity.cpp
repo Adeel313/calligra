@@ -231,6 +231,11 @@ bool Validity::testValidity(const CellBase *cell) const
         default:
             break;
         }
+    } else if (d->restriction == Formula) {
+        // Formula based validations are imported from spreadsheet formats.
+        // They are stored and written back unchanged; evaluating them here
+        // would need the formula parser, so any input is accepted for now.
+        valid = true;
     } else if (d->restriction == Text) {
         valid = val.isString();
     } else if (d->restriction == List) {

@@ -140,6 +140,33 @@ void KWRootAreaProvider::handleDependentProviders(int pageNumber)
     }
 }
 
+// Shapes anchored to a page are loaded invisible so the initial layout does
+// not reserve room for them on the first page. Layout shows them again when
+// their page is created; a page that is taken from the cache instead never
+// runs that code, so the shapes have to be shown here.
+void KWRootAreaProvider::showPageAnchoredShapes(int pageNumber)
+{
+    if (pageNumber <= 0 || frameSet()->textFrameSetType() != Words::MainTextFrameSet) {
+        return;
+    }
+    KWDocument *kwdoc = frameSet()->wordsDocument();
+    foreach (KWFrameSet *fs, kwdoc->frameSets()) {
+        if (KWTextFrameSet *tfs = qobject_cast<KWTextFrameSet *>(fs)) {
+            if (tfs->textFrameSetType() != Words::OtherTextFrameSet)
+                continue; // headers, footers and the main text are not anchored to a page
+        }
+        foreach (KWFrame *frame, fs->frames()) {
+            KoShape *shape = frame->shape();
+            if (!shape || shape->isVisible(true) || !shape->anchor()) {
+                continue;
+            }
+            if (shape->anchor()->pageNumber() == pageNumber) {
+                shape->setVisible(true);
+            }
+        }
+    }
+}
+
 KoTextLayoutRootArea *KWRootAreaProvider::provideNext(KoTextDocumentLayout *documentLayout, const RootAreaConstraint &constraints)
 {
     KWDocument *kwdoc = frameSet()->wordsDocument();
@@ -305,6 +332,7 @@ KWRootAreaProvider::provide(KoTextDocumentLayout *documentLayout, const RootArea
 
         KWRootAreaPage *rootAreaPage = m_pageHash.value(rootArea);
         Q_ASSERT(rootAreaPage);
+        showPageAnchoredShapes(rootAreaPage->page.pageNumber());
 
         if (constraints.visiblePageNumber >= 0)
             rootAreaPage->page.setVisiblePageNumber(constraints.visiblePageNumber);
@@ -370,8 +398,22 @@ void KWRootAreaProvider::releaseAllAfter(KoTextLayoutRootArea *afterThis)
         afterIndex = m_pages.indexOf(page);
         Q_ASSERT(afterIndex >= 0);
 
+        // The area we are told to keep may already have been dropped from the
+        // cache, for example when a shape was cleaned up in the middle of a
+        // layout run. Dropping every cached area in that case used to leave the
+        // pages below alive without their root areas, and each following layout
+        // appended yet another page for the same position.
         int newSize = m_rootAreaCache.indexOf(afterThis) + 1;
-        while (m_rootAreaCache.size() != newSize) {
+        if (newSize == 0) {
+            while (newSize < m_rootAreaCache.size()) {
+                KWRootAreaPage *areaPage = m_pageHash.value(m_rootAreaCache[newSize]);
+                const int areaPageIndex = areaPage ? m_pages.indexOf(areaPage) : -1;
+                if (areaPageIndex < 0 || areaPageIndex > afterIndex)
+                    break;
+                ++newSize;
+            }
+        }
+        while (m_rootAreaCache.size() > newSize) {
             KoTextLayoutRootArea *oldArea = m_rootAreaCache.takeLast();
             delete (oldArea);
         }

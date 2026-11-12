@@ -1156,6 +1156,105 @@ void OdfTextReaderDocxBackend::elementTextS(KoXmlStreamReader &reader, OdfReader
     endRun(docxContext);
 }
 
+void OdfTextReaderDocxBackend::trackedChanges(KoXmlStreamReader &reader, OdfReaderContext *)
+{
+    QString id;
+    Revision revision;
+    QVector<QString> styles;
+    int paragraphDepth = 0;
+    while (!reader.atEnd()) {
+        reader.readNext();
+        const QString tag = reader.qualifiedName().toString();
+        if (reader.isEndElement() && tag == QLatin1String("text:tracked-changes")) {
+            break;
+        }
+        if (reader.isStartElement()) {
+            if (tag == QLatin1String("text:changed-region")) {
+                id = reader.attributes().value(QStringLiteral("text:id")).toString();
+                revision = Revision();
+                revision.wordId = m_revisions.size() + 1;
+                styles.clear();
+            } else if (tag == QLatin1String("text:deletion") || tag == QLatin1String("text:insertion")) {
+                revision.type = tag;
+            } else if (tag == QLatin1String("dc:creator")) {
+                revision.author = reader.readElementText();
+            } else if (tag == QLatin1String("dc:date")) {
+                revision.date = reader.readElementText();
+            } else if (tag == QLatin1String("text:p") || tag == QLatin1String("text:h")) {
+                ++paragraphDepth;
+            } else if (tag == QLatin1String("text:span")) {
+                styles.append(reader.attributes().value(QStringLiteral("text:style-name")).toString());
+            } else if (paragraphDepth && tag == QLatin1String("text:s")) {
+                const int count = qBound(1, reader.attributes().value(QStringLiteral("text:c")).toInt(), 32767);
+                revision.fragments.append({QString(count, QLatin1Char(' ')), styles});
+            } else if (paragraphDepth && tag == QLatin1String("text:tab")) {
+                revision.fragments.append({QStringLiteral("\t"), styles});
+            } else if (paragraphDepth && tag == QLatin1String("text:line-break")) {
+                revision.fragments.append({QStringLiteral("\n"), styles});
+            }
+        } else if (reader.isEndElement()) {
+            if (tag == QLatin1String("text:changed-region")) {
+                m_revisions.insert(id, revision);
+            } else if (tag == QLatin1String("text:span") && !styles.isEmpty()) {
+                styles.removeLast();
+            } else if (tag == QLatin1String("text:p") || tag == QLatin1String("text:h")) {
+                --paragraphDepth;
+            }
+        } else if (reader.isCharacters() && paragraphDepth && revision.type == QLatin1String("text:deletion")
+                   && (!reader.isWhitespace() || !reader.text().contains(QLatin1Char('\n')))) {
+            revision.fragments.append({reader.text().toString(), styles});
+        }
+    }
+}
+
+void OdfTextReaderDocxBackend::textChange(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    auto *docxContext = dynamic_cast<OdfReaderDocxContext *>(context);
+    const QString tag = reader.qualifiedName().toString();
+    const QString id = reader.attributes().value(QStringLiteral("text:change-id")).toString();
+    reader.skipCurrentElement();
+    if (!docxContext) {
+        return;
+    }
+    KoXmlWriter *writer = currentWriter(docxContext);
+    if (tag == QLatin1String("text:change-end")) {
+        if (!m_openInsertions.isEmpty() && m_openInsertions.pop()) {
+            writer->endElement(); // w:ins
+        }
+        return;
+    }
+    const auto found = m_revisions.constFind(id);
+    const bool insertion = found != m_revisions.cend() && found->type == QLatin1String("text:insertion");
+    if (tag == QLatin1String("text:change-start")) {
+        m_openInsertions.push(insertion);
+    }
+    if (found == m_revisions.cend() || (tag == QLatin1String("text:change-start") && !insertion)) {
+        return;
+    }
+    writer->startElement(insertion ? "w:ins" : "w:del");
+    writer->addAttribute("w:id", found->wordId);
+    if (!found->author.isEmpty()) writer->addAttribute("w:author", found->author);
+    if (!found->date.isEmpty()) writer->addAttribute("w:date", found->date);
+    if (insertion) {
+        return; // closed by the matching change-end marker
+    }
+    const auto savedStyles = m_spanStyles;
+    for (const RevisionFragment &fragment : found->fragments) {
+        m_spanStyles = savedStyles;
+        m_spanStyles += fragment.styles;
+        startRun(reader.attributes(), docxContext);
+        writer->startElement(fragment.text == QLatin1String("\t") ? "w:tab" : fragment.text == QLatin1String("\n") ? "w:br" : "w:delText");
+        if (fragment.text != QLatin1String("\t") && fragment.text != QLatin1String("\n")) {
+            writer->addAttribute("xml:space", "preserve");
+            writer->addTextNode(fragment.text);
+        }
+        writer->endElement();
+        endRun(docxContext);
+    }
+    m_spanStyles = savedStyles;
+    writer->endElement(); // w:del
+}
+
 void OdfTextReaderDocxBackend::elementTextA(KoXmlStreamReader &reader, OdfReaderContext *context)
 {
     DEBUG_BACKEND();
@@ -1184,10 +1283,15 @@ void OdfTextReaderDocxBackend::elementTextA(KoXmlStreamReader &reader, OdfReader
         } else if (m_insideFootnote) {
             sourcePart = m_insideEndnote ? QStringLiteral("word/endnotes.xml") : QStringLiteral("word/footnotes.xml");
         }
+            QUrl target(href);
+            if (target.hasFragment()) {
+                writer->addAttribute("w:anchor", target.fragment());
+                target.setFragment(QString());
+            }
             const QString relationshipId = docxContext->m_docxFile->addRelationship(
                 sourcePart,
                 "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
-                href,
+                target.toString(QUrl::FullyEncoded),
                 true);
             if (relationshipId.isEmpty()) {
                 writer->endElement(); // w:hyperlink

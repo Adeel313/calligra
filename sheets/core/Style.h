@@ -95,6 +95,21 @@ public:
         NegRedBrackets = 4
     };
 
+    /// Border line styles that a QPen cannot express. Everything else is
+    /// carried by the pen itself (see leftBorderPen() and friends).
+    enum BorderStyle {
+        BorderStyleAuto = 0, ///< the pen's own style decides
+        BorderStyleDouble,
+        BorderStyleGroove,
+        BorderStyleRidge,
+        BorderStyleInset,
+        BorderStyleOutset,
+        BorderStyleTriple,
+        BorderStyleWave,
+        BorderStyleDoubleWave,
+        BorderStyleSlash
+    };
+
     /// The style type
     enum StyleType {
         BUILTIN, ///< built-in style (the default style)
@@ -157,7 +172,12 @@ public:
         DontPrintText,
         NotProtected,
         HideAll,
-        HideFormula
+        HideFormula,
+        // border line styles (only what QPen cannot represent)
+        LeftBorderStyle,
+        RightBorderStyle,
+        TopBorderStyle,
+        BottomBorderStyle
     };
 
     Style();
@@ -185,6 +205,10 @@ public:
     QPen topBorderPen() const;
     QPen fallDiagonalPen() const;
     QPen goUpDiagonalPen() const;
+    BorderStyle leftBorderStyle() const;
+    BorderStyle rightBorderStyle() const;
+    BorderStyle topBorderStyle() const;
+    BorderStyle bottomBorderStyle() const;
     QBrush backgroundBrush() const;
     QString customFormat() const;
     QString prefix() const;
@@ -300,18 +324,23 @@ public:
     }
     void setRightBorderPen(QPen const &pen)
     {
+        // A new pen replaces whatever line style was attached to the old one.
+        clearAttribute(RightBorderStyle);
         insertSubStyle(RightPen, pen);
     }
     void setBottomBorderPen(QPen const &pen)
     {
+        clearAttribute(BottomBorderStyle);
         insertSubStyle(BottomPen, pen);
     }
     void setLeftBorderPen(QPen const &pen)
     {
+        clearAttribute(LeftBorderStyle);
         insertSubStyle(LeftPen, pen);
     }
     void setTopBorderPen(QPen const &pen)
     {
+        clearAttribute(TopBorderStyle);
         insertSubStyle(TopPen, pen);
     }
     void setFallDiagonalPen(QPen const &pen)
@@ -321,6 +350,22 @@ public:
     void setGoUpDiagonalPen(QPen const &pen)
     {
         insertSubStyle(GoUpDiagonalPen, pen);
+    }
+    void setLeftBorderStyle(BorderStyle style)
+    {
+        insertSubStyle(LeftBorderStyle, int(style));
+    }
+    void setRightBorderStyle(BorderStyle style)
+    {
+        insertSubStyle(RightBorderStyle, int(style));
+    }
+    void setTopBorderStyle(BorderStyle style)
+    {
+        insertSubStyle(TopBorderStyle, int(style));
+    }
+    void setBottomBorderStyle(BorderStyle style)
+    {
+        insertSubStyle(BottomBorderStyle, int(style));
     }
     void setAngle(int angle)
     {

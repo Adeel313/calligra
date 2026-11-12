@@ -265,14 +265,18 @@ int StyleStorage::firstColumnIndexInRow(int row) const
 {
     d->ensureLoaded();
     const QRect rect = usedArea().intersected(QRect(QPoint(1, row), QPoint(KS_colMax, row)));
-    return rect.isNull() ? 0 : rect.left();
+    // isEmpty(), not isNull(): a rect of zero width but one row of height is
+    // null in neither Qt's sense nor ours, and its left() would be past the end.
+    return rect.isEmpty() ? 0 : rect.left();
 }
 
 int StyleStorage::nextColumnIndexInRow(int column, int row) const
 {
     d->ensureLoaded();
     const QRect rect = usedArea().intersected(QRect(QPoint(column + 1, row), QPoint(KS_colMax, row)));
-    return rect.isNull() ? 0 : rect.left();
+    // With column == KS_colMax the intersection is an empty rectangle whose
+    // left() is KS_colMax + 1, which used to become an out-of-range cell.
+    return rect.isEmpty() ? 0 : rect.left();
 }
 
 void StyleStorage::insert(const QRect &rect, const SharedSubStyle &subStyle, bool markRegionChanged)

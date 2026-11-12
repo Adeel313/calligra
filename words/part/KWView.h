@@ -81,6 +81,10 @@ public:
     /// Insert images inline at the current cursor of \a textFrameSet.
     void insertImagesIntoTextFrame(KWTextFrameSet *textFrameSet, const QVector<QImage> &imageList);
 
+    /// Insert an empty formula inline at the current cursor of \a textFrameSet
+    /// and start editing it, the way an equation is inserted in Office.
+    void insertFormulaIntoTextFrame(KWTextFrameSet *textFrameSet);
+
     // interface KoView
     /// reimplemented method from superclass
     void updateReadWrite(bool readWrite) override;

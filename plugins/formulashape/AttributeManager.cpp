@@ -332,6 +332,8 @@ Qt::PenStyle AttributeManager::parsePenStyle(const QString &value) const
         return Qt::NoPen;
 }
 
+static const qreal DefaultFontSize = 12.0;
+
 QFont AttributeManager::font(const BasicElement *element) const
 {
     // TODO process the mathvariant values partly
@@ -348,6 +350,11 @@ QFont AttributeManager::font(const BasicElement *element) const
         font.setPointSizeF(lengthToPixels(unit, element, "fontsize") * element->scaleFactor());
     } else if (unit.type == Length::Pixel) {
         font.setPixelSize(lengthToPixels(unit, element, "fontsize") * element->scaleFactor());
+    } else {
+        // No explicit size: do not inherit the (usually much smaller) desktop
+        // application font, or formulas end up tiny compared to the text they
+        // are inserted into.
+        font.setPointSizeF(DefaultFontSize);
     }
     return font;
 }

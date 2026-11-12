@@ -97,7 +97,9 @@ KoShadowConfigWidget::KoShadowConfigWidget(QWidget *parent)
 
     // The Stage Format tab keeps a row of icons: the on/off toggle, the colour
     // swatch, and a menu holding the blur, distance and angle controls.
-    if (QCoreApplication::applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)) {
+    if ((QCoreApplication::applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)
+        || QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)
+        || QCoreApplication::applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive))) {
         d->widget.SpecialSpacer->hide();
         d->widget.label_2->hide();
         d->widget.label->hide();
@@ -106,7 +108,8 @@ KoShadowConfigWidget::KoShadowConfigWidget(QWidget *parent)
         toggle->setCheckable(true);
         toggle->setAutoRaise(true);
         toggle->setIcon(QIcon(shadowTogglePixmap()));
-        toggle->setIconSize(QSize(16, 16));
+        toggle->setIconSize(QSize(24, 24));
+        toggle->setMinimumSize(34, 34);
         toggle->setToolTip(i18n("Use a shadow"));
         toggle->setChecked(d->widget.shadowVisible->isChecked());
         d->widget.shadowVisible->hide();
@@ -118,7 +121,8 @@ KoShadowConfigWidget::KoShadowConfigWidget(QWidget *parent)
         options->setAutoRaise(true);
         options->setPopupMode(QToolButton::InstantPopup);
         options->setIcon(koIcon("configure"));
-        options->setIconSize(QSize(16, 16));
+        options->setIconSize(QSize(24, 24));
+        options->setMinimumSize(34, 34);
         options->setToolTip(i18n("Shadow distance, blur and angle"));
         auto *menu = new QMenu(options);
         options->setMenu(menu);

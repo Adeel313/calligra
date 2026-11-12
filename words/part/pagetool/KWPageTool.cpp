@@ -6,6 +6,8 @@
 
 // pagetool includes
 #include "KWPageTool.h"
+#include <KoRibbonLayout.h>
+#include "KWPageSetupGallery.h"
 #include "KWView.h"
 #include "frames/KWTextFrameSet.h"
 
@@ -29,53 +31,22 @@
 
 // calligra includes
 #include <KoCanvasBase.h>
+#include <KoCharacterStyle.h>
+#include <KoColumns.h>
+#include <KoOdfLineNumberingConfiguration.h>
+#include <KoPageLayout.h>
 #include <KoPointerEvent.h>
 #include <KoRibbonIcons.h>
 #include <KoTextDocument.h>
 #include <KoTextEditor.h>
-#include <KoViewConverter.h>
-#include <KoCharacterStyle.h>
-#include <KoOdfLineNumberingConfiguration.h>
 #include <KoUnit.h>
+#include <KoViewConverter.h>
+#include <kundo2command.h>
 
-namespace
-{
-QIcon pageSetupIcon(int type)
-{
-    QPixmap pixmap(64, 64);
-    pixmap.setDevicePixelRatio(2);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setPen(QPen(QColor("#596575"), 1.2));
-    painter.setBrush(Qt::white);
-    const QRectF page = type == 1 ? QRectF(2, 7, 28, 19) : QRectF(6, 2, 20, 28);
-    painter.drawRoundedRect(page, 1, 1);
-    painter.setPen(QPen(QColor("#185abd"), 1.3));
-    if (type == 0) {
-        painter.setPen(QPen(QColor("#185abd"), 1, Qt::DashLine));
-        painter.drawRect(page.adjusted(4, 5, -4, -5));
-    } else if (type == 2) {
-        painter.drawLine(QPointF(10, 7), QPointF(22, 7));
-        painter.drawLine(QPointF(10, 7), QPointF(13, 5));
-        painter.drawLine(QPointF(22, 7), QPointF(19, 5));
-        painter.drawLine(QPointF(16, 12), QPointF(16, 25));
-        painter.drawLine(QPointF(16, 12), QPointF(14, 15));
-        painter.drawLine(QPointF(16, 25), QPointF(14, 22));
-    } else {
-        for (int y = type == 1 ? 12 : 7; y < (type == 1 ? 23 : 27); y += 4) {
-            if (type == 3) {
-                painter.drawLine(9, y, 14, y);
-                painter.drawLine(18, y, 23, y);
-            } else {
-                painter.drawLine(7, y, 25, y);
-            }
-        }
-    }
-    painter.end();
-    return QIcon(pixmap);
-}
-}
+// words includes
+#include "KWPage.h"
+#include "KWPageStyle.h"
+#include "commands/KWPageStylePropertiesCommand.h"
 
 KWPageTool::KWPageTool(KoCanvasBase *canvas)
     : KoToolBase(canvas)
@@ -128,6 +99,128 @@ void KWPageTool::insertPageBreak()
     }
 }
 
+PageSetupState KWPageTool::pageSetupState() const
+{
+    PageSetupState state;
+    KWView *view = m_canvas ? m_canvas->view() : nullptr;
+    if (!view) {
+        return state;
+    }
+    const KWPage page = view->currentPage();
+    if (!page.isValid()) {
+        return state;
+    }
+    const KWPageStyle style = page.pageStyle();
+    const KoPageLayout layout = style.pageLayout();
+    state.size = QSizeF(layout.width, layout.height);
+    state.margins = QMarginsF(qMax(0.0, layout.leftMargin),
+                              qMax(0.0, layout.topMargin),
+                              qMax(0.0, layout.rightMargin),
+                              qMax(0.0, layout.bottomMargin));
+    state.format = layout.format;
+    state.orientation = layout.orientation;
+    state.columns = qMax(1, style.columns().count);
+    return state;
+}
+
+void KWPageTool::refreshPageSetupGallery()
+{
+    if (m_gallery) {
+        m_gallery->setState(pageSetupState());
+    }
+}
+
+void KWPageTool::applyPageSetup(const std::function<void(KoPageLayout &layout, KoColumns &columns)> &change,
+                                const KUndo2MagicString &text)
+{
+    KWView *view = m_canvas ? m_canvas->view() : nullptr;
+    if (!view || !m_document || !m_document->isReadWrite()) {
+        return;
+    }
+    const KWPage page = view->currentPage();
+    if (!page.isValid()) {
+        return;
+    }
+
+    KWPageStyle style = page.pageStyle();
+    KoPageLayout layout = style.pageLayout();
+    KoColumns columns = style.columns();
+    change(layout, columns);
+
+    // Every page that uses this style follows the change, so it is a style
+    // change and not only a property of the page under the cursor.
+    style.detach(style.name());
+    style.setPageLayout(layout);
+    style.setColumns(columns);
+
+    auto *command = new KUndo2Command(text);
+    new KWPageStylePropertiesCommand(m_document, page.pageStyle(), style, command);
+    m_document->addCommand(command);
+    m_document->firePageSetupChanged();
+    refreshPageSetupGallery();
+}
+
+void KWPageTool::applyMargins(const QMarginsF &margins)
+{
+    applyPageSetup(
+        [margins](KoPageLayout &layout, KoColumns &) {
+            layout.leftMargin = margins.left();
+            layout.topMargin = margins.top();
+            layout.rightMargin = margins.right();
+            layout.bottomMargin = margins.bottom();
+            // A single page layout, not the facing pages one.
+            layout.pageEdge = -1;
+            layout.bindingSide = -1;
+        },
+        kundo2_i18n("Change Margins"));
+}
+
+void KWPageTool::applyOrientation(KoPageFormat::Orientation orientation)
+{
+    applyPageSetup(
+        [orientation](KoPageLayout &layout, KoColumns &) {
+            if (layout.orientation == orientation) {
+                return;
+            }
+            layout.orientation = orientation;
+            // The paper keeps its format, so only the two sides exchange.
+            const bool tooTall = layout.width < layout.height;
+            if ((orientation == KoPageFormat::Landscape) == tooTall) {
+                const qreal width = layout.width;
+                layout.width = layout.height;
+                layout.height = width;
+            }
+        },
+        kundo2_i18n("Change Orientation"));
+}
+
+void KWPageTool::applyPageFormat(KoPageFormat::Format format)
+{
+    applyPageSetup(
+        [format](KoPageLayout &layout, KoColumns &) {
+            const auto orientation = layout.orientation == KoPageFormat::Landscape ? KoPageFormat::Landscape
+                                                                                  : KoPageFormat::Portrait;
+            layout.format = format;
+            layout.width = MM_TO_POINT(KoPageFormat::width(format, orientation));
+            layout.height = MM_TO_POINT(KoPageFormat::height(format, orientation));
+        },
+        kundo2_i18n("Change Paper Size"));
+}
+
+void KWPageTool::applyColumns(int count)
+{
+    applyPageSetup(
+        [count](KoPageLayout &, KoColumns &columns) {
+            columns.count = qBound(1, count, 8);
+            // The columns share the text area evenly.
+            columns.columnData.clear();
+            if (columns.gapWidth <= 0.0) {
+                columns.gapWidth = 14.0;
+            }
+        },
+        kundo2_i18n("Change Columns"));
+}
+
 QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
 {
     QList<QPointer<QWidget>> widgets;
@@ -143,79 +236,48 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
     pageSetupLayout->setVerticalSpacing(1);
     pageSetupLayout->setSizeConstraint(QLayout::SetFixedSize);
 
-    int buttonIndex = 0;
-    const auto placeButton = [pageSetupLayout, &buttonIndex](QToolButton *button) {
-        const bool large = buttonIndex < 4;
-        button->setToolButtonStyle(large ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonTextBesideIcon);
-        button->setIconSize(large ? QSize(32, 32) : QSize(16, 16));
-        if (large) {
-            button->setMinimumSize(64, 72);
-            pageSetupLayout->addWidget(button, 0, buttonIndex, 3, 1, Qt::AlignTop);
-        } else {
-            pageSetupLayout->addWidget(button, (buttonIndex - 4) % 3, 4 + (buttonIndex - 4) / 3, Qt::AlignLeft);
+    // Margins, orientation, paper size and columns are a gallery of page
+    // pictures; each one opens its presets and applies them right away.
+    auto *gallery = new KWPageSetupGallery(pageSetupGroup);
+    m_gallery = gallery;
+    connect(gallery, &KWPageSetupGallery::marginsSelected, this, &KWPageTool::applyMargins);
+    connect(gallery, &KWPageSetupGallery::orientationSelected, this, &KWPageTool::applyOrientation);
+    connect(gallery, &KWPageSetupGallery::pageFormatSelected, this, &KWPageTool::applyPageFormat);
+    connect(gallery, &KWPageSetupGallery::columnsSelected, this, &KWPageTool::applyColumns);
+    connect(gallery, &KWPageSetupGallery::actionRequested, this, [this](const QString &name) {
+        // The break actions belong to the active text tool, so they are looked
+        // up when one of them is picked.
+        if (KWView *view = m_canvas ? m_canvas->view() : nullptr) {
+            if (QAction *action = view->action(name)) {
+                action->trigger();
+            }
         }
-        ++buttonIndex;
-    };
-    const auto addPageSetupAction = [this, pageSetupGroup, &placeButton, &buttonIndex](const QString &actionName, const QString &label) {
-        auto *button = new QToolButton(pageSetupGroup);
-        button->setObjectName(QStringLiteral("layout%1Button").arg(label));
-        button->setText(label);
-        const QIcon icon = pageSetupIcon(buttonIndex);
-        button->setIcon(icon);
-        // KWGui builds the ribbon before KWView registers its actions.
-        QTimer::singleShot(0, button, [this, button, actionName, label, icon] {
-            QAction *action = m_canvas->view()->action(actionName);
-            if (!action) {
-                button->setEnabled(false);
-                return;
+    });
+    connect(gallery, &KWPageSetupGallery::pageSetupRequested, this, [this] {
+        if (KWView *view = m_canvas ? m_canvas->view() : nullptr) {
+            if (QAction *action = view->action(QStringLiteral("format_page"))) {
+                action->trigger();
             }
-            button->setDefaultAction(action);
-            button->setText(label);
-            button->setIcon(icon);
-            connect(action, &QAction::changed, button, [button, label, icon] {
-                button->setText(label);
-                button->setIcon(icon);
-            });
-            if (action->menu()) {
-                button->setPopupMode(QToolButton::MenuButtonPopup);
-            }
-        });
-        button->setAutoRaise(true);
-        placeButton(button);
-    };
+        }
+    });
+    connect(gallery, &KWPageSetupGallery::refreshRequested, this, &KWPageTool::refreshPageSetupGallery);
+    connect(m_document, &KWDocument::pageSetupChanged, this, &KWPageTool::refreshPageSetupGallery);
+    QTimer::singleShot(0, gallery, [this] { refreshPageSetupGallery(); });
+    pageSetupLayout->addWidget(gallery, 0, 0, 3, 1, Qt::AlignTop);
 
-    addPageSetupAction(QStringLiteral("format_page"), i18n("Margins"));
-    addPageSetupAction(QStringLiteral("format_page"), i18n("Orientation"));
-    addPageSetupAction(QStringLiteral("format_page"), i18n("Size"));
-    addPageSetupAction(QStringLiteral("format_page"), i18n("Columns"));
-    auto *manualBreak = new QToolButton(pageSetupGroup);
-    manualBreak->setObjectName(QStringLiteral("layoutBreaksButton"));
-    manualBreak->setText(i18n("Breaks"));
-    manualBreak->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("insert-page-break")));
-    manualBreak->setAutoRaise(true);
-    auto *breaksMenu = new QMenu(manualBreak);
-    const auto populateBreaksMenu = [this, breaksMenu] {
-        breaksMenu->clear();
-        // These actions are replaced when the active text tool changes.
-        for (const QString &name : {QStringLiteral("insert_framebreak"), QStringLiteral("insert_section"), QStringLiteral("line_break")}) {
-            if (QAction *action = m_canvas->view()->action(name)) {
-                breaksMenu->addAction(action);
-            }
-        }
+    // Breaks, line numbering and hyphenation are the small buttons next to the
+    // gallery, like the ones under it in an office suite.
+    int smallIndex = 0;
+    const auto placeSmall = [pageSetupLayout, &smallIndex](QToolButton *button) {
+        KoRibbonLayout::configureButton(button, Qt::ToolButtonTextBesideIcon);
+        pageSetupLayout->addWidget(button, smallIndex % 3, 1 + smallIndex / 3, Qt::AlignLeft);
+        ++smallIndex;
     };
-    connect(breaksMenu, &QMenu::aboutToShow, this, populateBreaksMenu);
-    QTimer::singleShot(0, breaksMenu, populateBreaksMenu);
-    manualBreak->setMenu(breaksMenu);
-    manualBreak->setPopupMode(QToolButton::InstantPopup);
-    placeButton(manualBreak);
 
     auto *lineNumbers = new QToolButton(pageSetupGroup);
     lineNumbers->setText(i18n("Line Numbering"));
     lineNumbers->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("format-list-ordered")));
-    lineNumbers->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    lineNumbers->setIconSize(QSize(28, 28));
     lineNumbers->setCheckable(true);
-    lineNumbers->setAutoRaise(true);
     if (m_document->mainFrameSet()) {
         KoTextDocument textDocument(m_document->mainFrameSet()->document());
         if (KoOdfLineNumberingConfiguration *configuration = textDocument.lineNumberingConfiguration()) {
@@ -239,15 +301,12 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
         m_document->relayout();
         m_canvas->update();
     });
-    placeButton(lineNumbers);
+    placeSmall(lineNumbers);
 
     auto *hyphenation = new QToolButton(pageSetupGroup);
     hyphenation->setText(i18n("Hyphenation"));
     hyphenation->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("format-text-hyphenation")));
-    hyphenation->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    hyphenation->setIconSize(QSize(28, 28));
     hyphenation->setCheckable(true);
-    hyphenation->setAutoRaise(true);
     hyphenation->setToolTip(i18n("Allow hyphenation for the current text selection"));
     if (KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(m_canvas)) {
         hyphenation->setChecked(editor->charFormat().property(KoCharacterStyle::HasHyphenation).toBool());
@@ -259,7 +318,7 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
             editor->setCharFormat(format);
         }
     });
-    placeButton(hyphenation);
+    placeSmall(hyphenation);
 
     widgets.append(pageSetupGroup);
 

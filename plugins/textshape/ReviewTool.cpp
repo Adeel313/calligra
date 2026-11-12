@@ -136,7 +136,7 @@ QList<QPointer<QWidget>> ReviewTool::createOptionWidgets()
     }
     if (qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
         sscw->hide();
-        proofing->setWindowTitle(i18n("Spelling"));
+        proofing->setWindowTitle(i18n("Proofing"));
         auto *spell = sscw->findChild<QToolButton *>(QStringLiteral("toolAutoSpellCheck"));
         if (QAction *check = action("apply_spellcheck")) {
             spell->setDefaultAction(check);
@@ -249,14 +249,17 @@ QList<QPointer<QWidget>> ReviewTool::createOptionWidgets()
         }
         autocorrection->setMenu(correctionMenu);
         autocorrection->setPopupMode(QToolButton::MenuButtonPopup);
-        KoRibbonLayout::arrange(proofing, {spell, language, hyphenation, autocorrection}, {});
+        QList<QToolButton *> proofingCommands{hyphenation, autocorrection};
         if (wordCountButton) {
-            auto *statistics = new QWidget;
-            statistics->setWindowTitle(i18n("Statistics"));
-            statistics->setProperty("ribbonGroupOrder", 15);
-            KoRibbonLayout::arrange(statistics, {wordCountButton}, {});
-            widgets.append(statistics);
+            proofingCommands.prepend(wordCountButton);
         }
+        KoRibbonLayout::arrange(proofing, {spell}, proofingCommands);
+        auto *languageGroup = new QWidget;
+        languageGroup->setWindowTitle(i18n("Language"));
+        languageGroup->setProperty("ribbonGroupOrder", 30);
+        KoRibbonLayout::arrange(languageGroup, {language}, {});
+        widgets.append(languageGroup);
+
     }
     widgets.append(proofing);
 

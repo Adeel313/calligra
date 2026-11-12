@@ -11,6 +11,8 @@
 #include "ArtisticTextToolSelection.h"
 
 #include <QAction>
+#include <QApplication>
+#include <KoRibbonLayout.h>
 
 ArtisticTextShapeConfigWidget::ArtisticTextShapeConfigWidget(ArtisticTextTool *textTool)
     : m_textTool(textTool)
@@ -27,6 +29,15 @@ ArtisticTextShapeConfigWidget::ArtisticTextShapeConfigWidget(ArtisticTextTool *t
     widget.anchorMiddle->setDefaultAction(textTool->action("artistictext_anchor_middle"));
     widget.anchorEnd->setDefaultAction(textTool->action("artistictext_anchor_end"));
     widget.fontSize->setRange(2, 1000);
+    if (qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        widget.fontFamily->setMinimumWidth(180);
+        widget.gridLayout->setContentsMargins(2, 1, 2, 1);
+        widget.gridLayout->setSpacing(2);
+        for (QToolButton *button : {widget.bold, widget.italic, widget.superScript, widget.subScript,
+                                   widget.anchorStart, widget.anchorMiddle, widget.anchorEnd}) {
+            KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly);
+        }
+    }
 
     connect(widget.fontFamily, &QFontComboBox::currentFontChanged, this, &ArtisticTextShapeConfigWidget::fontFamilyChanged);
     connect(widget.fontSize, &QSpinBox::valueChanged, this, &ArtisticTextShapeConfigWidget::fontSizeChanged);

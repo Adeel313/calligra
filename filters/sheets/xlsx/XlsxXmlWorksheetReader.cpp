@@ -32,6 +32,7 @@
 #include <MsooXmlUtils.h>
 
 #include <KoGenStyles.h>
+#include <KoPageFormat.h>
 #include <KoPageLayout.h>
 #include <KoUnit.h>
 #include <KoXmlWriter.h>
@@ -96,7 +97,8 @@ XlsxXmlWorksheetReaderContext::XlsxXmlWorksheetReaderContext(uint _worksheetNumb
                                                              XlsxImport *_import,
                                                              QMap<QString, QString> _oleReplacements,
                                                              QMap<QString, QString> _oleBeginFrames,
-                                                             QVector<XlsxXmlDocumentReaderContext::AutoFilter> &autoFilters)
+                                                             QVector<XlsxXmlDocumentReaderContext::AutoFilter> &autoFilters,
+                                                             const QString &_printArea)
     : MSOOXML::MsooXmlReaderContext(&_relationships)
     , sheet(new Sheet(_worksheetName))
     , worksheetNumber(_worksheetNumber)
@@ -113,6 +115,7 @@ XlsxXmlWorksheetReaderContext::XlsxXmlWorksheetReaderContext(uint _worksheetNumb
     , oleReplacements(_oleReplacements)
     , oleFrameBegins(_oleBeginFrames)
     , autoFilters(autoFilters)
+    , printArea(_printArea)
 {
 }
 
@@ -460,6 +463,10 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
     //! @todo implement CASE #S202 for fixing the name
     body->addAttribute("table:name", m_context->worksheetName);
 
+    if (!m_context->printArea.isEmpty()) {
+        body->addAttribute("table:print-ranges", m_context->printArea);
+    }
+
     m_tableStyle = KoGenStyle(KoGenStyle::TableAutoStyle, "table");
 
     m_tableStyle.addProperty("table:display", m_context->sheet->visible());
@@ -483,6 +490,7 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
         if (isStartElement() && !m_context->firstRoundOfReading) {
             TRY_READ_IF(sheetFormatPr)
             ELSE_TRY_READ_IF(sheetPr)
+            ELSE_TRY_READ_IF(sheetViews)
             ELSE_TRY_READ_IF(pageMargins)
             ELSE_TRY_READ_IF(pageSetup)
             ELSE_TRY_READ_IF(cols)
@@ -512,6 +520,7 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
             SKIP_UNKNOWN
         } else if (isStartElement() && m_context->firstRoundOfReading) {
             TRY_READ_IF(conditionalFormatting)
+            ELSE_TRY_READ_IF(dataValidations)
             ELSE_TRY_READ_IF(tableParts)
             SKIP_UNKNOWN
         }
@@ -580,7 +589,8 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
     if (!m_context->firstRoundOfReading) {
         const QString masterName = QString("XlsxSheet%1").arg(m_context->worksheetNumber);
         KoPageLayout layout;
-        layout.format = KoPageFormat::formatFromString(m_pageFormat);
+        // Sheets without a pageSetup keep the application's default paper size.
+        layout.format = m_pageFormat.isEmpty() ? KoPageFormat::defaultFormat() : KoPageFormat::formatFromString(m_pageFormat);
         layout.orientation = m_orientation == QLatin1String("landscape") ? KoPageFormat::Landscape : KoPageFormat::Portrait;
         layout.width = MM_TO_POINT(KoPageFormat::width(layout.format, layout.orientation));
         layout.height = MM_TO_POINT(KoPageFormat::height(layout.format, layout.orientation));
@@ -590,10 +600,14 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
         layout.bottomMargin = MM_TO_POINT(m_marginBottom * 10.0);
         KoGenStyle pageLayoutStyle = layout.saveOdf();
         if (m_fitToPage && (m_fitWidth > 0 || m_fitHeight > 0)) {
-            // Sheets currently models a single page count; Excel commonly leaves
-            // height unconstrained when fitToHeight is zero. Use the nonzero axis.
-            const int pageCount = m_fitWidth > 0 && m_fitHeight > 0 ? m_fitWidth * m_fitHeight : qMax(m_fitWidth, m_fitHeight);
-            pageLayoutStyle.addProperty("style:scale-to-pages", pageCount);
+            // Excel limits each direction separately, and zero means unlimited
+            // (fitToHeight="0" is "one page wide, as many rows as needed").
+            if (m_fitWidth > 0)
+                pageLayoutStyle.addProperty("style:scale-to-X", m_fitWidth);
+            if (m_fitHeight > 0)
+                pageLayoutStyle.addProperty("style:scale-to-Y", m_fitHeight);
+            if (m_fitWidth > 0 && m_fitHeight > 0)
+                pageLayoutStyle.addProperty("style:scale-to-pages", m_fitWidth * m_fitHeight);
         } else if (m_scalePercent > 0 && m_scalePercent != 100) {
             pageLayoutStyle.addProperty("style:scale-to", m_scalePercent);
         }
@@ -610,6 +624,11 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
 
     const QString currentTableStyleName(mainStyles->insert(m_tableStyle, "ta"));
     heldBody->addAttribute("table:style-name", currentTableStyleName);
+    if (!m_context->firstRoundOfReading && (m_frozenColumns > 0 || m_frozenRows > 0)) {
+        heldBody->addAttribute("xmlns:calligra", "http://www.calligra.org/2002/sheets");
+        heldBody->addAttribute("calligra:freeze-columns", m_frozenColumns);
+        heldBody->addAttribute("calligra:freeze-rows", m_frozenRows);
+    }
     heldBody->addCompleteElement(&bodyBuffer);
     delete body;
     body = heldBody;
@@ -621,9 +640,12 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
         body->endElement(); // table:shapes
     }
 
-    // now we have everything to start writing the actual cells
-    int c = 0;
-    while (c <= m_context->sheet->maxColumn()) {
+    // now we have everything to start writing the actual cells. Columns that
+    // read_cols() already defined (including the padding up to the sheet's
+    // limit) must not be written a second time, and the total must stay within
+    // KS_colMax or the sheet cannot be loaded again.
+    int c = qMin(m_columnCount, (int)MSOOXML::maximumSpreadsheetColumns());
+    while (c <= m_context->sheet->maxColumn() && c < (int)MSOOXML::maximumSpreadsheetColumns()) {
         body->startElement("table:table-column");
         int repeatedColumns = 1;
         bool currentColumnHidden = false;
@@ -668,7 +690,13 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
 
     const int rowCount = m_context->sheet->maxRow();
     for (int r = 0; r <= rowCount; ++r) {
-        const int columnCount = m_context->sheet->maxCellsInRow(r);
+        int columnCount = m_context->sheet->maxCellsInRow(r);
+        // Cells without content are not part of the sheet data; validations
+        // still need a cell element to hang on, so widen the row.
+        for (const auto &validation : m_context->validationCells) {
+            if (r + 1 >= validation.first.top() && r + 1 <= validation.first.bottom())
+                columnCount = qMax(columnCount, validation.first.right() - 1);
+        }
         Row *row = m_context->sheet->row(r, false);
         body->startElement("table:table-row");
         if (row) {
@@ -686,6 +714,12 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
 
             for (int c = 0; c <= columnCount; ++c) {
                 body->startElement("table:table-cell");
+                for (const auto &validation : m_context->validationCells) {
+                    if (validation.first.contains(c + 1, r + 1)) {
+                        body->addAttribute("table:content-validation-name", validation.second);
+                        break;
+                    }
+                }
                 if (Cell *cell = m_context->sheet->cell(c, r, false)) {
                     const bool hasHyperlink = !cell->hyperlink().isEmpty();
 
@@ -1127,6 +1161,48 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetPr()
     READ_EPILOGUE
 }
 
+//! sheetViews handler (Sheet Views)
+/*! ECMA-376, 18.3.1.88, p. 1906.
+ The frozen panes of a sheet are described by a pane element inside the
+ sheetView. Only the frozen part is kept; split (unfrozen) views are not a
+ document property and are dropped.
+
+ Parent elements:
+ - [done] worksheet (§18.3.1.99)
+*/
+KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetViews()
+{
+    const QString currentElement = name().toString();
+    while (!atEnd()) {
+        readNext();
+        if (isEndElement() && name() == currentElement) {
+            break;
+        }
+        if (!isStartElement()) {
+            continue;
+        }
+        if (name() == QLatin1StringView("pane")) {
+            const auto attrs = attributes();
+            const QString state = attrs.value(QLatin1StringView("state")).toString();
+            // "split" is a scrolling split, not a frozen pane.
+            if (state.isEmpty() || state == QLatin1String("frozen") || state == QLatin1String("frozenSplit")) {
+                if (attrs.hasAttribute(QLatin1StringView("xSplit"))) {
+                    m_frozenColumns = qMax(0, qRound(attrs.value(QLatin1StringView("xSplit")).toString().toDouble()));
+                }
+                if (attrs.hasAttribute(QLatin1StringView("ySplit"))) {
+                    m_frozenRows = qMax(0, qRound(attrs.value(QLatin1StringView("ySplit")).toString().toDouble()));
+                }
+            }
+            skipCurrentElement();
+        } else if (name() == QLatin1StringView("sheetView")) {
+            // The pane element is a child of sheetView, descend into it.
+        } else {
+            skipCurrentElement();
+        }
+    }
+    return KoFilter::OK;
+}
+
 #undef CURRENT_EL
 #define CURRENT_EL cols
 //! cols handler (Column Information)
@@ -1174,7 +1250,7 @@ void XlsxXmlWorksheetReader::saveColumnStyle(const QString &widthString)
     }
 }
 
-void XlsxXmlWorksheetReader::appendTableColumns(int columns, const QString &width)
+void XlsxXmlWorksheetReader::appendTableColumns(int columns, const QString &width, bool hidden)
 {
     qCDebug(lcXlsxImport) << "columns:" << columns;
     if (columns <= 0)
@@ -1182,6 +1258,8 @@ void XlsxXmlWorksheetReader::appendTableColumns(int columns, const QString &widt
     body->startElement("table:table-column");
     if (columns > 1)
         body->addAttribute("table:number-columns-repeated", QByteArray::number(columns));
+    if (hidden)
+        body->addAttribute("table:visibility", "collapse");
     //! @todo hardcoded table:default-cell-style-name
     body->addAttribute("table:default-cell-style-name", "Excel_20_Built-in_20_Normal");
     //! @todo hardcoded default style:column-width
@@ -1248,7 +1326,7 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_col()
     }
 
     // moved    body->endElement(); // table:table-column
-    appendTableColumns(maxCol - minCol + 1, realWidthString);
+    appendTableColumns(maxCol - minCol + 1, realWidthString, column->hidden);
     if (d->savedStyles.contains(realWidthString)) {
         column->styleName = d->savedStyles.value(realWidthString);
     }
@@ -1546,14 +1624,13 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
                 }
             }
         } else if (t == QLatin1String("e")) {
-            if (m_value == QLatin1String("#REF!"))
-                cell->text = "#NAME?";
-            else
-                cell->text = m_value;
-            //! @todo full parsing needed to retrieve the type
-            cell->valueType = Cell::ConstFloat;
-            cell->valueAttr = Cell::OfficeValue;
-            m_value = QLatin1String("0");
+            cell->text = m_value;
+            // Keep the error code as the cell content. Mapping it to the number
+            // 0 (as this used to) silently turned every error into a zero when
+            // the workbook was written back out.
+            cell->valueType = Cell::ConstString;
+            cell->valueAttr = Cell::OfficeStringValue;
+            m_value = cell->text;
         } else {
             raiseUnexpectedAttributeValueError(t, "c@t");
             return KoFilter::WrongFormat;
@@ -1600,6 +1677,22 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
 
         const QString cellStyleName = mainStyles->insert(cellStyle, "ce");
         cell->styleName = cellStyleName;
+    } else if (!m_context->conditionalStyles.isEmpty()) {
+        // Conditional formatting applies to cells without an explicit style
+        // too; those need a style of their own to carry the style maps.
+        QString positionLetter;
+        int positionNumber;
+        splitToRowAndColumn(r.toLatin1().constData(), 0, r.size(), positionLetter, positionNumber);
+        QList<QMap<QString, QString>> maps = m_context->conditionalStyleForPosition(positionLetter, positionNumber);
+        if (!maps.isEmpty()) {
+            KoGenStyle cellStyle(KoGenStyle::TableCellAutoStyle, "table-cell");
+            int index = maps.size();
+            while (index > 0) {
+                cellStyle.addStyleMap(maps.at(index - 1));
+                --index;
+            }
+            cell->styleName = mainStyles->insert(cellStyle, "ce");
+        }
     }
 
     delete cell->valueAttrValue;
@@ -2031,7 +2124,7 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_customFilters()
     }
 
     if (!m_context->autoFilters.isEmpty()) {
-        if (andValue == "1") {
+        if (andValue == "1" || andValue == "true") {
             m_context->autoFilters.last().type = "and";
         } else {
             m_context->autoFilters.last().type = "or";
@@ -2083,6 +2176,9 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_filters()
     if (blank == "1") {
         m_context->currentFilterCondition.value = "0";
         m_context->currentFilterCondition.opField = "empty";
+    } else if (!hasValueAlready) {
+        // Nothing to filter on; an empty list element is a placeholder.
+        READ_EPILOGUE
     }
 
     if (!m_context->autoFilters.isEmpty()) {
@@ -2111,10 +2207,64 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_customFilter()
     TRY_READ_ATTR_WITHOUT_NS(val)
     m_context->currentFilterCondition.value = val;
 
-    if (opValue == "notEqual") {
-        m_context->currentFilterCondition.opField = "!=";
+    // ST_FilterOperator has no text operators: Excel spells "contains" and
+    // friends as equal/notEqual with wildcards. ODF knows regular expressions
+    // only, so both forms are translated into one.
+    const auto wildcardToRegex = [](const QString &pattern) {
+        QString expression(QLatin1Char('^'));
+        for (const QChar &c : pattern) {
+            if (c == QLatin1Char('*')) {
+                expression += QLatin1String(".*");
+            } else if (c == QLatin1Char('?')) {
+                expression += QLatin1Char('.');
+            } else if (c.isLetterOrNumber() || c == QLatin1Char('_')) {
+                expression += c;
+            } else {
+                expression += QLatin1Char('\\');
+                expression += c;
+            }
+        }
+        expression += QLatin1Char('$');
+        return expression;
+    };
+
+    QString opField;
+    if (opValue == QLatin1String("notEqual")) {
+        opField = QStringLiteral("!=");
+    } else if (opValue == QLatin1String("lessThan")) {
+        opField = QStringLiteral("<");
+    } else if (opValue == QLatin1String("lessThanOrEqual")) {
+        opField = QStringLiteral("<=");
+    } else if (opValue == QLatin1String("greaterThan")) {
+        opField = QStringLiteral(">");
+    } else if (opValue == QLatin1String("greaterThanOrEqual")) {
+        opField = QStringLiteral(">=");
     } else {
-        m_context->currentFilterCondition.opField = "=";
+        opField = QStringLiteral("=");
+    }
+
+    if (opValue == QLatin1String("contains") || opValue == QLatin1String("beginsWith")
+        || opValue == QLatin1String("endsWith") || opValue == QLatin1String("notContains")) {
+        QString pattern = val;
+        if (opValue == QLatin1String("contains") || opValue == QLatin1String("notContains"))
+            pattern = QLatin1Char('*') + pattern + QLatin1Char('*');
+        else if (opValue == QLatin1String("beginsWith"))
+            pattern += QLatin1Char('*');
+        else
+            pattern.prepend(QLatin1Char('*'));
+        const bool negated = (opValue == QLatin1String("notContains"));
+        m_context->currentFilterCondition.value = wildcardToRegex(pattern);
+        m_context->currentFilterCondition.opField = negated ? QStringLiteral("!match") : QStringLiteral("match");
+    } else if (opField == QLatin1String("=") || opField == QLatin1String("!=")) {
+        if (val.contains(QLatin1Char('*')) || val.contains(QLatin1Char('?'))) {
+            m_context->currentFilterCondition.value = wildcardToRegex(val);
+            m_context->currentFilterCondition.opField = (opField == QLatin1String("="))
+                ? QStringLiteral("match") : QStringLiteral("!match");
+        } else {
+            m_context->currentFilterCondition.opField = opField;
+        }
+    } else {
+        m_context->currentFilterCondition.opField = opField;
     }
 
     if (!m_context->autoFilters.isEmpty()) {
@@ -2274,6 +2424,259 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_picture()
  - [done] tablePart (Table Part) §18.3.1.94
 
 */
+namespace
+{
+//! Parses an A1 style cell reference. Returns false for anything else.
+bool parseCellReference(const QString &text, int *column, int *row)
+{
+    int letters = 0;
+    while (letters < text.size() && text.at(letters).isLetter())
+        ++letters;
+    if (letters == 0 || letters == text.size())
+        return false;
+    bool okay = false;
+    const int rowNumber = text.mid(letters).toInt(&okay);
+    if (!okay || rowNumber < 1)
+        return false;
+    int columnNumber = 0;
+    for (int i = 0; i < letters; ++i) {
+        const QChar c = text.at(i).toUpper();
+        if (c < QLatin1Char('A') || c > QLatin1Char('Z'))
+            return false;
+        columnNumber = columnNumber * 26 + (c.unicode() - u'A' + 1);
+    }
+    *column = columnNumber;
+    *row = rowNumber;
+    return true;
+}
+
+//! Expands a space separated list of areas like "A1:B2 D4" into rectangles.
+QList<QRect> parseCellRanges(const QString &sqref)
+{
+    QList<QRect> ranges;
+    const QStringList areas = sqref.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    for (const QString &area : areas) {
+        const QStringList corners = area.split(QLatin1Char(':'));
+        int firstColumn = 0, firstRow = 0;
+        if (!parseCellReference(corners.first(), &firstColumn, &firstRow))
+            continue;
+        int lastColumn = firstColumn, lastRow = firstRow;
+        if (corners.size() > 1 && !parseCellReference(corners.at(1), &lastColumn, &lastRow))
+            continue;
+        ranges.append(QRect(QPoint(qMin(firstColumn, lastColumn), qMin(firstRow, lastRow)),
+                            QPoint(qMax(firstColumn, lastColumn), qMax(firstRow, lastRow))));
+    }
+    return ranges;
+}
+
+//! Returns the A1 style name of a cell.
+QString cellName(int column, int row)
+{
+    QString letters;
+    int value = column;
+    while (value > 0) {
+        const int remainder = (value - 1) % 26;
+        letters.prepend(QChar(u'A' + remainder));
+        value = (value - 1) / 26;
+    }
+    return letters + QString::number(row);
+}
+
+//! Converts an Excel reference like Sheet2!$B$2:$B$5 into OpenDocument notation.
+QString toOdfReference(const QString &reference)
+{
+    QString result = reference.trimmed();
+    const int bang = result.lastIndexOf(QLatin1Char('!'));
+    QString sheetName;
+    if (bang >= 0) {
+        sheetName = result.left(bang);
+        if (sheetName.startsWith(QLatin1Char('\'')) && sheetName.endsWith(QLatin1Char('\'')))
+            sheetName = sheetName.mid(1, sheetName.size() - 2);
+        result = result.mid(bang + 1);
+        sheetName.remove(QLatin1Char('\''));
+    }
+    const QStringList corners = result.split(QLatin1Char(':'));
+    QString odf = sheetName.isEmpty() ? QString() : QLatin1Char('$') + sheetName + QLatin1Char('.');
+    QStringList parts;
+    for (const QString &corner : corners) {
+        QString cell = corner;
+        cell.remove(QLatin1Char('$'));
+        if (cell.isEmpty())
+            continue;
+        parts << (odf.isEmpty() ? cell : odf + cell);
+    }
+    return parts.join(QLatin1Char(':'));
+}
+} // namespace
+
+#undef CURRENT_EL
+#define CURRENT_EL dataValidations
+//! dataValidations handler (Data Validations)
+/*! ECMA-376, 18.3.1.33, p. 1802.
+ The validations are written as table:content-validations, which the Sheets
+ ODF reader turns into Validity objects on the cells, and the cells get a
+ table:content-validation-name attribute.
+
+ Parent elements:
+ - [done] worksheet (§18.3.1.99)
+*/
+KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_dataValidations()
+{
+    READ_PROLOGUE
+    while (!atEnd()) {
+        readNext();
+        BREAK_IF_END_OF(CURRENT_EL)
+        if (isStartElement()) {
+            if (name() == QLatin1StringView("dataValidation")) {
+                m_validationName = m_context->import->nextDataValidationName();
+                const QXmlStreamAttributes attrs(attributes());
+                m_validationType = attrs.value(QLatin1StringView("type")).toString();
+                m_validationOperator = attrs.value(QLatin1StringView("operator")).toString();
+                m_validationAllowBlank = attrs.value(QLatin1StringView("allowBlank")) == QLatin1String("1")
+                    || attrs.value(QLatin1StringView("allowBlank")) == QLatin1String("true");
+                m_validationShowInput = attrs.value(QLatin1StringView("showInputMessage")) == QLatin1String("1");
+                m_validationShowError = attrs.value(QLatin1StringView("showErrorMessage")) == QLatin1String("1");
+                m_validationPrompt = attrs.value(QLatin1StringView("prompt")).toString();
+                m_validationPromptTitle = attrs.value(QLatin1StringView("promptTitle")).toString();
+                m_validationError = attrs.value(QLatin1StringView("error")).toString();
+                m_validationErrorTitle = attrs.value(QLatin1StringView("errorTitle")).toString();
+                m_validationFormula1.clear();
+                m_validationFormula2.clear();
+
+                const QString sqref = attrs.value(QLatin1StringView("sqref")).toString();
+                const QList<QRect> ranges = parseCellRanges(sqref);
+
+                // Read the formulas of this validation.
+                const QString elementName = name().toString();
+                while (!atEnd()) {
+                    readNext();
+                    if (isEndElement() && name() == elementName)
+                        break;
+                    if (!isStartElement())
+                        continue;
+                    if (name() == QLatin1StringView("formula1"))
+                        m_validationFormula1 = readElementText(QXmlStreamReader::IncludeChildElements).trimmed();
+                    else if (name() == QLatin1StringView("formula2"))
+                        m_validationFormula2 = readElementText(QXmlStreamReader::IncludeChildElements).trimmed();
+                    else
+                        skipCurrentElement();
+                }
+
+                if (m_validationType.isEmpty() || m_validationType == QLatin1String("none"))
+                    continue;
+
+                QString condition;
+                if (m_validationType == QLatin1String("list")) {
+                    QString items = m_validationFormula1;
+                    if (items.startsWith(QLatin1Char('"')) && items.endsWith(QLatin1Char('"'))) {
+                        items = items.mid(1, items.size() - 2);
+                        QStringList quoted;
+                        const QStringList values = items.split(QLatin1Char(','));
+                        for (QString value : values)
+                            quoted << QLatin1Char('"') + value.trimmed() + QLatin1Char('"');
+                        condition = QStringLiteral("cell-content-is-in-list(%1)").arg(quoted.join(QLatin1Char(';')));
+                    } else if (!items.isEmpty()) {
+                        condition = QStringLiteral("cell-content-is-in-list(%1)").arg(toOdfReference(items));
+                    }
+                } else if (m_validationType == QLatin1String("custom")) {
+                    if (!m_validationFormula1.isEmpty())
+                        condition = QStringLiteral("is-true-formula(%1)").arg(m_validationFormula1);
+                } else {
+                    QString prefix;
+                    if (m_validationType == QLatin1String("whole"))
+                        prefix = QStringLiteral("cell-content-is-whole-number() and ");
+                    else if (m_validationType == QLatin1String("decimal"))
+                        prefix = QStringLiteral("cell-content-is-decimal-number() and ");
+                    else if (m_validationType == QLatin1String("date"))
+                        prefix = QStringLiteral("cell-content-is-date() and ");
+                    else if (m_validationType == QLatin1String("time"))
+                        prefix = QStringLiteral("cell-content-is-time() and ");
+                    else if (m_validationType == QLatin1String("textLength"))
+                        prefix = QStringLiteral("cell-content-text-length()");
+
+                    QString comparison;
+                    if (m_validationOperator == QLatin1String("between") || m_validationOperator == QLatin1String("notBetween")) {
+                        const QString function = m_validationOperator == QLatin1String("between")
+                            ? QStringLiteral("cell-content-is-between(%1,%2)")
+                            : QStringLiteral("cell-content-is-not-between(%1,%2)");
+                        comparison = function.arg(m_validationFormula1, m_validationFormula2);
+                    } else {
+                        QChar symbol = QLatin1Char('=');
+                        if (m_validationOperator == QLatin1String("notEqual"))
+                            symbol = QLatin1Char('!'), comparison = QStringLiteral("!=");
+                        else if (m_validationOperator == QLatin1String("greaterThan"))
+                            comparison = QStringLiteral(">");
+                        else if (m_validationOperator == QLatin1String("lessThan"))
+                            comparison = QStringLiteral("<");
+                        else if (m_validationOperator == QLatin1String("greaterThanOrEqual"))
+                            comparison = QStringLiteral(">=");
+                        else if (m_validationOperator == QLatin1String("lessThanOrEqual"))
+                            comparison = QStringLiteral("<=");
+                        else if (m_validationOperator == QLatin1String("equal"))
+                            comparison = QStringLiteral("=");
+                        if (comparison.isEmpty())
+                            comparison = QStringLiteral("=") + m_validationFormula1;
+                        else
+                            comparison += m_validationFormula1;
+                        if (m_validationType != QLatin1String("textLength"))
+                            comparison.prepend(QStringLiteral("cell-content()"));
+                        Q_UNUSED(symbol)
+                    }
+                    condition = prefix + comparison;
+                }
+
+                if (condition.isEmpty())
+                    continue;
+
+                QBuffer buffer;
+                buffer.open(QIODevice::WriteOnly);
+                KoXmlWriter writer(&buffer);
+                writer.startElement("table:content-validation");
+                writer.addAttribute("table:name", m_validationName);
+                writer.addAttribute("table:condition", "of:" + condition);
+                writer.addAttribute("table:allow-empty-cell", m_validationAllowBlank);
+                if (m_validationType == QLatin1String("list"))
+                    writer.addAttribute("table:display-list", "unsorted");
+                if (!ranges.isEmpty()) {
+                    writer.addAttribute("table:base-cell-address",
+                                        m_context->worksheetName + QLatin1Char('.')
+                                        + cellName(ranges.first().left(), ranges.first().top()));
+                }
+                if (!m_validationPrompt.isEmpty() || !m_validationPromptTitle.isEmpty()) {
+                    writer.startElement("table:help-message");
+                    if (!m_validationPromptTitle.isEmpty())
+                        writer.addAttribute("table:title", m_validationPromptTitle);
+                    writer.addAttribute("table:display", m_validationShowInput);
+                    writer.startElement("text:p");
+                    writer.addTextNode(m_validationPrompt);
+                    writer.endElement();
+                    writer.endElement();
+                }
+                if (!m_validationError.isEmpty() || !m_validationErrorTitle.isEmpty()) {
+                    writer.startElement("table:error-message");
+                    if (!m_validationErrorTitle.isEmpty())
+                        writer.addAttribute("table:title", m_validationErrorTitle);
+                    writer.addAttribute("table:display", m_validationShowError);
+                    writer.startElement("text:p");
+                    writer.addTextNode(m_validationError);
+                    writer.endElement();
+                    writer.endElement();
+                }
+                writer.endElement();
+                m_context->import->appendDataValidationXml(QString::fromUtf8(buffer.data()));
+
+                for (const QRect &range : ranges)
+                    m_context->validationCells.append(qMakePair(range, m_validationName));
+            } else {
+                skipCurrentElement();
+            }
+        }
+    }
+    READ_EPILOGUE
+}
+
+#undef CURRENT_EL
+#define CURRENT_EL tableParts
 KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_tableParts()
 {
     READ_PROLOGUE
@@ -2311,6 +2714,20 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_tablePart()
     if (result != KoFilter::OK) {
         raiseError(reader.errorString());
         return result;
+    }
+
+    // An Excel table is a database range in OpenDocument terms; it carries
+    // the name and the range, and the import already set up its style.
+    if (!context.name.isEmpty() && !context.referenceArea.isEmpty()) {
+        QString sheetName = m_context->worksheetName;
+        if (sheetName.contains(QLatin1Char(' ')) || sheetName.contains(QLatin1Char('.')))
+            sheetName = QLatin1Char('\'') + sheetName + QLatin1Char('\'');
+        const QStringList corners = context.referenceArea.split(QLatin1Char(':'));
+        QStringList parts;
+        parts << sheetName + QLatin1Char('.') + corners.first();
+        if (corners.size() > 1)
+            parts << sheetName + QLatin1Char('.') + corners.at(1);
+        m_context->import->appendTable(context.name, parts.join(QLatin1Char(':')));
     }
 
     readNext();

@@ -375,6 +375,7 @@ protected:
     // KoView interface
     void updateReadWrite(bool readwrite) override;
     KoPrintJob *createPrintJob() override;
+    KoPrintJob *createPdfPrintJob() override;
 
     /** Informs the sheet views about this view's siize. This is necessary to ensure that they always are big enough to fill in the entire view. */
     void sendSizeToSheetViews();

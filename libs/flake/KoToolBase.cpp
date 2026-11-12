@@ -21,6 +21,11 @@
 #include <KLocalizedString>
 
 #include <QAction>
+#include <QApplication>
+#include <QHBoxLayout>
+#include <QMenu>
+#include <QToolButton>
+#include <QWidgetAction>
 #include <QDomDocument>
 #include <QDomElement>
 #include <QFile>
@@ -211,6 +216,43 @@ QList<QPointer<QWidget>> KoToolBase::optionWidgets()
     Q_D(KoToolBase);
     if (d->optionWidgets.empty()) {
         d->optionWidgets = createOptionWidgets();
+        if (qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)
+            && toolId() != QLatin1String("ChartToolFactory_ID")) {
+            for (QPointer<QWidget> &option : d->optionWidgets) {
+                QWidget *panel = option;
+                // Purpose-built ribbon groups and routed panels already choose
+                // their own presentation. Fold only legacy vertical panels.
+                if (!panel || panel->property("ribbonGroupOrder").isValid()
+                    || panel->property("ribbonTargetPage").isValid()
+                    || qMax(panel->minimumHeight(), qMax(panel->sizeHint().height(), panel->minimumSizeHint().height())) <= 100) {
+                    continue;
+                }
+                auto *group = new QWidget;
+                const QString title = panel->windowTitle().isEmpty() ? i18n("Options") : panel->windowTitle();
+                group->setWindowTitle(title);
+                group->setObjectName(panel->objectName() + QStringLiteral("RibbonGroup"));
+                auto *layout = new QHBoxLayout(group);
+                layout->setContentsMargins(2, 1, 2, 1);
+                auto *button = new QToolButton(group);
+                button->setText(title);
+                button->setAccessibleName(title);
+                button->setToolTip(title);
+                button->setIcon(QIcon::fromTheme(QStringLiteral("configure")));
+                button->setIconSize(QSize(32, 32));
+                button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+                button->setAutoRaise(true);
+                button->setProperty("ribbonPresentationStyle", int(Qt::ToolButtonTextUnderIcon));
+                button->setProperty("ribbonCompactable", true);
+                auto *menu = new QMenu(button);
+                auto *action = new QWidgetAction(menu);
+                action->setDefaultWidget(panel);
+                menu->addAction(action);
+                button->setMenu(menu);
+                button->setPopupMode(QToolButton::InstantPopup);
+                layout->addWidget(button, 0, Qt::AlignTop);
+                option = group;
+            }
+        }
     }
     return d->optionWidgets;
 }

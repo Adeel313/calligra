@@ -11,5 +11,8 @@
 #include <QLoggingCategory>
 
 Q_DECLARE_LOGGING_CATEGORY(lcXlsxImport)
+//! Timing instrumentation for the import and export filters; enable with
+//! QT_LOGGING_RULES="calligra.filter.xlsx.timing.debug=true".
+Q_DECLARE_LOGGING_CATEGORY(lcXlsxTiming)
 
 #endif

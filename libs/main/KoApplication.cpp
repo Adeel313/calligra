@@ -84,6 +84,7 @@ public:
     QList<KoPart *> partList;
     QString roundtripFileName;
     QString pdfFileName;
+    int pdfExportsPending = 0;
 };
 
 class KoApplication::ResetStarting
@@ -557,6 +558,8 @@ bool KoApplication::start()
                         }
                         if (print || exportAsPdf)
                             nPrinted++;
+                        if (exportAsPdf)
+                            d->pdfExportsPending++;
                         else
                             numberOfOpenDocuments++;
                     } else {
@@ -602,7 +605,8 @@ void KoApplication::benchmarkLoadingFinished()
     if (!d->roundtripFileName.isEmpty()) {
         part->document()->saveAs(QUrl("file:" + d->roundtripFileName));
     }
-    // close the document
+    // close the document; a command-line run must not stop at the save prompt
+    mainWindow->setProperty("headlessExit", true);
     mainWindow->slotFileQuit();
 }
 
@@ -644,8 +648,14 @@ void KoApplication::slotFilePrint(KoMainWindow *mainWindow)
 
 void KoApplication::slotExportToPdf(KoMainWindow *mainWindow)
 {
+    // Command-line export: the process is only here to write the PDF, so closing
+    // it must not ask whether the (possibly modified on load) document is saved.
+    mainWindow->setProperty("headlessExit", true);
+    // The export runs blocking, so the PDF is complete once this returns.
     mainWindow->exportToPdf(d->pdfFileName);
-    // TODO: exit if all jobs over
+    if (--d->pdfExportsPending <= 0) {
+        QTimer::singleShot(0, this, &QCoreApplication::quit);
+    }
 }
 
 KoApplication *KoApplication::koApplication()

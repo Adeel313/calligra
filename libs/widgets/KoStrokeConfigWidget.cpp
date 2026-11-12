@@ -237,7 +237,8 @@ KoStrokeConfigWidget::KoStrokeConfigWidget(QWidget *parent)
     d->spacer->setObjectName("SpecialSpacer");
     mainLayout->addWidget(d->spacer);
     // The Sheets ribbon shows the line controls in two flat rows.
-    if (QCoreApplication::applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive)) {
+    if ((QCoreApplication::applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive)
+        || QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive))) {
         d->spacer->hide();
     }
 

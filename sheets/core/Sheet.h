@@ -592,6 +592,21 @@ public:
     HeaderFooter *headerFooter() const;
 
     /**
+     * \ingroup Page
+     * Returns the first cell of the scrolling area; the rows above and the
+     * columns left of it stay in place while scrolling. (1, 1) means that the
+     * sheet is not split at all.
+     */
+    QPoint freezePoint() const;
+
+    /**
+     * \ingroup Page
+     * Freezes the rows above and the columns left of \p point.
+     * Pass (1, 1) to remove the freeze.
+     */
+    void setFreezePoint(const QPoint &point);
+
+    /**
      * Applies a database filter.
      */
     void applyDatabaseFilter(const Database &database);

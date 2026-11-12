@@ -36,3 +36,6 @@ set_property(TEST libs-kowidgets-KoResourceTaggingTest APPEND PROPERTY ENVIRONME
 kowidgets_add_unit_test(KoProgressUpdaterTest KoProgressUpdater_test.cpp  LINK_LIBRARIES kowidgets KF6::ThreadWeaver Qt6::Test)
 
 ########### end ###############
+
+kowidgets_add_unit_test(KoRibbonLayoutTest KoRibbonLayoutTest.cpp LINK_LIBRARIES kowidgets flake Qt6::Test)
+set_tests_properties(libs-kowidgets-KoRibbonLayoutTest PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

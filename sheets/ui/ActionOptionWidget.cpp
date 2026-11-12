@@ -21,6 +21,7 @@
 
 // Calligra
 #include <KoFontComboBox.h>
+#include <KoRibbonLayout.h>
 
 // Calligra Sheets
 #include "CellToolBase.h"
@@ -76,6 +77,10 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
     }
 
     int groupPosition = 0;
+    QList<QHBoxLayout *> groupLayouts;
+    QList<QWidget *> ribbonGroups;
+    QWidget *fontSelector = nullptr;
+    QHBoxLayout *fontSelectorGroup = nullptr;
     for (QDomElement group = e.firstChildElement("group"); !group.isNull(); group = group.nextSiblingElement("group")) {
         QHBoxLayout *groupLayout = new QHBoxLayout();
         groupLayout->setSpacing(4);
@@ -88,42 +93,55 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
             groupLayout->setContentsMargins(0, 0, 0, 0);
             groupLayout->setAlignment(Qt::AlignLeft);
             // Two rows of groups keep the ribbon as flat as the office one.
-            ribbonLayout->addWidget(ribbonGroup, groupPosition % 2, groupPosition / 2, Qt::AlignLeft | Qt::AlignTop);
+            // The group fills its grid cell so the shorter row of controls can
+            // use the width the taller row needs.
+            ribbonLayout->addWidget(ribbonGroup, groupPosition % 2, groupPosition / 2, Qt::AlignTop);
             ++groupPosition;
         } else {
             layout->addItem(groupLayout);
         }
 
-        // A menu collects related actions into one drop-down button, the way
-        // the Office ribbon groups commands such as the cell borders.
-        for (QDomElement menu = group.firstChildElement("menu"); !menu.isNull(); menu = menu.nextSiblingElement("menu")) {
-            const QString menuName = menu.attribute("name");
-            auto *button = new QToolButton(this);
-            button->setText(menuName);
-            button->setIcon(QIcon::fromTheme(menu.attribute("icon"), QIcon::fromTheme(QStringLiteral("format-border"))));
-            button->setPopupMode(QToolButton::InstantPopup);
-            button->setAutoRaise(true);
-            auto *popup = new QMenu(button);
-            for (QDomElement entry = menu.firstChildElement("action"); !entry.isNull(); entry = entry.nextSiblingElement("action")) {
-                if (QAction *a = cellTool->action(entry.attribute("name"))) {
-                    popup->addAction(a);
+        // Walk the children in document order, so a group reads left to right
+        // exactly as it does in the XML file.
+        for (QDomElement entry = group.firstChildElement(); !entry.isNull(); entry = entry.nextSiblingElement()) {
+            // A menu collects related actions into one drop-down button, the way
+            // the Office ribbon groups commands such as the cell borders.
+            if (entry.tagName() == QLatin1String("menu")) {
+                const QString menuName = entry.attribute("name");
+                auto *button = new QToolButton(this);
+                button->setText(menuName);
+                button->setIcon(QIcon::fromTheme(entry.attribute("icon"), QIcon::fromTheme(QStringLiteral("format-border"))));
+                button->setPopupMode(QToolButton::InstantPopup);
+                button->setAutoRaise(true);
+                auto *popup = new QMenu(button);
+                for (QDomElement item = entry.firstChildElement("action"); !item.isNull(); item = item.nextSiblingElement("action")) {
+                    if (QAction *a = cellTool->action(item.attribute("name"))) {
+                        popup->addAction(a);
+                    }
                 }
-            }
-            if (popup->isEmpty()) {
-                delete popup;
-                delete button;
+                if (popup->isEmpty()) {
+                    delete popup;
+                    delete button;
+                    continue;
+                }
+                if (button->icon().isNull() && !popup->actions().isEmpty()) {
+                    button->setIcon(popup->actions().constFirst()->icon());
+                }
+                button->setMenu(popup);
+                if (ribbon) {
+                    KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly);
+                    button->setToolTip(menuName);
+                    button->setAccessibleName(menuName);
+                }
+                groupLayout->addWidget(button);
                 continue;
             }
-            if (button->icon().isNull() && !popup->actions().isEmpty()) {
-                button->setIcon(popup->actions().constFirst()->icon());
+            if (entry.tagName() != QLatin1String("action")) {
+                continue;
             }
-            button->setMenu(popup);
-            groupLayout->addWidget(button);
-        }
 
-        // In each group there are a number of actions that will be layouted together.
-        for (QDomElement action = group.firstChildElement("action"); !action.isNull(); action = action.nextSiblingElement("action")) {
-            QString actionName = action.attribute("name");
+            // In each group there are a number of actions that will be layouted together.
+            QString actionName = entry.attribute("name");
             QAction *a = cellTool->action(actionName);
             if (!a) {
                 warnSheets << "unknown action" << actionName << "in CellToolOptionWidgets.xml";
@@ -132,9 +150,15 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
             QWidgetAction *wa = qobject_cast<QWidgetAction *>(a);
             QWidget *w = wa ? wa->requestWidget(this) : nullptr;
             if (w && ribbon && actionName == QLatin1String("font")) {
-                w->setFixedWidth(170);
+                // The font box fills whatever width the icon row below needs; a
+                // fixed width left a blank strip before the Alignment group.
+                w->setMinimumWidth(170);
+                w->setMaximumWidth(QWIDGETSIZE_MAX);
+                w->setSizePolicy(QSizePolicy::Expanding, w->sizePolicy().verticalPolicy());
+                fontSelector = w;
+                fontSelectorGroup = groupLayout;
             } else if (w && ribbon && actionName == QLatin1String("fontSize")) {
-                w->setFixedWidth(64);
+                w->setMinimumWidth(64);
             } else if (w && qobject_cast<KoFontComboBox *>(w)) {
                 w->setMinimumWidth(w->minimumWidth() / 2);
             }
@@ -143,6 +167,9 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
                 b->setFocusPolicy(Qt::NoFocus);
                 b->setDefaultAction(a);
                 b->setAutoRaise(true);
+                if (ribbon) {
+                    KoRibbonLayout::configureButton(b, a->icon().isNull() ? Qt::ToolButtonTextOnly : Qt::ToolButtonIconOnly);
+                }
                 w = b;
             }
 
@@ -151,7 +178,15 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
             }
         }
         if (ribbonGroup) {
-            ribbonGroup->setMinimumSize(groupLayout->minimumSize());
+            ribbonGroups.append(ribbonGroup);
+            groupLayouts.append(groupLayout);
+        }
+    }
+
+    if (ribbonLayout) {
+        Q_UNUSED(fontSelectorGroup)
+        for (QWidget *ribbonGroup : ribbonGroups) {
+            ribbonGroup->setMinimumSize(ribbonGroup->layout()->minimumSize());
         }
     }
 

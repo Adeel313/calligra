@@ -42,14 +42,27 @@ KoFilter::ConversionStatus XlsxXmlStylesReader::readAttributes(const QXmlStreamA
     QString s;
     //! @todo more styles
     TRY_READ_ATTR_WITHOUT_NS_INTO(style, s)
-    if (s == QLatin1String("dashed") || s == QLatin1String("dotted") || s == QLatin1String("double")) {
-        borderStyle = s;
-    } else if (s == QLatin1String("medium") || s == QLatin1String("thick") || s == QLatin1String("thin")) {
-        borderStyle = s + " solid";
+    // Excel border styles map to a CSS border shorthand ("<width> <style>"),
+    // which is what the OpenDocument reader expects. Without the width the
+    // line style is lost and every border degrades to a thin solid line.
+    if (s == QLatin1String("dashed")) {
+        borderStyle = QLatin1String("1pt dashed");
+    } else if (s == QLatin1String("dotted")) {
+        borderStyle = QLatin1String("1pt dotted");
+    } else if (s == QLatin1String("double")) {
+        borderStyle = QLatin1String("2pt double");
+    } else if (s == QLatin1String("dashDot") || s == QLatin1String("dashDotDot")) {
+        borderStyle = (s == QLatin1String("dashDot") ? QLatin1String("1pt dot-dash") : QLatin1String("1pt dot-dot-dash"));
+    } else if (s == QLatin1String("medium")) {
+        borderStyle = QLatin1String("2pt solid");
+    } else if (s == QLatin1String("thick")) {
+        borderStyle = QLatin1String("3pt solid");
+    } else if (s == QLatin1String("thin")) {
+        borderStyle = QLatin1String("1pt solid");
     } else if (s == QLatin1String("none")) {
         borderStyle = QLatin1String("hidden");
     } else if (!s.isEmpty()) {
-        borderStyle = QLatin1String("solid"); // fallback
+        borderStyle = QLatin1String("1pt solid"); // fallback
     }
     qCDebug(lcXlsxImport) << "style:" << s << "set to:" << borderStyle;
     return KoFilter::OK;
@@ -637,7 +650,10 @@ KoFilter::ConversionStatus XlsxXmlStylesReader::read_numFmt()
     STRING_TO_INT(numFmtId, id, "numFmt@numFmtId")
 
     TRY_READ_ATTR_WITHOUT_NS(formatCode);
-    if (id >= 0 && !formatCode.isEmpty()) {
+    // "General" is the absence of a number format; converting it would produce a
+    // literal format string that Excel then rejects.
+    if (id >= 0 && !formatCode.isEmpty()
+        && formatCode.trimmed().compare(QLatin1String("General"), Qt::CaseInsensitive) != 0) {
         m_context->styles->numberFormatStrings[id] = formatCode;
     }
 
@@ -743,9 +759,22 @@ KoFilter::ConversionStatus XlsxXmlStylesReader::read_name()
     READ_PROLOGUE
     const QXmlStreamAttributes attrs(attributes());
     TRY_READ_ATTR_WITHOUT_NS(val)
+    TRY_READ_ATTR_WITHOUT_NS(scheme)
 
-    if (!val.isEmpty()) {
-        m_currentFontStyle->addProperty("fo:font-family", val);
+    // A font whose name is a theme reference ("minor"/"major") is rendered with
+    // the theme's font set, not with the literal name stored in the style.
+    QString fontName = val;
+    if ((scheme == QLatin1String("minor") || scheme == QLatin1String("major")) && m_context->themes) {
+        const MSOOXML::DrawingMLFontSet &fontSet = scheme == QLatin1String("major")
+            ? m_context->themes->fontScheme.majorFonts
+            : m_context->themes->fontScheme.minorFonts;
+        if (!fontSet.latinTypeface.isEmpty()) {
+            fontName = fontSet.latinTypeface;
+        }
+    }
+
+    if (!fontName.isEmpty()) {
+        m_currentFontStyle->addProperty("fo:font-family", fontName);
     }
 
     readNext();

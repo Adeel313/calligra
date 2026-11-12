@@ -4,26 +4,16 @@
     <group>
       <action name="font" />
       <action name="fontSize" />
+    </group>
+    <!-- Formatting commands, including the font size steps, share the second
+         line instead of trailing in a lone row to the right. -->
+    <group>
       <action name="increaseFontSize" />
       <action name="decreaseFontSize" />
-    </group>
-    <group>
       <action name="bold" />
       <action name="italic" />
       <action name="underline" />
       <action name="strikeOut" />
-    </group>
-    <group>
-      <menu name="Borders" icon="format-border">
-        <action name="borderAll" />
-        <action name="borderOutline" />
-        <action name="borderRemove" />
-        <action name="borderLeft" />
-        <action name="borderTop" />
-        <action name="borderRight" />
-        <action name="borderBottom" />
-        <action name="borderColor" />
-      </menu>
       <action name="backgroundColor" />
       <action name="textColor" />
     </group>
@@ -55,6 +45,18 @@
         <action name="mergeCellsHorizontal" />
         <action name="mergeCellsVertical" />
         <action name="dissociateCells" />
+      </menu>
+      <!-- Cell borders belong with the other cell-level formatting commands,
+           not inside the font selector group. -->
+      <menu name="Borders" icon="format-border">
+        <action name="borderAll" />
+        <action name="borderOutline" />
+        <action name="borderRemove" />
+        <action name="borderLeft" />
+        <action name="borderTop" />
+        <action name="borderRight" />
+        <action name="borderBottom" />
+        <action name="borderColor" />
       </menu>
     </group>
   </optionWidget>

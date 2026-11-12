@@ -24,6 +24,7 @@ add_library(calligra_shape_vector MODULE ${VectorShape_SRCS})
 
 target_link_libraries(calligra_shape_vector
     flake
+    kowidgets
     kovectorimage
     KF6::I18n
     KF6::KIOFileWidgets

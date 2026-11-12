@@ -38,6 +38,7 @@ set(wordsprivate_LIB_SRCS
     KWRootAreaProvider.cpp
 
     pagetool/KWPageTool.cpp
+    pagetool/KWPageSetupGallery.cpp
     pagetool/KWPageToolFactory.cpp
     pagetool/SimpleSetupWidget.cpp
     pagetool/SimpleHeaderFooterWidget.cpp

@@ -95,7 +95,8 @@ set( formulashape_PART_SRCS
    KoFormulaTool.cpp
    FormulaCommand.cpp
    KoFormulaToolFactory.cpp
-   FormulaToolWidget.cpp
+   FormulaRibbonWidgets.cpp
+   FormulaLinearInput.cpp
    FormulaToolEditWidget.cpp
    FormulaDocument.cpp
    FormulaPart.cpp
@@ -104,7 +105,6 @@ set( formulashape_PART_SRCS
 if (NOT MSVC AND NOT (WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel"))
 set (formulashape_PART_SRCS
    ${formulashape_PART_SRCS}
-   KoM2MMLForumulaTool.cpp
    # itexToMML files
    ${ITEXTOMML_SOURCE_DIR}/lex.yy.c
    ${ITEXTOMML_SOURCE_DIR}/y.tab.c
@@ -112,7 +112,6 @@ set (formulashape_PART_SRCS
 endif ()
 
 ki18n_wrap_ui( formulashape_PART_SRCS
-    FormulaToolWidget.ui
     FormulaToolEditWidget.ui
 )
 

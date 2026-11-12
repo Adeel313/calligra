@@ -281,6 +281,7 @@ const CommandIcon commandIcons[] = {
     {"add_shape", "category"}, {"insert_chart", "bar_chart"}, {"insert_picture", "image"},
     {"insertMathExpr", "functions"}, {"insertFormula", "function"},
     {"insertSeries", "format_list_numbered"}, {"insertSpecialChar", "special_character"},
+    {"insert_textbox", "text_fields"}, {"insert_equation", "functions"},
     {"insertHyperlink", "link"}, {"comment", "comment"},
     {"insertFromClipboard", "content_paste"}, {"insertFromTextfile", "description"},
     {"insertFromDatabase", "database"},

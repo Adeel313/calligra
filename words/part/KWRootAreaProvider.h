@@ -64,6 +64,10 @@ private:
     }
     KoTextLayoutRootArea *provideNext(KoTextDocumentLayout *documentLayout, const RootAreaConstraint &constraints);
     void handleDependentProviders(int pageNumber);
+    /// Page anchored shapes are hidden while a document loads and shown again
+    /// when their page is laid out. Reusing a cached page skips that, so the
+    /// shapes of the page have to be made visible explicitly.
+    void showPageAnchoredShapes(int pageNumber);
 };
 
 #endif

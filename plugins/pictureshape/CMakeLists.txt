@@ -29,6 +29,7 @@ add_library(calligra_shape_picture MODULE ${pictureshape_LIB_SRCS})
 
 target_link_libraries(calligra_shape_picture
     flake
+    kowidgets
     KF6::I18n
     KF6::KIOFileWidgets
     KF6::GuiAddons

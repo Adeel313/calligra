@@ -63,6 +63,10 @@ public:
     /// Reset the cursor
     void resetFormulaEditor();
 
+Q_SIGNALS:
+    /// Emitted when the tool starts editing another formula
+    void formulaShapeChanged(KoFormulaShape *shape);
+
 public Q_SLOTS:
     /// Called when this tool instance is activated and fills m_formulaShape
     void activate(KoToolBase::ToolActivation toolActivation, const QSet<KoShape *> &shapes) override;
@@ -102,6 +106,14 @@ private:
 
     /// Creates all the actions provided by the tool
     void setupActions();
+
+    /**
+     * Replace the linear notation just typed ("a/b", "x^2", "\alpha") with
+     * the structures it stands for, the way the Office equation editor builds
+     * them up when a space ends the expression.
+     * @return true when something was built and the key was used up
+     */
+    bool buildUpLinearInput();
 
     void addTemplateAction(const QString &caption, const QString &name, const QString &data, const char *iconName);
 

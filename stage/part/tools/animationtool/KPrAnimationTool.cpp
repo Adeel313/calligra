@@ -78,7 +78,17 @@ void KPrAnimationTool::configureRibbon(QWidget *transitions, QWidget *animations
     // any groups cannot crash us.
     const auto addToRibbon = [](QWidget *page, QWidget *child) {
         if (auto *box = qobject_cast<QBoxLayout *>(page->layout())) {
-            box->addWidget(child, 0, Qt::AlignLeft | Qt::AlignTop);
+            if (page->objectName() == QLatin1String("stageInsertPage")) {
+                int position = 0;
+                const int order = child->property("ribbonGroupOrder").toInt();
+                while (position < box->count() && box->itemAt(position)->widget()
+                       && box->itemAt(position)->widget()->property("ribbonGroupOrder").toInt() <= order) {
+                    ++position;
+                }
+                box->insertWidget(position, child, 0, Qt::AlignLeft | Qt::AlignTop);
+            } else {
+                box->addWidget(child, 0, Qt::AlignLeft | Qt::AlignTop);
+            }
         } else if (page->layout()) {
             page->layout()->addWidget(child);
         } else {
@@ -108,12 +118,19 @@ void KPrAnimationTool::configureRibbon(QWidget *transitions, QWidget *animations
             addToRibbon(animations, shapeAnimations->createRibbonControls(pane));
         } else if (qobject_cast<KPrClickActionDocker *>(widget)) {
             auto *group = new QWidget(insert);
+            group->setProperty("ribbonGroupOrder", 50);
             group->setProperty("ribbonRoutedGroup", true);
             auto *layout = new QVBoxLayout(group);
+            layout->setContentsMargins(6, 0, 6, 0);
+            layout->setSpacing(2);
             auto *button = new QToolButton(group);
             button->setText(i18n("Action"));
             button->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("system-run")));
             KoRibbonLayout::configureButton(button, Qt::ToolButtonTextUnderIcon);
+            button->setProperty("ribbonPreferredIconSize", QSize(36, 36));
+            button->setProperty("ribbonPreferredMinimumSize", QSize(72, 76));
+            button->setIconSize(QSize(36, 36));
+            button->setMinimumSize(button->sizeHint().expandedTo(QSize(72, 76)));
             auto *menu = new QMenu(button);
             auto *action = new QWidgetAction(menu);
             widget->setMinimumWidth(280);
@@ -122,11 +139,11 @@ void KPrAnimationTool::configureRibbon(QWidget *transitions, QWidget *animations
             button->setMenu(menu);
             button->setPopupMode(QToolButton::InstantPopup);
             layout->addWidget(button);
-            layout->addStretch();
             auto *label = new QLabel(i18n("Links"), group);
             label->setAlignment(Qt::AlignCenter);
             label->setProperty("ribbonGroupTitle", true);
             layout->addWidget(label);
+            layout->addStretch();
             addToRibbon(insert, group);
         }
     }

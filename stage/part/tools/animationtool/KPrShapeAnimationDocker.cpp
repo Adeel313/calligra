@@ -214,7 +214,7 @@ QWidget *KPrShapeAnimationDocker::createRibbonControls(QDockWidget *animationPan
             QToolButton *button = buttons[index];
             button->setParent(widget);
             KoRibbonLayout::configureButton(button, large ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonTextBesideIcon);
-            grid->addWidget(button, large ? 0 : index % 3, large ? index : index / 3, large ? 3 : 1, 1);
+            grid->addWidget(button, large ? 0 : index % 2, large ? index : index / 2, large ? 2 : 1, 1);
         }
         vertical->addLayout(grid);
         vertical->addStretch();
@@ -222,7 +222,7 @@ QWidget *KPrShapeAnimationDocker::createRibbonControls(QDockWidget *animationPan
         caption->setProperty("ribbonGroupTitle", true);
         caption->setAlignment(Qt::AlignCenter);
         vertical->addWidget(caption);
-        widget->setMinimumHeight(110);
+        widget->setMinimumHeight(0);
         row->addWidget(widget);
     };
     m_buttonPreviewAnimation->setText(i18n("Preview"));

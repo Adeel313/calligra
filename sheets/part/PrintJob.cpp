@@ -25,6 +25,8 @@
 #include "ui/SheetView.h"
 
 #include <KoGlobal.h>
+#include <KoPageFormat.h>
+#include <KoPageLayout.h>
 #include <KoShape.h>
 #include <KoShapeManager.h>
 #include <KoUnit.h>
@@ -32,8 +34,10 @@
 
 #include <KMessageBox>
 
+#include <QPageSize>
 #include <QPainter>
 #include <QPrintPreviewDialog>
+#include <QPrinter>
 
 using namespace Calligra::Sheets;
 
@@ -217,12 +221,16 @@ void PrintJob::Private::printHeaderFooter(QPainter &painter, Sheet *sheet, int p
     }
 }
 
-PrintJob::PrintJob(View *view)
+PrintJob::PrintJob(View *view, bool printAllSheets)
     : KoPrintingDialog(view)
     , d(new Private)
 {
     d->view = view;
     d->sheetSelectPage = new SheetSelectPage();
+
+    if (printAllSheets) {
+        d->sheetSelectPage->m_ui.allSheetsButton->setChecked(true);
+    }
 
     setShapeManager(static_cast<Canvas *>(d->view->canvas())->shapeManager());
 
@@ -233,15 +241,7 @@ PrintJob::PrintJob(View *view)
 
     // apply page layout parameters
     Sheet *const sheet = d->view->activeSheet();
-    const PrintSettings *settings = sheet->printSettings();
-    const KoPageLayout pageLayout = settings->pageLayout();
-    const KoPageFormat::Format pageFormat = pageLayout.format;
-    printer().setPageSize(KoPageFormat::printerPageSize(pageFormat));
-    if (pageLayout.orientation == KoPageFormat::Landscape || pageFormat == KoPageFormat::ScreenSize)
-        printer().pageLayout().setOrientation(QPageLayout::Landscape);
-    else
-        printer().pageLayout().setOrientation(QPageLayout::Portrait);
-    printer().setPageMargins({pageLayout.leftMargin, pageLayout.topMargin, pageLayout.rightMargin, pageLayout.bottomMargin}, QPageLayout::Point);
+    applyPageLayout(printer(), sheet->printSettings()->pageLayout());
     printer().setFullPage(true);
 
     // debugSheetsUI <<"Iterating through available sheets and initializing list of available sheets.";
@@ -330,6 +330,9 @@ QRectF PrintJob::preparePage(int pageNumber)
     // Printer: 300 / 72 * 2 = 8.33 [physical points/logical points]
     const double scale = POINT_TO_INCH(printer().resolution());
     const KoPageLayout pageLayout = settings->pageLayout();
+    // Every page may use its own paper size and orientation, KoPrintingDialog starts
+    // the page after preparePage() has been called.
+    applyPageLayout(printer(), pageLayout);
     painter().translate(pageLayout.leftMargin * scale, pageLayout.topMargin * scale);
 
     // Apply the print zoom factor,
@@ -369,6 +372,25 @@ QRectF PrintJob::preparePage(int pageNumber)
         pageRect.moveTop(offset); // scale will be applied below
     }
     return QRectF(pageRect.left() * scale, pageRect.top() * scale, pageRect.width() * scale, pageRect.height() * scale);
+}
+
+void PrintJob::applyPageLayout(QPrinter &printer, const KoPageLayout &pageLayout)
+{
+    QPageSize pageSize;
+    if (pageLayout.format == KoPageFormat::CustomSize || pageLayout.format == KoPageFormat::ScreenSize) {
+        // KoPageLayout sizes are in points and already include the orientation.
+        pageSize = QPageSize(QSizeF(pageLayout.width, pageLayout.height), QPageSize::Point, QString(), QPageSize::ExactMatch);
+    } else {
+        pageSize = KoPageFormat::printerPageSize(pageLayout.format);
+    }
+    if (pageSize.isValid() && pageSize != printer.pageLayout().pageSize()) {
+        printer.setPageSize(pageSize);
+    }
+    const QPageLayout::Orientation orientation = pageLayout.format == KoPageFormat::ScreenSize
+        || pageLayout.width > pageLayout.height ? QPageLayout::Landscape : QPageLayout::Portrait;
+    if (printer.pageLayout().orientation() != orientation)
+        printer.setPageOrientation(orientation);
+    printer.setPageMargins({pageLayout.leftMargin, pageLayout.topMargin, pageLayout.rightMargin, pageLayout.bottomMargin}, QPageLayout::Point);
 }
 
 void PrintJob::printPage(int pageNumber, QPainter &painter)

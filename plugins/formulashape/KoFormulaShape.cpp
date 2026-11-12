@@ -7,8 +7,11 @@
 
 #include "KoFormulaShape.h"
 
+#include <QFontMetricsF>
+#include <QSizeF>
 #include <QUrl>
 
+#include <KLocalizedString>
 #include <KMessageBox>
 #include <kguiitem.h>
 
@@ -26,6 +29,13 @@
 #include "FormulaDocument.h"
 #include "FormulaElement.h"
 #include "FormulaRenderer.h"
+
+static const qreal MinimumWidth = 60.0;
+static const qreal MinimumHeight = 30.0;
+
+/// How much a formula is enlarged while it is edited; the equation keeps the
+/// size it has on the page, as it does in an office suite.
+static const qreal EditScale = 1.0;
 
 KoFormulaShape::KoFormulaShape(KoDocumentResourceManager *documentResourceManager)
     : KoFrameShape(KoXmlNS::draw, "object")
@@ -46,7 +56,39 @@ void KoFormulaShape::paint(QPainter &painter, const KoViewConverter &converter, 
     painter.save();
     applyConversion(painter, converter); // apply zooming and coordinate translation
     m_formulaRenderer->layoutElement(m_formulaData->formulaElement());
-    m_formulaRenderer->paintElement(painter, m_formulaData->formulaElement()); // paint the formula
+    const qreal scale = editingScale();
+    if (scale != 1.0) {
+        // Editing magnification: the element layout stays in its own
+        // coordinates, everything drawn is scaled up instead.
+        painter.scale(scale, scale);
+    }
+    if (m_formulaData->formulaElement()->childElements().isEmpty()) {
+        // An empty formula draws nothing at all, which makes a freshly inserted
+        // one almost impossible to find on the page. Show where it is until it
+        // gets some content.
+        QPen pen(QColor(140, 140, 140));
+        pen.setStyle(Qt::DashLine);
+        pen.setCosmetic(true);
+        painter.setPen(pen);
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRect(QRectF(QPointF(), size() / scale));
+        if (m_isEditing) {
+            // Tell the user that this box is waiting for an equation, the way
+            // the Office equation editor does while the placeholder is empty.
+            QFont hintFont;
+            hintFont.setPointSizeF(12.0);
+            hintFont.setItalic(true);
+            painter.setFont(hintFont);
+            painter.setPen(QColor(150, 150, 150));
+            const QRectF hintRect = QRectF(QPointF(), size() / scale).adjusted(6, 0, -6, 0);
+            const QFontMetricsF metrics(hintFont);
+            painter.drawText(hintRect,
+                             Qt::AlignLeft | Qt::AlignVCenter,
+                             metrics.elidedText(i18n("Type equation here."), Qt::ElideRight, hintRect.width()));
+        }
+    } else {
+        m_formulaRenderer->paintElement(painter, m_formulaData->formulaElement()); // paint the formula
+    }
     painter.restore();
 }
 
@@ -54,7 +96,44 @@ void KoFormulaShape::updateLayout()
 {
     m_formulaRenderer->layoutElement(m_formulaData->formulaElement());
 
-    KoShape::setSize(m_formulaData->formulaElement()->boundingRect().size());
+    QSizeF size = m_formulaData->formulaElement()->boundingRect().size();
+    // An empty formula has no extent of its own. Keep a frame that is large
+    // enough to show the "Type equation here." placeholder the way Office does.
+    qreal minimumWidth = MinimumWidth;
+    if (m_formulaData->formulaElement()->childElements().isEmpty()) {
+        QFont hintFont;
+        hintFont.setPointSizeF(12.0);
+        hintFont.setItalic(true);
+        minimumWidth = QFontMetricsF(hintFont).horizontalAdvance(i18n("Type equation here.")) + 16.0;
+    }
+    size.setWidth(qMax(size.width(), minimumWidth));
+    size.setHeight(qMax(size.height(), MinimumHeight));
+    // While the formula is edited the frame covers the enlarged drawing, so the
+    // surrounding text makes room for it; it shrinks back when editing ends.
+    size *= editingScale();
+    KoShape::setSize(size);
+}
+
+void KoFormulaShape::setEditing(bool editing)
+{
+    if (m_isEditing == editing) {
+        return;
+    }
+    m_isEditing = editing;
+    // The frame follows the magnification, which is what the text layout and
+    // the cursor positions are based on.
+    updateLayout();
+    update();
+}
+
+bool KoFormulaShape::isEditing() const
+{
+    return m_isEditing;
+}
+
+qreal KoFormulaShape::editingScale() const
+{
+    return m_isEditing ? EditScale : 1.0;
 }
 
 BasicElement *KoFormulaShape::elementAt(const QPointF &p)
@@ -80,7 +159,14 @@ bool KoFormulaShape::loadOdf(const KoXmlElement &element, KoShapeLoadingContext 
 {
     debugFormula << "Loading ODF in Formula";
     loadOdfAttributes(element, context, OdfAllAttributes);
-    return loadOdfFrame(element, context);
+    if (!loadOdfFrame(element, context)) {
+        return false;
+    }
+    // The stored frame size was computed with the metrics in effect when the
+    // formula was saved; recompute it so the frame encloses the formula as it
+    // is laid out now.
+    updateLayout();
+    return true;
 }
 
 bool KoFormulaShape::loadOdfFrameElement(const KoXmlElement &element, KoShapeLoadingContext &context)
@@ -246,7 +332,17 @@ void KoFormulaShape::saveOdf(KoShapeSavingContext &context) const
     debugFormula << "Saving ODF in Formula";
     KoXmlWriter &writer = context.xmlWriter();
     writer.startElement("draw:frame");
+    // A formula that is being edited is drawn magnified; the document keeps the
+    // size it has in the text.
+    auto *self = const_cast<KoFormulaShape *>(this);
+    const QSizeF editingSize = size();
+    if (m_isEditing) {
+        self->KoShape::setSize(editingSize / EditScale);
+    }
     saveOdfAttributes(context, OdfAllAttributes);
+    if (m_isEditing) {
+        self->KoShape::setSize(editingSize);
+    }
     writer.startElement("draw:object");
     // TODO add some namespace magic to avoid adding "math:" namespace everywhere
     formulaData()->formulaElement()->writeMathML(&context.xmlWriter());

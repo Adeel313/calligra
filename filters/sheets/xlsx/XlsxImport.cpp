@@ -27,6 +27,8 @@
 #include <memory>
 
 #include <QColor>
+#include <QElapsedTimer>
+#include <QBuffer>
 #include <QFile>
 #include <QFont>
 #include <QImage>
@@ -44,6 +46,7 @@
 K_PLUGIN_FACTORY_WITH_JSON(XlsxImportFactory, "calligra_filter_xlsx2ods.json", registerPlugin<XlsxImport>();)
 
 Q_LOGGING_CATEGORY(lcXlsxImport, "calligra.filter.xlsx2ods")
+Q_LOGGING_CATEGORY(lcXlsxTiming, "calligra.filter.xlsx.timing")
 
 enum XlsxDocumentType {
     XlsxDocument,
@@ -71,6 +74,11 @@ public:
 
     XlsxDocumentType type;
     bool macrosEnabled;
+    QMap<int, QString> printAreas;
+    QString dataValidationXml;
+    QString namedExpressionsXml;
+    QList<QPair<QString, QString>> tables;
+    int dataValidationCount = 0;
 };
 
 XlsxImport::XlsxImport(QObject *parent, const QVariantList &)
@@ -81,7 +89,61 @@ XlsxImport::XlsxImport(QObject *parent, const QVariantList &)
 
 KoFilter::ConversionStatus XlsxImport::convert(const QByteArray &from, const QByteArray &to)
 {
-    return MSOOXML::MsooXmlImport::convert(from, to);
+    QElapsedTimer timer;
+    timer.start();
+    const KoFilter::ConversionStatus status = MSOOXML::MsooXmlImport::convert(from, to);
+    qCDebug(lcXlsxTiming, "XLSX import: finished at %lld ms", (long long)timer.elapsed());
+    return status;
+}
+
+QMap<int, QString> XlsxImport::printAreas() const
+{
+    return d->printAreas;
+}
+
+void XlsxImport::setPrintAreas(const QMap<int, QString> &printAreas)
+{
+    d->printAreas = printAreas;
+}
+
+QString XlsxImport::dataValidationXml() const
+{
+    return d->dataValidationXml;
+}
+
+void XlsxImport::appendDataValidationXml(const QString &xml)
+{
+    d->dataValidationXml += xml;
+}
+
+void XlsxImport::clearDataValidationXml()
+{
+    d->dataValidationXml.clear();
+}
+
+QString XlsxImport::nextDataValidationName()
+{
+    return QStringLiteral("val%1").arg(++d->dataValidationCount);
+}
+
+QString XlsxImport::namedExpressionsXml() const
+{
+    return d->namedExpressionsXml;
+}
+
+void XlsxImport::setNamedExpressionsXml(const QString &xml)
+{
+    d->namedExpressionsXml = xml;
+}
+
+QList<QPair<QString, QString>> XlsxImport::tables() const
+{
+    return d->tables;
+}
+
+void XlsxImport::appendTable(const QString &name, const QString &range)
+{
+    d->tables.append(qMakePair(name, range));
 }
 
 XlsxImport::~XlsxImport()
@@ -118,6 +180,139 @@ bool XlsxImport::acceptsDestinationMimeType(const QByteArray &mime) const
     qCDebug(lcXlsxImport) << "Entering XLSX Import filter: to " << mime;
     return mime == "application/vnd.oasis.opendocument.spreadsheet";
 }
+
+namespace
+{
+//! Reads workbook.xml to collect the sheet print areas, which the worksheet reader emits as
+//! table:print-ranges. They have to be known before the sheets are parsed.
+class PrintAreaReader : public MSOOXML::MsooXmlReader
+{
+public:
+    explicit PrintAreaReader(KoOdfWriters *writers)
+        : MsooXmlReader(writers)
+    {
+    }
+
+    KoFilter::ConversionStatus read(MSOOXML::MsooXmlReaderContext *context = nullptr) override
+    {
+        Q_UNUSED(context)
+        readNext();
+        if (!isStartDocument()) {
+            return KoFilter::WrongFormat;
+        }
+        readNext();
+        if (!expectEl("workbook")) {
+            return KoFilter::WrongFormat;
+        }
+        while (!atEnd()) {
+            readNext();
+            if (isEndElement()) {
+                break;
+            }
+            if (!isStartElement()) {
+                continue;
+            }
+            if (name() == QLatin1StringView("definedNames")) {
+                readDefinedNames();
+            } else {
+                skipCurrentElement();
+            }
+        }
+        return KoFilter::OK;
+    }
+
+    //! Print areas in OpenDocument notation, keyed by the zero-based sheet index.
+    QMap<int, QString> printAreas;
+    //! Workbook level names, converted to OpenDocument notation.
+    QList<QPair<QString, QString>> definedNames;
+
+private:
+    void readDefinedNames()
+    {
+        while (!atEnd()) {
+            readNext();
+            if (isEndElement() && name() == QLatin1StringView("definedNames")) {
+                break;
+            }
+            if (!isStartElement()) {
+                continue;
+            }
+            if (name() != QLatin1StringView("definedName")) {
+                skipCurrentElement();
+                continue;
+            }
+            const auto attrs = attributes();
+            const QString name = attrs.value(QLatin1StringView("name")).toString();
+            if (name == QLatin1StringView("_xlnm.Print_Area")) {
+                const int sheet = attrs.value(QLatin1StringView("localSheetId")).toInt();
+                const QString area = convertPrintArea(readElementText().trimmed());
+                if (!area.isEmpty()) {
+                    printAreas.insert(sheet, area);
+                }
+                continue;
+            }
+            if (!name.isEmpty() && !name.startsWith(QLatin1StringView("_xlnm."))) {
+                const QString range = convertPrintArea(readElementText().trimmed());
+                if (!range.isEmpty()) {
+                    definedNames.append(qMakePair(name, range));
+                }
+                continue;
+            }
+            skipCurrentElement();
+        }
+    }
+
+    //! Converts an Excel print area ('Sheet'!$A$1:$L$100) into OpenDocument print-ranges notation.
+    static QString convertPrintArea(const QString &expression)
+    {
+        QStringList areas;
+        QString current;
+        bool inQuotes = false;
+        for (const QChar c : expression) {
+            if (c == QLatin1Char('\'')) {
+                inQuotes = !inQuotes;
+            }
+            if (c == QLatin1Char(',') && !inQuotes) {
+                areas << current;
+                current.clear();
+                continue;
+            }
+            current += c;
+        }
+        areas << current;
+
+        QStringList result;
+        for (QString area : std::as_const(areas)) {
+            area = area.trimmed();
+            const int bang = area.lastIndexOf(QLatin1Char('!'));
+            if (bang <= 0 || bang + 1 >= area.size()) {
+                continue;
+            }
+            QString sheetName = area.left(bang).trimmed();
+            if (sheetName.size() > 1 && sheetName.startsWith(QLatin1Char('\'')) && sheetName.endsWith(QLatin1Char('\''))) {
+                sheetName = sheetName.mid(1, sheetName.size() - 2);
+                sheetName.replace(QLatin1String("''"), QLatin1String("'"));
+            }
+            const QStringList cells = area.mid(bang + 1).trimmed().split(QLatin1Char(':'));
+            if (cells.isEmpty() || cells.first().isEmpty()) {
+                continue;
+            }
+            QString odfSheetName = sheetName;
+            odfSheetName.replace(QLatin1Char('\''), QLatin1String("''"));
+            if (odfSheetName.contains(QLatin1Char(' ')) || odfSheetName.contains(QLatin1Char('.')) || odfSheetName.contains(QLatin1Char(';'))
+                || odfSheetName.contains(QLatin1Char('!')) || odfSheetName.contains(QLatin1Char('$')) || odfSheetName.contains(QLatin1Char(']'))) {
+                odfSheetName = QLatin1Char('\'') + odfSheetName + QLatin1Char('\'');
+            }
+            QString odfArea = odfSheetName + QLatin1Char('.') + cells.first();
+            if (cells.size() > 1 && !cells.at(1).isEmpty()) {
+                odfArea += QLatin1Char(':') + odfSheetName + QLatin1Char('.') + cells.at(1);
+            }
+            result << odfArea;
+        }
+        return result.join(QLatin1Char(' '));
+    }
+};
+} // namespace
 
 KoFilter::ConversionStatus XlsxImport::parseParts(KoOdfWriters *writers, MSOOXML::MsooXmlRelationships *relationships, QString &errorMessage)
 {
@@ -440,7 +635,7 @@ KoFilter::ConversionStatus XlsxImport::parseParts(KoOdfWriters *writers, MSOOXML
         "\n      <style:table-cell-properties style:rotation-angle=\"90\"/>"
         "\n    </style:style>"
         "\n    <style:style style:name=\"Excel_20_Built-in_20_Normal\" style:display-name=\"Excel Built-in Normal\" style:family=\"table-cell\" "
-        "style:parent-style-name=\"Default\" style:data-style-name=\"N5000\">"
+        "style:parent-style-name=\"Default\">"
         "\n      <style:table-cell-properties style:cell-protect=\"protected\" style:print-content=\"true\" style:diagonal-bl-tr=\"none\" "
         "style:diagonal-tl-br=\"none\" style:text-align-source=\"value-type\" style:repeat-content=\"false\" fo:background-color=\"transparent\" "
         "fo:wrap-option=\"no-wrap\" fo:border=\"none\" style:direction=\"ltr\" style:rotation-angle=\"0\" style:rotation-align=\"none\" "
@@ -625,6 +820,28 @@ KoFilter::ConversionStatus XlsxImport::parseParts(KoOdfWriters *writers, MSOOXML
     }
 
     reportProgress(35);
+
+    // 3b. collect the sheet print areas, they are needed while the sheets are read
+    {
+        PrintAreaReader printAreaReader(writers);
+        RETURN_IF_ERROR(loadAndParseDocument(d->mainDocumentContentType(), &printAreaReader, writers, errorMessage, nullptr))
+        setPrintAreas(printAreaReader.printAreas);
+        if (!printAreaReader.definedNames.isEmpty()) {
+            QBuffer buffer;
+            buffer.open(QIODevice::WriteOnly);
+            KoXmlWriter namedWriter(&buffer);
+            namedWriter.startElement("table:named-expressions");
+            for (const auto &name : printAreaReader.definedNames) {
+                namedWriter.startElement("table:named-range");
+                namedWriter.addAttribute("table:name", name.first);
+                namedWriter.addAttribute("table:base-cell-address", name.second.section(QLatin1Char(':'), 0, 0));
+                namedWriter.addAttribute("table:cell-range-address", name.second);
+                namedWriter.endElement();
+            }
+            namedWriter.endElement();
+            setNamedExpressionsXml(QString::fromUtf8(buffer.data()));
+        }
+    }
 
     // 4. parse document; the comments parts are found through the sheet
     // relationships while the sheets are read

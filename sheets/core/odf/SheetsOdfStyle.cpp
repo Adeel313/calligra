@@ -105,7 +105,9 @@ Format::Type fractionType(const QString &);
 Format::Type numberType(const QString &);
 Currency numberCurrency(const QString &);
 QPen decodePen(const QString &border);
+Style::BorderStyle decodeBorderStyle(const QString &border);
 QString encodePen(const QPen &pen);
+QString encodeBorder(const QPen &pen, Style::BorderStyle borderStyle);
 /**
  * Returns the name of a color.  This is the same as returned by QColor::name, but an internal cache
  * is used to reduce the overhead when asking for the name of the same color.
@@ -523,30 +525,39 @@ void Odf::loadTableCellProperties(Style *style, KoOdfStylesReader &stylesReader,
     if (styleStack.hasProperty(KoXmlNS::fo, "border")) {
         str = styleStack.property(KoXmlNS::fo, "border");
         QPen pen = decodePen(str);
+        const Style::BorderStyle borderStyle = decodeBorderStyle(str);
         style->setLeftBorderPen(pen);
         style->setTopBorderPen(pen);
         style->setBottomBorderPen(pen);
         style->setRightBorderPen(pen);
+        style->setLeftBorderStyle(borderStyle);
+        style->setTopBorderStyle(borderStyle);
+        style->setBottomBorderStyle(borderStyle);
+        style->setRightBorderStyle(borderStyle);
         debugSheetsODF << "\t\tfo:border" << str;
     }
     if (styleStack.hasProperty(KoXmlNS::fo, "border-left")) {
         str = styleStack.property(KoXmlNS::fo, "border-left");
         style->setLeftBorderPen(decodePen(str));
+        style->setLeftBorderStyle(decodeBorderStyle(str));
         debugSheetsODF << "\t\tfo:border-left" << str;
     }
     if (styleStack.hasProperty(KoXmlNS::fo, "border-right")) {
         str = styleStack.property(KoXmlNS::fo, "border-right");
         style->setRightBorderPen(decodePen(str));
+        style->setRightBorderStyle(decodeBorderStyle(str));
         debugSheetsODF << "\t\tfo:border-right" << str;
     }
     if (styleStack.hasProperty(KoXmlNS::fo, "border-top")) {
         str = styleStack.property(KoXmlNS::fo, "border-top");
         style->setTopBorderPen(decodePen(str));
+        style->setTopBorderStyle(decodeBorderStyle(str));
         debugSheetsODF << "\t\tfo:border-top" << str;
     }
     if (styleStack.hasProperty(KoXmlNS::fo, "border-bottom")) {
         str = styleStack.property(KoXmlNS::fo, "border-bottom");
         style->setBottomBorderPen(decodePen(str));
+        style->setBottomBorderStyle(decodeBorderStyle(str));
         debugSheetsODF << "\t\tfo:border-bottom" << str;
     }
     if (styleStack.hasProperty(KoXmlNS::style, "diagonal-tl-br")) {
@@ -811,21 +822,23 @@ void Odf::saveStyle(const Style *style,
     //              independent of the transformation set on the painter.
     if (keysToStore.contains(Style::LeftPen) && keysToStore.contains(Style::RightPen) && keysToStore.contains(Style::TopPen)
         && keysToStore.contains(Style::BottomPen) && (style->leftBorderPen() == style->topBorderPen()) && (style->leftBorderPen() == style->rightBorderPen())
-        && (style->leftBorderPen() == style->bottomBorderPen())) {
+        && (style->leftBorderPen() == style->bottomBorderPen())
+        && (style->leftBorderStyle() == style->topBorderStyle()) && (style->leftBorderStyle() == style->rightBorderStyle())
+        && (style->leftBorderStyle() == style->bottomBorderStyle())) {
         if (style->leftBorderPen().style() != Qt::NoPen)
-            xmlstyle.addProperty("fo:border", encodePen(style->leftBorderPen()));
+            xmlstyle.addProperty("fo:border", encodeBorder(style->leftBorderPen(), style->leftBorderStyle()));
     } else {
         if (keysToStore.contains(Style::LeftPen) && (style->leftBorderPen().style() != Qt::NoPen))
-            xmlstyle.addProperty("fo:border-left", encodePen(style->leftBorderPen()));
+            xmlstyle.addProperty("fo:border-left", encodeBorder(style->leftBorderPen(), style->leftBorderStyle()));
 
         if (keysToStore.contains(Style::RightPen) && (style->rightBorderPen().style() != Qt::NoPen))
-            xmlstyle.addProperty("fo:border-right", encodePen(style->rightBorderPen()));
+            xmlstyle.addProperty("fo:border-right", encodeBorder(style->rightBorderPen(), style->rightBorderStyle()));
 
         if (keysToStore.contains(Style::TopPen) && (style->topBorderPen().style() != Qt::NoPen))
-            xmlstyle.addProperty("fo:border-top", encodePen(style->topBorderPen()));
+            xmlstyle.addProperty("fo:border-top", encodeBorder(style->topBorderPen(), style->topBorderStyle()));
 
         if (keysToStore.contains(Style::BottomPen) && (style->bottomBorderPen().style() != Qt::NoPen))
-            xmlstyle.addProperty("fo:border-bottom", encodePen(style->bottomBorderPen()));
+            xmlstyle.addProperty("fo:border-bottom", encodeBorder(style->bottomBorderPen(), style->bottomBorderStyle()));
     }
     if (keysToStore.contains(Style::FallDiagonalPen) && (style->fallDiagonalPen().style() != Qt::NoPen)) {
         xmlstyle.addProperty("style:diagonal-tl-br", encodePen(style->fallDiagonalPen()));
@@ -1293,13 +1306,15 @@ QPen Odf::decodePen(const QString &border)
     QByteArray _style = border.section(' ', 1, 1).toLatin1();
     QString _color = border.section(' ', 2, 2);
 
-    pen.setWidth((int)(KoUnit::parseValue(_width, 1.0)));
+    // Border widths are often fractional (LibreOffice writes 0.74pt for a thin
+    // line), so truncating to int here would turn 2.49pt "thick" into 2pt.
+    pen.setWidthF(KoUnit::parseValue(_width, 1.0));
 
     if (_style == "none")
         pen.setStyle(Qt::NoPen);
     else if (_style == "solid")
         pen.setStyle(Qt::SolidLine);
-    else if (_style == "dashed")
+    else if (_style == "dashed" || _style == "fine-dashed")
         pen.setStyle(Qt::DashLine);
     else if (_style == "dotted")
         pen.setStyle(Qt::DotLine);
@@ -1318,6 +1333,13 @@ QPen Odf::decodePen(const QString &border)
     return pen;
 }
 
+//! The pen width as ODF writes it: whole points stay whole ("2pt").
+static QString widthString(const QPen &pen)
+{
+    const qreal width = pen.widthF() == 0 ? 1.0 : pen.widthF();
+    return QString::number(width, 'g', 4);
+}
+
 QString Odf::encodePen(const QPen &pen)
 {
     //     debugSheets<<"encodePen( const QPen & pen ) :"<<pen;
@@ -1325,7 +1347,7 @@ QString Odf::encodePen(const QPen &pen)
     //              A line width of zero indicates a cosmetic pen. This means
     //              that the pen width is always drawn one pixel wide,
     //              independent of the transformation set on the painter.
-    QString s = QString("%1pt ").arg((pen.width() == 0) ? 1 : pen.width());
+    QString s = QStringLiteral("%1pt ").arg(widthString(pen));
     switch (pen.style()) {
     case Qt::NoPen:
         return "none";
@@ -1351,6 +1373,65 @@ QString Odf::encodePen(const QPen &pen)
     if (pen.color().isValid()) {
         s += ' ' + colorName(pen.color());
     }
+    return s;
+}
+
+Style::BorderStyle Odf::decodeBorderStyle(const QString &border)
+{
+    // ODF line styles that a QPen cannot hold. All others are already in the pen.
+    static const QHash<QString, Style::BorderStyle> styles = {
+        {QStringLiteral("double"), Style::BorderStyleDouble},
+        {QStringLiteral("double-thin"), Style::BorderStyleDouble},
+        {QStringLiteral("groove"), Style::BorderStyleGroove},
+        {QStringLiteral("ridge"), Style::BorderStyleRidge},
+        {QStringLiteral("inset"), Style::BorderStyleInset},
+        {QStringLiteral("outset"), Style::BorderStyleOutset},
+        {QStringLiteral("triple"), Style::BorderStyleTriple},
+        {QStringLiteral("wave"), Style::BorderStyleWave},
+        {QStringLiteral("double-wave"), Style::BorderStyleDoubleWave},
+        {QStringLiteral("slash"), Style::BorderStyleSlash},
+    };
+    return styles.value(border.section(' ', 1, 1), Style::BorderStyleAuto);
+}
+
+QString Odf::encodeBorder(const QPen &pen, Style::BorderStyle borderStyle)
+{
+    QString styleName;
+    switch (borderStyle) {
+    case Style::BorderStyleDouble:
+        styleName = QStringLiteral("double");
+        break;
+    case Style::BorderStyleGroove:
+        styleName = QStringLiteral("groove");
+        break;
+    case Style::BorderStyleRidge:
+        styleName = QStringLiteral("ridge");
+        break;
+    case Style::BorderStyleInset:
+        styleName = QStringLiteral("inset");
+        break;
+    case Style::BorderStyleOutset:
+        styleName = QStringLiteral("outset");
+        break;
+    case Style::BorderStyleTriple:
+        styleName = QStringLiteral("triple");
+        break;
+    case Style::BorderStyleWave:
+        styleName = QStringLiteral("wave");
+        break;
+    case Style::BorderStyleDoubleWave:
+        styleName = QStringLiteral("double-wave");
+        break;
+    case Style::BorderStyleSlash:
+        styleName = QStringLiteral("slash");
+        break;
+    case Style::BorderStyleAuto:
+        return encodePen(pen);
+    }
+    // Same shape as encodePen writes, with the style QPen cannot express.
+    QString s = QStringLiteral("%1pt %2").arg(widthString(pen)).arg(styleName);
+    if (pen.color().isValid())
+        s += ' ' + colorName(pen.color());
     return s;
 }
 

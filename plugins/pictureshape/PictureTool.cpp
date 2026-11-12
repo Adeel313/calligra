@@ -11,7 +11,15 @@
 #include "CropWidget.h"
 #include "PictureShape.h"
 
+#include <QApplication>
 #include <QFileDialog>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QMenu>
+#include <QToolButton>
+#include <QWidgetAction>
+#include <KoRibbonLayout.h>
 #include <QImageReader>
 #include <QUrl>
 
@@ -88,7 +96,7 @@ void PictureTool::deactivate()
     m_pictureshape = nullptr;
 }
 
-QWidget *PictureTool::createOptionWidget()
+QList<QPointer<QWidget>> PictureTool::createOptionWidgets()
 {
     m_pictureToolUI = new PictureToolUI();
     m_pictureToolUI->cmbColorMode->addItem(i18n("Standard"), PictureShape::Standard);
@@ -110,7 +118,46 @@ QWidget *PictureTool::createOptionWidget()
     connect(m_pictureToolUI->cbContour, &QAbstractButton::toggled, this, &PictureTool::contourCheckBoxChanged);
     connect(m_pictureToolUI->cropWidget, &CropWidget::sigCropRegionChanged, this, &PictureTool::cropRegionChanged);
 
-    return m_pictureToolUI;
+    if (!qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        return {m_pictureToolUI};
+    }
+
+    auto *adjust = new QWidget;
+    adjust->setWindowTitle(i18n("Adjust"));
+    adjust->setProperty("ribbonGroupOrder", 10);
+    auto *adjustLayout = new QHBoxLayout(adjust);
+    adjustLayout->setContentsMargins(2, 1, 2, 1);
+    auto *change = new QToolButton(adjust);
+    change->setText(i18n("Change Picture"));
+    change->setIcon(koIcon("insert-image"));
+    KoRibbonLayout::configureButton(change, Qt::ToolButtonTextUnderIcon);
+    connect(change, &QToolButton::clicked, m_pictureToolUI->bnImageFile, &QPushButton::click);
+    adjustLayout->addWidget(change);
+    auto *color = new QWidget(adjust);
+    auto *colorLayout = new QVBoxLayout(color);
+    colorLayout->setContentsMargins(2, 0, 2, 0);
+    auto *colorLabel = new QLabel(i18n("Color"), color);
+    colorLabel->setBuddy(m_pictureToolUI->cmbColorMode);
+    colorLayout->addWidget(colorLabel);
+    colorLayout->addWidget(m_pictureToolUI->cmbColorMode);
+    adjustLayout->addWidget(color);
+
+    auto *size = new QWidget;
+    size->setWindowTitle(i18n("Size"));
+    size->setProperty("ribbonGroupOrder", 20);
+    auto *crop = new QToolButton(size);
+    crop->setText(i18n("Crop"));
+    crop->setIcon(koIcon("transform-crop"));
+    auto *menu = new QMenu(crop);
+    auto *options = new QWidgetAction(menu);
+    m_pictureToolUI->bnImageFile->hide();
+    m_pictureToolUI->label->hide();
+    options->setDefaultWidget(m_pictureToolUI);
+    menu->addAction(options);
+    crop->setMenu(menu);
+    crop->setPopupMode(QToolButton::InstantPopup);
+    KoRibbonLayout::arrange(size, {crop}, {});
+    return {adjust, size};
 }
 
 void PictureTool::updateControlElements()

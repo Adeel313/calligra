@@ -185,6 +185,18 @@ QString SubStyle::name(Style::Key key)
     case Style::HideFormula:
         name = "Hide formula";
         break;
+    case Style::LeftBorderStyle:
+        name = "Left border style";
+        break;
+    case Style::RightBorderStyle:
+        name = "Right border style";
+        break;
+    case Style::TopBorderStyle:
+        name = "Top border style";
+        break;
+    case Style::BottomBorderStyle:
+        name = "Bottom border style";
+        break;
     }
     return name;
 }
@@ -269,6 +281,34 @@ uint Style::rightPenValue() const
     if (!d->subStyles.contains(RightPen))
         return BorderPenStyle(RightPen).value;
     return static_cast<const BorderPenStyle *>(d->subStyles[RightPen].data())->value;
+}
+
+Style::BorderStyle Style::leftBorderStyle() const
+{
+    if (!d->subStyles.contains(LeftBorderStyle))
+        return BorderStyleAuto;
+    return static_cast<BorderStyle>(static_cast<const SubStyleOne<int> *>(d->subStyles[LeftBorderStyle].data())->value1);
+}
+
+Style::BorderStyle Style::rightBorderStyle() const
+{
+    if (!d->subStyles.contains(RightBorderStyle))
+        return BorderStyleAuto;
+    return static_cast<BorderStyle>(static_cast<const SubStyleOne<int> *>(d->subStyles[RightBorderStyle].data())->value1);
+}
+
+Style::BorderStyle Style::topBorderStyle() const
+{
+    if (!d->subStyles.contains(TopBorderStyle))
+        return BorderStyleAuto;
+    return static_cast<BorderStyle>(static_cast<const SubStyleOne<int> *>(d->subStyles[TopBorderStyle].data())->value1);
+}
+
+Style::BorderStyle Style::bottomBorderStyle() const
+{
+    if (!d->subStyles.contains(BottomBorderStyle))
+        return BorderStyleAuto;
+    return static_cast<BorderStyle>(static_cast<const SubStyleOne<int> *>(d->subStyles[BottomBorderStyle].data())->value1);
 }
 
 uint Style::leftPenValue() const
@@ -538,6 +578,10 @@ bool Style::compare(const SubStyle *one, const SubStyle *two)
     case Angle:
         return static_cast<const SubStyleOne<int> *>(one)->value1 == static_cast<const SubStyleOne<int> *>(two)->value1;
     case Indentation:
+    case LeftBorderStyle:
+    case RightBorderStyle:
+    case TopBorderStyle:
+    case BottomBorderStyle:
         return static_cast<const SubStyleOne<int> *>(one)->value1 == static_cast<const SubStyleOne<int> *>(two)->value1;
         // content format
     case Prefix:
@@ -734,6 +778,10 @@ SharedSubStyle Style::createSubStyle(Key key, const QVariant &value)
     case Indentation:
     case Precision:
     case FontSize:
+    case LeftBorderStyle:
+    case RightBorderStyle:
+    case TopBorderStyle:
+    case BottomBorderStyle:
         newSubStyle = new SubStyleOne<int>(key, value.value<int>());
         break;
     case Prefix:

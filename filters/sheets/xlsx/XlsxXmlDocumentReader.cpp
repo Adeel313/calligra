@@ -209,6 +209,10 @@ KoFilter::ConversionStatus XlsxXmlDocumentReader::read_sheets()
 {
     READ_PROLOGUE
 
+    if (!m_context->import->namedExpressionsXml().isEmpty()) {
+        body->addCompleteElement(m_context->import->namedExpressionsXml().toUtf8());
+    }
+
     unsigned numberOfWorkSheets = m_context->relationships->targetCountWithWord("worksheets") + m_context->relationships->targetCountWithWord("dialogsheets")
         + m_context->relationships->targetCountWithWord("chartsheets");
     unsigned worksheet = 1;
@@ -227,23 +231,49 @@ KoFilter::ConversionStatus XlsxXmlDocumentReader::read_sheets()
         }
     }
 
-    if (!m_context->autoFilters.isEmpty()) {
+    if (!m_context->import->dataValidationXml().isEmpty()) {
+        body->startElement("table:content-validations");
+        body->addCompleteElement(m_context->import->dataValidationXml().toUtf8());
+        body->endElement(); // table:content-validations
+        m_context->import->clearDataValidationXml();
+    }
+
+    const QList<QPair<QString, QString>> tables = m_context->import->tables();
+    if (!tables.isEmpty() || !m_context->autoFilters.isEmpty()) {
         body->startElement("table:database-ranges");
+        for (const auto &table : tables) {
+            body->startElement("table:database-range");
+            body->addAttribute("table:target-range-address", table.second);
+            body->addAttribute("table:display-filter-buttons", "true");
+            body->addAttribute("table:name", table.first);
+            body->endElement();
+        }
         int index = 0;
         while (index < m_context->autoFilters.size()) {
+            // An autofilter on the range of a named table is already covered.
+            bool coveredByTable = false;
+            for (const auto &table : tables) {
+                if (table.second == m_context->autoFilters.at(index).area)
+                    coveredByTable = true;
+            }
+            if (coveredByTable) {
+                ++index;
+                continue;
+            }
             body->startElement("table:database-range");
             body->addAttribute("table:target-range-address", m_context->autoFilters.at(index).area);
             body->addAttribute("table:display-filter-buttons", "true");
-            body->addAttribute("table:name", QString("excel-database-%1").arg(index));
+            // No table:name: an autofilter is an unnamed database range, while
+            // a named one is an Excel table and is exported as such again.
             QString type = m_context->autoFilters.at(index).type;
             int filterConditionSize = m_context->autoFilters.at(index).filterConditions.size();
             if (filterConditionSize > 0) {
+                // table:filter is always the container; and/or is nested in it.
+                body->startElement("table:filter");
                 if (type == "and") {
                     body->startElement("table:filter-and");
                 } else if (type == "or") {
                     body->startElement("table:filter-or");
-                } else {
-                    body->startElement("table:filter");
                 }
                 int conditionIndex = 0;
                 while (conditionIndex < filterConditionSize) {
@@ -254,7 +284,10 @@ KoFilter::ConversionStatus XlsxXmlDocumentReader::read_sheets()
                     body->endElement(); // table:filter-condition
                     ++conditionIndex;
                 }
-                body->endElement(); // table:filter | table:filter-or | table:filter-and
+                if (type == "and" || type == "or") {
+                    body->endElement(); // table:filter-and | table:filter-or
+                }
+                body->endElement(); // table:filter
             }
             body->endElement(); // table:database-range
             ++index;
@@ -342,7 +375,8 @@ KoFilter::ConversionStatus XlsxXmlDocumentReader::read_sheet()
                                           m_context->import,
                                           vmlreader.content(),
                                           vmlreader.frames(),
-                                          m_context->autoFilters);
+                                          m_context->autoFilters,
+                                          m_context->import->printAreas().value(int(d->worksheetNumber) - 1));
     // Due to some information being available only in the later part of the document, we have to read twice
     // In the first round we get the later information and in 2nd round we read the rest and use the information
     context.firstRoundOfReading = true;

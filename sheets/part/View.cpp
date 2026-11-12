@@ -2769,6 +2769,15 @@ KoPrintJob *View::createPrintJob()
     return new PrintJob(this);
 }
 
+KoPrintJob *View::createPdfPrintJob()
+{
+    if (!activeSheet())
+        return nullptr;
+    // PDF export is not interactive, so there is no print dialog to pick sheets in.
+    selection()->emitCloseEditor(true); // save changes
+    return new PrintJob(this, true);
+}
+
 void View::updateAccessedCellRange(Sheet *sheet, const QPoint &location)
 {
     sheetView(sheet)->updateAccessedCellRange(location);

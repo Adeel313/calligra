@@ -245,7 +245,8 @@ QString ValueFormatter::createNumberFormat(Number value,
     int numExpDigits = 0; // QString::number() will be used
     // try to split formatstring into prefix, formatstring and postfix.
     if (!formatString.isEmpty()) {
-        QRegularExpression re(QLatin1String("^([^0#.,E+]*)([0#.,E+]*)(.*)$"));
+        // The pattern is constant; compiling it once avoids a PCRE2 compile per formatted cell.
+        static const QRegularExpression re(QLatin1String("^([^0#.,E+]*)([0#.,E+]*)(.*)$"));
         QRegularExpressionMatch match = re.match(formatString);
         if (match.hasMatch()) {
             prefix = match.captured(1);

@@ -16,6 +16,7 @@
 #include <KoZoomHandler.h>
 
 #include <QAction>
+#include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDebug>
@@ -248,6 +249,48 @@ QIcon borderLineIcon(Qt::PenStyle style, const QColor &color, qreal width)
 
 QList<QWidget *> SimpleTableWidget::configureRibbon()
 {
+    if (qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        for (QWidget *child : findChildren<QWidget *>(QString(), Qt::FindDirectChildrenOnly)) {
+            child->hide();
+        }
+        setWindowTitle(i18n("Table"));
+        setProperty("ribbonGroupOrder", 10);
+        if (QWidget *spacer = findChild<QWidget *>(QStringLiteral("SpecialSpacer"))) {
+            spacer->hide();
+        }
+        auto *select = tableIconButton(this, m_tool->action(QStringLiteral("select_table")), QStringLiteral("selectWholeTable"));
+        KoRibbonLayout::arrange(this, {select}, {});
+
+        auto *rows = tableGroup(i18n("Rows & Columns"), false);
+        rows->setProperty("ribbonGroupOrder", 20);
+        KoRibbonLayout::arrange(rows, {}, {widget.addRowAbove, widget.addRowBelow, widget.addColumnLeft,
+                                           widget.addColumnRight, widget.deleteRow, widget.deleteColumn});
+        auto *merge = tableGroup(i18n("Merge"), false);
+        merge->setProperty("ribbonGroupOrder", 30);
+        KoRibbonLayout::arrange(merge, {widget.mergeCells}, {widget.splitCells});
+        auto *alignment = tableGroup(i18n("Alignment"), false);
+        alignment->setProperty("ribbonGroupOrder", 40);
+        QList<QToolButton *> alignButtons;
+        for (const QString &name : {QStringLiteral("table_align_left"), QStringLiteral("table_align_center"), QStringLiteral("table_align_right")}) {
+            alignButtons.append(tableIconButton(alignment, m_tool->action(name), name + QStringLiteral("RibbonButton")));
+        }
+        KoRibbonLayout::arrange(alignment, {}, alignButtons);
+        auto *properties = createTablePropertiesGroup();
+        properties->setProperty("ribbonItalicTitle", false);
+        properties->setProperty("ribbonGroupOrder", 50);
+
+        auto *styles = createTableStylesGroup();
+        styles->setWindowTitle(i18n("Table Styles"));
+        styles->setProperty("ribbonTargetPage", QStringLiteral("tableDesignRibbonPage"));
+        styles->setProperty("ribbonItalicTitle", false);
+        styles->setProperty("ribbonGroupOrder", 10);
+        auto *borders = createBordersGroup();
+        borders->setProperty("ribbonTargetPage", QStringLiteral("tableDesignRibbonPage"));
+        borders->setProperty("ribbonItalicTitle", false);
+        borders->setProperty("ribbonGroupOrder", 20);
+        return {rows, merge, alignment, properties, styles, borders};
+    }
+
     // Layout: caption, the row/column commands and the cell selection and
     // merging commands, two rows of icons, as in the reference ribbon.
     setWindowTitle(i18n("Layout"));

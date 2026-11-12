@@ -12,19 +12,12 @@
 
 #include <KPluginFactory>
 
-#ifndef _MSC_VER
-#include "KoM2MMLForumulaTool.h"
-#endif
-
 K_PLUGIN_FACTORY_WITH_JSON(KoFormulaShapePluginFactory, "calligra_shape_formula.json", registerPlugin<KoFormulaShapePlugin>();)
 
 KoFormulaShapePlugin::KoFormulaShapePlugin(QObject *parent, const QVariantList &)
     : QObject(parent)
 {
     KoToolRegistry::instance()->add(new KoFormulaToolFactory());
-#ifndef _MSC_VER
-    KoToolRegistry::instance()->add(new KoM2MMLFormulaToolFactory());
-#endif
     KoShapeRegistry::instance()->add(new KoFormulaShapeFactory());
 }
 

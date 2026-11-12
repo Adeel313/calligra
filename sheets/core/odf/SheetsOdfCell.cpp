@@ -87,7 +87,10 @@ bool Odf::loadCell(Cell *cell,
                    QList<ShapeLoadingData> &shapeData)
 {
     static const QString sFormula = QString::fromLatin1("formula");
-    static const QString sValidationName = QString::fromLatin1("validation-name");
+    // OpenDocument names the attribute table:content-validation-name; older
+    // Calligra documents used table:validation-name and are still readable.
+    static const QString sValidationName = QString::fromLatin1("content-validation-name");
+    static const QString sLegacyValidationName = QString::fromLatin1("validation-name");
     static const QString sValueType = QString::fromLatin1("value-type");
     static const QString sBoolean = QString::fromLatin1("boolean");
     static const QString sBooleanValue = QString::fromLatin1("boolean-value");
@@ -147,8 +150,10 @@ bool Odf::loadCell(Cell *cell,
     //
     // validation
     //
-    if (element.hasAttributeNS(KoXmlNS::table, sValidationName)) {
-        const QString validationName = element.attributeNS(KoXmlNS::table, sValidationName, QString());
+    if (element.hasAttributeNS(KoXmlNS::table, sValidationName) || element.hasAttributeNS(KoXmlNS::table, sLegacyValidationName)) {
+        const QString validationName = element.hasAttributeNS(KoXmlNS::table, sValidationName)
+            ? element.attributeNS(KoXmlNS::table, sValidationName, QString())
+            : element.attributeNS(KoXmlNS::table, sLegacyValidationName, QString());
         debugSheetsODF << "cell:" << cell->name() << sValidationName << validationName;
         Validity validity;
         loadValidation(&validity, cell, validationName, tableContext);

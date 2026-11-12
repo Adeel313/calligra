@@ -148,7 +148,11 @@ void OdtReader::readElementOfficeText(KoXmlStreamReader &reader)
         } else if (tagName == "text:sequence-decls") {
             reader.skipCurrentElement();
         } else if (tagName == "text:tracked-changes") {
-            reader.skipCurrentElement();
+            if (m_textReader) {
+                m_textReader->readTextLevelElement(reader);
+            } else {
+                reader.skipCurrentElement();
+            }
         } else if (tagName == "text:user-field-decls") {
             reader.skipCurrentElement();
         } else if (tagName == "text:variable-decls") {

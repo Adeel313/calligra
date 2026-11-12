@@ -51,6 +51,9 @@ protected:
     KoFilter::ConversionStatus read_pageMargins();
     KoFilter::ConversionStatus read_pageSetup();
     KoFilter::ConversionStatus read_sheetPr();
+    KoFilter::ConversionStatus read_sheetViews();
+    KoFilter::ConversionStatus read_sheetView();
+    KoFilter::ConversionStatus read_pane();
     KoFilter::ConversionStatus read_cols();
     KoFilter::ConversionStatus read_col();
     KoFilter::ConversionStatus read_sheetData();
@@ -79,6 +82,7 @@ protected:
     KoFilter::ConversionStatus read_oleObject();
     KoFilter::ConversionStatus read_controls();
     KoFilter::ConversionStatus read_control();
+    KoFilter::ConversionStatus read_dataValidations();
     KoFilter::ConversionStatus read_tableParts();
     KoFilter::ConversionStatus read_tablePart();
 
@@ -90,7 +94,26 @@ protected:
     int m_fitHeight = 0;
     int m_scalePercent = 100;
     QString m_orientation = "portrait";
-    QString m_pageFormat = "A4";
+    //! Paper format from pageSetup, empty if the sheet does not name one.
+    QString m_pageFormat;
+    //! Frozen columns and rows from sheetViews, zero if the sheet is not split.
+    int m_frozenColumns = 0;
+    int m_frozenRows = 0;
+    //! The data validation currently being read.
+    QString m_validationName;
+    QString m_validationType;
+    QString m_validationOperator;
+    QString m_validationFormula1;
+    QString m_validationFormula2;
+    QString m_validationPrompt;
+    QString m_validationPromptTitle;
+    QString m_validationError;
+    QString m_validationErrorTitle;
+    bool m_validationAllowBlank = false;
+    bool m_validationShowInput = false;
+    bool m_validationShowError = false;
+    bool m_validationInFormula1 = false;
+    bool m_validationInFormula2 = false;
     qreal m_marginLeft = 1.905;
     qreal m_marginRight = 1.905;
     qreal m_marginTop = 1.905;
@@ -122,7 +145,7 @@ private:
 
     void showWarningAboutWorksheetSize();
     void saveColumnStyle(const QString &widthString);
-    void appendTableColumns(int columns, const QString &width = QString());
+    void appendTableColumns(int columns, const QString &width = QString(), bool hidden = false);
     void appendTableCells(int cells);
     //! Saves annotation element (comments) for cell specified by @a col and @a row it there is any annotation defined.
     void saveAnnotation(int col, int row);
@@ -158,7 +181,8 @@ public:
                                   XlsxImport *_import,
                                   QMap<QString, QString> _oleReplacements,
                                   QMap<QString, QString> _oleBeginFrames,
-                                  QVector<XlsxXmlDocumentReaderContext::AutoFilter> &autoFilters);
+                                  QVector<XlsxXmlDocumentReaderContext::AutoFilter> &autoFilters,
+                                  const QString &_printArea);
 
     ~XlsxXmlWorksheetReaderContext() override;
 
@@ -181,6 +205,12 @@ public:
 
     XlsxXmlDocumentReaderContext::AutoFilterCondition currentFilterCondition;
     QVector<XlsxXmlDocumentReaderContext::AutoFilter> &autoFilters;
+
+    //! Print area in OpenDocument print-ranges notation, empty if the sheet has none.
+    const QString printArea;
+
+    //! Cells covered by a data validation, with the validation's ODF name.
+    QList<QPair<QRect, QString>> validationCells;
 
     bool firstRoundOfReading;
 

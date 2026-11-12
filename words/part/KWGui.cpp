@@ -21,6 +21,7 @@
 #include <KActionCollection>
 #include <KLocalizedString>
 #include <KoCanvasControllerWidget.h>
+#include <KoChartInterface.h>
 #include <KoCreateShapesTool.h>
 #include <KoCanvasResourceManager.h>
 #include <KoColorBackground.h>
@@ -52,6 +53,11 @@
 #include <KoToolBase.h>
 #include <KoText.h>
 #include <KoTextEditor.h>
+#include <KoBookmarkManager.h>
+#include <KoTextDocument.h>
+#include <KoTextRangeManager.h>
+#include <KoInlineObjectRegistry.h>
+#include <KoInlineObjectFactoryBase.h>
 #include <KoUnit.h>
 
 #include "QRCodeGenerator.h"
@@ -256,8 +262,11 @@ static QWidget *createStyleGallery(KWDocument *document, KWCanvas *canvas, QWidg
     gallery->setIconSize(QSize(72, 40));
     gallery->setGridSize(QSize(88, 62));
     gallery->setFixedHeight(66);
-    gallery->setMinimumWidth(470);
-    gallery->setMaximumWidth(620);
+    // The strip of styles takes the width the group does not need for its
+    // buttons, so that the tab is filled instead of ending in empty space.
+    gallery->setMinimumWidth(320);
+    gallery->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    gallery->setProperty("ribbonExpandingGallery", true);
 
     auto *styleManager = document
         ? document->resourceManager()->resource(KoText::StyleManager).value<KoStyleManager *>()
@@ -446,6 +455,91 @@ private:
     QList<QMetaObject::Connection> m_connections;
     int m_retries = 0;
 };
+
+// Chart Tools: selecting a chart on the page shows the chart tab, and the chart
+// plugin fills it (the same tab Stage shows for a selected chart).
+class ChartRibbonContext final : public QObject
+{
+public:
+    ChartRibbonContext(KWCanvas *canvas, QWidget *page)
+        : QObject(page), m_canvas(canvas), m_page(page)
+    {
+        connect(canvas->shapeManager()->selection(), &KoSelection::selectionChanged, this, [this] { update(); });
+        QTimer::singleShot(0, this, [this] { update(); });
+    }
+
+private:
+    void update()
+    {
+        if (!m_canvas) {
+            return;
+        }
+        bool chartSelected = false;
+        const QList<KoShape *> shapes = m_canvas->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
+        for (KoShape *shape : shapes) {
+            for (KoShape *candidate = shape; candidate && !chartSelected; candidate = candidate->parent()) {
+                chartSelected = candidate->shapeId() == QLatin1String(ChartShapeId);
+            }
+            if (chartSelected) {
+                break;
+            }
+        }
+        if (chartSelected) {
+            build();
+            // The chart panels live on this tab now, so the tab the chart tool
+            // brings with it only duplicates them.
+            hideToolTab();
+        }
+        const QVariant current = m_page->property("ribbonContextActive");
+        if (current.isValid() && current.toBool() == chartSelected) {
+            return;
+        }
+        m_page->setProperty("ribbonContextActive", chartSelected);
+        if (chartSelected) {
+            // Selecting a chart also switches to the chart tool, and Words shows
+            // the page of the active tool. Ask for this tab again once that has
+            // settled, so it is the one the user sees.
+            QTimer::singleShot(0, this, [this] {
+                if (!m_page->property("ribbonContextActive").toBool()) {
+                    return;
+                }
+                // Activating the tool recreates its tab, so hide it again
+                // before asking for this one.
+                hideToolTab();
+                m_page->setProperty("ribbonContextActive", false);
+                m_page->setProperty("ribbonContextActive", true);
+            });
+        }
+    }
+
+    void hideToolTab()
+    {
+        QWidget *window = m_page->window();
+        QWidget *box = window ? window->findChild<QWidget *>(QStringLiteral("wordsRibbon")) : nullptr;
+        if (box) {
+            QMetaObject::invokeMethod(box, "setToolTabVisible", Qt::DirectConnection,
+                                      Q_ARG(QString, QStringLiteral("ChartToolFactory_ID")), Q_ARG(bool, false));
+        }
+    }
+
+    // The page lives as long as the window, so it is filled once, by the first
+    // chart tool the canvas has.
+    void build()
+    {
+        if (m_page->property("chartTabBuilt").toBool()) {
+            return;
+        }
+        KoToolBase *chartTool = KoToolManager::instance()->toolById(m_canvas, QStringLiteral("ChartToolFactory_ID"));
+        if (!chartTool) {
+            return; // The chart plugin is not loaded yet.
+        }
+        m_page->setProperty("chartTabBuilt", true);
+        QMetaObject::invokeMethod(chartTool, "configureRibbon", Qt::DirectConnection, Q_ARG(QWidget *, m_page));
+    }
+
+    QPointer<KWCanvas> m_canvas;
+    QWidget *m_page;
+};
 }
 
 // Lay out ribbon groups in the Microsoft Office style: large buttons with the
@@ -460,6 +554,7 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
     pageLayout->setContentsMargins(4, 4, 4, 2);
     pageLayout->setSpacing(0);
     bool firstGroup = true;
+    bool hasExpandingGroup = false;
     int groupPosition = 0;
     for (const RibbonGroup &groupInfo : groups) {
         auto *group = new QWidget(page);
@@ -491,7 +586,7 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
                     check->setChecked(action->isChecked());
                     check->setEnabled(action->isEnabled());
                 });
-                buttonLayout->addWidget(check, buttonIndex % 3, buttonIndex / 3);
+                buttonLayout->addWidget(check, buttonIndex % 2, buttonIndex / 2);
                 ++buttonIndex;
                 continue;
             }
@@ -523,15 +618,25 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
                                          ? QToolButton::InstantPopup : QToolButton::MenuButtonPopup);
             }
             KoRibbonLayout::configureButton(button, large ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonTextBesideIcon);
+            // The format painter is a brush, which reads better as one larger
+            // picture than as a picture beside its name.
+            const bool iconOnly = actionName == QLatin1String("format_painter");
+            if (iconOnly) {
+                KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly);
+                button->setIconSize(QSize(28, 28));
+                button->setMinimumSize(36, 36);
+                button->setToolTip(label);
+                button->setAccessibleName(label);
+            }
             const int compactIndex = buttonIndex - largeCount;
             if (large) {
-                buttonLayout->addWidget(button, 0, buttonIndex, 3, 1, Qt::AlignTop);
+                buttonLayout->addWidget(button, 0, buttonIndex, 2, 1, Qt::AlignTop);
             } else if (groupInfo.layout == RibbonGroup::PreviewNavigation) {
                 KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly);
                 button->setAccessibleName(label);
                 buttonLayout->addWidget(button, 1, compactIndex + 1);
             } else {
-                buttonLayout->addWidget(button, compactIndex % 3, compactIndex / 3 + largeCount, Qt::AlignLeft);
+                buttonLayout->addWidget(button, compactIndex % 2, compactIndex / 2 + largeCount, Qt::AlignLeft);
             }
             ++buttonIndex;
         }
@@ -540,16 +645,21 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
             group->deleteLater();
             continue;
         }
+        bool expandingGallery = false;
         if (groupInfo.gallery) {
+            expandingGallery = groupInfo.gallery->property("ribbonExpandingGallery").toBool();
             auto *content = new QWidget(group);
             auto *contentLayout = new QHBoxLayout(content);
             contentLayout->setContentsMargins(0, 0, 0, 0);
             contentLayout->setSpacing(6);
             contentLayout->addWidget(buttons);
-            contentLayout->addWidget(groupInfo.gallery);
+            contentLayout->addWidget(groupInfo.gallery, expandingGallery ? 1 : 0);
             groupLayout->addWidget(content, 1);
         } else {
             groupLayout->addWidget(buttons, 1);
+        }
+        if (expandingGallery) {
+            group->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         }
         if (showGroupTitles) {
             auto *title = new QLabel(groupInfo.title, group);
@@ -566,14 +676,218 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
             pageLayout->insertWidget(groupPosition++, separator);
         }
         firstGroup = false;
-        pageLayout->insertWidget(groupPosition++, group);
+        if (expandingGallery) {
+            hasExpandingGroup = true;
+        }
+        pageLayout->insertWidget(groupPosition++, group, expandingGallery ? 1 : 0);
     }
-    if (pageLayout->count() == 0 || !pageLayout->itemAt(pageLayout->count() - 1)->spacerItem()) {
+    if (!hasExpandingGroup
+        && (pageLayout->count() == 0 || !pageLayout->itemAt(pageLayout->count() - 1)->spacerItem())) {
         pageLayout->addStretch(1);
     }
 }
 
 // Ribbon pages are filled once the XMLGUI factory has created the actions.
+/// The pictures of the Design tab groups that have no icon of their own.
+enum class DesignIcon { Theme, Colors, Fonts };
+
+/// @return a picture of a theme, a colour palette or a font, drawn large
+/// enough for a button of the ribbon.
+static QIcon designIcon(DesignIcon kind)
+{
+    QPixmap pixmap(64, 64);
+    pixmap.setDevicePixelRatio(2);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    if (kind == DesignIcon::Colors) {
+        const QList<QColor> colors{QColor(0x2f, 0x54, 0x96), QColor(0xe3, 0x6c, 0x0a), QColor(0xa5, 0xa5, 0xa5), QColor(0x1e, 0x1e, 0x1e)};
+        for (int i = 0; i < colors.count(); ++i) {
+            const QRectF square(3 + (i % 2) * 13, 3 + (i / 2) * 13, 11, 11);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(colors.at(i));
+            painter.drawRoundedRect(square, 1, 1);
+        }
+        return QIcon(pixmap);
+    }
+
+    if (kind == DesignIcon::Fonts) {
+        QFont font = painter.font();
+        font.setPixelSize(28);
+        font.setBold(false);
+        font.setFamily(QStringLiteral("Serif"));
+        painter.setFont(font);
+        painter.setPen(QPen(QColor(0x1e, 0x1e, 0x1e)));
+        painter.drawText(QRectF(2, 1, 28, 31), Qt::AlignCenter, QStringLiteral("A"));
+        return QIcon(pixmap);
+    }
+
+    // A theme: a page whose first line is set in a large face.
+    painter.setPen(QPen(QColor(0x8f, 0x9a, 0xa8), 1.0));
+    painter.setBrush(QColor(255, 255, 255));
+    painter.drawRoundedRect(QRectF(4.5, 2.5, 23, 27), 1.5, 1.5);
+    QFont themeFont = painter.font();
+    themeFont.setPixelSize(11);
+    themeFont.setBold(true);
+    painter.setFont(themeFont);
+    painter.setPen(QPen(QColor(0x2f, 0x54, 0x96)));
+    painter.drawText(QRectF(6, 5, 20, 10), Qt::AlignLeft | Qt::AlignVCenter, QStringLiteral("Aa"));
+    painter.setPen(QPen(QColor(0xc8, 0xcf, 0xd8), 1.0));
+    for (int i = 0; i < 4; ++i) {
+        painter.drawLine(QPointF(7, 18 + i * 2.6), QPointF(25, 18 + i * 2.6));
+    }
+    return QIcon(pixmap);
+}
+
+/// @return a group of the Design tab; @p content is where its controls go.
+static QWidget *createDesignGroup(QWidget *page, const QString &title, QWidget **content)
+{
+    auto *group = new QWidget(page);
+    auto *groupLayout = new QVBoxLayout(group);
+    groupLayout->setContentsMargins(8, 0, 8, 0);
+    groupLayout->setSpacing(0);
+
+    auto *body = new QWidget(group);
+    body->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    groupLayout->addWidget(body, 1);
+
+    auto *label = new QLabel(title, group);
+    label->setProperty("ribbonGroupTitle", true);
+    label->setMinimumHeight(18);
+    label->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+    groupLayout->addWidget(label);
+
+    *content = body;
+    return group;
+}
+
+/// Connect a ribbon button to the view action it stands for. The action may
+/// only exist once the text tool has registered it, so it is looked up later.
+static void bindDesignButton(QToolButton *button, const QString &actionName, const ActionFinder &findAction)
+{
+    QTimer::singleShot(0, button, [button, actionName, findAction] {
+        QAction *action = findAction(actionName);
+        if (!action) {
+            button->setEnabled(false);
+            return;
+        }
+        button->setEnabled(action->isEnabled());
+        QObject::connect(button, &QToolButton::clicked, action, &QAction::trigger);
+        QObject::connect(action, &QAction::changed, button, [button, action] { button->setEnabled(action->isEnabled()); });
+    });
+}
+
+/**
+ * Builds the Design tab: one large button for the themes, the strip of document
+ * styles with the colour and font buttons beside it, and the page background.
+ */
+static void buildDesignRibbonPage(QWidget *page, const ActionFinder &findAction, QWidget *styleGallery)
+{
+    auto *layout = qobject_cast<QHBoxLayout *>(page->layout());
+    if (!layout) {
+        layout = new QHBoxLayout(page);
+    }
+    layout->setContentsMargins(4, 4, 4, 2);
+    layout->setSpacing(0);
+
+    const auto addGroup = [layout, page](QWidget *group, bool first, int stretch) {
+        if (!first) {
+            auto *separator = new QFrame(page);
+            separator->setFrameStyle(QFrame::VLine);
+            separator->setFixedWidth(1);
+            layout->addWidget(separator);
+        }
+        layout->addWidget(group, stretch);
+    };
+
+    // --- Themes -------------------------------------------------------------
+    QWidget *themesContent = nullptr;
+    QWidget *themesGroup = createDesignGroup(page, i18n("Themes"), &themesContent);
+    auto *themesLayout = new QVBoxLayout(themesContent);
+    themesLayout->setContentsMargins(0, 0, 0, 0);
+    themesLayout->setSpacing(0);
+    themesLayout->addStretch();
+    auto *themesButton = new QToolButton(themesContent);
+    themesButton->setText(i18n("Themes"));
+    themesButton->setIcon(designIcon(DesignIcon::Theme));
+    themesButton->setIconSize(QSize(32, 32));
+    themesButton->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+    themesButton->setMinimumSize(64, 72);
+    themesButton->setAutoRaise(true);
+    themesButton->setToolTip(i18n("Change the styles, colours and fonts of the document"));
+    themesLayout->addWidget(themesButton, 0, Qt::AlignHCenter);
+    themesLayout->addStretch();
+    bindDesignButton(themesButton, QStringLiteral("format_stylist"), findAction);
+    addGroup(themesGroup, true, 0);
+
+    // --- Document Formatting ------------------------------------------------
+    QWidget *formattingContent = nullptr;
+    QWidget *formattingGroup = createDesignGroup(page, i18n("Document Formatting"), &formattingContent);
+    formattingGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    auto *formattingLayout = new QHBoxLayout(formattingContent);
+    formattingLayout->setContentsMargins(0, 0, 0, 0);
+    formattingLayout->setSpacing(6);
+    formattingLayout->addWidget(styleGallery, 1);
+
+    const auto addMediumButton = [&](const QString &actionName, const QString &text, const QIcon &icon) {
+        auto *button = new QToolButton(formattingContent);
+        button->setText(text);
+        button->setIcon(icon);
+        button->setIconSize(QSize(28, 28));
+        button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+        button->setMinimumSize(54, 62);
+        button->setAutoRaise(true);
+        formattingLayout->addWidget(button, 0, Qt::AlignVCenter);
+        bindDesignButton(button, actionName, findAction);
+        return button;
+    };
+    addMediumButton(QStringLiteral("format_textcolor"), i18n("Colors"), designIcon(DesignIcon::Colors));
+    addMediumButton(QStringLiteral("format_font"), i18n("Fonts"), designIcon(DesignIcon::Fonts));
+
+    // The remaining formatting commands sit in a column of small rows beside
+    // the colours and fonts, as they do in an office suite.
+    auto *rows = new QVBoxLayout;
+    rows->setContentsMargins(0, 0, 0, 0);
+    rows->setSpacing(2);
+    rows->addStretch();
+    auto *paragraphSpacing = new QToolButton(formattingContent);
+    paragraphSpacing->setText(i18n("Paragraph Spacing"));
+    paragraphSpacing->setIcon(QIcon::fromTheme(QStringLiteral("format-justify-left")));
+    paragraphSpacing->setIconSize(QSize(16, 16));
+    paragraphSpacing->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    paragraphSpacing->setAutoRaise(true);
+    rows->addWidget(paragraphSpacing, 0, Qt::AlignLeft);
+    rows->addStretch();
+    formattingLayout->addLayout(rows);
+    bindDesignButton(paragraphSpacing, QStringLiteral("format_paragraph"), findAction);
+    addGroup(formattingGroup, false, 1);
+
+    // --- Page Background ----------------------------------------------------
+    QWidget *backgroundContent = nullptr;
+    QWidget *backgroundGroup = createDesignGroup(page, i18n("Page Background"), &backgroundContent);
+    auto *backgroundLayout = new QHBoxLayout(backgroundContent);
+    backgroundLayout->setContentsMargins(0, 0, 0, 0);
+    backgroundLayout->setSpacing(4);
+    const QList<QPair<QString, QString>> backgroundCommands = {
+        {QStringLiteral("watermark"), i18n("Watermark")},
+        {QStringLiteral("page_color"), i18n("Page Color")},
+        {QStringLiteral("page_borders"), i18n("Page Borders")},
+    };
+    for (const auto &[actionName, text] : backgroundCommands) {
+        auto *button = new QToolButton(backgroundContent);
+        button->setText(text);
+        button->setIcon(KoRibbonIcons::forCommand(actionName));
+        button->setIconSize(QSize(32, 32));
+        button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+        button->setMinimumSize(64, 72);
+        button->setAutoRaise(true);
+        backgroundLayout->addWidget(button);
+        bindDesignButton(button, actionName, findAction);
+    }
+    addGroup(backgroundGroup, false, 0);
+}
+
 static void populateRibbonGroupsLater(QWidget *page,
                                       const QList<RibbonGroup> &groups,
                                       const ActionFinder &findAction,
@@ -695,10 +1009,10 @@ static void populateFilePage(QWidget *page, KoMainWindow *mainWindow, KActionCol
         {i18n("Save"),
          {{QStringLiteral("file_save"), i18n("Save")},
           {QStringLiteral("file_save_as"), i18n("Save As")},
-          {QStringLiteral("extra_template"), i18n("Save as Template")}}},
-        {i18n("Print"), {{QStringLiteral("file_print"), i18n("Print")}, {QStringLiteral("file_print_preview"), i18n("Print Preview")}}},
-        {i18n("Export"), {{QStringLiteral("file_export_file"), i18n("Export")}, {QStringLiteral("file_export_pdf"), i18n("Export as PDF")}}},
-        {i18n("Info"), {{QStringLiteral("file_documentinfo"), i18n("Properties")}, {QStringLiteral("file_versions_file"), i18n("Versions")}}},
+          {QStringLiteral("extra_template"), i18n("Save as Template")}}, RibbonGroup::LargeAndStacked},
+        {i18n("Print"), {{QStringLiteral("file_print"), i18n("Print")}, {QStringLiteral("file_print_preview"), i18n("Print Preview")}}, RibbonGroup::LargeAndStacked},
+        {i18n("Export"), {{QStringLiteral("file_export_pdf"), i18n("Export as PDF")}, {QStringLiteral("file_export_file"), i18n("Export")}}, RibbonGroup::LargeAndStacked},
+        {i18n("Info"), {{QStringLiteral("file_documentinfo"), i18n("Properties")}, {QStringLiteral("file_versions_file"), i18n("Versions")}}, RibbonGroup::Stacked},
     };
     const ActionFinder findAction = [mainWindow, viewActions](const QString &name) {
         return findFileAction(mainWindow, viewActions, name);
@@ -839,23 +1153,22 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
             modeBoxFactory.addWidgetToToolTab(QStringLiteral("TextToolFactory_ID"), groupWidget);
             populateRibbonGroupsLater(groupWidget, {{title, actions, layout}}, findRibbonAction, false, 20);
         };
-        addHomeGroup(i18n("Edit"),
+        addHomeGroup(i18n("Clipboard"),
                      {{QStringLiteral("edit_paste"), i18n("Paste")},
                       {QStringLiteral("edit_cut"), i18n("Cut")},
                       {QStringLiteral("edit_copy"), i18n("Copy")},
                       {QStringLiteral("format_painter"), i18n("Format painter")}},
                      10, RibbonGroup::LargeAndStacked);
-        addHomeGroup(i18n("Search"),
+        addHomeGroup(i18n("Editing"),
                      {{QStringLiteral("edit_find"), i18n("Search")},
                       {QStringLiteral("edit_replace"), i18n("Replace")},
                       {QStringLiteral("edit_findnext"), i18n("Search again")},
                       {QStringLiteral("edit_findprevious"), i18n("Search previous")},
-                      {QStringLiteral("ribbon_go_to_page"), i18n("Go to")}},
+                      {QStringLiteral("ribbon_go_to_page"), i18n("Go To")},
+                      {QStringLiteral("edit_select_all"), i18n("Select")},
+                      {QStringLiteral("edit_selectcurrentframe"), i18n("Select Current Frame")}},
                      50, RibbonGroup::LargeAndStacked);
-        addHomeGroup(i18n("Selection"),
-                     {{QStringLiteral("edit_select_all"), i18n("Select all")},
-                      {QStringLiteral("edit_selectcurrentframe"), i18n("Select current frame")}},
-                     60, RibbonGroup::LargeButtons);
+
 
         // Microsoft Office 2026 style ribbon pages: Insert, Draw and Design
         // after Home, Mailings after References, and View and Help at the end.
@@ -1083,13 +1396,29 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
         helpPage->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         modeBoxFactory.addCustomPage(i18n("Help"), QIcon::fromTheme("help-contents"), i18n("Documentation, feedback and about"), helpPage, false, true);
 
+        auto *tableDesignPage = new QWidget;
+        tableDesignPage->setObjectName(QStringLiteral("tableDesignRibbonPage"));
+        tableDesignPage->setProperty("ribbonContextActive", false);
+        tableDesignPage->setProperty("ribbonAutoSelect", false);
+        modeBoxFactory.addCustomPage(i18n("Table Design"), QIcon::fromTheme("insert-table"),
+                                     i18n("Table styles, shading and borders"), tableDesignPage, false, true);
+        new TableRibbonContext(m_canvas, tableDesignPage);
+
         auto *tablePage = new QWidget;
         tablePage->setObjectName(QStringLiteral("tableRibbonPage"));
         tablePage->setProperty("ribbonContextActive", false);
         // The table commands spread over the whole ribbon width.
-        tablePage->setProperty("ribbonFillWidth", true);
+        tablePage->setProperty("ribbonFillWidth", false);
         modeBoxFactory.addCustomPage(i18n("Table Layout"), QIcon::fromTheme("insert-table"), i18n("Table rows, columns and borders"), tablePage, false, true);
         new TableRibbonContext(m_canvas, tablePage);
+
+        auto *chartPage = new QWidget;
+        chartPage->setObjectName(QStringLiteral("chartRibbonPage"));
+        chartPage->setProperty("ribbonContextActive", false);
+        chartPage->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        modeBoxFactory.addCustomPage(i18n("Chart Design"), QIcon::fromTheme("office-chart-bar"),
+                                     i18n("Chart type, data, colors and chart elements"), chartPage, false, true);
+        new ChartRibbonContext(m_canvas, chartPage);
 
         QMenuBar *menuBar = m_view->mainWindow()->menuBar();
         menuBar->setNativeMenuBar(false);
@@ -1306,7 +1635,9 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
             QString toolTip;
         };
         const InsertShape insertShapes[] = {
-            {"insert_formula", i18n("Formula"), "FormulaShapeID", "functions",
+            {"insert_textbox", i18n("Text Box"), "TextShapeID", "insert-text",
+             i18n("Draw a text box anywhere on the page")},
+            {"insert_formula", i18n("Equation"), "FormulaShapeID", "functions",
              i18n("Insert a formula and edit it with the formula tools")},
             {"insert_wordart", i18n("Word Art"), "ArtisticText", "style",
              i18n("Insert an artistic text shape")},
@@ -1328,6 +1659,15 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
                 if (!m_view->koDocument()->isReadWrite()) {
                     return;
                 }
+                // An equation goes straight into the text at the cursor, with
+                // the formula tools ready to type into it; other shapes are
+                // still drawn with the shape tool.
+                if (shapeId == QLatin1String("FormulaShapeID")) {
+                    if (KWTextFrameSet *frameSet = m_view->currentTextFrameSet()) {
+                        m_view->insertFormulaIntoTextFrame(frameSet);
+                        return;
+                    }
+                }
                 if (KoCreateShapesTool *tool = KoToolManager::instance()->shapeCreatorTool(m_canvas)) {
                     tool->setShapeId(shapeId);
                     tool->setShapeProperties(nullptr);
@@ -1337,27 +1677,125 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
             });
         }
 
-        // Microsoft Office 2026 style groups of the Insert tab.
+        // Keep the less common Calligra object types in a menu so the main
+        // ribbon follows Word's group order without an oversized illustration band.
+        auto *objects = new QAction(KoRibbonIcons::forCommand(QStringLiteral("insert_vectorimage")), i18n("Object"), this);
+        auto *objectMenu = new QMenu(this);
+        for (const char *name : {"insert_vectorimage", "insert_stateshape", "insert_3dscene", "insert_webshape", "insert_qrcode"}) {
+            objectMenu->addAction(m_view->actionCollection()->action(QLatin1String(name)));
+        }
+        objects->setMenu(objectMenu);
+        objects->setProperty("ribbonMenuOnly", true);
+        m_view->actionCollection()->addAction(QStringLiteral("insert_object"), objects);
+
+        auto *pageNumber = new QAction(QIcon::fromTheme(QStringLiteral("insert-text")), i18n("Page Number"), this);
+        pageNumber->setToolTip(i18n("Insert the current page number at the cursor"));
+        m_view->actionCollection()->addAction(QStringLiteral("insert_page_number"), pageNumber);
+        connect(pageNumber, &QAction::triggered, this, [this] {
+            if (!m_view->koDocument()->isReadWrite()) {
+                return;
+            }
+            KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(m_canvas);
+            auto *factory = KoInlineObjectRegistry::instance()->value(QStringLiteral("page"));
+            if (editor && factory) {
+                KoProperties properties;
+                properties.setProperty(QStringLiteral("vartype"), 2);
+                if (auto *variable = factory->createInlineObject(&properties)) {
+                    editor->insertInlineObject(variable);
+                }
+            }
+        });
+
+        auto *link = new QAction(QIcon::fromTheme(QStringLiteral("insert-link")), i18n("Link"), this);
+        link->setToolTip(i18n("Insert a link to a web page, file or bookmark"));
+        m_view->actionCollection()->addAction(QStringLiteral("ribbon_insert_link"), link);
+        connect(link, &QAction::triggered, this, [this] {
+            QPointer<KoTextEditor> editor = KoTextEditor::getTextEditorFromCanvas(m_canvas);
+            if (!editor || !m_view->koDocument()->isReadWrite()) {
+                return;
+            }
+            QDialog dialog(this);
+            dialog.setWindowTitle(i18n("Insert Link"));
+            auto *layout = new QVBoxLayout(&dialog);
+            auto *textLabel = new QLabel(i18n("Text to display:"), &dialog);
+            layout->addWidget(textLabel);
+            auto *text = new QLineEdit(editor->selectedText(), &dialog);
+            textLabel->setBuddy(text);
+            layout->addWidget(text);
+            auto *addressLabel = new QLabel(i18n("Address:"), &dialog);
+            layout->addWidget(addressLabel);
+            auto *address = new QLineEdit(&dialog);
+            addressLabel->setBuddy(address);
+            address->setToolTip(i18n("Enter a full URL such as https://example.com, a file:// URL, or a bookmark name"));
+            address->setPlaceholderText(QStringLiteral("https://"));
+            layout->addWidget(address);
+            auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+            layout->addWidget(buttons);
+            buttons->button(QDialogButtonBox::Ok)->setEnabled(false);
+            connect(address, &QLineEdit::textChanged, &dialog, [buttons](const QString &value) {
+                buttons->button(QDialogButtonBox::Ok)->setEnabled(!value.trimmed().isEmpty());
+            });
+            connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+            connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+            address->setFocus();
+            if (dialog.exec() == QDialog::Accepted && editor) {
+                QString href = address->text().trimmed();
+                // The text editor adds the fragment marker for bookmark links.
+                if (href.startsWith(QLatin1Char('#'))) {
+                    href.remove(0, 1);
+                }
+                if (!href.isEmpty()) {
+                    editor->insertText(text->text().isEmpty() ? href : text->text(), href);
+                }
+                m_canvas->setFocus(Qt::OtherFocusReason);
+            }
+        });
+
+        auto *bookmark = new QAction(QIcon::fromTheme(QStringLiteral("bookmark-new")), i18n("Bookmark"), this);
+        m_view->actionCollection()->addAction(QStringLiteral("ribbon_insert_bookmark"), bookmark);
+        connect(bookmark, &QAction::triggered, this, [this] {
+            QPointer<KoTextEditor> editor = KoTextEditor::getTextEditorFromCanvas(m_canvas);
+            if (!editor || !m_view->koDocument()->isReadWrite()) {
+                return;
+            }
+            bool accepted = false;
+            const QString name = QInputDialog::getText(this, i18n("Insert Bookmark"), i18n("Bookmark name:"),
+                                                       QLineEdit::Normal, QString(), &accepted).trimmed();
+            if (!accepted || name.isEmpty() || !editor) {
+                return;
+            }
+            const auto *ranges = KoTextDocument(editor->document()).textRangeManager();
+            if (ranges && ranges->bookmarkManager()->bookmark(name)) {
+                QMessageBox::information(this, i18n("Insert Bookmark"), i18n("A bookmark with this name already exists."));
+                return;
+            }
+            editor->addBookmark(name);
+            m_canvas->setFocus(Qt::OtherFocusReason);
+        });
+
         const QList<RibbonGroup> insertGroups = {
             {i18n("Pages"), {{QStringLiteral("insert_framebreak"), i18n("Page Break")}}},
             {i18n("Tables"), {{QStringLiteral("insert_table"), i18n("Table")}}},
             {i18n("Illustrations"),
              {{QStringLiteral("insert_picture"), i18n("Pictures")},
               {QStringLiteral("add_shape"), i18n("Shapes")},
-              {QStringLiteral("insert_chart"), i18n("Chart")},
-              {QStringLiteral("insert_formula"), i18n("Formula")},
-              {QStringLiteral("insert_wordart"), i18n("Word Art")},
-              {QStringLiteral("insert_stateshape"), i18n("State")},
-              {QStringLiteral("insert_3dscene"), i18n("3D Scene")},
-              {QStringLiteral("insert_vectorimage"), i18n("Vector Image")},
-              {QStringLiteral("insert_webshape"), i18n("Web Shape")},
-              {QStringLiteral("insert_qrcode"), i18n("QR Code")}}},
+              {QStringLiteral("insert_chart"), i18n("Chart")}}, RibbonGroup::LargeAndStacked},
+            {i18n("Links"),
+             {{QStringLiteral("ribbon_insert_link"), i18n("Link")},
+              {QStringLiteral("ribbon_insert_bookmark"), i18n("Bookmark")}}, RibbonGroup::Stacked},
             {i18n("Comments"), {{QStringLiteral("insert_annotation"), i18n("Comment")}}},
             {i18n("Header & Footer"),
              {{QStringLiteral("insert_header"), i18n("Header")},
               {QStringLiteral("insert_footer"), i18n("Footer")},
-              {QStringLiteral("insert_variable"), i18n("Page Number")}}},
-            {i18n("Symbols"), {{QStringLiteral("insert_specialchar"), i18n("Symbol")}}},
+              {QStringLiteral("insert_page_number"), i18n("Page Number")}}, RibbonGroup::Stacked},
+            {i18n("Text"),
+             {{QStringLiteral("insert_textbox"), i18n("Text Box")},
+              {QStringLiteral("insert_variable"), i18n("Quick Parts")},
+              {QStringLiteral("insert_wordart"), i18n("WordArt")},
+              {QStringLiteral("insert_object"), i18n("Object")}}, RibbonGroup::LargeAndStacked},
+            {i18n("Symbols"),
+             {{QStringLiteral("insert_formula"), i18n("Equation")},
+              {QStringLiteral("insert_specialchar"), i18n("Symbol")}}, RibbonGroup::Stacked},
         };
         populateRibbonGroupsLater(insertPage, insertGroups, findRibbonAction, true, 20);
 
@@ -1367,10 +1805,10 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
              {{QStringLiteral("KoPencilTool"), i18n("Freehand")},
               {QStringLiteral("CreatePathTool"), i18n("Draw Path")},
               {QStringLiteral("ConnectionTool"), i18n("Connect Shapes")},
-              {QStringLiteral("convert-to-path"), i18n("Convert to Path")}}},
+              {QStringLiteral("convert-to-path"), i18n("Convert to Path")}}, RibbonGroup::LargeAndStacked},
             {i18n("Rotate"),
              {{QStringLiteral("rotate-left"), i18n("Rotate Left")},
-              {QStringLiteral("rotate-right"), i18n("Rotate Right")}}},
+              {QStringLiteral("rotate-right"), i18n("Rotate Right")}}, RibbonGroup::Stacked},
         };
         populateRibbonGroupsLater(drawPage, drawGroups, findDrawAction, true, 20);
 
@@ -1558,36 +1996,23 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
             return findRibbonAction(name);
         };
         QWidget *styleGallery = createStyleGallery(m_view->kwdocument(), m_canvas, designPage);
-        const QList<RibbonGroup> designGroups = {
-            {i18n("Document Formatting"),
-             {{QStringLiteral("format_stylist"), i18n("Themes")},
-              {QStringLiteral("format_textcolor"), i18n("Colors")},
-              {QStringLiteral("format_font"), i18n("Fonts")},
-              {QStringLiteral("format_paragraph"), i18n("Paragraph Spacing")}},
-             RibbonGroup::LargeButtons,
-             styleGallery},
-            {i18n("Page Background"),
-             {{QStringLiteral("watermark"), i18n("Watermark")},
-              {QStringLiteral("page_color"), i18n("Page Color")},
-              {QStringLiteral("page_borders"), i18n("Page Borders")}}},
-        };
-        populateRibbonGroupsLater(designPage, designGroups, findDesignAction, true, 20);
+        buildDesignRibbonPage(designPage, findDesignAction, styleGallery);
 
         // Microsoft Office 2026 style groups of the Mailings tab.
         const QList<RibbonGroup> mailingsGroups = {
             {i18n("Start Mail Merge"),
              {{QStringLiteral("mailmerge_select_recipients"), i18n("Select Recipients")},
-              {QStringLiteral("mailmerge_edit_recipients"), i18n("Edit Recipient List")}}},
+              {QStringLiteral("mailmerge_edit_recipients"), i18n("Edit Recipient List")}}, RibbonGroup::LargeAndStacked},
             {i18n("Write & Insert Fields"),
              {{QStringLiteral("mailmerge_insert_field"), i18n("Insert Merge Field")},
               {QStringLiteral("mailmerge_greeting_line"), i18n("Greeting Line")},
-              {QStringLiteral("mailmerge_highlight"), i18n("Highlight Fields")}}},
+              {QStringLiteral("mailmerge_highlight"), i18n("Highlight Fields")}}, RibbonGroup::LargeAndStacked},
             {i18n("Preview Results"),
              {{QStringLiteral("mailmerge_preview"), i18n("Preview Results")},
               {QStringLiteral("mailmerge_first"), i18n("First")},
               {QStringLiteral("mailmerge_prev"), i18n("Previous")},
               {QStringLiteral("mailmerge_next"), i18n("Next")},
-              {QStringLiteral("mailmerge_last"), i18n("Last")}}},
+              {QStringLiteral("mailmerge_last"), i18n("Last")}}, RibbonGroup::PreviewNavigation},
             {i18n("Finish"), {{QStringLiteral("mailmerge_finish"), i18n("Edit Individual Documents")}}},
         };
         populateRibbonGroupsLater(mailingsPage, mailingsGroups, findRibbonAction, true, 20);
@@ -1701,18 +2126,19 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
             return viewActions->contains(name) ? viewActions->value(name) : findDrawAction(name);
         };
         const QList<RibbonGroup> viewGroups = {
-            {i18n("Mode"), {{QStringLiteral("InteractionTool"), i18n("Object\nmode")}}},
-            {i18n("Views"), {{QStringLiteral("view_fullscreen"), i18n("Full\nscreen")}}},
+            {i18n("Views"),
+             {{QStringLiteral("view_fullscreen"), i18n("Full Screen")},
+              {QStringLiteral("InteractionTool"), i18n("Select Objects")}}, RibbonGroup::LargeAndStacked},
             {i18n("Fields"),
              {{QStringLiteral("view_fieldshadings"), i18n("Shade fields")},
               {QStringLiteral("view_formattingchars"), i18n("Formatting marks")},
-              {QStringLiteral("view_frameborders"), i18n("Text boundaries")}}, RibbonGroup::Stacked},
+              {QStringLiteral("view_frameborders"), i18n("Text Boundaries")}}, RibbonGroup::CheckBoxes},
             {i18n("Show"),
              {{QStringLiteral("view_grid"), i18n("Gridlines")},
               {QStringLiteral("view_snaptogrid"), i18n("Snap to grid")},
               {QStringLiteral("view_show_guides"), i18n("Guides")},
               {QStringLiteral("ribbon_horizontal_ruler"), i18n("Horiz. ruler")},
-              {QStringLiteral("ribbon_vertical_ruler"), i18n("Vert. ruler")}}, RibbonGroup::Stacked},
+              {QStringLiteral("ribbon_vertical_ruler"), i18n("Vertical Ruler")}}, RibbonGroup::CheckBoxes},
             {i18n("Zoom"),
              {{QStringLiteral("ribbon_set_zoom"), i18n("Set\nzoom")},
               {QStringLiteral("ribbon_zoom_menu"), i18n("Zoom")},
@@ -1731,10 +2157,10 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
             {i18n("Help"),
              {{QStringLiteral("help_contents"), i18n("Help")},
               {QStringLiteral("help_report_bug"), i18n("Report Bug")},
-              {QStringLiteral("help_switch_application_language"), i18n("Switch Language")}}},
+              {QStringLiteral("help_switch_application_language"), i18n("Switch Language")}}, RibbonGroup::LargeAndStacked},
             {i18n("About"),
              {{QStringLiteral("help_about_app"), i18n("About Calligra Words")},
-              {QStringLiteral("help_about_kde"), i18n("About KDE")}}},
+              {QStringLiteral("help_about_kde"), i18n("About KDE")}}, RibbonGroup::Stacked},
         };
         populateRibbonGroupsLater(helpPage, helpGroups, findRibbonAction, true, 20);
     }

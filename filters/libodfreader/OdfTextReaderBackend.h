@@ -99,6 +99,9 @@ public:
 
     // ----------------------------------------------------------------
     // Some special functions
+    // These callbacks consume the complete element, including its end tag.
+    virtual void trackedChanges(KoXmlStreamReader &reader, OdfReaderContext *context);
+    virtual void textChange(KoXmlStreamReader &reader, OdfReaderContext *context);
     virtual void characterData(KoXmlStreamReader &reader, OdfReaderContext *context);
     virtual void textVariable(const QString &name, const QString &value);
 

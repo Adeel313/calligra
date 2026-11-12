@@ -135,7 +135,9 @@ KoFillConfigWidget::KoFillConfigWidget(QWidget *parent)
     setObjectName("Fill widget");
     // The Stage ribbon has no room for a long row of fill mode buttons, so it
     // stacks the four of them as a two by two block next to the colour button.
-    const bool compactGrid = QCoreApplication::applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive);
+    const bool compactGrid = (QCoreApplication::applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)
+        || QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)
+        || QCoreApplication::applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive));
     auto *layout = new QGridLayout(this);
     setSizePolicy(compactGrid ? QSizePolicy::Fixed : QSizePolicy::Expanding, QSizePolicy::Fixed);
     layout->setContentsMargins({});
@@ -143,6 +145,10 @@ KoFillConfigWidget::KoFillConfigWidget(QWidget *parent)
 
     int styleCell = 0;
     auto addStyleButton = [layout, compactGrid, &styleCell](QToolButton *styleButton) {
+        if (compactGrid) {
+            styleButton->setIconSize(QSize(24, 24));
+            styleButton->setMinimumSize(34, 34);
+        }
         if (compactGrid) {
             layout->addWidget(styleButton, styleCell / 2, styleCell % 2);
         } else {
@@ -194,7 +200,7 @@ KoFillConfigWidget::KoFillConfigWidget(QWidget *parent)
     if (compactGrid) {
         // One square swatch beside the two rows of mode buttons.
         d->colorButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-        d->colorButton->setMinimumWidth(28);
+        d->colorButton->setMinimumWidth(36);
         layout->addWidget(d->colorButton, 0, 2, 2, 1);
     } else {
         d->colorButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);

@@ -14,6 +14,8 @@
 #include "engine/SheetBase.h"
 #include "engine/Validity.h"
 
+#include <QRegularExpression>
+
 #include <KoXmlNS.h>
 
 namespace Calligra
@@ -33,7 +35,19 @@ void Odf::loadValidation(Validity *validity, CellBase *const cell, const QString
     CalculationSettings *cs = cell->sheet()->map()->calculationSettings();
     if (element.hasAttributeNS(KoXmlNS::table, "condition")) {
         QString valExpression = element.attributeNS(KoXmlNS::table, "condition", QString());
+        if (valExpression.startsWith(QLatin1String("of:")) || valExpression.startsWith(QLatin1String("oooc:")))
+            valExpression.remove(0, valExpression.indexOf(QLatin1Char(':')) + 1);
         debugSheetsODF << " element.attribute( table:condition )" << valExpression;
+
+        // A formula based validity: is-true-formula(<expression>)
+        if (valExpression.startsWith(QLatin1String("is-true-formula(")) && valExpression.endsWith(QLatin1Char(')'))) {
+            QString formula = valExpression.mid(16);
+            formula.chop(1);
+            validity->setRestriction(Validity::Formula);
+            validity->setCondition(Validity::IsTrueFormula);
+            validity->setMinimumValue(Value(formula));
+            debugSheetsODF << " formula validation:" << formula;
+        } else {
         // Condition ::= ExtendedTrueCondition | TrueFunction 'and' TrueCondition
         // TrueFunction ::= cell-content-is-whole-number() | cell-content-is-decimal-number() | cell-content-is-date() | cell-content-is-time()
         // ExtendedTrueCondition ::= ExtendedGetFunction | cell-content-text-length() Operator Value
@@ -49,7 +63,7 @@ void Odf::loadValidation(Validity *validity, CellBase *const cell, const QString
         // ExtendedTrueCondition
         if (valExpression.contains("cell-content-text-length()")) {
             //"cell-content-text-length()>45"
-            valExpression = valExpression.remove("oooc:cell-content-text-length()");
+            valExpression.remove("cell-content-text-length()");
             debugSheetsODF << " valExpression = :" << valExpression;
             validity->setRestriction(Validity::TextLength);
 
@@ -77,7 +91,7 @@ void Odf::loadValidation(Validity *validity, CellBase *const cell, const QString
             loadValidationValue(validity, listVal, cs);
         } else if (valExpression.contains("cell-content-is-in-list(")) {
             validity->setRestriction(Validity::List);
-            valExpression.remove("oooc:cell-content-is-in-list(");
+            valExpression.remove("cell-content-is-in-list(");
             debugSheetsODF << " valExpression :" << valExpression;
             valExpression.remove(')');
             validity->setValidityList(valExpression.split(';', Qt::SkipEmptyParts));
@@ -86,16 +100,20 @@ void Odf::loadValidation(Validity *validity, CellBase *const cell, const QString
         else {
             if (valExpression.contains("cell-content-is-whole-number()")) {
                 validity->setRestriction(Validity::Number);
-                valExpression.remove("oooc:cell-content-is-whole-number() and ");
+                valExpression.remove("cell-content-is-whole-number() and ");
+                valExpression.remove("cell-content-is-whole-number()and ");
             } else if (valExpression.contains("cell-content-is-decimal-number()")) {
                 validity->setRestriction(Validity::Integer);
-                valExpression.remove("oooc:cell-content-is-decimal-number() and ");
+                valExpression.remove("cell-content-is-decimal-number() and ");
+                valExpression.remove("cell-content-is-decimal-number()and ");
             } else if (valExpression.contains("cell-content-is-date()")) {
                 validity->setRestriction(Validity::Date);
-                valExpression.remove("oooc:cell-content-is-date() and ");
+                valExpression.remove("cell-content-is-date() and ");
+                valExpression.remove("cell-content-is-date()and ");
             } else if (valExpression.contains("cell-content-is-time()")) {
                 validity->setRestriction(Validity::Time);
-                valExpression.remove("oooc:cell-content-is-time() and ");
+                valExpression.remove("cell-content-is-time() and ");
+                valExpression.remove("cell-content-is-time()and ");
             }
             debugSheetsODF << "valExpression :" << valExpression;
 
@@ -119,6 +137,7 @@ void Odf::loadValidation(Validity *validity, CellBase *const cell, const QString
                 loadValidationValue(validity, listVal, cs);
                 validity->setCondition(Validity::Different);
             }
+        }
         }
     }
     if (element.hasAttributeNS(KoXmlNS::table, "allow-empty-cell")) {
@@ -237,9 +256,27 @@ void Odf::loadValidationCondition(Validity *validity, QString &valExpression, Ca
     } else
         debugSheetsODF << " I don't know how to parse it :" << valExpression;
     if (validity->restriction() == Validity::Date) {
-        validity->setMinimumValue(Value(QDate::fromString(value, Qt::ISODate), cs));
+        // Values are written as OpenFormula DATE(year;month;day) by
+        // LibreOffice; plain ISO dates are accepted as well.
+        QDate date;
+        if (value.startsWith(QLatin1String("DATE(")) && value.endsWith(QLatin1Char(')'))) {
+            const QStringList parts = value.mid(5, value.size() - 6).split(QRegularExpression(QStringLiteral("[,;]")));
+            if (parts.size() == 3)
+                date = QDate(parts.at(0).toInt(), parts.at(1).toInt(), parts.at(2).toInt());
+        } else {
+            date = QDate::fromString(value, Qt::ISODate);
+        }
+        validity->setMinimumValue(Value(date, cs));
     } else if (validity->restriction() == Validity::Time) {
-        validity->setMinimumValue(Value(Time(QTime::fromString(value, Qt::ISODate))));
+        QTime time;
+        if (value.startsWith(QLatin1String("TIME(")) && value.endsWith(QLatin1Char(')'))) {
+            const QStringList parts = value.mid(5, value.size() - 6).split(QRegularExpression(QStringLiteral("[,;]")));
+            if (parts.size() >= 2)
+                time = QTime(parts.at(0).toInt(), parts.at(1).toInt());
+        } else {
+            time = QTime::fromString(value, Qt::ISODate);
+        }
+        validity->setMinimumValue(Value(Time(time)));
     } else {
         bool ok = false;
         validity->setMinimumValue(Value(value.toDouble(&ok)));

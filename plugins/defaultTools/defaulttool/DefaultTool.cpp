@@ -1229,6 +1229,15 @@ QList<QPointer<QWidget>> DefaultTool::createOptionWidgets()
     shadowWidget->setWindowTitle(i18n("Shadow"));
     shadowWidget->setProperty("ribbonGroupOrder", 70);
     shadowWidget->setCanvas(canvas());
+    if (qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        fillWidget->setWindowTitle(i18n("Shape Fill"));
+        fillWidget->setProperty("ribbonGroupOrder", 20);
+        strokeWidget->setWindowTitle(i18n("Shape Outline"));
+        strokeWidget->setProperty("ribbonGroupOrder", 30);
+        shadowWidget->setWindowTitle(i18n("Shape Effects"));
+        shadowWidget->setProperty("ribbonGroupOrder", 40);
+        defaultArrange->setProperty("ribbonGroupOrder", 50);
+    }
     widgets.append(shadowWidget);
 
     return widgets;

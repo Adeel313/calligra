@@ -41,7 +41,7 @@ public:
     ~SimpleParagraphWidget() override;
 
     void setInitialUsedStyles(QVector<int> list);
-    QWidget *configureRibbon();
+    QWidget *configureRibbon(bool includeStyles = true);
 
 public Q_SLOTS:
     void setCurrentBlock(const QTextBlock &block);

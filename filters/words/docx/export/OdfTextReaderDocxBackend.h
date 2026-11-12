@@ -66,6 +66,8 @@ public:
 
     void elementTableTableColumn(KoXmlStreamReader &reader, OdfReaderContext *context) override;
 
+    void trackedChanges(KoXmlStreamReader &reader, OdfReaderContext *context) override;
+    void textChange(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void characterData(KoXmlStreamReader &reader, OdfReaderContext *context) override;
 
 private:
@@ -88,6 +90,19 @@ private:
     };
 
 private:
+    struct RevisionFragment {
+        QString text;
+        QVector<QString> styles;
+    };
+    struct Revision {
+        QString type;
+        QString author;
+        QString date;
+        QVector<RevisionFragment> fragments;
+        int wordId = 0;
+    };
+    QHash<QString, Revision> m_revisions;
+    QStack<bool> m_openInsertions;
     int m_insideSpanLevel; // Number of nested <text:span> levels.
     QVector<QString> m_spanStyles; // Logical ODF spans; emitted runs stay flat.
     int m_currentOutlineLevel;

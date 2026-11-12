@@ -13,6 +13,7 @@
 #include <QScopedPointer>
 #include <QSizeF>
 #include <QString>
+#include <QStack>
 
 class KoXmlWriter;
 class OdfReaderContext;
@@ -60,6 +61,7 @@ private:
     void writeTextBoxDrawing(const QString &name);
     void writePrimitive(KoXmlStreamReader &reader, const QString &preset, bool line);
     QHash<QString, PresetShape> m_presetShapes;
+    QStack<PresetShape> m_customShapes;
     void writeDrawing(const EmbeddedImage &drawing, bool chart = false, const QString &sourcePath = QString(), const PresetShape *shape = nullptr);
     OdfReaderDocxContext *m_context = nullptr;
     QHash<QString, QByteArray> m_chartData;

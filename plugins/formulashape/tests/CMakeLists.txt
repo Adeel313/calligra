@@ -51,7 +51,7 @@ TestCursor.cpp
    ../FormulaPart.cpp
    ../KoFormulaShape.cpp
    ../FormulaDocument.cpp
-   ../FormulaToolWidget.cpp
+   ../FormulaRibbonWidgets.cpp
    ../FormulaToolEditWidget.cpp
    ../FormulaCommandUpdate.cpp
    ../KoFormulaShapeFactory.cpp
@@ -65,7 +65,7 @@ set(TestCursor_SRCS
 endif()
 
 qt_wrap_ui( TestCursor_SRCS
-    ../FormulaToolWidget.ui
+    ../FormulaToolEditWidget.ui
 )
 
 formulashape_add_unit_test(Cursor

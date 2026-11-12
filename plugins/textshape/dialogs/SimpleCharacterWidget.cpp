@@ -108,7 +108,8 @@ SimpleCharacterWidget::~SimpleCharacterWidget()
 void SimpleCharacterWidget::configureRibbon()
 {
     setObjectName(QStringLiteral("ribbonFontGroup"));
-    if (QCoreApplication::applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)) {
+    if (QCoreApplication::applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)
+        || QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
         widget.characterStyleCombo->hide();
     }
     widget.SpecialSpacer->hide();
@@ -129,8 +130,9 @@ void SimpleCharacterWidget::configureRibbon()
         connect(button, &QToolButton::clicked, this, &SimpleCharacterWidget::doneWithFocus);
     }
     if (auto *family = qobject_cast<QComboBox *>(widget.fontsFrame->itemAtPosition(0, 0)->widget())) {
-        family->setMinimumWidth(220);
-        family->setMaximumWidth(320);
+        const bool words = QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive);
+        family->setMinimumWidth(words ? 160 : 220);
+        family->setMaximumWidth(words ? 260 : 320);
     }
     if (auto *size = qobject_cast<QComboBox *>(widget.fontsFrame->itemAtPosition(0, 1)->widget())) {
         size->setMinimumWidth(qMax(64, size->minimumSizeHint().width()));
@@ -148,7 +150,8 @@ void SimpleCharacterWidget::configureRibbon()
     widget.moreOptions->setText(QStringLiteral("↘"));
     widget.moreOptions->setAccessibleName(i18n("Font dialog"));
     setMinimumWidth(260);
-    if (QCoreApplication::applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)) {
+    if (QCoreApplication::applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)
+        || QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
         // A widget container prevents the fixed-width icon columns below
         // from compressing the font family's nested layout.
         widget.gridLayout->removeItem(widget.fontsFrame);

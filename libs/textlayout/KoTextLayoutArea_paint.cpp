@@ -191,6 +191,10 @@ void KoTextLayoutArea::paint(QPainter *painter, const KoTextDocumentLayout::Pain
 
             painter->save();
 
+            // A paragraph border sets its own pen, so start each block from the text colour again;
+            // runs without an explicit colour would otherwise be painted in the previous border's colour.
+            painter->setPen(context.textContext.palette.color(QPalette::Text));
+
             QBrush bg = paintStrategy->background(block.blockFormat().background());
             if (bg != Qt::NoBrush) {
                 painter->fillRect(br, bg);
@@ -290,9 +294,14 @@ void KoTextLayoutArea::paint(QPainter *painter, const KoTextDocumentLayout::Pain
                         } else {
                             frontBrush.setColor(QColor(Qt::white));
                         }
-                        format.setForeground(frontBrush);
-
-                        formatChanged = true;
+                        // The colour the text already has is the one a default (automatic) colour resolves to
+                        // on a light background. Forcing the same colour through a format range makes Qt draw
+                        // the whole line a second time, which duplicates the text in the output, so only use a
+                        // range when the automatic colour actually differs from what is painted now.
+                        if (format.foreground().color() != frontBrush.color()) {
+                            format.setForeground(frontBrush);
+                            formatChanged = true;
+                        }
                     }
                     if (formatChanged) {
                         QTextLayout::FormatRange fr;

@@ -1736,6 +1736,70 @@ void KWView::insertImagesIntoTextFrame(KWTextFrameSet *textFrameSet, const QVect
     m_canvas->setFocus(Qt::OtherFocusReason);
 }
 
+void KWView::insertFormulaIntoTextFrame(KWTextFrameSet *textFrameSet)
+{
+    if (!m_canvas || !textFrameSet) {
+        return;
+    }
+
+    KoTextEditor *editor = KoTextDocument(textFrameSet->document()).textEditor();
+    if (!editor || editor->isEditProtected()) {
+        return;
+    }
+
+    KoShapeFactoryBase *factory = KoShapeRegistry::instance()->value(QStringLiteral("FormulaShapeID"));
+    if (!factory) {
+        warnWords << "No formula shape found, cannot insert an equation.";
+        return;
+    }
+
+    KoShape *shape = factory->createShape(nullptr, kwdocument()->resourceManager());
+    if (!shape) {
+        warnWords << "Could not create a formula shape";
+        return;
+    }
+    // An empty equation is a small box on the text line; it grows while it is
+    // being edited.
+    shape->setTextRunAroundSide(KoShape::NoRunAround);
+
+    KoShapeAnchor *anchor = new KoShapeAnchor(shape);
+    anchor->setAnchorType(KoShapeAnchor::AnchorAsCharacter);
+    anchor->setHorizontalRel(KoShapeAnchor::HChar);
+    anchor->setHorizontalPos(KoShapeAnchor::HLeft);
+    anchor->setVerticalRel(KoShapeAnchor::VBaseline);
+    anchor->setVerticalPos(KoShapeAnchor::VTop);
+    shape->setAnchor(anchor);
+
+    m_canvas->addCommand(new KWShapeCreateCommand(kwdocument(), shape));
+    editor->insertInlineObject(new KoAnchorInlineObject(anchor));
+
+    KoSelection *selection = m_canvas->shapeManager()->selection();
+    selection->deselectAll();
+    selection->select(shape);
+    m_canvas->setFocus(Qt::OtherFocusReason);
+    // Hand the keyboard to the formula tools so typing goes into the box; they
+    // only show their tab while a formula is being edited.
+    // Inserting the inline object makes the text machinery claim the canvas
+    // again, so hand the shape to the formula tools once the pending tool
+    // switches have run.
+    KoShape *insertedShape = shape;
+    QPointer<KWCanvas> canvas(m_canvas);
+    QMetaObject::invokeMethod(
+        KoToolManager::instance(),
+        [canvas, insertedShape] {
+            if (!canvas || !canvas->shapeManager()->shapes().contains(insertedShape)) {
+                return;
+            }
+            KoSelection *shapeSelection = canvas->shapeManager()->selection();
+            if (!shapeSelection->isSelected(insertedShape)) {
+                shapeSelection->deselectAll();
+                shapeSelection->select(insertedShape);
+            }
+            KoToolManager::instance()->switchToolRequested(QStringLiteral("KoFormulaToolFactoryId"));
+        },
+        Qt::QueuedConnection);
+}
+
 const qreal KWView::AnnotationAreaWidth = 200.0; // only static const integral data members can be initialized within a class
 
 // -------------------- Mail merge -----------------------

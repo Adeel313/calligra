@@ -1144,6 +1144,10 @@ bool KoMainWindow::queryClose()
 {
     if (rootDocument() == nullptr)
         return true;
+    // Command-line runs (PDF export, benchmark loading, roundtrip) exit on their own and
+    // must not stop at the save prompt, whatever the import marked as modified.
+    if (property("headlessExit").toBool())
+        return true;
     // debugMain <<"KoMainWindow::queryClose() viewcount=" << rootDocument()->viewCount()
     //                << " mainWindowCount=" << rootDocument()->mainWindowCount() << Qt::endl;
     if (!d->forQuit && d->rootPart && d->rootPart->mainwindowCount() > 1)
@@ -1415,6 +1419,8 @@ KoPrintJob *KoMainWindow::exportToPdf(const KoPageLayout &_pageLayout, const QSt
     KoPrintJob *printJob = rootView()->createPdfPrintJob();
     if (printJob == nullptr)
         return nullptr;
+    // Exporting is not interactive: print synchronously so that the caller knows when the PDF is complete.
+    printJob->setProperty("blocking", true);
     if (isHidden()) {
         printJob->setProperty("noprogressdialog", true);
     }
@@ -1425,7 +1431,8 @@ KoPrintJob *KoMainWindow::exportToPdf(const KoPageLayout &_pageLayout, const QSt
     printJob->printer().setColorMode(QPrinter::Color);
 
     if (pageLayout.format == KoPageFormat::CustomSize) {
-        printJob->printer().setPageSize(QPageSize{QSizeF(pageLayout.width, pageLayout.height), QPageSize::Millimeter});
+        // KoPageLayout stores all sizes in points, so a custom size has to be declared in points too.
+        printJob->printer().setPageSize(QPageSize{QSizeF(pageLayout.width, pageLayout.height), QPageSize::Point});
     } else {
         printJob->printer().setPageSize(KoPageFormat::printerPageSize(pageLayout.format));
     }

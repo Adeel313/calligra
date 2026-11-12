@@ -68,7 +68,8 @@ static bool headerFooterLimit(const KoShape *shape, QRectF *limit)
  * a floating anchor makes it draggable (an as-character image is positioned by
  * the text layout and can not be moved with the mouse).
  */
-static bool makeHeaderFooterShapeFloating(KoShape *shape, KoShapeAnchor *anchor)
+static bool makeInlineShapeFloating(KoShape *shape, KoShapeAnchor *anchor,
+                                    KoShapeAnchor::HorizontalRel horizontalRel, KoShapeAnchor::VerticalRel verticalRel)
 {
     KoShapeContainer *container = shape->parent();
     if (!container) {
@@ -89,11 +90,15 @@ static bool makeHeaderFooterShapeFloating(KoShape *shape, KoShapeAnchor *anchor)
 
     KoShapeAnchor anchorProperties(nullptr);
     anchorProperties.setAnchorType(KoShapeAnchor::AnchorToCharacter);
-    anchorProperties.setHorizontalRel(KoShapeAnchor::HChar);
-    anchorProperties.setVerticalRel(KoShapeAnchor::VChar);
+    anchorProperties.setHorizontalRel(horizontalRel);
+    anchorProperties.setVerticalRel(verticalRel);
     anchorProperties.setHorizontalPos(KoShapeAnchor::HFromLeft);
     anchorProperties.setVerticalPos(KoShapeAnchor::VFromTop);
-    anchorProperties.setOffset(anchor->offset());
+    // The position of an as-character shape is relative to the text frame that
+    // holds it, which is how a frame relative (HFrame/VFrame) floating anchor is
+    // measured as well.  Using it as the offset therefore keeps the image where
+    // it is, while a page relative anchor would need the page position here.
+    anchorProperties.setOffset(shape->position());
 
     ChangeAnchorPropertiesCommand *command = new ChangeAnchorPropertiesCommand(anchor, anchorProperties, container, nullptr);
     editor->addCommand(command); // executes the command and makes it undoable
@@ -207,7 +212,7 @@ void ShapeMoveStrategy::promoteInlineAnchors()
         // shape.  It still has to be draggable inside the header/footer, so it
         // becomes a floating shape anchored to a character of that same text.
         if (isHeaderFooterAnchor(anchor)) {
-            if (makeHeaderFooterShapeFloating(shape, anchor)) {
+            if (makeInlineShapeFloating(shape, anchor, KoShapeAnchor::HChar, KoShapeAnchor::VChar)) {
                 m_previousOffsets[i] = anchor->offset();
                 m_newOffsets[i] = anchor->offset();
             }
@@ -215,20 +220,14 @@ void ShapeMoveStrategy::promoteInlineAnchors()
         }
         // An as-character image is glued to the text flow: the layout keeps
         // recomputing its position, so a position-only drag would be undone
-        // at the next relayout.  Turn it into a floating image anchored to
-        // the page and take the current position as the new offset so it
-        // does not visually jump.  From here on the generic move code
-        // (position + offset kept in sync) applies.
-        anchor->setAnchorType(KoShapeAnchor::AnchorPage);
-        anchor->setHorizontalPos(KoShapeAnchor::HFromLeft);
-        anchor->setVerticalPos(KoShapeAnchor::VFromTop);
-        anchor->setHorizontalRel(KoShapeAnchor::HPage);
-        anchor->setVerticalRel(KoShapeAnchor::VPage);
-        anchor->setOffset(shape->position());
-        // The old offset belonged to the as-character anchor; record the
-        // new one so undo restores a consistent state.
-        m_previousOffsets[i] = anchor->offset();
-        m_newOffsets[i] = anchor->offset();
+        // at the next relayout.  Turn it into a floating image that is anchored
+        // to the same character and measured from the text frame, which keeps
+        // the image at its current position.  From here on the generic move
+        // code (and the text shape container) applies the drag.
+        if (makeInlineShapeFloating(shape, anchor, KoShapeAnchor::HFrame, KoShapeAnchor::VFrame)) {
+            m_previousOffsets[i] = anchor->offset();
+            m_newOffsets[i] = anchor->offset();
+        }
     }
 }
 
