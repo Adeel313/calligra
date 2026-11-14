@@ -2,7 +2,7 @@
 # Launch the locally built Calligra Stage, including its plugins and data.
 set -e
 SRC="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-D="$SRC/destdir/usr"
+D="$SRC/build/install"
 BUILD="$SRC/build/bin"
 exec env \
     LD_LIBRARY_PATH="$BUILD:$D/lib/x86_64-linux-gnu:$D/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \

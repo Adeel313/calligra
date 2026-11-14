@@ -315,6 +315,7 @@ public:
 
     // There could potentially be multiple of these...todo
     QString pageDrawStyleName; //!< written in read_sldInternal()
+    QStringList layoutRelationshipIds; //!< master only: r:id of each sldLayoutId, read in the first round
     QVector<QString> pageFrames; //! Frames which go to masterslide
     QMap<int, QString> commentAuthors;
 

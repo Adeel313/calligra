@@ -8,10 +8,13 @@
 #include "Align.h"
 #include "Actions.h"
 
+#include "core/Sheet.h"
 #include "core/Style.h"
 #include "ui/commands/StyleCommand.h"
 
 #include <KLocalizedString>
+
+#include <QKeySequence>
 
 using namespace Calligra::Sheets;
 
@@ -214,3 +217,45 @@ bool AlignMiddle::checkedForSelection(Selection *, const Cell &activeCell)
     const Style style = activeCell.style();
     return (style.valign() == Style::Middle);
 }
+
+RotateTextUp::RotateTextUp(Actions *actions)
+    : ToggleableCellAction(actions,
+                           "rotateTextUp",
+                           i18n("Rotate Text Up"),
+                           koIcon("object-rotate-left"),
+                           i18n("Rotate the cell contents from bottom to top so narrow columns can show them"))
+{
+}
+
+RotateTextUp::~RotateTextUp() = default;
+
+QAction *RotateTextUp::createAction()
+{
+    QAction *res = ToggleableCellAction::createAction();
+    res->setIconText(i18n("Rotate Up"));
+    res->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R));
+    return res;
+}
+
+void RotateTextUp::executeToggled(bool selected, Selection *selection, Sheet *sheet, QWidget *)
+{
+    StyleCommand *command = new StyleCommand();
+    command->setSheet(sheet);
+    command->setText(selected ? kundo2_i18n("Rotate Text Up") : kundo2_i18n("Reset Text Rotation"));
+    Style s;
+    // A negative angle is drawn counter-clockwise, i.e. reading bottom to top.
+    s.setAngle(selected ? -90 : 0);
+    s.setVerticalText(false);
+    if (selected)
+        s.setWrapText(false);
+    command->setStyle(s);
+    command->add(*selection);
+    command->execute(selection->canvas());
+}
+
+bool RotateTextUp::checkedForSelection(Selection *, const Cell &activeCell)
+{
+    const Style style = activeCell.style();
+    return !style.verticalText() && (style.angle() == -90);
+}
+

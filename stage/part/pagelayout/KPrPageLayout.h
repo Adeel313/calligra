@@ -23,13 +23,15 @@
 #include <QList>
 #include <QString>
 
+#include "stage_export.h"
+
 class QRectF;
 class QPixmap;
 class KPrPlaceholder;
 #include "KoXmlReaderForward.h"
 class KoPASavingContext;
 
-class KPrPageLayout
+class STAGE_EXPORT KPrPageLayout
 {
 public:
     enum Type {

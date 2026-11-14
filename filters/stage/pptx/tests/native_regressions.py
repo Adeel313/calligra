@@ -25,7 +25,7 @@ R='http://schemas.openxmlformats.org/officeDocument/2006/relationships'
 def main():
     p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);args=p.parse_args()
     out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
-    install=ROOT/'destdir/usr';env=os.environ.copy();env.update(QT_QPA_PLATFORM='offscreen',QT_QPA_PLATFORMTHEME='generic',QT_LOGGING_RULES='*.debug=false',GSETTINGS_BACKEND='memory',LD_LIBRARY_PATH=str(ROOT/'build/bin')+':'+str(install/'lib/x86_64-linux-gnu'),QT_PLUGIN_PATH=str(install/'lib/x86_64-linux-gnu/qt6/plugins'),XDG_DATA_DIRS=str(install/'share')+':/usr/local/share:/usr/share')
+    install=ROOT/'build/install';env=os.environ.copy();env.update(QT_QPA_PLATFORM='offscreen',QT_QPA_PLATFORMTHEME='generic',QT_LOGGING_RULES='*.debug=false',GSETTINGS_BACKEND='memory',LD_LIBRARY_PATH=str(ROOT/'build/bin')+':'+str(install/'lib/x86_64-linux-gnu'),QT_PLUGIN_PATH=str(install/'lib/x86_64-linux-gnu/qt6/plugins'),XDG_DATA_DIRS=str(install/'share')+':/usr/local/share:/usr/share')
     source=out/'cached.pptx';fixture(source)
     with zipfile.ZipFile(source) as package:parts={n:package.read(n) for n in package.namelist()}
     tree=E.fromstring(parts['ppt/diagrams/drawing1.xml']);props=tree.find('.//{'+D+'}grpSpPr')

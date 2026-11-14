@@ -476,14 +476,14 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
     KoXmlWriter *heldBody = body;
     QBuffer bodyBuffer;
     bodyBuffer.open(QIODevice::ReadWrite);
-    body = new KoXmlWriter(&bodyBuffer);
-
     QBuffer drawingBuffer;
     drawingBuffer.open(QIODevice::ReadWrite);
+    if (!m_context->firstRoundOfReading) {
+        body = new KoXmlWriter(&bodyBuffer);
+    }
 
     while (!atEnd()) {
         readNext();
-        qCDebug(lcXlsxImport) << *this;
         if (isEndElement() && name() == type) {
             break;
         }
@@ -568,6 +568,7 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
         }
     }
 
+    if (!m_context->firstRoundOfReading) {
     if (!m_context->sheet->pictureBackgroundPath().isNull()) {
         QBuffer buffer;
         buffer.open(QIODevice::WriteOnly);
@@ -712,146 +713,140 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
             }
             // body->addAttribute("table:number-rows-repeated", QByteArray::number(row->repeated));
 
-            for (int c = 0; c <= columnCount; ++c) {
-                body->startElement("table:table-cell");
+            int c = 0;
+            while (c <= columnCount) {
+                Cell *cell = m_context->sheet->cell(c, r, false);
+                bool hasValidation = false;
                 for (const auto &validation : m_context->validationCells) {
-                    if (validation.first.contains(c + 1, r + 1)) {
-                        body->addAttribute("table:content-validation-name", validation.second);
-                        break;
-                    }
+                    if (validation.first.contains(c + 1, r + 1)) { hasValidation = true; break; }
                 }
-                if (Cell *cell = m_context->sheet->cell(c, r, false)) {
-                    const bool hasHyperlink = !cell->hyperlink().isEmpty();
-
-                    if (!cell->styleName.isEmpty()) {
-                        body->addAttribute("table:style-name", cell->styleName);
-                    }
-                    // body->addAttribute("table:number-columns-repeated", QByteArray::number(cell->repeated));
-                    if (!hasHyperlink) {
-                        switch (cell->valueType) {
-                        case Cell::ConstNone:
-                            break;
-                        case Cell::ConstString:
-                            body->addAttribute("office:value-type", MsooXmlReader::constString);
-                            break;
-                        case Cell::ConstBoolean:
-                            body->addAttribute("office:value-type", MsooXmlReader::constBoolean);
-                            break;
-                        case Cell::ConstDate:
-                            body->addAttribute("office:value-type", MsooXmlReader::constDate);
-                            break;
-                        case Cell::ConstFloat:
-                            body->addAttribute("office:value-type", MsooXmlReader::constFloat);
+                const bool collapsible = (cell == nullptr)
+                    || (cell->valueType == Cell::ConstNone
+                        && cell->text.isEmpty()
+                        && !cell->formula
+                        && cell->rowsMerged == 1
+                        && cell->columnsMerged == 1
+                        && cell->embedded == nullptr
+                        && cell->hyperlink().isEmpty()
+                        && cell->charStyleName.isEmpty()
+                        && !hasValidation);
+                if (!collapsible) {
+                    body->startElement("table:table-cell");
+                    for (const auto &validation : m_context->validationCells) {
+                        if (validation.first.contains(c + 1, r + 1)) {
+                            body->addAttribute("table:content-validation-name", validation.second);
                             break;
                         }
                     }
-
-                    if (cell->valueAttrValue) {
-                        switch (cell->valueAttr) {
-                        case Cell::OfficeNone:
-                            break;
-                        case Cell::OfficeValue:
-                            body->addAttribute(XlsxXmlWorksheetReader::officeValue, *cell->valueAttrValue);
-                            break;
-                        case Cell::OfficeStringValue:
-                            body->addAttribute(XlsxXmlWorksheetReader::officeStringValue, *cell->valueAttrValue);
-                            break;
-                        case Cell::OfficeBooleanValue:
-                            // Treat boolean values specially (ODF1.1 chapter 6.7.1)
-                            //! @todo This breaks down if the value is a formula and not constant.
-                            body->addAttribute(XlsxXmlWorksheetReader::officeBooleanValue, *cell->valueAttrValue == "0" ? "false" : "true");
-                            break;
-                        case Cell::OfficeDateValue:
-                            body->addAttribute(XlsxXmlWorksheetReader::officeDateValue, *cell->valueAttrValue);
-                            break;
+                    if (cell) {
+                        const bool hasHyperlink = !cell->hyperlink().isEmpty();
+                        if (!cell->styleName.isEmpty()) {
+                            body->addAttribute("table:style-name", cell->styleName);
                         }
-                    }
-
-                    if (cell->formula) {
-                        QString formula;
-                        if (cell->formula->isShared()) {
-                            Cell *referencedCell = static_cast<SharedFormula *>(cell->formula)->m_referencedCell;
-                            Q_ASSERT(referencedCell);
-                            formula = MSOOXML::convertFormulaReference(referencedCell, cell);
-                        } else {
-                            formula = static_cast<FormulaImpl *>(cell->formula)->m_formula;
+                        if (!hasHyperlink) {
+                            switch (cell->valueType) {
+                            case Cell::ConstNone: break;
+                            case Cell::ConstString: body->addAttribute("office:value-type", MsooXmlReader::constString); break;
+                            case Cell::ConstBoolean: body->addAttribute("office:value-type", MsooXmlReader::constBoolean); break;
+                            case Cell::ConstDate: body->addAttribute("office:value-type", MsooXmlReader::constDate); break;
+                            case Cell::ConstFloat: body->addAttribute("office:value-type", MsooXmlReader::constFloat); break;
+                            }
                         }
-                        if (!formula.isEmpty()) {
-                            body->addAttribute("table:formula", formula);
+                        if (cell->valueAttrValue && !cell->valueAttrValue->isEmpty()) {
+                            switch (cell->valueAttr) {
+                            case Cell::OfficeNone: break;
+                            case Cell::OfficeValue: body->addAttribute(XlsxXmlWorksheetReader::officeValue, *cell->valueAttrValue); break;
+                            case Cell::OfficeStringValue: body->addAttribute(XlsxXmlWorksheetReader::officeStringValue, *cell->valueAttrValue); break;
+                            case Cell::OfficeBooleanValue:
+                                body->addAttribute(XlsxXmlWorksheetReader::officeBooleanValue, *cell->valueAttrValue == "0" ? "false" : "true");
+                                break;
+                            case Cell::OfficeDateValue: body->addAttribute(XlsxXmlWorksheetReader::officeDateValue, *cell->valueAttrValue); break;
+                            }
                         }
-                    }
-
-                    if (cell->rowsMerged > 1) {
-                        body->addAttribute("table:number-rows-spanned", cell->rowsMerged);
-                    }
-                    if (cell->columnsMerged > 1) {
-                        body->addAttribute("table:number-columns-spanned", cell->columnsMerged);
-                    }
-
-                    saveAnnotation(c, r);
-
-                    if (!cell->text.isEmpty() || !cell->charStyleName.isEmpty() || hasHyperlink) {
-                        body->startElement("text:p", false);
-                        if (!cell->charStyleName.isEmpty()) {
-                            body->startElement("text:span");
-                            body->addAttribute("text:style-name", cell->charStyleName);
-                        }
-                        if (hasHyperlink) {
-                            body->startElement("text:a");
-                            body->addAttribute("xlink:href", cell->hyperlink());
-                            body->addAttribute("xlink:type", "simple");
-                            // body->addAttribute("office:target-frame-name", targetFrameName);
-                            if (cell->text.isEmpty()) {
-                                body->addTextNode(cell->hyperlink());
+                        if (cell->formula) {
+                            QString formula;
+                            if (cell->formula->isShared()) {
+                                Cell *referencedCell = static_cast<SharedFormula *>(cell->formula)->m_referencedCell;
+                                Q_ASSERT(referencedCell);
+                                formula = MSOOXML::convertFormulaReference(referencedCell, cell);
                             } else {
+                                formula = static_cast<FormulaImpl *>(cell->formula)->m_formula;
+                            }
+                            if (!formula.isEmpty()) {
+                                body->addAttribute("table:formula", formula);
+                            }
+                        }
+                        if (cell->rowsMerged > 1) body->addAttribute("table:number-rows-spanned", cell->rowsMerged);
+                        if (cell->columnsMerged > 1) body->addAttribute("table:number-columns-spanned", cell->columnsMerged);
+                        saveAnnotation(c, r);
+                        if (!cell->text.isEmpty() || !cell->charStyleName.isEmpty() || hasHyperlink) {
+                            body->startElement("text:p", false);
+                            if (!cell->charStyleName.isEmpty()) {
+                                body->startElement("text:span");
+                                body->addAttribute("text:style-name", cell->charStyleName);
+                            }
+                            if (hasHyperlink) {
+                                body->startElement("text:a");
+                                body->addAttribute("xlink:href", cell->hyperlink());
+                                body->addAttribute("xlink:type", "simple");
+                                if (cell->text.isEmpty()) {
+                                    body->addTextNode(cell->hyperlink());
+                                } else {
+                                    body->addCompleteElement(cell->text.toUtf8());
+                                }
+                                body->endElement();
+                            } else if (!cell->text.isEmpty()) {
                                 body->addCompleteElement(cell->text.toUtf8());
                             }
-                            body->endElement(); // text:a
-                        } else if (!cell->text.isEmpty()) {
-                            body->addCompleteElement(cell->text.toUtf8());
+                            if (!cell->charStyleName.isEmpty()) {
+                                body->endElement();
+                            }
+                            body->endElement();
                         }
-                        if (!cell->charStyleName.isEmpty()) {
-                            body->endElement(); // text:span
-                        }
-                        body->endElement(); // text:p
-                    }
-
-                    // handle drawing objects like e.g. charts, diagrams and pictures
-                    if (cell->embedded) {
-                        foreach (XlsxDrawingObject *drawing, cell->embedded->drawings) {
-                            drawing->save(body);
-                        }
-
-                        typedef QPair<QString, QString> OleObject;
-                        int listIndex = 0;
-                        foreach (const OleObject &oleObject, cell->embedded->oleObjects) {
-                            const QString olePath = oleObject.first;
-                            const QString previewPath = oleObject.second;
-                            body->addCompleteElement(cell->embedded->oleFrameBegins.at(listIndex).toUtf8());
-                            ++listIndex;
-
-                            body->startElement("draw:object-ole");
-                            body->addAttribute("xlink:href", olePath);
-                            body->addAttribute("xlink:type", "simple");
-                            body->addAttribute("xlink:show", "embed");
-                            body->addAttribute("xlink:actuate", "onLoad");
-                            body->endElement(); // draw:object-ole
-
-                            body->startElement("draw:image");
-                            body->addAttribute("xlink:href", previewPath);
-                            body->addAttribute("xlink:type", "simple");
-                            body->addAttribute("xlink:show", "embed");
-                            body->addAttribute("xlink:actuate", "onLoad");
-                            body->endElement(); // draw:image
-
-                            body->addCompleteElement("</draw:frame>");
+                        if (cell->embedded) {
+                            foreach (XlsxDrawingObject *drawing, cell->embedded->drawings) {
+                                drawing->save(body);
+                            }
                         }
                     }
+                    body->endElement(); // table:table-cell
+                    ++c;
+                } else {
+                    QString runStyle = cell ? cell->styleName : QString();
+                    int runLen = 0;
+                    while (c <= columnCount) {
+                        Cell *cc = m_context->sheet->cell(c, r, false);
+                        bool ccCollapsible = (cc == nullptr)
+                            || (cc->valueType == Cell::ConstNone
+                                && cc->text.isEmpty()
+                                && !cc->formula
+                                && cc->rowsMerged == 1
+                                && cc->columnsMerged == 1
+                                && cc->embedded == nullptr
+                                && cc->hyperlink().isEmpty()
+                                && cc->charStyleName.isEmpty());
+                        bool ccHasValidation = false;
+                        for (const auto &validation : m_context->validationCells) {
+                            if (validation.first.contains(c + 1, r + 1)) { ccHasValidation = true; break; }
+                        }
+                        if (!ccCollapsible || ccHasValidation) break;
+                        if (cc && cc->styleName != runStyle) break;
+                        ++runLen;
+                        ++c;
+                    }
+                    body->startElement("table:table-cell");
+                    if (!runStyle.isEmpty()) {
+                        body->addAttribute("table:style-name", runStyle);
+                    }
+                    if (runLen > 1) {
+                        body->addAttribute("table:number-columns-repeated", runLen);
+                    }
+                    body->endElement(); // table:table-cell
                 }
-                body->endElement(); // table:table-cell
             }
-        }
 
+
+            }
         if (!row || columnCount <= 0) {
             // element table:table-row may not be empty
             body->startElement("table:table-cell");
@@ -861,6 +856,7 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
     }
 
     body->endElement(); // table:table
+    }
 
     if (m_context->firstRoundOfReading) {
         body = oldBody;
@@ -1451,7 +1447,6 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_row()
     int counter = 0;
     while (!atEnd()) {
         readNext();
-        qCDebug(lcXlsxImport) << *this;
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             if (counter == 40) {
@@ -1518,11 +1513,8 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
 
     m_value.clear();
 
-    Cell *cell = m_context->sheet->cell(m_currentColumn, m_currentRow, true);
-
     while (!atEnd()) {
         readNext();
-        qCDebug(lcXlsxImport) << *this;
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             TRY_READ_IF(f)
@@ -1531,6 +1523,18 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
             SKIP_UNKNOWN
         }
     }
+
+    // Fast path: default-styled, empty cells (no value, no formula) are
+    // extremely common in large sheets (e.g. a whole row formatted up to
+    // column XFD). They carry no information, so skip creating a Cell.
+    if ((s.isEmpty() || s == "0") && m_value.isEmpty()
+        && m_context->sheet->cell(m_currentColumn, m_currentRow, false) == nullptr) {
+        ++m_currentColumn;
+        READ_EPILOGUE
+        return KoFilter::OK;
+    }
+
+    Cell *cell = m_context->sheet->cell(m_currentColumn, m_currentRow, true);
 
     bool ok;
     uint styleId = s.toUInt(&ok);
@@ -1643,40 +1647,52 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
             raiseUnexpectedAttributeValueError(s, "c@s");
             return KoFilter::WrongFormat;
         }
-        KoGenStyle cellStyle(KoGenStyle::TableCellAutoStyle, "table-cell");
 
-        if (charStyleName.isEmpty()) {
-            KoGenStyle *fontStyle = m_context->styles->fontStyle(cellFormat->fontId);
-            if (!fontStyle) {
-                qCWarning(lcXlsxImport) << "No font with ID:" << cellFormat->fontId;
-            } else {
-                KoGenStyle::copyPropertiesFromStyle(*fontStyle, cellStyle, KoGenStyle::TextType);
+        const bool hasConditionals = !m_context->conditionalStyles.isEmpty();
+        QString cachedName;
+        bool cached = false;
+        if (!hasConditionals && m_cellStyleCache.contains((int)styleId)) {
+            cachedName = m_cellStyleCache.value((int)styleId);
+            cached = true;
+        }
+        if (!cached) {
+            KoGenStyle cellStyle(KoGenStyle::TableCellAutoStyle, "table-cell");
+
+            if (charStyleName.isEmpty()) {
+                KoGenStyle *fontStyle = m_context->styles->fontStyle(cellFormat->fontId);
+                if (!fontStyle) {
+                    qCWarning(lcXlsxImport) << "No font with ID:" << cellFormat->fontId;
+                } else {
+                    KoGenStyle::copyPropertiesFromStyle(*fontStyle, cellStyle, KoGenStyle::TextType);
+                }
             }
-        }
-        if (!cellFormat->setupCellStyle(m_context->styles, &cellStyle)) {
-            return KoFilter::WrongFormat;
-        }
-
-        if (!formattedStyle.isEmpty()) {
-            cellStyle.addAttribute("style:data-style-name", formattedStyle);
-        }
-
-        if (!m_context->conditionalStyles.isEmpty()) {
-            QString positionLetter;
-            int positionNumber;
-            splitToRowAndColumn(r.toLatin1().constData(), 0, r.size(), positionLetter, positionNumber);
-            QList<QMap<QString, QString>> maps = m_context->conditionalStyleForPosition(positionLetter, positionNumber);
-            int index = maps.size();
-            // Adding the lists in reversed priority order, as KoGenStyle when creating the style
-            // adds last added first
-            while (index > 0) {
-                cellStyle.addStyleMap(maps.at(index - 1));
-                --index;
+            if (!cellFormat->setupCellStyle(m_context->styles, &cellStyle)) {
+                return KoFilter::WrongFormat;
             }
-        }
 
-        const QString cellStyleName = mainStyles->insert(cellStyle, "ce");
-        cell->styleName = cellStyleName;
+            if (!formattedStyle.isEmpty()) {
+                cellStyle.addAttribute("style:data-style-name", formattedStyle);
+            }
+
+            if (hasConditionals) {
+                QString positionLetter;
+                int positionNumber;
+                splitToRowAndColumn(r.toLatin1().constData(), 0, r.size(), positionLetter, positionNumber);
+                QList<QMap<QString, QString>> maps = m_context->conditionalStyleForPosition(positionLetter, positionNumber);
+                int index = maps.size();
+                // Adding the lists in reversed priority order, as KoGenStyle when creating the style
+                // adds last added first
+                while (index > 0) {
+                    cellStyle.addStyleMap(maps.at(index - 1));
+                    --index;
+                }
+            }
+
+            cachedName = mainStyles->insert(cellStyle, "ce");
+            if (!hasConditionals)
+                m_cellStyleCache.insert((int)styleId, cachedName);
+        }
+        cell->styleName = cachedName;
     } else if (!m_context->conditionalStyles.isEmpty()) {
         // Conditional formatting applies to cells without an explicit style
         // too; those need a style of their own to carry the style maps.
@@ -1753,8 +1769,7 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_is()
 */
 KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_f()
 {
-    Cell *cell = m_context->sheet->cell(m_currentColumn, m_currentRow, false);
-    Q_ASSERT(cell);
+    Cell *cell = m_context->sheet->cell(m_currentColumn, m_currentRow, true);
 
     READ_PROLOGUE
     const QXmlStreamAttributes attrs(attributes());

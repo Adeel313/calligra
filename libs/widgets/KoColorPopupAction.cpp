@@ -23,6 +23,7 @@
 #include <QHBoxLayout>
 #include <QMenu>
 #include <QPainter>
+#include <QSignalBlocker>
 #include <QToolButton>
 #include <QWidgetAction>
 
@@ -109,6 +110,12 @@ KoColorPopupAction::~KoColorPopupAction()
 
 void KoColorPopupAction::setCurrentColor(const KoColor &color)
 {
+    // Setting the color programmatically is not a user edit. Without blocking
+    // the chooser's signals, the resulting colorChanged() signal would be
+    // handled like a color picked by the user and be applied to the document.
+    // E.g. selecting a cell without a background color in Sheets would then
+    // set that cell's background to black.
+    const QSignalBlocker blocker(d->colorChooser);
     d->colorChooser->setColor(color);
 
     KoColor minColor(color);

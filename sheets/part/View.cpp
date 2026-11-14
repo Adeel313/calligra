@@ -691,11 +691,13 @@ void View::Private::initActions()
 
     actions->protectSheet = new KToggleAction(i18n("Protect &Sheet..."), view);
     ac->addAction("protectSheet", actions->protectSheet);
+    actions->protectSheet->setIcon(koIcon("lock"));
     actions->protectSheet->setToolTip(i18n("Protect the sheet from being modified"));
     connect(actions->protectSheet, &QAction::triggered, view, &View::toggleProtectSheet);
 
     actions->protectDoc = new KToggleAction(i18n("Protect &Document..."), view);
     ac->addAction("protectDoc", actions->protectDoc);
+    actions->protectDoc->setIcon(koIcon("lock"));
     actions->protectDoc->setToolTip(i18n("Protect the document from being modified"));
     connect(actions->protectDoc, &QAction::triggered, view, &View::toggleProtectDoc);
 

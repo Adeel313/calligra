@@ -960,6 +960,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_grpSpPr()
     prop.svgYChOld = m_svgChY;
     prop.svgWidthChOld = m_svgChWidth;
     prop.svgHeightChOld = m_svgChHeight;
+    prop.rotOld = m_rot;
 
     m_svgProp.push_back(prop);
 
@@ -2114,7 +2115,9 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_lnRef()
     const KoGenStyle *lnStyle = nullptr;
 
     if (!idx.isEmpty() && !lst->empty()) {
-        int index = idx.toInt();
+        // a:lnRef/@idx is one-based in the theme style matrix, while
+        // lnStyleLst is stored as a zero-based list.
+        int index = qMax(0, idx.toInt() - 1);
 
         if (index >= lst->size()) {
             index = lst->size() - 1;
@@ -3550,8 +3553,10 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_off()
         while (index < m_svgProp.size()) {
             //(a:off(x) - a:chOff(x))/a:chExt(x) * a(p):ext(x) + a(p):off(x)
             GroupProp prop = m_svgProp.at(m_svgProp.size() - 1 - index);
-            m_svgX = (m_svgX - prop.svgXChOld) / prop.svgWidthChOld * prop.svgWidthOld + prop.svgXOld;
-            m_svgY = (m_svgY - prop.svgYChOld) / prop.svgHeightChOld * prop.svgHeightOld + prop.svgYOld;
+            if (prop.svgWidthChOld != 0 && prop.svgHeightChOld != 0) {
+                m_svgX = (m_svgX - prop.svgXChOld) / prop.svgWidthChOld * prop.svgWidthOld + prop.svgXOld;
+                m_svgY = (m_svgY - prop.svgYChOld) / prop.svgHeightChOld * prop.svgHeightOld + prop.svgYOld;
+            }
             ++index;
         }
     }

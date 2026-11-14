@@ -536,11 +536,45 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_sldInternal()
                     m_currentDrawStyle->addProperty("presentation:duration", QStringLiteral("PT%1S").arg(advance.toDouble()/1000.0));
                 }
                 const QString speed = transitionAttributes.value(QLatin1String("spd")).toString();
+                // smil:dur uses a plain seconds count ("0.75"), not the
+                // XML Schema duration form: Stage's KPrDurationParser would
+                // reject "PT0.75S" and fall back to its default speed.
+                const QString duration = speed == QLatin1String("slow") ? QStringLiteral("1")
+                    : speed == QLatin1String("med") ? QStringLiteral("0.75") : QStringLiteral("0.5");
+                const auto setTransition = [&](const QString &type, const QString &subtype, bool reverse) {
+                    m_currentDrawStyle->addProperty("smil:type", type);
+                    m_currentDrawStyle->addProperty("smil:subtype", subtype);
+                    m_currentDrawStyle->addProperty("smil:dur", duration);
+                    if (reverse) m_currentDrawStyle->addProperty("smil:direction", "reverse");
+                };
                 while (readNextStartElement()) {
                     if (name() == QLatin1String("fade")) {
-                        m_currentDrawStyle->addProperty("smil:type", "fade");
-                        m_currentDrawStyle->addProperty("smil:subtype", "crossfade");
-                        m_currentDrawStyle->addProperty("smil:dur", speed == QLatin1String("slow") ? "PT1S" : speed == QLatin1String("med") ? "PT0.75S" : "PT0.5S");
+                        setTransition(QStringLiteral("fade"), QStringLiteral("crossfade"), false);
+                    } else if (name() == QLatin1String("push")) {
+                        // p:push dir is the direction the new page moves in;
+                        // Stage's slideWipe names where it enters from.
+                        const QString dir = attributes().value(QLatin1String("dir")).toString();
+                        QString subtype = QStringLiteral("fromRight");
+                        if (dir == QLatin1String("r")) subtype = QStringLiteral("fromLeft");
+                        else if (dir == QLatin1String("u")) subtype = QStringLiteral("fromBottom");
+                        else if (dir == QLatin1String("d")) subtype = QStringLiteral("fromTop");
+                        setTransition(QStringLiteral("slideWipe"), subtype, false);
+                    } else if (name() == QLatin1String("wipe")) {
+                        // PowerPoint's default wipe reveals from the bottom.
+                        const QString dir = attributes().value(QLatin1String("dir")).toString();
+                        if (dir == QLatin1String("l"))
+                            setTransition(QStringLiteral("barWipe"), QStringLiteral("leftToRight"), true);
+                        else if (dir == QLatin1String("r"))
+                            setTransition(QStringLiteral("barWipe"), QStringLiteral("leftToRight"), false);
+                        else if (dir == QLatin1String("d"))
+                            setTransition(QStringLiteral("barWipe"), QStringLiteral("topToBottom"), false);
+                        else
+                            setTransition(QStringLiteral("barWipe"), QStringLiteral("topToBottom"), true);
+                    } else if (name() == QLatin1String("zoom")) {
+                        // Stage has no zoom page effect; a space rotation is
+                        // the closest built-in transition and is mapped back
+                        // to p:zoom on export.
+                        setTransition(QStringLiteral("spaceRotation"), QStringLiteral("topToBottom"), false);
                     }
                     skipCurrentElement();
                 }
@@ -550,6 +584,13 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_sldInternal()
                 if (m_context->firstReadingRound) {
                     TRY_READ(notesStyle)
                 } else {
+                    skipCurrentElement();
+                }
+            } else if (m_context->type == SlideMaster && QUALIFIED_NAME_IS(sldLayoutIdLst)) {
+                while (readNextStartElement()) {
+                    if (m_context->firstReadingRound && name() == QLatin1String("sldLayoutId")) {
+                        m_context->layoutRelationshipIds.append(attributes().value(QLatin1String(MSOOXML::Schemas::officeDocument::relationships), QLatin1String("id")).toString());
+                    }
                     skipCurrentElement();
                 }
             } else if (m_context->type == SlideMaster && QUALIFIED_NAME_IS(txStyles)) {

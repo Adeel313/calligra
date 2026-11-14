@@ -52,7 +52,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--build', type=Path, default=ROOT / 'build')
-    parser.add_argument('--install', type=Path, default=ROOT / 'destdir/usr')
+    parser.add_argument('--install', type=Path, default=ROOT / 'build/install')
     parser.add_argument('--repeat', type=int, default=3)
     parser.add_argument('--size', type=int, default=200)
     parser.add_argument('--timeout', type=float, default=120)

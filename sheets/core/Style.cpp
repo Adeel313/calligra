@@ -637,11 +637,11 @@ bool Style::operator==(const Style &other) const
 {
     if (other.isEmpty())
         return isEmpty() ? true : false;
-    const auto list = d->subStyles.keys() + other.d->subStyles.keys();
-    const QSet<Key> keys = QSet<Key>(list.begin(), list.end());
-    const QSet<Key>::ConstIterator end = keys.constEnd();
-    for (QSet<Key>::ConstIterator it = keys.constBegin(); it != end; ++it) {
-        if (!compare(d->subStyles.value(*it).data(), other.d->subStyles.value(*it).data()))
+    if (d->subStyles.count() != other.d->subStyles.count())
+        return false;
+    for (auto it = d->subStyles.cbegin(); it != d->subStyles.cend(); ++it) {
+        const auto otherIt = other.d->subStyles.constFind(it.key());
+        if (otherIt == other.d->subStyles.cend() || !compare(it.value().data(), otherIt.value().data()))
             return false;
     }
     return true;
@@ -650,8 +650,8 @@ bool Style::operator==(const Style &other) const
 size_t Calligra::Sheets::qHash(const Style &style, size_t seed)
 {
     size_t hash = 0;
-    for (const SharedSubStyle &ss : style.subStyles()) {
-        hash ^= ss->koHash(seed);
+    for (auto it = style.d->subStyles.cbegin(); it != style.d->subStyles.cend(); ++it) {
+        hash ^= it.value()->koHash(seed);
     }
     return hash;
 }

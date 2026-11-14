@@ -17,6 +17,7 @@
 
 // Sheets
 #include "engine/CalculationSettings.h"
+#include "engine/calligra_sheets_limits.h"
 #include "engine/Damages.h"
 
 #include "core/CellStorage.h"
@@ -517,11 +518,16 @@ void CellToolBase::scrollToCell(const QPoint &location)
 {
     Sheet *const sheet = selection()->activeSheet();
 
+    // Stay inside the grid: a movement key or an out-of-range used area can hand
+    // us a position in front of the first or behind the last cell.
+    const QPoint target(qBound(1, location.x(), int(KS_colMax)),
+                        qBound(1, location.y(), int(KS_rowMax)));
+
     // Adjust the maximum accessed column and row for the scrollbars.
-    sheetView(sheet)->updateAccessedCellRange(location);
+    sheetView(sheet)->updateAccessedCellRange(target);
 
     // The cell geometry expanded by some pixels in each direction.
-    const Cell cell = Cell(sheet, location).masterCell();
+    const Cell cell = Cell(sheet, target).masterCell();
     const double xpos = sheet->columnPosition(cell.cellPosition().x());
     const double ypos = sheet->rowPosition(cell.cellPosition().y());
     const double pixelWidth = canvas()->viewConverter()->viewToDocumentX(1);
@@ -562,7 +568,8 @@ double CellToolBase::canvasWidth() const
 bool CellToolBase::createEditor(bool clear, bool focus, bool captureArrows)
 {
     Sheet *sheet = selection()->activeSheet();
-    const Cell cell(sheet, selection()->cursor());
+    const Cell rawCell(sheet, selection()->cursor());
+    const Cell cell = !rawCell.isNull() ? rawCell.masterCell() : rawCell;
     if (selection()->isProtected())
         return false;
 
@@ -724,7 +731,7 @@ void CellToolBase::updateEditor()
     if (!d->externalEditor) {
         return;
     }
-    const Cell cell = Cell(selection()->activeSheet(), selection()->cursor());
+    const Cell cell = Cell(selection()->activeSheet(), selection()->cursor()).masterCell();
     if (!cell) {
         return;
     }
@@ -773,7 +780,11 @@ void CellToolBase::applyUserInput(const QString &userInput, bool expandMatrix)
     command->setValue(Value(text));
     command->setParsing(true);
     command->setExpandMatrix(expandMatrix);
-    command->add(expandMatrix ? *selection() : Region(selection()->cursor(), selection()->activeSheet()));
+    // Merged cells are edited through their master cell; writing to a slave
+    // cell (which is obscured by the merge) would silently drop the text.
+    const Cell rawCursor(selection()->activeSheet(), selection()->cursor());
+    const Cell cursorCell = !rawCursor.isNull() ? rawCursor.masterCell() : rawCursor;
+    command->add(expandMatrix ? *selection() : Region(cursorCell.cellPosition(), selection()->activeSheet()));
     command->execute(canvas());
 
     if (expandMatrix && selection()->isSingular())

@@ -20,6 +20,7 @@
 #include <MsooXmlTheme.h>
 
 #include <KoGenStyle.h>
+#include <QHash>
 #include <styles/KoCharacterStyle.h>
 
 #include "XlsxXmlDocumentReader.h"
@@ -126,6 +127,9 @@ protected:
     int m_currentColumn;
     //! Used in read_f() and read_v()
     QString m_value;
+
+    //! Cache of already-inserted cell style names, keyed by style id.
+    QHash<int, QString> m_cellStyleCache;
 
     // for optimization
     static const char officeValue[];

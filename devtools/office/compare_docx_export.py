@@ -91,7 +91,7 @@ def main():
     checks['source_unchanged']=digest(source)==before
     report=dict(source=str(source),source_sha256=before,checks=checks,passed=all(checks.values()),native_features=native,
         reference_features=reference,visual=rendered,package_integrity=integrity,
-        native_filter_sha256=digest(ROOT/'destdir/usr/lib/x86_64-linux-gnu/qt6/plugins/calligra/formatfilters/calligra_filter_odt2docx.so'))
+        native_filter_sha256=digest(ROOT/'build/install/lib/x86_64-linux-gnu/qt6/plugins/calligra/formatfilters/calligra_filter_odt2docx.so'))
     if args.baseline:report['baseline_visual']=visual('baseline')
     report['reference_version']=subprocess.check_output(['/usr/bin/libreoffice','--version'],env=env,text=True).strip()
     (out/'report.json').write_text(json.dumps(report,indent=2)+'\n')

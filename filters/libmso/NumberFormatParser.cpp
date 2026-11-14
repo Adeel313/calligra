@@ -354,21 +354,25 @@ KoGenStyle NumberFormatParser::parse(const QString &origNumberFormat, KoGenStyle
                     xmlWriter.endElement();
                 } else {
                     // On the next iteration, we might see whether there're
-                    // seconds or something else. Let's just default to
-                    // minutes, if there's nothing more.
-                    bool minutes = true;
+                    // seconds or something else. Default to month, e.g. for
+                    // a lone "m".
+                    bool minutes = false;
 
-                    // So, let's look ahead:
-                    for (int j = i + 1; j < numberFormat.length(); ++j) {
-                        const char ch = numberFormat[i].toLatin1();
-                        if (ch == 's' || ch == 'S') { // minutes
+                    // So, let's look ahead (skipping the rest of this
+                    // token first, e.g. the second 'm' of "mm:ss"):
+                    int j = i + 1;
+                    while (j < numberFormat.length() && numberFormat[j] == numberFormat[i])
+                        ++j;
+                    for (; j < numberFormat.length(); ++j) {
+                        const char ch = numberFormat[j].toLatin1();
+                        if (ch == 's' || ch == 'S') { // followed by seconds: minutes
+                            minutes = true;
                             break;
                         }
-                        if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))) { // months
+                        if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))) { // separators
                             continue;
                         }
-                        minutes = false;
-                        break;
+                        break; // another token follows: it is a month
                     }
                     if (minutes) {
                         SET_TYPE_OR_RETURN(KoGenStyle::NumericTimeStyle)

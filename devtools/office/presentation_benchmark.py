@@ -156,7 +156,7 @@ def main():
     original_hash = digest(source)
     shutil.copy2(source, out / 'source.pptx')
     source_copy = out / 'source.pptx'
-    install = ROOT / 'destdir/usr'
+    install = ROOT / 'build/install'
     env = os.environ.copy()
     env.update(QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='generic',
                QT_LOGGING_RULES='*.debug=false', GSETTINGS_BACKEND='memory', SAL_USE_VCLPLUGIN='svp',

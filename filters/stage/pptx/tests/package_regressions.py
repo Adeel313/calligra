@@ -33,7 +33,7 @@ def main():
     deck.slides[0].notes_slide.notes_text_frame.text = 'PACKAGE_NOTES'
     source = out / 'directions.pptx'
     deck.save(source)
-    install = ROOT / 'destdir/usr'
+    install = ROOT / 'build/install'
     env = dict(os.environ, QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='generic',
                QT_LOGGING_RULES='*.debug=false', GSETTINGS_BACKEND='memory',
                LD_LIBRARY_PATH=str(ROOT/'build/bin')+':'+str(install/'lib/x86_64-linux-gnu'),

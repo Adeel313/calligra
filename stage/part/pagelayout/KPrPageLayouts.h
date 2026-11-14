@@ -25,13 +25,15 @@
 #include <QString>
 #include <QVariant>
 
+#include "stage_export.h"
+
 class QRectF;
 class KPrPageLayout;
 class KPrPageLayoutWrapper;
 class KoPALoadingContext;
 class KoPASavingContext;
 
-class KPrPageLayouts : public QObject
+class STAGE_EXPORT KPrPageLayouts : public QObject
 {
     Q_OBJECT
 public:
@@ -52,12 +54,16 @@ public:
 
     const QList<KPrPageLayout *> layouts() const;
 
+    /// The layouts defined by the document itself, without Stage's built-in defaults.
+    QList<KPrPageLayout *> documentLayouts() const;
+
     /// The document's Title and Content layout, with a built-in fallback.
     KPrPageLayout *defaultContentLayout();
 
 private:
     // this is a simulation of a std::set<KPrPageLayout, compareByKPrPageLayout>()
     QMap<KPrPageLayoutWrapper, KPrPageLayout *> m_pageLayouts;
+    QList<KPrPageLayout *> m_builtinLayouts; //!< entries of m_pageLayouts added from Stage's defaults
 };
 
 Q_DECLARE_METATYPE(KPrPageLayouts *)

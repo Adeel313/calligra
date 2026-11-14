@@ -66,6 +66,9 @@ protected:
     // Locates slide layout information for given slide. Caches the result.
     PptxSlideProperties *slideLayoutProperties(const QString &slidePath, const QString &slideFile);
 
+    // Loads a slide layout part by its full path, whether or not a slide uses it.
+    PptxSlideProperties *loadSlideLayout(const QString &slideLayoutPathAndFile);
+
     KoOdfWriters *m_writers;
     PptxXmlDocumentReaderContext *m_context;
 

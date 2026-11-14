@@ -131,6 +131,7 @@ bool KPrPageLayouts::loadOdf(KoPALoadingContext &context)
     while (defaultIt != defaultLayouts.constEnd()) {
         if (docIt == documentLayouts.constEnd() || compareLayouts(*defaultIt, *docIt)) {
             m_pageLayouts.insert(KPrPageLayoutWrapper(*defaultIt), *defaultIt);
+            m_builtinLayouts.append(*defaultIt);
             ++defaultIt;
         } else if (compareLayouts(*docIt, *defaultIt)) {
             ++docIt;
@@ -142,6 +143,16 @@ bool KPrPageLayouts::loadOdf(KoPALoadingContext &context)
     }
 
     return true;
+}
+
+QList<KPrPageLayout *> KPrPageLayouts::documentLayouts() const
+{
+    QList<KPrPageLayout *> result;
+    for (KPrPageLayout *layout : m_pageLayouts) {
+        if (!m_builtinLayouts.contains(layout))
+            result.append(layout);
+    }
+    return result;
 }
 
 KPrPageLayout *KPrPageLayouts::pageLayout(const QString &name, KoPALoadingContext &loadingContext, const QRectF &pageRect)

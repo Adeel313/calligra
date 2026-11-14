@@ -100,7 +100,7 @@ XlsxStyles::XlsxStyles()
     numberFormatStrings[11] = QLatin1String("0.00E+00");
     numberFormatStrings[12] = QLatin1String("# ?/?");
     numberFormatStrings[13] = QLatin1String("# \?\?/\?\?");
-    numberFormatStrings[14] = QLatin1String("mm-dd-yy");
+    numberFormatStrings[14] = QLatin1String("m/d/yyyy");
     numberFormatStrings[15] = QLatin1String("d-mmm-yy");
     numberFormatStrings[16] = QLatin1String("d-mmm");
     numberFormatStrings[17] = QLatin1String("mmm-yy");
@@ -115,7 +115,7 @@ XlsxStyles::XlsxStyles()
     numberFormatStrings[40] = QLatin1String("#,##0.00;[Red](#,##0.00)");
     numberFormatStrings[45] = QLatin1String("mm:ss");
     numberFormatStrings[46] = QLatin1String("[h]:mm:ss");
-    numberFormatStrings[47] = QLatin1String("mmss.0");
+    numberFormatStrings[47] = QLatin1String("mm:ss.0");
     numberFormatStrings[48] = QLatin1String("##0.0E+0");
     numberFormatStrings[49] = QLatin1String("@");
 }

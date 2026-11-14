@@ -29,7 +29,7 @@ def main():
     report=dict(source=str(source),source_sha256=before,repeats=args.repeat,engines={},
         timing_scope='Fresh processes, including startup and file I/O; filesystem cache is warm. All samples run sequentially.',
         reference_version=subprocess.check_output(['/usr/bin/libreoffice','--version'],env=env,text=True).strip(),
-        native_filter_sha256=digest(ROOT/'destdir/usr/lib/x86_64-linux-gnu/qt6/plugins/calligra/formatfilters/calligra_filter_odt2docx.so'))
+        native_filter_sha256=digest(ROOT/'build/install/lib/x86_64-linux-gnu/qt6/plugins/calligra/formatfilters/calligra_filter_odt2docx.so'))
     cache=(ROOT/'build/CMakeCache.txt').read_text()
     report['build_type']=next((line.split('=',1)[1] for line in cache.splitlines() if line.startswith('CMAKE_BUILD_TYPE:')),'unknown')
     for engine in ['native','libreoffice']:

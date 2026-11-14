@@ -24,10 +24,11 @@
 #include <QRectF>
 #include <QString>
 
+#include "stage_export.h"
 #include "KoXmlReaderForward.h"
 class KoXmlWriter;
 
-class KPrPlaceholder
+class STAGE_EXPORT KPrPlaceholder
 {
 public:
     KPrPlaceholder();

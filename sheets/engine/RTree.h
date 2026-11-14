@@ -469,6 +469,7 @@ void RTree<T>::load(const QList<QPair<Region, T>> &data)
         for (int j = 0; j < this->m_capacity && i + j < indices.size(); j++) {
             const LoadData &d = rectData[indices[i + j]];
             n->insert(QRectF(d.rect).normalized().adjusted(0, 0, -0.1, -0.1), *d.data, LeafNode::dataIdCounter + indices[i + j]);
+            this->m_leafMap[*d.data] = n;
         }
         n->updateBoundingBox();
         nodes.append(qMakePair<Node *, qreal>(n, calcLoadingRectValue(n->boundingBox())));

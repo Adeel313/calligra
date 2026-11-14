@@ -36,12 +36,10 @@ public:
                        {"subtitle", "TextShapeID", "<draw:text-box/>", kli18n("Click to add a subtitle")},
                        {"text", "TextShapeID", "<draw:text-box/>", kli18n("Click to add text")},
                        {"notes", "TextShapeID", "<draw:text-box/>", kli18n("Click to add notes")},
-                       /*
-                       { "date-time", "TextShapeID", "<draw:text-box/>", kli18n( "Double click to add data/time" ) },
-                       { "footer", "TextShapeID", "<draw:text-box/>", kli18n( "Double click to add footer" ) },
-                       { "header", "TextShapeID", "<draw:text-box/>", kli18n( "Double click to add header" ) },
-                       { "page-number", "TextShapeID", "<draw:text-box/>", kli18n( "Double click to add page number" ) },
-                       */
+                       {"date-time", "TextShapeID", "<draw:text-box/>", kli18n( "Double click to add data/time" ) },
+                       {"footer", "TextShapeID", "<draw:text-box/>", kli18n( "Double click to add footer" ) },
+                       {"header", "TextShapeID", "<draw:text-box/>", kli18n( "Double click to add header" ) },
+                       {"page-number", "TextShapeID", "<draw:text-box/>", kli18n( "Double click to add page number" ) },
                        {"graphic",
                         "PictureShape",
                         "<draw:image xlink:href=\"\" xlink:type=\"simple\" xlink:show=\"embed\" xlink:actuate=\"onLoad\"/>",

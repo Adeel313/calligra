@@ -172,6 +172,11 @@ PptxSlideProperties *PptxXmlDocumentReader::slideLayoutProperties(const QString 
     if (slideLayoutPathAndFile.isEmpty())
         return nullptr;
 
+    return loadSlideLayout(slideLayoutPathAndFile);
+}
+
+PptxSlideProperties *PptxXmlDocumentReader::loadSlideLayout(const QString &slideLayoutPathAndFile)
+{
     QString slideLayoutPath, slideLayoutFile;
     MSOOXML::Utils::splitPathAndFile(slideLayoutPathAndFile, &slideLayoutPath, &slideLayoutFile);
 
@@ -180,14 +185,9 @@ PptxSlideProperties *PptxXmlDocumentReader::slideLayoutProperties(const QString 
     if (resultInCache)
         return resultInCache;
 
-    QString slideMasterPath, slideMasterFile;
-    MSOOXML::Utils::splitPathAndFile(
-        m_context->relationships->targetForType(slidePath, slideFile, QLatin1String(MSOOXML::Schemas::officeDocument::relationships) + "/slideLayout"),
-        &slideMasterPath,
-        &slideMasterFile);
     const QString slideMasterPathAndFile =
-        m_context->relationships->targetForType(slideMasterPath,
-                                                slideMasterFile,
+        m_context->relationships->targetForType(slideLayoutPath,
+                                                slideLayoutFile,
                                                 QLatin1String(MSOOXML::Schemas::officeDocument::relationships) + "/slideMaster");
 
     auto result = std::unique_ptr<PptxSlideProperties>(new PptxSlideProperties());
@@ -596,6 +596,14 @@ KoFilter::ConversionStatus PptxXmlDocumentReader::read_sldMasterId()
     d->slideMasterPageProperties.insert(slideMasterPathAndFile, masterPageProperties);
     d->masterPageDrawStyleNames.push_back(context.pageDrawStyleName);
     d->masterPageFrames += context.pageFrames;
+
+    // Load every layout of this master, not only those used by slides, so the
+    // presentation keeps its full layout set when it is converted.
+    for (const QString &layoutId : std::as_const(context.layoutRelationshipIds)) {
+        const QString layoutPathAndFile(m_context->relationships->target(slideMasterPath, slideMasterFile, layoutId));
+        if (!layoutPathAndFile.isEmpty())
+            loadSlideLayout(layoutPathAndFile);
+    }
     debugPptx << "d->masterPageDrawStyleName:" << d->masterPageDrawStyleNames.back();
     SKIP_EVERYTHING
     READ_EPILOGUE

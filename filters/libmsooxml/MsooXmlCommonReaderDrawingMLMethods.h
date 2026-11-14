@@ -63,6 +63,7 @@ struct GroupProp {
     qreal svgYChOld;
     qreal svgWidthChOld;
     qreal svgHeightChOld;
+    qint64 rotOld; //! group rotation in 1/60000th of a degree
 };
 
 void initDrawingML();

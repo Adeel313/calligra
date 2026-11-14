@@ -80,6 +80,21 @@ int KPrPageEffect::subType() const
     return m_strategy->subType();
 }
 
+const QString &KPrPageEffect::smilType() const
+{
+    return m_strategy->smilType();
+}
+
+const QString &KPrPageEffect::smilSubType() const
+{
+    return m_strategy->smilSubType();
+}
+
+bool KPrPageEffect::reverse() const
+{
+    return m_strategy->reverse();
+}
+
 void KPrPageEffect::saveOdfSmilAttributes(KoXmlWriter &xmlWriter) const
 {
     qreal seconds = m_duration / qreal(1000.0);

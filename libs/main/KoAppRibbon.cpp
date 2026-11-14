@@ -167,17 +167,23 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
         group->setProperty("ribbonGroupOrder", order);
     }
     auto *vertical = new QVBoxLayout(group);
-    vertical->setContentsMargins(6, 0, 6, 0);
-    vertical->setSpacing(2);
+    // The Formulas band carries the widest set of captions, so its groups take
+    // the slimmest margins; a couple of pixels decide whether the tab still
+    // shows its labels.
+    const bool tightPage = page->objectName() == QLatin1String("sheetsFormulasPage");
+    const int sideMargin = tightPage ? 3 : 6;
+    vertical->setContentsMargins(sideMargin, 0, sideMargin, 0);
+    vertical->setSpacing(tightPage ? 1 : 2);
     // A squeezed caption is worse than a scrollbar: report the real minimum.
     vertical->setSizeConstraint(QLayout::SetMinimumSize);
     auto *grid = new QGridLayout;
     grid->setContentsMargins(0, 0, 0, 0);
-    grid->setSpacing(3);
+    grid->setSpacing(tightPage ? 1 : 3);
     grid->setAlignment(Qt::AlignTop);
     // Every ribbon page uses the same two command rows, so one band height
     // serves all tabs. The Function Library is the exception: it stacks three
-    // category rows like the Office formula ribbon.
+    // category rows like the Office formula ribbon, which keeps the group
+    // narrow enough to show every caption instead of falling back to icons.
     const bool compact = page->objectName().startsWith(QLatin1String("sheets"));
     const bool formulaLibrary = compact && page->objectName() == QLatin1String("sheetsFormulasPage")
         && title == i18n("Function Library");
@@ -614,7 +620,8 @@ void populateSheetsFormulas(KoView *view, QWidget *page)
     const auto menuButton = [page](const QString &name, const QString &title, const QIcon &icon, QMenu *menu) {
         auto *button = new QToolButton;
         button->setObjectName(QStringLiteral("ribbon") + name);
-        button->setText(title);
+        // A lone ampersand marks a mnemonic, so "Math & Trig" needs a double one.
+        button->setText(QString(title).replace(QLatin1Char('&'), QLatin1String("&&")));
         button->setAccessibleName(title);
         button->setIcon(icon);
         button->setProperty("ribbonCompactable", true);
@@ -625,6 +632,11 @@ void populateSheetsFormulas(KoView *view, QWidget *page)
         button->setPopupMode(QToolButton::MenuButtonPopup);
         button->setToolTip(title);
         KoRibbonLayout::configureButton(button, Qt::ToolButtonTextBesideIcon);
+        // A touch shorter than the standard small ribbon button, which keeps
+        // the three-row group from making the Formulas band tower over the
+        // other tabs.
+        const QSize minSize = button->minimumSize();
+        button->setMinimumSize(minSize.width(), qMin(minSize.height(), 30));
         QObject::connect(button, &QToolButton::clicked, button, [button, menu] {
             if (menu) {
                 menu->popup(button->mapToGlobal(QPoint(0, button->height())));
@@ -655,6 +667,14 @@ void populateSheetsFormulas(KoView *view, QWidget *page)
     }
 
     QSet<QAction *> addedCategories;
+    struct CategoryEntry {
+        QString title; // full name, used in menus and tooltips
+        QString shortTitle; // caption shown in the ribbon band
+        QMenu *menu;
+        QIcon icon;
+        QString objectName;
+    };
+    QList<CategoryEntry> entries;
     for (QAction *source : std::as_const(categories)) {
         if (addedCategories.contains(source))
             continue;
@@ -690,7 +710,42 @@ void populateSheetsFormulas(KoView *view, QWidget *page)
             if (groupName == QLatin1String("Lookup & Reference"))
                 buttonTitle = i18n("Lookup & Reference");
         }
-        library.append(menuButton(source->objectName(), buttonTitle, icon, menu));
+        // "Lookup & Reference" is the widest caption we show; in the ribbon it
+        // is shortened to "Lookup", the full name stays in its menu.
+        const QString shortTitle = buttonTitle == QLatin1String("Lookup & Reference")
+                                       ? QStringLiteral("Lookup")
+                                       : buttonTitle;
+        entries.append({buttonTitle, shortTitle, menu, icon, source->objectName()});
+    }
+    // Office puts the six everyday categories in three rows and hides the rest
+    // behind "More Functions", which keeps the group narrow enough to show
+    // every caption inside the ribbon band.
+    const QStringList preferred = {QStringLiteral("Financial"), QStringLiteral("Logical"),
+                                   QStringLiteral("Text"), QStringLiteral("Date & Time"),
+                                   QStringLiteral("Lookup"), QStringLiteral("Math & Trig")};
+    for (const QString &title : preferred) {
+        for (const CategoryEntry &entry : std::as_const(entries)) {
+            if (entry.shortTitle == title) {
+                library.append(menuButton(entry.objectName, entry.shortTitle, entry.icon, entry.menu));
+                break;
+            }
+        }
+    }
+    QMenu *moreMenu = nullptr;
+    for (const CategoryEntry &entry : std::as_const(entries)) {
+        if (preferred.contains(entry.shortTitle))
+            continue;
+        if (!moreMenu)
+            moreMenu = new QMenu(i18n("More Functions"), view);
+        QMenu *submenu = new QMenu(entry.title, moreMenu);
+        submenu->setIcon(entry.icon);
+        if (entry.menu)
+            submenu->addActions(entry.menu->actions());
+        moreMenu->addMenu(submenu);
+    }
+    if (moreMenu) {
+        library.append(menuButton(QStringLiteral("MoreFunctions"), i18n("More Functions"),
+                                  KoRibbonIcons::forCommand(QStringLiteral("functions")), moreMenu));
     }
     addGroup(page, i18n("Function Library"), library, 1);
 
@@ -702,19 +757,24 @@ void populateSheetsFormulas(KoView *view, QWidget *page)
     if (QAction *options = submenuAction(view, i18n("Calculation Options"), "calculate",
                                          {"menu_none", "menu_sum", "menu_min", "menu_max", "menu_average", "menu_count", "menu_counta"}))
         calculation.append(options);
-    addGroup(page, i18n("Calculation"), calculation, 1);
+    // Stacked instead of side by side: two long captions in one column keep the
+    // whole tab inside the ribbon width, so every label stays visible.
+    addGroup(page, i18n("Calculation"), calculation, 0);
 }
 
-// The review tab mirrors the office one: proofing, comments, protection and
-// the application language.
+// The review tab mirrors the office one: Proofing, Language, Comments and
+// Protect in that order, every command a large button like Excel's. The
+// Accessibility, Insights, Notes and Ink groups have no equivalent in
+// Sheets, so they don't appear here. Custom Lists (sortList) moved out -
+// Excel keeps it in Options, not on the ribbon; it stays in the Tools menu.
 void populateSheetsReview(KoView *view, QWidget *page)
 {
     if (!page)
         return;
-    addSheetGroup(view, page, i18n("Proofing"), {"tools_spelling", "sortList"}, 1);
-    addSheetGroup(view, page, i18n("Comments"), {"comment", "clearComment"}, 1);
-    addSheetGroup(view, page, i18n("Protect"), {"protectSheet", "protectDoc"}, 1);
+    addSheetGroup(view, page, i18n("Proofing"), {"tools_spelling"}, 1);
     addSheetGroup(view, page, i18n("Language"), {"switch_application_language"}, 1);
+    addSheetGroup(view, page, i18n("Comments"), {"comment", "clearComment"}, 2);
+    addSheetGroup(view, page, i18n("Protect"), {"protectSheet", "protectDoc"}, 2);
 }
 
 void populateSheetsView(KoView *view, QWidget *page)
@@ -755,7 +815,9 @@ void populateSheets(KoView *view, QWidget *home)
         // Excel names the import commands after their source.
         {"insertFromTextfile", i18n("From &Text/CSV")}, {"insertFromDatabase", i18n("From &Database")},
         {"insertFromClipboard", i18n("From &Clipboard")},
-        {"comment", i18n("Comment")}, {"clearComment", i18n("Delete Comment")},
+        {"comment", i18n("New Comment")}, {"clearComment", i18n("Delete")},
+        {"tools_spelling", i18n("Spelling")},
+        {"protectSheet", i18n("Protect Sheet")}, {"protectDoc", i18n("Protect Workbook")},
         {"add_shape", i18n("Shapes")}, {"insert_picture", i18n("Pictures")},
         {"insertHyperlink", i18n("Link")}, {"insertSpecialChar", i18n("Symbol")},
         {"insertSeries", i18n("Series")}, {"insert_textbox", i18n("Text Box")},
@@ -770,7 +832,7 @@ void populateSheets(KoView *view, QWidget *home)
 
     addSheetGroup(view, home, i18n("Clipboard"), {"paste", "cut", "copy", "specialPaste"}, 1);
     addSheetGroup(view, home, i18n("Styles"), {"conditional", "autoFormat", "styleDialog"}, 1);
-    addSheetGroup(view, home, i18n("Cells"), {"insertCell", "deleteCell", "cellStyle"}, 1);
+    addSheetGroup(view, home, i18n("Cells"), {"insertCell", "deleteCell", "cellStyle", "rotateTextUp"}, 1);
 
     QList<QAction *> editing;
     if (QAction *sum = findAction(view, QStringLiteral("autoSum"))) {

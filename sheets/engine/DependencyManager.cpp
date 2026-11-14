@@ -181,6 +181,7 @@ void DependencyManager::updateAllDependencies(const MapBase *map, Updater *updat
 
     CellBase cell;
     int cellCurrent = 0;
+    d->collectConsumers = true;
     for (SheetBase *sheet : map->sheetList()) {
         for (int c = 0; c < sheet->formulaStorage()->count(); ++c, ++cellCurrent) {
             cell = CellBase(sheet, sheet->formulaStorage()->col(c), sheet->formulaStorage()->row(c));
@@ -193,6 +194,13 @@ void DependencyManager::updateAllDependencies(const MapBase *map, Updater *updat
                 updater->setProgress(int(qreal(cellCurrent) / qreal(cellsCount) * 50.));
         }
     }
+    d->collectConsumers = false;
+    for (auto it = d->pendingConsumers.cbegin(); it != d->pendingConsumers.cend(); ++it) {
+        RTree<CellBase> *tree = new RTree<CellBase>();
+        tree->load(it.value());
+        d->consumers.insert(it.key(), tree);
+    }
+    d->pendingConsumers.clear();
     cellCurrent = 0;
     for (SheetBase *sheet : map->sheetList()) {
         for (int c = 0; c < sheet->formulaStorage()->count(); ++c, ++cellCurrent) {
@@ -604,13 +612,17 @@ void DependencyManager::Private::computeDependencies(const CellBase &cell, const
 
                     SheetBase *sheet = region.firstSheet();
 
-                    // create consumer tree, if not existing yet
-                    QHash<SheetBase *, RTree<CellBase> *>::iterator it = consumers.find(sheet);
-                    if (it == consumers.end()) {
-                        it = consumers.insert(sheet, new RTree<CellBase>());
+                    if (collectConsumers) {
+                        pendingConsumers[sheet].append(qMakePair(Region(region.firstRange(), sheet), cell));
+                    } else {
+                        // create consumer tree, if not existing yet
+                        QHash<SheetBase *, RTree<CellBase> *>::iterator it = consumers.find(sheet);
+                        if (it == consumers.end()) {
+                            it = consumers.insert(sheet, new RTree<CellBase>());
+                        }
+                        // add cell as consumer of the range
+                        it.value()->insert(region.firstRange(), cell);
                     }
-                    // add cell as consumer of the range
-                    it.value()->insert(region.firstRange(), cell);
                 }
             }
         }

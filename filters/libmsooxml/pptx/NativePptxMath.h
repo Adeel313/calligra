@@ -267,9 +267,17 @@ bool preparePptxMath(QDomDocument &document)
                 }
             } else {
                 // Functions, boxes, phantom runs and anything we do not model
-                // keep their content in document order.
-                for (auto c = node.firstChildElement(); !c.isNull(); c = c.nextSiblingElement())
-                    out += convert(c, baseline, size);
+                // keep their content in document order. Office also writes raw
+                // text directly inside containers such as m:num, m:den and m:e,
+                // so text nodes must be kept instead of skipped.
+                for (auto c = node.firstChild(); !c.isNull(); c = c.nextSibling()) {
+                    if (c.isText()) {
+                        const QString text = c.nodeValue();
+                        if (!text.isEmpty()) out += literal(text, baseline, size);
+                    } else if (c.isElement()) {
+                        out += convert(c.toElement(), baseline, size);
+                    }
+                }
             }
             return out;
         }

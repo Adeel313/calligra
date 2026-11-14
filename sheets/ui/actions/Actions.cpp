@@ -100,6 +100,7 @@ void Actions::createActions()
     addAction(new AlignMiddle(this));
     // Angle
     addAction(new Angle(this));
+    addAction(new RotateTextUp(this));
     // AutoFilter
     addAction(new AutoFilter(this));
     // AutoFormat

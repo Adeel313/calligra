@@ -1608,7 +1608,8 @@ void CellView::makeLayout(SheetView *sheetView, const Cell &cell)
             font.setPointSizeF(siz / 2.);
             fontMetrics = QFontMetricsF(font, &device);
             d->calculateTextSize(font, fontMetrics);
-            if (d->fittingWidth)
+            // The scaled text has to fit both the width and the height of the cell.
+            if (d->fittingWidth && d->fittingHeight)
                 lower = siz;
             else
                 upper = siz - 1;
@@ -1617,7 +1618,9 @@ void CellView::makeLayout(SheetView *sheetView, const Cell &cell)
         font.setPointSizeF(upper / 2.0);
         fontMetrics = QFontMetricsF(font, &device);
         d->calculateTextSize(font, fontMetrics); // update fittingWidth et al
+        // The largest size that fits was chosen, so do not obscure the cell instead.
         d->fittingWidth = true;
+        d->fittingHeight = true;
     }
 
     // Obscure horizontal cells, if necessary.
@@ -1794,6 +1797,10 @@ void CellView::obscureHorizontalCells(SheetView *sheetView, const Cell &masterCe
             NotEnoughSpace
         } status = Undefined;
         while (status == Undefined) {
+            if (col >= KS_colMax) { // no cell to the right to borrow space from
+                status = NotEnoughSpace;
+                break;
+            }
             Cell nextCell = Cell(masterCell.fullSheet(), col + 1, masterCell.row()).masterCell();
 
             if (nextCell.isEmpty()) {
@@ -1863,6 +1870,10 @@ void CellView::obscureVerticalCells(SheetView *sheetView, const Cell &masterCell
         } status = Undefined;
         Sheet *sheet = masterCell.fullSheet();
         while (status == Undefined) {
+            if (row >= KS_rowMax) { // no cell below to borrow space from
+                status = NotEnoughSpace;
+                break;
+            }
             Cell nextCell = Cell(sheet, masterCell.column(), row + 1).masterCell();
 
             bool isEmpty = true;

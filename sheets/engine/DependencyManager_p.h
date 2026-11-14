@@ -127,6 +127,10 @@ public:
     QMap<CellBase, Region> providers;
     // stores consuming cell locations ordered by their providing regions
     QHash<SheetBase *, RTree<CellBase> *> consumers;
+    // collects consumer entries while all dependencies are generated, so that
+    // each consumers tree is built in one bulk load instead of one insert per reference
+    bool collectConsumers = false;
+    QHash<SheetBase *, QList<QPair<Region, CellBase>>> pendingConsumers;
     // stores consuming cell locations ordered by their providing named area
     // (in addition to the general storage of the consuming cell locations)
     QHash<QString, QList<CellBase>> namedAreaConsumers;

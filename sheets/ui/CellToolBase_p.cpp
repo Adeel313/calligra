@@ -38,6 +38,7 @@
 #include "core/RowFormatStorage.h"
 #include "core/Sheet.h"
 #include "engine/CalculationSettings.h"
+#include "engine/calligra_sheets_limits.h"
 
 // ui
 #include "CellEditor.h"
@@ -186,8 +187,9 @@ QPoint CellToolBase::Private::destinationForKey(QKeyEvent *event)
         QRect used = sheet->usedArea();
         if (!used.right())
             return QPoint(1, 1);
-        // ctrl + Home will always just send us to the last used cell
-        return QPoint(used.right(), ctrl ? used.bottom() : cursor.y());
+        // ctrl + End will always just send us to the last used cell
+        return QPoint(qMin(used.right(), int(KS_colMax)),
+                      ctrl ? qMin(used.bottom(), int(KS_rowMax)) : cursor.y());
     }
     if (key == Qt::Key_PageUp) {
         // TODO - actually determine this length
@@ -206,6 +208,10 @@ void CellToolBase::Private::moveToDestination(QPoint destination, bool extendSel
     Selection *sel = q->selection();
     Sheet *sheet = sel->activeSheet();
 
+    // Clamp to the grid before the destination is turned into a cell.
+    destination.setX(qBound(1, destination.x(), int(KS_colMax)));
+    destination.setY(qBound(1, destination.y(), int(KS_rowMax)));
+
     if (extendSelection)
         sel->update(destination);
     else
@@ -218,7 +224,7 @@ void CellToolBase::Private::moveToDestination(QPoint destination, bool extendSel
 bool CellToolBase::Private::handleMovementKeys(QKeyEvent *event)
 {
     QPoint target = destinationForKey(event);
-    if (target.x() <= 0)
+    if (target.x() <= 0 || target.y() <= 0)
         return false; // Not a movement key.
 
     Selection *sel = q->selection();
@@ -286,28 +292,28 @@ Cell CellToolBase::Private::nextMarginCellInDirection(const Cell &cell, Calligra
             // hit the end?
             if (c.isNull())
                 return Cell(sheet, nextCell.column(), KS_rowMax);
-            nextCell = Cell(sheet, nextCell.column(), c.row() - 1);
+            nextCell = Cell(sheet, nextCell.column(), qMax(1, c.row() - 1));
         }
         if (direction == Top) {
             Cell c = storage->prevInColumn(nextCell.column(), nextCell.row(), CellStorage::VisitContent);
             // hit the end?
             if (c.isNull())
                 return Cell(sheet, nextCell.column(), 1);
-            nextCell = Cell(sheet, nextCell.column(), c.row() + 1);
+            nextCell = Cell(sheet, nextCell.column(), qMin(int(KS_rowMax), c.row() + 1));
         }
         if (direction == Right) {
             Cell c = storage->nextInRow(nextCell.column(), nextCell.row(), CellStorage::VisitContent);
             // hit the end?
             if (c.isNull())
                 return Cell(sheet, KS_colMax, nextCell.row());
-            nextCell = Cell(sheet, c.column() - 1, nextCell.row());
+            nextCell = Cell(sheet, qMax(1, c.column() - 1), nextCell.row());
         }
         if (direction == Left) {
             Cell c = storage->prevInRow(nextCell.column(), nextCell.row(), CellStorage::VisitContent);
             // hit the end?
             if (c.isNull())
                 return Cell(sheet, 1, nextCell.row());
-            nextCell = Cell(sheet, c.column() + 1, nextCell.row());
+            nextCell = Cell(sheet, qMin(int(KS_colMax), c.column() + 1), nextCell.row());
         }
 
         QPoint nextcursor = nextCell.cellPosition();

@@ -80,6 +80,23 @@ protected:
     virtual bool checkedForSelection(Selection *selection, const Cell &activeCell) override;
 };
 
+/**
+ * Rotates the cell contents from bottom to top (like Excel's "Rotate Text Up"),
+ * so narrow columns can show long content such as dates.
+ */
+class RotateTextUp : public ToggleableCellAction
+{
+    Q_OBJECT
+public:
+    RotateTextUp(Actions *actions);
+    virtual ~RotateTextUp();
+
+protected:
+    virtual QAction *createAction() override;
+    virtual void executeToggled(bool selected, Selection *selection, Sheet *sheet, QWidget *canvasWidget) override;
+    virtual bool checkedForSelection(Selection *selection, const Cell &activeCell) override;
+};
+
 class AlignMiddle : public ToggleableCellAction
 {
     Q_OBJECT

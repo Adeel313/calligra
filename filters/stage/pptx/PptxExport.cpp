@@ -41,6 +41,10 @@
 #include <KPrPage.h>
 #include <KPrShapeAnimations.h>
 #include <animations/KPrShapeAnimation.h>
+#include "KPresenter.h"
+#include "pagelayout/KPrPageLayout.h"
+#include "pagelayout/KPrPageLayouts.h"
+#include "pagelayout/KPrPlaceholder.h"
 
 #include <KPluginFactory>
 #include <QBuffer>
@@ -62,6 +66,7 @@
 #include <QTextDocumentFragment>
 #include <QXmlStreamWriter>
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 
@@ -159,10 +164,43 @@ QByteArray chartXml(const KoChart::ChartShape *chart)
         xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/chart"), QStringLiteral("c"));
         xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/main"), QStringLiteral("a"));
         xml.writeStartElement(QStringLiteral("c:chart"));
+        // The chart title lives in the chart's own text document. PowerPoint
+        // stores it in c:title, so an untitled chart must not emit the element
+        // (an empty title would be shown as a blank line above the plot).
+        const QString chartTitle = chart->title() && chart->title()->isVisible() && chart->titleData()
+            ? chart->titleData()->document()->toPlainText().trimmed() : QString();
+        if (!chartTitle.isEmpty()) {
+            xml.writeStartElement(QStringLiteral("c:title"));
+            xml.writeStartElement(QStringLiteral("c:tx"));
+            xml.writeStartElement(QStringLiteral("c:rich"));
+            xml.writeEmptyElement(QStringLiteral("a:bodyPr"));
+            xml.writeEmptyElement(QStringLiteral("a:lstStyle"));
+            xml.writeStartElement(QStringLiteral("a:p"));
+            xml.writeStartElement(QStringLiteral("a:r"));
+            xml.writeTextElement(QStringLiteral("a:t"), chartTitle);
+            xml.writeEndElement(); // a:r
+            xml.writeEndElement(); // a:p
+            xml.writeEndElement(); // c:rich
+            xml.writeEndElement(); // c:tx
+            xml.writeEmptyElement(QStringLiteral("c:overlay"));
+            xml.writeAttribute(QStringLiteral("val"), QStringLiteral("0"));
+            xml.writeEndElement(); // c:title
+            xml.writeEmptyElement(QStringLiteral("c:autoTitleDeleted"));
+            xml.writeAttribute(QStringLiteral("val"), QStringLiteral("0"));
+        }
         xml.writeStartElement(QStringLiteral("c:plotArea")); xml.writeEmptyElement(QStringLiteral("c:layout"));
         xml.writeStartElement(QStringLiteral("c:") + type);
         if (type == QLatin1String("barChart")) { xml.writeEmptyElement(QStringLiteral("c:barDir")); xml.writeAttribute(QStringLiteral("val"), chart->plotArea()->isVertical() ? QStringLiteral("bar") : QStringLiteral("col")); }
-        if (scatter) { xml.writeEmptyElement(QStringLiteral("c:scatterStyle")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("lineMarker")); }
+        if (scatter) {
+            // ODF keeps the scatter look on the series: no stroke means
+            // markers only, otherwise markers connected by lines.
+            bool markerOnly = true;
+            for (const auto *data : dataSets) {
+                if (data->pen().style() != Qt::NoPen) { markerOnly = false; break; }
+            }
+            xml.writeEmptyElement(QStringLiteral("c:scatterStyle"));
+            xml.writeAttribute(QStringLiteral("val"), markerOnly ? QStringLiteral("marker") : QStringLiteral("lineMarker"));
+        }
         if (!pie && !scatter) { xml.writeEmptyElement(QStringLiteral("c:grouping")); xml.writeAttribute(QStringLiteral("val"), grouping); }
         xml.writeEmptyElement(QStringLiteral("c:varyColors")); xml.writeAttribute(QStringLiteral("val"), pie ? QStringLiteral("1") : QStringLiteral("0"));
         const int seriesCount = pie ? 1 : dataSets.size();
@@ -508,10 +546,20 @@ void writeFill(QXmlStreamWriter &xml, const QSharedPointer<KoShapeBackground> &b
 void writeFillAndLine(QXmlStreamWriter &xml, KoShape *shape, int fillImageRel = 0)
 {
     writeFill(xml, shape->background(), fillImageRel);
-    if (auto *stroke = dynamic_cast<KoShapeStroke *>(shape->stroke())) {
+    auto *stroke = dynamic_cast<KoShapeStroke *>(shape->stroke());
+    if (stroke && stroke->lineStyle() != Qt::NoPen) {
+        QString dash = QStringLiteral("solid");
+        switch (stroke->lineStyle()) {
+        case Qt::DashLine: dash = QStringLiteral("dash"); break;
+        case Qt::DotLine: dash = QStringLiteral("sysDot"); break;
+        case Qt::DashDotLine: dash = QStringLiteral("dashDot"); break;
+        case Qt::DashDotDotLine: dash = QStringLiteral("lgDashDotDot"); break;
+        case Qt::CustomDashLine: dash = QStringLiteral("dash"); break;
+        default: break;
+        }
         xml.writeStartElement(QStringLiteral("a:ln")); xml.writeAttribute(QStringLiteral("w"), QString::number(qMax(1, qRound64(stroke->lineWidth() * 12700.0))));
         xml.writeStartElement(QStringLiteral("a:solidFill")); xml.writeEmptyElement(QStringLiteral("a:srgbClr")); xml.writeAttribute(QStringLiteral("val"), stroke->color().name().mid(1).toUpper()); xml.writeEndElement();
-        xml.writeEmptyElement(QStringLiteral("a:prstDash")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("solid")); xml.writeEndElement();
+        xml.writeEmptyElement(QStringLiteral("a:prstDash")); xml.writeAttribute(QStringLiteral("val"), dash); xml.writeEndElement();
     } else { xml.writeStartElement(QStringLiteral("a:ln")); xml.writeEmptyElement(QStringLiteral("a:noFill")); xml.writeEndElement(); }
 }
 
@@ -644,8 +692,35 @@ void writeTextBody(QXmlStreamWriter &xml, const SlideObject &object, QTextDocume
             xml.writeAttribute(QStringLiteral("sz"), QString::number(qRound(points * 100.0)));
             if (fmt.fontWeight() >= QFont::DemiBold) xml.writeAttribute(QStringLiteral("b"), QStringLiteral("1"));
             if (fmt.fontItalic()) xml.writeAttribute(QStringLiteral("i"), QStringLiteral("1"));
-            if (fmt.fontUnderline()) xml.writeAttribute(QStringLiteral("u"), QStringLiteral("sng"));
-            if (fmt.fontStrikeOut()) xml.writeAttribute(QStringLiteral("strike"), QStringLiteral("sngStrike"));
+            // ODF keeps underline and strike-out in the Calligra character
+            // properties, which applyStyle() does not translate into the
+            // QTextCharFormat flags. Read both so a styled run keeps its look.
+            bool underline = fmt.fontUnderline();
+            QString underlineStyle = QStringLiteral("sng");
+            if (fmt.hasProperty(KoCharacterStyle::UnderlineStyle)
+                && fmt.intProperty(KoCharacterStyle::UnderlineStyle) != KoCharacterStyle::NoLineStyle) {
+                underline = true;
+                const int line = fmt.intProperty(KoCharacterStyle::UnderlineStyle);
+                const int type = fmt.hasProperty(KoCharacterStyle::UnderlineType)
+                    ? fmt.intProperty(KoCharacterStyle::UnderlineType) : KoCharacterStyle::SingleLine;
+                if (type == KoCharacterStyle::DoubleLine) underlineStyle = QStringLiteral("dbl");
+                else if (line == KoCharacterStyle::DottedLine) underlineStyle = QStringLiteral("dotted");
+                else if (line == KoCharacterStyle::DashLine) underlineStyle = QStringLiteral("dash");
+                else if (line == KoCharacterStyle::WaveLine) underlineStyle = QStringLiteral("wavy");
+                else if (line == KoCharacterStyle::DotDashLine || line == KoCharacterStyle::DotDotDashLine
+                         || line == KoCharacterStyle::LongDashLine) underlineStyle = QStringLiteral("dash");
+            }
+            if (underline) xml.writeAttribute(QStringLiteral("u"), underlineStyle);
+            bool strikeOut = fmt.fontStrikeOut();
+            QString strikeStyle = QStringLiteral("sngStrike");
+            if (fmt.hasProperty(KoCharacterStyle::StrikeOutStyle)
+                && fmt.intProperty(KoCharacterStyle::StrikeOutStyle) != KoCharacterStyle::NoLineStyle) {
+                strikeOut = true;
+                if (fmt.hasProperty(KoCharacterStyle::StrikeOutType)
+                    && fmt.intProperty(KoCharacterStyle::StrikeOutType) == KoCharacterStyle::DoubleLine)
+                    strikeStyle = QStringLiteral("dblStrike");
+            }
+            if (strikeOut) xml.writeAttribute(QStringLiteral("strike"), strikeStyle);
             if (fmt.verticalAlignment() == QTextCharFormat::AlignSuperScript)
                 xml.writeAttribute(QStringLiteral("baseline"), QStringLiteral("30000"));
             else if (fmt.verticalAlignment() == QTextCharFormat::AlignSubScript)
@@ -962,33 +1037,165 @@ void writeTransition(QXmlStreamWriter &xml, KPrPage *page)
     if (!data) return;
     const KPrPageTransition &transition = data->pageTransition();
     const auto *effect = data->pageEffect();
-    const bool fade = effect && effect->id() == QLatin1String("FadeEffect");
-    if (transition.type() == KPrPageTransition::Manual && !fade) return;
+    if (transition.type() == KPrPageTransition::Manual && !effect) return;
     xml.writeStartElement(QStringLiteral("p:transition"));
-    xml.writeAttribute(QStringLiteral("advClick"), transition.type() == KPrPageTransition::Automatic ? QStringLiteral("0") : QStringLiteral("1"));
+    // advClick defaults to true, so only the explicit pause needs writing.
+    if (transition.type() == KPrPageTransition::Automatic)
+        xml.writeAttribute(QStringLiteral("advClick"), QStringLiteral("0"));
     if (transition.type() != KPrPageTransition::Manual)
         xml.writeAttribute(QStringLiteral("advTm"), QString::number(qMax(0, transition.milliseconds())));
-    if (fade) {
+    if (effect) {
         xml.writeAttribute(QStringLiteral("spd"), effect->duration() >= 1000 ? QStringLiteral("slow") : effect->duration() >= 750 ? QStringLiteral("med") : QStringLiteral("fast"));
-        xml.writeEmptyElement(QStringLiteral("p:fade"));
+        const QString type = effect->smilType();
+        const QString subtype = effect->smilSubType();
+        const bool reverse = effect->reverse();
+        if (type == QLatin1String("fade")) {
+            xml.writeEmptyElement(QStringLiteral("p:fade"));
+        } else if (type == QLatin1String("slideWipe")) {
+            // Stage's slideWipe names the side the new page enters from;
+            // p:push names the direction it travels in.
+            QString direction = QStringLiteral("l");
+            if (subtype == QLatin1String("fromLeft")) direction = QStringLiteral("r");
+            else if (subtype == QLatin1String("fromBottom")) direction = QStringLiteral("u");
+            else if (subtype == QLatin1String("fromTop")) direction = QStringLiteral("d");
+            xml.writeStartElement(QStringLiteral("p:push"));
+            if (direction != QLatin1String("l")) xml.writeAttribute(QStringLiteral("dir"), direction);
+            xml.writeEndElement();
+        } else if (type == QLatin1String("barWipe")) {
+            QString direction;
+            if (subtype == QLatin1String("topToBottom"))
+                direction = reverse ? QStringLiteral("u") : QStringLiteral("d");
+            else
+                direction = reverse ? QStringLiteral("l") : QStringLiteral("r");
+            xml.writeStartElement(QStringLiteral("p:wipe"));
+            if (direction != QLatin1String("u")) xml.writeAttribute(QStringLiteral("dir"), direction);
+            xml.writeEndElement();
+        } else if (type == QLatin1String("spaceRotation")) {
+            // Stage renders p:zoom as a space rotation (see the importer).
+            xml.writeEmptyElement(QStringLiteral("p:zoom"));
+        }
     }
     xml.writeEndElement();
 }
 
 // Writes the p:bg of a master or layout whose picture is stored in ppt/media
 // and referenced through relationship rId3 of the part's .rels file.
-void writePictureBackground(QXmlStreamWriter &xml)
+void writePictureBackground(QXmlStreamWriter &xml, const QString &relationshipId = QStringLiteral("rId3"))
 {
     xml.writeStartElement(QStringLiteral("p:bg"));
     xml.writeStartElement(QStringLiteral("p:bgPr"));
     xml.writeStartElement(QStringLiteral("a:blipFill"));
     xml.writeEmptyElement(QStringLiteral("a:blip"));
-    xml.writeAttribute(QStringLiteral("r:embed"), QStringLiteral("rId3"));
+    xml.writeAttribute(QStringLiteral("r:embed"), relationshipId);
     xml.writeStartElement(QStringLiteral("a:stretch"));
     xml.writeEmptyElement(QStringLiteral("a:fillRect"));
     xml.writeEndElement(); xml.writeEndElement();
     xml.writeEmptyElement(QStringLiteral("a:effectLst"));
     xml.writeEndElement(); xml.writeEndElement();
+}
+
+// Maps an ODF presentation placeholder object ("presentation:object") to the
+// DrawingML placeholder type PowerPoint understands.
+QString drawingMlPlaceholderType(const QString &presentationObject)
+{
+    if (presentationObject == QLatin1String("title")) return QStringLiteral("title");
+    if (presentationObject == QLatin1String("subtitle")) return QStringLiteral("subTitle");
+    if (presentationObject == QLatin1String("outline")) return QStringLiteral("body");
+    if (presentationObject == QLatin1String("notes")) return QStringLiteral("body");
+    if (presentationObject == QLatin1String("header")) return QStringLiteral("hdr");
+    if (presentationObject == QLatin1String("footer")) return QStringLiteral("ftr");
+    if (presentationObject == QLatin1String("date") || presentationObject == QLatin1String("datetime") || presentationObject == QLatin1String("date-time")) return QStringLiteral("dt");
+    if (presentationObject == QLatin1String("page-number") || presentationObject == QLatin1String("slide-number")) return QStringLiteral("sldNum");
+    if (presentationObject == QLatin1String("object")) return QStringLiteral("obj");
+    if (presentationObject == QLatin1String("table")) return QStringLiteral("tbl");
+    if (presentationObject == QLatin1String("chart")) return QStringLiteral("chart");
+    if (presentationObject == QLatin1String("image") || presentationObject == QLatin1String("graphic")) return QStringLiteral("pic");
+    return QStringLiteral("body");
+}
+
+// Identifies a layout by its placeholder types and positions, in page units.
+QString pageLayoutSignature(KPrPageLayout *layout, const QSizeF &pageSize)
+{
+    QStringList parts;
+    if (layout) {
+        for (KPrPlaceholder *placeholder : layout->placeholders()) {
+            const QRectF rect = placeholder->rect(pageSize);
+            parts.append(QStringLiteral("%1@%2,%3,%4,%5").arg(placeholder->presentationObject())
+                             .arg(qRound(rect.x())).arg(qRound(rect.y()))
+                             .arg(qRound(rect.width())).arg(qRound(rect.height())));
+        }
+    }
+    std::sort(parts.begin(), parts.end());
+    return parts.join(QLatin1Char('|'));
+}
+
+// Writes one ppt/slideLayouts/slideLayoutN.xml part. The placeholders of the
+// Stage page layout become DrawingML placeholder shapes, so each slide keeps
+// the layout it was authored with instead of every slide sharing one blank one.
+QByteArray slideLayoutXml(KPrPageLayout *layout, bool hasMasterPicture, const QSizeF &pageSize)
+{
+    const bool hasPlaceholders = layout && !layout->placeholders().isEmpty();
+    return xmlPart([&](QXmlStreamWriter &xml) {
+        xml.writeStartElement(QStringLiteral("p:sldLayout"));
+        xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/presentationml/2006/main"), QStringLiteral("p"));
+        xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/main"), QStringLiteral("a"));
+        xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships"), QStringLiteral("r"));
+        xml.writeAttribute(QStringLiteral("type"), hasPlaceholders ? QStringLiteral("cust") : QStringLiteral("blank"));
+        xml.writeAttribute(QStringLiteral("preserve"), QStringLiteral("1"));
+        xml.writeStartElement(QStringLiteral("p:cSld"));
+        if (hasMasterPicture) writePictureBackground(xml, QStringLiteral("rId2"));
+        startShapeTree(xml);
+        int shapeId = 2;
+        int placeholderIndex = 0;
+        if (layout) {
+            for (KPrPlaceholder *placeholder : layout->placeholders()) {
+                const QRectF rect = placeholder->rect(pageSize);
+                const QString type = drawingMlPlaceholderType(placeholder->presentationObject());
+                xml.writeStartElement(QStringLiteral("p:sp"));
+                xml.writeStartElement(QStringLiteral("p:nvSpPr"));
+                xml.writeEmptyElement(QStringLiteral("p:cNvPr"));
+                xml.writeAttribute(QStringLiteral("id"), QString::number(shapeId++));
+                xml.writeAttribute(QStringLiteral("name"), QStringLiteral("Placeholder %1").arg(placeholderIndex + 1));
+                xml.writeStartElement(QStringLiteral("p:cNvSpPr"));
+                xml.writeEmptyElement(QStringLiteral("a:spLocks"));
+                xml.writeAttribute(QStringLiteral("noGrp"), QStringLiteral("1"));
+                xml.writeEndElement(); // cNvSpPr
+                xml.writeStartElement(QStringLiteral("p:nvPr"));
+                xml.writeEmptyElement(QStringLiteral("p:ph"));
+                xml.writeAttribute(QStringLiteral("type"), type);
+                xml.writeAttribute(QStringLiteral("idx"), QString::number(placeholderIndex));
+                xml.writeEndElement(); // nvPr
+                xml.writeEndElement(); // nvSpPr
+                xml.writeStartElement(QStringLiteral("p:spPr"));
+                xml.writeStartElement(QStringLiteral("a:xfrm"));
+                xml.writeEmptyElement(QStringLiteral("a:off"));
+                xml.writeAttribute(QStringLiteral("x"), QString::number(qRound64(rect.x() * 12700.0)));
+                xml.writeAttribute(QStringLiteral("y"), QString::number(qRound64(rect.y() * 12700.0)));
+                xml.writeEmptyElement(QStringLiteral("a:ext"));
+                xml.writeAttribute(QStringLiteral("cx"), QString::number(qMax<qint64>(0, qRound64(rect.width() * 12700.0))));
+                xml.writeAttribute(QStringLiteral("cy"), QString::number(qMax<qint64>(0, qRound64(rect.height() * 12700.0))));
+                xml.writeEndElement(); // xfrm
+                xml.writeStartElement(QStringLiteral("a:prstGeom"));
+                xml.writeAttribute(QStringLiteral("prst"), QStringLiteral("rect"));
+                xml.writeEmptyElement(QStringLiteral("a:avLst"));
+                xml.writeEndElement(); // prstGeom
+                xml.writeEndElement(); // spPr
+                xml.writeStartElement(QStringLiteral("p:txBody"));
+                xml.writeEmptyElement(QStringLiteral("a:bodyPr"));
+                xml.writeEmptyElement(QStringLiteral("a:lstStyle"));
+                xml.writeEmptyElement(QStringLiteral("a:p"));
+                xml.writeEndElement(); // txBody
+                xml.writeEndElement(); // sp
+                ++placeholderIndex;
+            }
+        }
+        xml.writeEndElement(); // spTree
+        xml.writeEndElement(); // cSld
+        xml.writeStartElement(QStringLiteral("p:clrMapOvr"));
+        xml.writeEmptyElement(QStringLiteral("a:masterClrMapping"));
+        xml.writeEndElement();
+        xml.writeEndElement(); // sldLayout
+    });
 }
 
 QByteArray slideXml(const QList<SlideObject> &objects, bool hidden, KPrPage *page)
@@ -1105,6 +1312,33 @@ KoFilter::ConversionStatus PptxExport::convert(const QByteArray &from, const QBy
     const qint64 width = qMax<qint64>(1, qRound64(pageSize.width() * 12700.0));
     const qint64 height = qMax<qint64>(1, qRound64(pageSize.height() * 12700.0));
 
+    // Export every layout the document defines, so unused ones stay in
+    // PowerPoint's layout gallery. Layouts are deduplicated by their placeholder
+    // geometry, since Stage can hold several equal copies of one layout.
+    QList<KPrPageLayout *> slideLayouts;
+    QHash<QString, int> layoutPartBySignature;
+    const auto addLayout = [&](KPrPageLayout *layout) -> int {
+        const QString signature = pageLayoutSignature(layout, pageSize);
+        auto it = layoutPartBySignature.constFind(signature);
+        if (it != layoutPartBySignature.constEnd()) return it.value();
+        slideLayouts.append(layout);
+        const int index = int(slideLayouts.size()) - 1;
+        layoutPartBySignature.insert(signature, index);
+        return index;
+    };
+    if (auto *layouts = document->resourceManager()->resource(KPresenter::PageLayouts).value<KPrPageLayouts *>()) {
+        for (KPrPageLayout *layout : layouts->documentLayouts()) addLayout(layout);
+    }
+    QList<int> pageLayoutPart(pages.size(), 0);
+    for (int i = 0; i < pages.size(); ++i) {
+        auto *presentationPage = dynamic_cast<KPrPage *>(pages[i]);
+        KPrPageLayout *layout = presentationPage ? presentationPage->layout() : nullptr;
+        if (layout) pageLayoutPart[i] = addLayout(layout);
+    }
+    const int layoutPartCount = qMax(1, int(slideLayouts.size()));
+    const int themeRelationshipId = layoutPartCount + 1;
+    const int masterPictureRelationshipId = layoutPartCount + 2;
+
     QList<QList<SlideObject>> slideObjects;
     QList<SlideObject> slideNotes;
     QList<int> notesRelationshipIds;
@@ -1209,8 +1443,9 @@ KoFilter::ConversionStatus PptxExport::convert(const QByteArray &from, const QBy
             xml.writeEmptyElement(QStringLiteral("Default"));
             xml.writeAttribute(QStringLiteral("Extension"), it.key()); xml.writeAttribute(QStringLiteral("ContentType"), it.value());
         }
-        const QList<QPair<QString, QString>> parts{{"/ppt/presentation.xml", "application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"}, {"/ppt/slideMasters/slideMaster1.xml", "application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"}, {"/ppt/slideLayouts/slideLayout1.xml", "application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"}, {"/ppt/theme/theme1.xml", "application/vnd.openxmlformats-officedocument.theme+xml"}};
+        const QList<QPair<QString, QString>> parts{{"/ppt/presentation.xml", "application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"}, {"/ppt/slideMasters/slideMaster1.xml", "application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"}, {"/ppt/theme/theme1.xml", "application/vnd.openxmlformats-officedocument.theme+xml"}};
         for (const auto &part : parts) { xml.writeEmptyElement(QStringLiteral("Override")); xml.writeAttribute(QStringLiteral("PartName"), part.first); xml.writeAttribute(QStringLiteral("ContentType"), part.second); }
+        for (int i = 0; i < layoutPartCount; ++i) { xml.writeEmptyElement(QStringLiteral("Override")); xml.writeAttribute(QStringLiteral("PartName"), QStringLiteral("/ppt/slideLayouts/slideLayout%1.xml").arg(i + 1)); xml.writeAttribute(QStringLiteral("ContentType"), QStringLiteral("application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml")); }
         if (hasNotes) { xml.writeEmptyElement(QStringLiteral("Override")); xml.writeAttribute(QStringLiteral("PartName"), QStringLiteral("/ppt/notesMasters/notesMaster1.xml")); xml.writeAttribute(QStringLiteral("ContentType"), QStringLiteral("application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml")); }
         for (int i = 0; i < pages.size(); ++i) { xml.writeEmptyElement(QStringLiteral("Override")); xml.writeAttribute(QStringLiteral("PartName"), QStringLiteral("/ppt/slides/slide%1.xml").arg(i + 1)); xml.writeAttribute(QStringLiteral("ContentType"), QStringLiteral("application/vnd.openxmlformats-officedocument.presentationml.slide+xml")); }
         for (int i = 0; i < pages.size(); ++i) if (notesRelationshipIds[i]) { xml.writeEmptyElement(QStringLiteral("Override")); xml.writeAttribute(QStringLiteral("PartName"), QStringLiteral("/ppt/notesSlides/notesSlide%1.xml").arg(i + 1)); xml.writeAttribute(QStringLiteral("ContentType"), QStringLiteral("application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml")); }
@@ -1247,41 +1482,35 @@ KoFilter::ConversionStatus PptxExport::convert(const QByteArray &from, const QBy
         xml.writeEndElement(); // spTree
         xml.writeEndElement(); // cSld
         xml.writeStartElement(QStringLiteral("p:clrMap")); for (const auto &pair : {qMakePair(QStringLiteral("bg1"), QStringLiteral("lt1")), qMakePair(QStringLiteral("tx1"), QStringLiteral("dk1")), qMakePair(QStringLiteral("bg2"), QStringLiteral("lt2")), qMakePair(QStringLiteral("tx2"), QStringLiteral("dk2")), qMakePair(QStringLiteral("accent1"), QStringLiteral("accent1")), qMakePair(QStringLiteral("accent2"), QStringLiteral("accent2")), qMakePair(QStringLiteral("accent3"), QStringLiteral("accent3")), qMakePair(QStringLiteral("accent4"), QStringLiteral("accent4")), qMakePair(QStringLiteral("accent5"), QStringLiteral("accent5")), qMakePair(QStringLiteral("accent6"), QStringLiteral("accent6")), qMakePair(QStringLiteral("hlink"), QStringLiteral("hlink")), qMakePair(QStringLiteral("folHlink"), QStringLiteral("folHlink"))}) xml.writeAttribute(pair.first, pair.second); xml.writeEndElement();
-        xml.writeStartElement(QStringLiteral("p:sldLayoutIdLst")); xml.writeEmptyElement(QStringLiteral("p:sldLayoutId")); xml.writeAttribute(QStringLiteral("id"), QStringLiteral("2147483649")); xml.writeAttribute(QStringLiteral("r:id"), QStringLiteral("rId1")); xml.writeEndElement(); xml.writeEmptyElement(QStringLiteral("p:txStyles")); xml.writeEndElement();
+        xml.writeStartElement(QStringLiteral("p:sldLayoutIdLst")); for (int i = 0; i < layoutPartCount; ++i) { xml.writeEmptyElement(QStringLiteral("p:sldLayoutId")); xml.writeAttribute(QStringLiteral("id"), QString::number(2147483649 + i)); xml.writeAttribute(QStringLiteral("r:id"), QStringLiteral("rId%1").arg(i + 1)); } xml.writeEndElement(); xml.writeEmptyElement(QStringLiteral("p:txStyles")); xml.writeEndElement();
     }))) return CreationError;
 
     if (!write(QStringLiteral("ppt/slideMasters/_rels/slideMaster1.xml.rels"), xmlPart([&](QXmlStreamWriter &xml) {
         xml.writeStartElement(QStringLiteral("Relationships")); xml.writeDefaultNamespace(QStringLiteral("http://schemas.openxmlformats.org/package/2006/relationships"));
-        xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId1")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../slideLayouts/slideLayout1.xml"));
-        xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId2")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../theme/theme1.xml"));
-        if (hasMasterPicture) { xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId3")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../media/master-image1.%1").arg(masterPictureSuffix)); }
+        for (int i = 0; i < layoutPartCount; ++i) { xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId%1").arg(i + 1)); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../slideLayouts/slideLayout%1.xml").arg(i + 1)); }
+        xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId%1").arg(themeRelationshipId)); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../theme/theme1.xml"));
+        if (hasMasterPicture) { xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId%1").arg(masterPictureRelationshipId)); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../media/master-image1.%1").arg(masterPictureSuffix)); }
         xml.writeEndElement();
     }))) return CreationError;
 
-    if (!write(QStringLiteral("ppt/slideLayouts/slideLayout1.xml"), xmlPart([&](QXmlStreamWriter &xml) {
-        xml.writeStartElement(QStringLiteral("p:sldLayout")); xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/presentationml/2006/main"), QStringLiteral("p")); xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/main"), QStringLiteral("a")); xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships"), QStringLiteral("r")); xml.writeAttribute(QStringLiteral("type"), QStringLiteral("blank"));
-        xml.writeStartElement(QStringLiteral("p:cSld"));
-        if (hasMasterPicture) writePictureBackground(xml);
-        startShapeTree(xml);
-        xml.writeEndElement(); // spTree
-        xml.writeEndElement(); // cSld
-        xml.writeStartElement(QStringLiteral("p:clrMapOvr")); xml.writeEmptyElement(QStringLiteral("a:masterClrMapping")); xml.writeEndElement(); xml.writeEndElement();
-    }))) return CreationError;
-
-    if (!write(QStringLiteral("ppt/slideLayouts/_rels/slideLayout1.xml.rels"), xmlPart([&](QXmlStreamWriter &xml) {
-        xml.writeStartElement(QStringLiteral("Relationships")); xml.writeDefaultNamespace(QStringLiteral("http://schemas.openxmlformats.org/package/2006/relationships")); xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId1")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../slideMasters/slideMaster1.xml"));
-        if (hasMasterPicture) { xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId3")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../media/master-image1.%1").arg(masterPictureSuffix)); }
-        xml.writeEndElement();
-    }))) return CreationError;
+    for (int i = 0; i < layoutPartCount; ++i) {
+        KPrPageLayout *layout = i < slideLayouts.size() ? slideLayouts.at(i) : nullptr;
+        if (!write(QStringLiteral("ppt/slideLayouts/slideLayout%1.xml").arg(i + 1), slideLayoutXml(layout, hasMasterPicture, pageSize))) return CreationError;
+        if (!write(QStringLiteral("ppt/slideLayouts/_rels/slideLayout%1.xml.rels").arg(i + 1), xmlPart([&](QXmlStreamWriter &xml) {
+            xml.writeStartElement(QStringLiteral("Relationships")); xml.writeDefaultNamespace(QStringLiteral("http://schemas.openxmlformats.org/package/2006/relationships")); xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId1")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../slideMasters/slideMaster1.xml"));
+            if (hasMasterPicture) { xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId2")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/image")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../media/master-image1.%1").arg(masterPictureSuffix)); }
+            xml.writeEndElement();
+        }))) return CreationError;
+    }
     if (hasMasterPicture && !writeMedia(QStringLiteral("ppt/media/master-image1.%1").arg(masterPictureSuffix), masterPictureData)) return CreationError;
     if (!write(QStringLiteral("ppt/theme/theme1.xml"), themeXml())) return CreationError;
 
     for (int i = 0; i < pages.size(); ++i) {
         const QList<SlideObject> &objects = slideObjects[i];
         if (!write(QStringLiteral("ppt/slides/slide%1.xml").arg(i + 1), slideXml(objects, dynamic_cast<KPrPage *>(pages[i]) && static_cast<KPrPage *>(pages[i])->isHidden(), dynamic_cast<KPrPage *>(pages[i])))) return CreationError;
-        if (!write(QStringLiteral("ppt/slides/_rels/slide%1.xml.rels").arg(i + 1), xmlPart([i, &objects, notesRelationshipId = notesRelationshipIds[i]](QXmlStreamWriter &xml) {
+        if (!write(QStringLiteral("ppt/slides/_rels/slide%1.xml.rels").arg(i + 1), xmlPart([i, &objects, layoutPart = pageLayoutPart.at(i) + 1, notesRelationshipId = notesRelationshipIds[i]](QXmlStreamWriter &xml) {
             xml.writeStartElement(QStringLiteral("Relationships")); xml.writeDefaultNamespace(QStringLiteral("http://schemas.openxmlformats.org/package/2006/relationships"));
-            xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId1")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../slideLayouts/slideLayout1.xml"));
+            xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId1")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../slideLayouts/slideLayout%1.xml").arg(layoutPart));
             QSet<int> writtenHyperlinks;
             for (const SlideObject &object : objects) {
                 if (object.mediaRelationshipId) {

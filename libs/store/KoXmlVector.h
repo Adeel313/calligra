@@ -47,19 +47,32 @@ private:
 
     mutable unsigned m_bufferStartIndex;
     mutable QVector<T> m_bufferItems;
-    mutable QByteArray m_bufferData;
+
+    struct DecodedBlock
+    {
+        unsigned startIndex = 0;
+        unsigned lastUse = 0;
+        QVector<T> items;
+    };
+    static constexpr int decodedBlockCacheSize = 8;
+    mutable QVector<DecodedBlock> m_decodedBlocks;
+    mutable unsigned m_useCounter = 0;
+    mutable QByteArray m_decodeBuffer;
 
 protected:
     /**
-     * fetch given item index to the buffer
-     * will INVALIDATE all references to the buffer
+     * decode the stored block holding the given item index into the cache
+     * (least recently used block is replaced when the cache is full)
      */
-    void fetchItem(unsigned index) const
+    const DecodedBlock &decodeBlock(unsigned index) const
     {
-        // already in the buffer ?
-        if (index >= m_bufferStartIndex)
-            if (index - m_bufferStartIndex < (unsigned)m_bufferItems.count())
-                return;
+        for (int i = 0; i < m_decodedBlocks.count(); ++i) {
+            DecodedBlock &block = m_decodedBlocks[i];
+            if (index >= block.startIndex && index - block.startIndex < (unsigned)block.items.count()) {
+                block.lastUse = ++m_useCounter;
+                return block;
+            }
+        }
 
         // search in the stored blocks
         // TODO: binary search to speed up
@@ -71,17 +84,30 @@ protected:
                     break;
                 }
 
-        m_bufferStartIndex = m_startIndex[loc];
+        DecodedBlock *slot = nullptr;
+        if (m_decodedBlocks.count() < decodedBlockCacheSize) {
+            m_decodedBlocks.append(DecodedBlock());
+            slot = &m_decodedBlocks.last();
+        } else {
+            slot = &m_decodedBlocks[0];
+            for (DecodedBlock &block : m_decodedBlocks)
+                if (block.lastUse < slot->lastUse)
+                    slot = &block;
+        }
+
 #ifdef KOXMLVECTOR_USE_LZF
-        KoLZF::decompress(m_blocks[loc], m_bufferData);
+        KoLZF::decompress(m_blocks[loc], m_decodeBuffer);
 #else
-        m_bufferData = m_blocks[loc];
+        m_decodeBuffer = m_blocks[loc];
 #endif
-        QBuffer buffer(&m_bufferData);
+        QBuffer buffer(&m_decodeBuffer);
         buffer.open(QIODevice::ReadOnly);
         QDataStream in(&buffer);
-        m_bufferItems.clear();
-        in >> m_bufferItems;
+        slot->items.clear();
+        in >> slot->items;
+        slot->startIndex = m_startIndex[loc];
+        slot->lastUse = ++m_useCounter;
+        return *slot;
     }
 
     /**
@@ -118,7 +144,8 @@ public:
 
         m_bufferStartIndex = 0;
         m_bufferItems.clear();
-        m_bufferData.reserve(reservedBufferSize);
+        m_decodedBlocks.clear();
+        m_decodeBuffer.reserve(reservedBufferSize);
     }
 
     inline int count() const
@@ -156,8 +183,12 @@ public:
      */
     const T &operator[](int i) const
     {
-        fetchItem((unsigned)i);
-        return m_bufferItems[i - m_bufferStartIndex];
+        const unsigned index = (unsigned)i;
+        if (index >= m_bufferStartIndex && index - m_bufferStartIndex < (unsigned)m_bufferItems.count())
+            return m_bufferItems[index - m_bufferStartIndex];
+
+        const DecodedBlock &block = decodeBlock(index);
+        return block.items[index - block.startIndex];
     }
 
     /**

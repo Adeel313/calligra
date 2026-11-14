@@ -133,6 +133,21 @@ public:
     int subType() const;
 
     /**
+     * SMIL type this effect saves as (for example "fade" or "slideWipe").
+     */
+    const QString &smilType() const;
+
+    /**
+     * SMIL subtype this effect saves as (for example "crossfade").
+     */
+    const QString &smilSubType() const;
+
+    /**
+     * @return true when the effect uses smil:direction="reverse".
+     */
+    bool reverse() const;
+
+    /**
      * Save the smil attributes of the effect
      *
      * @param xmlWriter The xml writer used for saving

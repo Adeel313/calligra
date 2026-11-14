@@ -465,6 +465,18 @@ void KoModeBox::updateRibbonCompactness(QWidget *page)
     }
     const int labelledWidth = page->property("ribbonLabelledWidth").toInt();
     const bool compact = labelledWidth > available;
+    if (qEnvironmentVariableIsSet("CALLIGRA_RIBBON_DEBUG")) {
+        qWarning("RIBBON %s available=%d labelled=%d compact=%d",
+                 qPrintable(page->objectName()), available, labelledWidth, compact);
+        for (QWidget *child : page->findChildren<QWidget *>(QString(), Qt::FindDirectChildrenOnly)) {
+            qWarning("  group minW=%d hintW=%d", child->minimumSizeHint().width(), child->sizeHint().width());
+        }
+        for (QToolButton *button : KoRibbonLayout::pageButtons(page)) {
+            qWarning("  button %s text=%s minW=%d hintW=%d",
+                     qPrintable(button->objectName()), qPrintable(button->text()),
+                     button->minimumSizeHint().width(), button->sizeHint().width());
+        }
+    }
     if (page->property("ribbonCompact").toBool() == compact && page->property("ribbonCompactSet").toBool()) {
         return;
     }

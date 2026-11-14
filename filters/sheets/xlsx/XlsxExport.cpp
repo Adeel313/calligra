@@ -245,7 +245,7 @@ QByteArray stylesXml(const QList<Style> &styles, const QList<Style> &conditional
         xml.writeStartElement(QStringLiteral("cellXfs")); xml.writeAttribute(QStringLiteral("count"), QString::number(styles.size() + 1));
         xml.writeEmptyElement(QStringLiteral("xf")); xml.writeAttribute(QStringLiteral("numFmtId"), QStringLiteral("0")); xml.writeAttribute(QStringLiteral("fontId"), QStringLiteral("0")); xml.writeAttribute(QStringLiteral("fillId"), QStringLiteral("0")); xml.writeAttribute(QStringLiteral("borderId"), QStringLiteral("0")); xml.writeAttribute(QStringLiteral("xfId"), QStringLiteral("0"));
         for (int i = 0; i < styles.size(); ++i) { const Style &s = styles[i]; const int numFmtId = excelNumberFormat(s) == 164 ? customFormatIds.value(excelFormatCode(s), 164) : excelNumberFormat(s); xml.writeStartElement(QStringLiteral("xf")); xml.writeAttribute(QStringLiteral("numFmtId"), QString::number(numFmtId)); xml.writeAttribute(QStringLiteral("fontId"), QString::number(i + 1)); xml.writeAttribute(QStringLiteral("fillId"), QString::number(i + 2)); xml.writeAttribute(QStringLiteral("borderId"), QString::number(i + 1)); xml.writeAttribute(QStringLiteral("xfId"), QStringLiteral("0")); xml.writeAttribute(QStringLiteral("applyFont"), QStringLiteral("1")); xml.writeAttribute(QStringLiteral("applyFill"), QStringLiteral("1")); xml.writeAttribute(QStringLiteral("applyBorder"), QStringLiteral("1")); xml.writeAttribute(QStringLiteral("applyNumberFormat"), QStringLiteral("1"));
-            if (s.halign() != Style::HAlignUndefined || s.valign() != Style::VAlignUndefined || s.wrapText()) { xml.writeStartElement(QStringLiteral("alignment")); if (s.halign() != Style::HAlignUndefined) xml.writeAttribute(QStringLiteral("horizontal"), s.halign() == Style::Center ? QStringLiteral("center") : s.halign() == Style::Right ? QStringLiteral("right") : s.halign() == Style::Justified ? QStringLiteral("justify") : QStringLiteral("left")); if (s.valign() != Style::VAlignUndefined) xml.writeAttribute(QStringLiteral("vertical"), s.valign() == Style::Top ? QStringLiteral("top") : s.valign() == Style::Middle ? QStringLiteral("center") : QStringLiteral("bottom")); if (s.wrapText()) xml.writeAttribute(QStringLiteral("wrapText"), QStringLiteral("1")); xml.writeEndElement(); }
+            if (s.halign() != Style::HAlignUndefined || s.valign() != Style::VAlignUndefined || s.wrapText() || s.angle() != 0 || s.verticalText() || s.shrinkToFit()) { xml.writeStartElement(QStringLiteral("alignment")); if (s.halign() != Style::HAlignUndefined) xml.writeAttribute(QStringLiteral("horizontal"), s.halign() == Style::Center ? QStringLiteral("center") : s.halign() == Style::Right ? QStringLiteral("right") : s.halign() == Style::Justified ? QStringLiteral("justify") : QStringLiteral("left")); if (s.valign() != Style::VAlignUndefined) xml.writeAttribute(QStringLiteral("vertical"), s.valign() == Style::Top ? QStringLiteral("top") : s.valign() == Style::Middle ? QStringLiteral("center") : QStringLiteral("bottom")); if (s.wrapText()) xml.writeAttribute(QStringLiteral("wrapText"), QStringLiteral("1")); if (s.shrinkToFit()) xml.writeAttribute(QStringLiteral("shrinkToFit"), QStringLiteral("1")); if (s.verticalText()) xml.writeAttribute(QStringLiteral("textRotation"), QStringLiteral("255")); else if (s.angle() != 0) { int rotation = -s.angle(); if (rotation < 0) rotation = 90 - rotation; xml.writeAttribute(QStringLiteral("textRotation"), QString::number(rotation)); } xml.writeEndElement(); }
             xml.writeEndElement(); }
         xml.writeEndElement();
         xml.writeStartElement(QStringLiteral("cellStyles")); xml.writeAttribute(QStringLiteral("count"), QStringLiteral("1")); xml.writeEmptyElement(QStringLiteral("cellStyle")); xml.writeAttribute(QStringLiteral("name"), QStringLiteral("Normal")); xml.writeAttribute(QStringLiteral("xfId"), QStringLiteral("0")); xml.writeAttribute(QStringLiteral("builtinId"), QStringLiteral("0")); xml.writeEndElement();
@@ -657,7 +657,12 @@ QByteArray tableXml(const SheetTable &table, int id)
     });
 }
 
-QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, const QHash<QString, int> &conditionalStyleIds, bool hasDrawing, QList<QPair<QString, QString>> *links, const QList<SheetTable> &tables, const QList<SheetFilter> &filters)
+static inline qint64 cellStyleKey(int column, int row)
+{
+    return (qint64(row) << 32) | quint32(column);
+}
+
+QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, const QHash<qint64, int> &cellStyleIds, const QHash<QString, int> &conditionalStyleIds, bool hasDrawing, QList<QPair<QString, QString>> *links, const QList<SheetTable> &tables, const QList<SheetFilter> &filters)
 {
     const QRect area = sheet->usedArea(true);
     return xmlBytes([&](QXmlStreamWriter &xml) {
@@ -778,11 +783,15 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
                         xml.writeStartElement(QStringLiteral("c"));
                         xml.writeAttribute(QStringLiteral("r"), columnName(cell.column()) + QString::number(row));
                         cellTimer.restart();
-                        const Style cellStyle = cell.style();
+                        const auto styleIt = cellStyleIds.constFind(cellStyleKey(cell.column(), row));
+                        if (styleIt != cellStyleIds.cend()) {
+                            if (styleIt.value() > 0) xml.writeAttribute(QStringLiteral("s"), QString::number(styleIt.value()));
+                        } else {
+                            const auto fallbackIt = styleIds.constFind(cell.style());
+                            if (fallbackIt != styleIds.cend()) xml.writeAttribute(QStringLiteral("s"), QString::number(fallbackIt.value()));
+                        }
                         styleNanos += cellTimer.nsecsElapsed();
                         cellTimer.restart();
-                        const auto styleIt = styleIds.constFind(cellStyle);
-                        if (styleIt != styleIds.cend()) xml.writeAttribute(QStringLiteral("s"), QString::number(styleIt.value()));
                         const Value value = cell.value();
                         valueNanos += cellTimer.nsecsElapsed();
                         cellTimer.restart();
@@ -1162,6 +1171,7 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
     QHash<Style, int> styleIds;
     QList<Style> conditionalStyles;
     QHash<QString, int> conditionalStyleIds;
+    QList<QHash<qint64, int>> sheetCellStyleIds;
     for (const Sheet *sheet : sheets) {
         QElapsedTimer sheetTimer;
         sheetTimer.start();
@@ -1169,6 +1179,7 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
         CellStorage *storage = static_cast<CellStorage *>(sheet->cellStorage());
         qCDebug(lcXlsxTiming, "XLSX styles: sheet %s area %d,%d %dx%d", qPrintable(sheet->sheetName()), area.left(), area.top(), area.width(), area.height());
         int cellCount = 0;
+        QHash<qint64, int> cellStyleIds;
         qint64 styleNanos = 0, hashNanos = 0, iterNanos = 0;
         for (int row = area.top(); !area.isEmpty() && row <= area.bottom(); ++row) {
             QElapsedTimer it;
@@ -1180,10 +1191,18 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
                 const Style style = cell.style();
                 styleNanos += it.nsecsElapsed();
                 it.restart();
-                if (!style.isDefault() && !styleIds.contains(style)) {
-                    styles.append(style);
-                    styleIds.insert(style, styles.size());
+                int styleId = 0;
+                if (!style.isDefault()) {
+                    const auto styleIt = styleIds.constFind(style);
+                    if (styleIt == styleIds.cend()) {
+                        styles.append(style);
+                        styleId = styles.size();
+                        styleIds.insert(style, styleId);
+                    } else {
+                        styleId = styleIt.value();
+                    }
                 }
+                cellStyleIds.insert(cellStyleKey(cell.column(), row), styleId);
                 hashNanos += it.nsecsElapsed();
                 it.restart();
                 cell = storage->nextInRow(cell.column(), row, CellStorage::VisitContent);
@@ -1209,6 +1228,7 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
                 }
             }
         }
+        sheetCellStyleIds.append(cellStyleIds);
     }
 
     qCDebug(lcXlsxTiming, "XLSX export: styles done at %lld ms", (long long)timer.elapsed());
@@ -1415,7 +1435,7 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
     for (int i = 0; i < sheets.size(); ++i) {
         qCDebug(lcXlsxTiming, "XLSX export: sheet %d (%s) begin at %lld ms", i + 1, qPrintable(sheetNames[i]), (long long)timer.elapsed());
         QList<QPair<QString, QString>> sheetLinks;
-        if (!write(QStringLiteral("xl/worksheets/sheet%1.xml").arg(i + 1), worksheetXml(sheets[i], styleIds, conditionalStyleIds, !sheetImages[i].isEmpty(), &sheetLinks, sheetTableList[i], sheetFilterList[i]))) return CreationError;
+        if (!write(QStringLiteral("xl/worksheets/sheet%1.xml").arg(i + 1), worksheetXml(sheets[i], styleIds, sheetCellStyleIds[i], conditionalStyleIds, !sheetImages[i].isEmpty(), &sheetLinks, sheetTableList[i], sheetFilterList[i]))) return CreationError;
         qCDebug(lcXlsxTiming, "XLSX export: sheet %d done at %lld ms", i + 1, (long long)timer.elapsed());
         if (!sheetImages[i].isEmpty() || !sheetLinks.isEmpty() || !sheetTableList[i].isEmpty()) {
             const int firstLinkId = sheetImages[i].isEmpty() ? 1 : 2;

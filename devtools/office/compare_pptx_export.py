@@ -79,7 +79,7 @@ def main():
     checks['source_unchanged'] = digest(source)==before
     report=dict(source=str(source),source_sha256=before,checks=checks,passed=all(checks.values()),
                 native_features=actual,reference_features=reference,visual=visual,package_integrity=integrity)
-    report['native_filter_sha256']=digest(ROOT/'destdir/usr/lib/x86_64-linux-gnu/qt6/plugins/calligra/formatfilters/calligra_filter_odp2pptx.so')
+    report['native_filter_sha256']=digest(ROOT/'build/install/lib/x86_64-linux-gnu/qt6/plugins/calligra/formatfilters/calligra_filter_odp2pptx.so')
     report['flake_sha256']=digest(ROOT/'build/bin/libflake.so')
     if args.baseline:report['baseline_visual']=compare_pdf('baseline')
     report['reference_version']=subprocess.check_output(['/usr/bin/libreoffice','--version'],env=env,text=True).strip()

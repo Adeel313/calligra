@@ -41,7 +41,7 @@ def main():
     checks['notes'] = normalize(original['notes']) == normalize(actual['notes'])
     checks['source_unchanged'] = hashlib.sha256(source.read_bytes()).hexdigest() == before
     dependencies = {}
-    plugins = ROOT/'destdir/usr/lib/x86_64-linux-gnu/qt6/plugins/calligra/formatfilters'
+    plugins = ROOT/'build/install/lib/x86_64-linux-gnu/qt6/plugins/calligra/formatfilters'
     for name in ['calligra_filter_pptx2odp.so', 'calligra_filter_odp2pptx.so']:
         output = subprocess.check_output(['/usr/bin/ldd', plugins/name], text=True, env=environment())
         dependencies[name] = output

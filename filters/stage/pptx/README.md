@@ -25,7 +25,7 @@ text and bar-chart direction as well as the existing feature checks:
 
 ```sh
 /usr/bin/python3 filters/stage/pptx/tests/compatibility.py \
-  --build build --install destdir/usr --output build/pptx-compatibility-new --jobs 2
+  --build build --install build/install --output build/pptx-compatibility-new --jobs 2
 ```
 
 Use a fresh output directory for a clean run. The finite fixture suite does not
@@ -51,7 +51,7 @@ build/bin/test_native_pptx_preparation
   --output build/pptx-package-regressions-new
 ```
 
-The Python regression requires the two built filters in the local `destdir`
+The Python regression requires the two built filters in the local `build/install`
 installation and the `stage_pptx_roundtrip` target. It checks the package produced
 by the real Stage load/save path, including masters and layouts.
 

@@ -54,7 +54,7 @@ private:
     QComboBox *m_borderWeight = nullptr;
     QToolButton *m_penColor = nullptr;
     QToolButton *m_bordersButton = nullptr;
-    KoStyleManager *m_styleManager;
+    KoStyleManager *m_styleManager = nullptr;
     bool m_blockSignals;
     bool m_comboboxHasBidiItems;
     QTextBlock m_currentBlock;

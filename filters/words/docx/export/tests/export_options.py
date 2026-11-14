@@ -22,7 +22,7 @@ ODF += ' xmlns:xlink="http://www.w3.org/1999/xlink"'
 
 
 def environment():
-    install=ROOT/'destdir/usr'
+    install=ROOT/'build/install'
     return dict(os.environ,QT_QPA_PLATFORM='offscreen',QT_QPA_PLATFORMTHEME='generic',
         QT_LOGGING_RULES='*.debug=false',GSETTINGS_BACKEND='memory',SAL_USE_VCLPLUGIN='svp',
         LD_LIBRARY_PATH=str(ROOT/'build/bin')+':'+str(install/'lib/x86_64-linux-gnu'),
