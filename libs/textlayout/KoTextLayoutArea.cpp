@@ -1831,7 +1831,8 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
                 if (percent != 0) {
                     height *= percent / 100.0;
                 }
-                if (!useFontProperties) height *= 1.16; // default word-processing leading
+                if (!useFontProperties && line.textLength() != 0) height *= 1.16; // default word-processing leading
+                if (!useFontProperties && line.textLength() == 0) height *= 1.115; // empty paragraphs: match LibreOffice leading
                 // A line that carries math keeps the height its glyphs really
                 // occupy: math fonts have a taller ascent/descent than the
                 // sentence font, and lines mixing in larger formula runs (like
