@@ -54,3 +54,7 @@ plugins/textediting/autocorrection/libs/autotests/data/empty-generated.xml
 
 # LibreOffice lock files
 .~lock.*#
+
+# Python bytecode caches
+__pycache__/
+*.pyc
