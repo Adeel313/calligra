@@ -632,22 +632,14 @@ qreal Utils::ST_Percentage_withMsooxmlFix_to_double(const QString &val, bool &ok
 
 QColor Utils::colorForLuminance(const QColor &color, const DoubleModifier &modulation, const DoubleModifier &offset)
 {
-    if (modulation.valid) {
-        int r, g, b;
-        color.getRgb(&r, &g, &b);
-        if (offset.valid) {
-            return QColor(int(floor((255 - r) * (100.0 - modulation.value) / 100.0 + r)),
-                          int(floor((255 - g) * offset.value / 100.0 + g)),
-                          int(floor((255 - b) * offset.value / 100.0 + b)),
-                          color.alpha());
-        } else {
-            return QColor(int(floor(r * modulation.value / 100.0)),
-                          int(floor(g * modulation.value / 100.0)),
-                          int(floor(b * modulation.value / 100.0)),
-                          color.alpha());
-        }
+    if ((!modulation.valid && !offset.valid) || !color.isValid()) {
+        return color;
     }
-    return color;
+    // ECMA-376 lumMod/lumOff act on the HSL lightness: L' = L * lumMod + lumOff.
+    const qreal mod = modulation.valid ? modulation.value / 100.0 : 1.0;
+    const qreal off = offset.valid ? offset.value / 100.0 : 0.0;
+    const qreal lightness = qBound(0.0, color.lightnessF() * mod + off, 1.0);
+    return QColor::fromHslF(qMax<qreal>(0.0, color.hslHueF()), color.hslSaturationF(), lightness, color.alphaF());
 }
 
 KOMSOOXML_EXPORT void Utils::modifyColor(QColor &color, qreal tint, qreal shade, qreal satMod)

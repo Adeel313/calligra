@@ -58,15 +58,13 @@ QColor XlsxXmlCommonReader::tintedColor(const QColor &color, qreal tint)
         return color;
     }
     int h, l, s;
-    color.getHsl(&h, &l, &s);
+    color.getHsl(&h, &s, &l);
     if (tint < 0.0) {
         l = floor(l * (1.0 + tint));
     } else {
         l = floor(l * (1.0 - tint) + (HLSMAX - HLSMAX * (1.0 - tint)));
     }
-    int r, g, b;
-    color.getRgb(&r, &g, &b);
-    return QColor(r, g, b, color.alpha());
+    return QColor::fromHsl(h, s, qBound(0, l, HLSMAX), color.alpha());
 }
 
 #undef CURRENT_EL

@@ -133,7 +133,7 @@ public:
     // this font stretch is needed if we want to have exact line height as in ms-word and oo
     //
     // font_size * font_stretch = windows_font_height
-    qreal calculateFontYStretch(const QString &fontFamily);
+    qreal calculateFontYStretch(const QString &fontFamily, bool externalLeading = true);
 
     StylePrivate hardCodedDefaultStyle;
 
@@ -196,13 +196,14 @@ void KoCharacterStyle::ensureMinimalProperties(QTextCharFormat &format) const
     }
 }
 
-qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily)
+qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily, bool externalLeading)
 {
     qreal stretch = 1;
 #ifdef SHOULD_BUILD_FONT_CONVERSION
 
-    if (textScaleMap.contains(fontFamily)) {
-        return textScaleMap.value(fontFamily);
+    const QString cacheKey = fontFamily + (externalLeading ? QStringLiteral("/leading") : QStringLiteral("/no-leading"));
+    if (textScaleMap.contains(cacheKey)) {
+        return textScaleMap.value(cacheKey);
     }
 
     FcResult result = FcResultMatch;
@@ -318,19 +319,29 @@ qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily
     qreal height = os2->usWinAscent + os2->usWinDescent;
     if ((os2->fsSelection & 0x0080) && os2->sTypoAscender > os2->sTypoDescender) {
         height = os2->sTypoAscender - os2->sTypoDescender + qMax<qreal>(0, os2->sTypoLineGap);
+    } else if (externalLeading) {
+        // Word's normal line box includes external leading from hhea in
+        // addition to the Windows ascent/descent. A fixed multiplier loses
+        // this font-specific spacing and accumulates pagination errors.
+        const auto *horizontal = static_cast<const TT_HoriHeader *>(FT_Get_Sfnt_Table(face, ft_sfnt_hhea));
+        if (horizontal) {
+            height += qMax<qreal>(0, horizontal->Line_Gap);
+        }
     }
-    height *= qreal(2048) / header->Units_Per_EM;
-    stretch = (1.215 * height) / 2500;
-    stretch = (1.15 * height) / 2500; // seems a better guess but probably not right
+    // KoTextLayoutArea applies the legacy 1.16 leading factor after this
+    // stretch. Compensate here so the resulting line box uses the actual
+    // font metrics, while fonts without metrics retain the fallback leading.
+    stretch = height / (qreal(header->Units_Per_EM) * 1.16);
 
     FT_Done_Face(face);
     FT_Done_FreeType(library);
     FcPatternDestroy(font);
     FcPatternDestroy(matched);
 
-    textScaleMap.insert(fontFamily, stretch);
+    textScaleMap.insert(cacheKey, stretch);
 #else
     Q_UNUSED(fontFamily);
+    Q_UNUSED(externalLeading);
 #endif // SHOULD_BUILD_FONT_CONVERSION
 
     return stretch;
@@ -804,6 +815,7 @@ void KoCharacterStyle::setFontFamily(const QString &family)
 {
     d->setProperty(QTextFormat::FontFamily, family);
     setFontYStretch(d->calculateFontYStretch(family));
+    d->setProperty(FontYStretchWithoutLeading, d->calculateFontYStretch(family, false));
 }
 QString KoCharacterStyle::fontFamily() const
 {

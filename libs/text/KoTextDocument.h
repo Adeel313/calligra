@@ -167,6 +167,10 @@ public:
     void setParaTableSpacingAtStart(bool spacingAtStart);
     bool paraTableSpacingAtStart() const;
 
+    /// Include the font's external leading in automatic line spacing.
+    void setAddExternalLeading(bool enabled);
+    bool addExternalLeading() const;
+
     /**
      * Returns the character format for the frame of this document.
      *
@@ -224,7 +228,8 @@ public:
         FrameCharFormat,
         FrameBlockFormat,
         ShapeController,
-        SectionModel
+        SectionModel,
+        AddExternalLeading
     };
 
     static const QUrl StyleManagerURL;
@@ -246,6 +251,7 @@ public:
     static const QUrl FrameBlockFormatUrl;
     static const QUrl ShapeControllerUrl;
     static const QUrl SectionModelUrl;
+    static const QUrl AddExternalLeadingUrl;
 
 private:
     QTextDocument *m_document;

@@ -431,6 +431,12 @@ bool KWOdfWriter::saveOdfSettings(KoStore *store)
     settingsWriter->addTextSpan(doc.paraTableSpacingAtStart() ? "true" : "false");
     settingsWriter->endElement();
 
+    settingsWriter->startElement("config:config-item");
+    settingsWriter->addAttribute("config:name", "AddExternalLeading");
+    settingsWriter->addAttribute("config:type", "boolean");
+    settingsWriter->addTextSpan(doc.addExternalLeading() ? "true" : "false");
+    settingsWriter->endElement();
+
     // OOo requires this config item to display files saved by wors correctly.
     // If true, then the fo:text-indent attribute will be ignored.
     settingsWriter->startElement("config:config-item");

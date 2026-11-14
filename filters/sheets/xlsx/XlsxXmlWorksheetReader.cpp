@@ -905,6 +905,15 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_conditionalFormatting()
 
     typedef QPair<int, QMap<QString, QString>> Condition;
 
+    // Excel writes the formulas of a block relative to the top-left cell of its first range.
+    // Give the conditions that base so relative references move with each cell.
+    if (!areas.isEmpty()) {
+        const QString baseCell = areas.first().section(QLatin1Char(':'), 0, 0);
+        for (Condition &condition : m_conditionalIndices) {
+            condition.second["style:base-cell-address"] = baseCell;
+        }
+    }
+
     // Adding conditions to list of conditions and making sure that only the one with highest priority
     // remains if there are multiple conditions with same area & condition
     // This is done because some ooxml files have same condition for some area listed multiple times but
@@ -992,24 +1001,30 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_cfRule()
     QMap<QString, QString> odf;
     // Map Excel's cell comparison and formula rules into the condition
     // expressions understood by the ODF style:map importer.
-    if (type == "expression") {
+    const bool textRule = type == "containsText" || type == "notContainsText" || type == "beginsWith" || type == "endsWith";
+    if (type == "expression" || textRule) {
         if (!formulas.isEmpty()) odf["style:condition"] = QString("is-true-formula(%1)").arg(formulas.first());
     } else if (op == "equal" && !formulas.isEmpty()) {
-        odf["style:condition"] = QString("cell-content()=%1").arg(m_formula);
+        odf["style:condition"] = QString("cell-content()=%1").arg(formulas.first());
     } else if (op == "notEqual" && !formulas.isEmpty()) {
-        odf["style:condition"] = QString("cell-content()!=%1").arg(m_formula);
+        odf["style:condition"] = QString("cell-content()!=%1").arg(formulas.first());
     } else if (op == "lessThan" && !formulas.isEmpty()) {
-        odf["style:condition"] = QString("cell-content()<%1").arg(m_formula);
+        odf["style:condition"] = QString("cell-content()<%1").arg(formulas.first());
     } else if (op == "lessThanOrEqual" && !formulas.isEmpty()) {
-        odf["style:condition"] = QString("cell-content()<=%1").arg(m_formula);
+        odf["style:condition"] = QString("cell-content()<=%1").arg(formulas.first());
     } else if (op == "greaterThan" && !formulas.isEmpty()) {
-        odf["style:condition"] = QString("cell-content()>%1").arg(m_formula);
+        odf["style:condition"] = QString("cell-content()>%1").arg(formulas.first());
     } else if (op == "greaterThanOrEqual" && !formulas.isEmpty()) {
-        odf["style:condition"] = QString("cell-content()>=%1").arg(m_formula);
+        odf["style:condition"] = QString("cell-content()>=%1").arg(formulas.first());
     } else if (op == "between" && formulas.size() >= 2) {
         odf["style:condition"] = QString("cell-content-is-between(%1, %2)").arg(formulas.at(0), formulas.at(1));
     } else if (op == "notBetween" && formulas.size() >= 2) {
         odf["style:condition"] = QString("cell-content-is-not-between(%1, %2)").arg(formulas.at(0), formulas.at(1));
+    }
+    // Rules without a condition we can express (color scales, data bars, icon sets)
+    // are skipped: an unconditional style:map would format the whole range.
+    if (!odf.contains("style:condition")) {
+        READ_EPILOGUE
     }
     odf["style:apply-style-name"] = m_context->styles->conditionalStyle(dxfId.toInt() + 1);
 

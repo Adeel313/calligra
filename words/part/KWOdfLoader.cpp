@@ -297,6 +297,7 @@ void KWOdfLoader::loadSettings(const KoXmlDocument &settingsDoc, QTextDocument *
         KoTextDocument(textDoc).setRelativeTabs(configurationSettings.parseConfigItemBool("TabsRelativeToIndent", true));
 
         KoTextDocument(textDoc).setParaTableSpacingAtStart(configurationSettings.parseConfigItemBool("AddParaTableSpacingAtStart", true));
+        KoTextDocument(textDoc).setAddExternalLeading(configurationSettings.parseConfigItemBool("AddExternalLeading", false));
     }
     // 1.6: m_document->variableCollection()->variableSetting()->loadOasis(settings);
 }

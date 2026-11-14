@@ -56,6 +56,51 @@
 #include <QSizeF>
 #include <QTime>
 
+namespace
+{
+//! Maps a WordprocessingML w:themeColor name to the key of the DrawingML colour scheme.
+QString docxThemeKey(const QString &themeColor)
+{
+    if (themeColor == QLatin1String("text1") || themeColor == QLatin1String("dark1"))
+        return QStringLiteral("dk1");
+    if (themeColor == QLatin1String("background1") || themeColor == QLatin1String("light1"))
+        return QStringLiteral("lt1");
+    if (themeColor == QLatin1String("text2") || themeColor == QLatin1String("dark2"))
+        return QStringLiteral("dk2");
+    if (themeColor == QLatin1String("background2") || themeColor == QLatin1String("light2"))
+        return QStringLiteral("lt2");
+    if (themeColor == QLatin1String("hyperlink"))
+        return QStringLiteral("hlink");
+    if (themeColor == QLatin1String("followedHyperlink"))
+        return QStringLiteral("folHlink");
+    return themeColor;
+}
+
+//! Resolves a w:themeColor with its w:themeTint or w:themeShade (hex, 255 leaves the colour unchanged).
+//! Returns an invalid colour when the theme does not define the colour.
+QColor docxThemeColor(MSOOXML::DrawingMLTheme *themes, const QString &themeColor, const QString &tint, const QString &shade)
+{
+    if (!themes || themeColor.isEmpty())
+        return QColor();
+    const MSOOXML::DrawingMLColorSchemeItemBase *item = themes->colorScheme.value(docxThemeKey(themeColor));
+    if (!item)
+        return QColor();
+    QColor color = item->value();
+    bool ok = false;
+    if (!tint.isEmpty()) {
+        const int value = tint.toInt(&ok, 16);
+        if (ok)
+            MSOOXML::Utils::modifyColor(color, value / 255.0, 0, 0);
+    }
+    if (!shade.isEmpty()) {
+        const int value = shade.toInt(&ok, 16);
+        if (ok)
+            MSOOXML::Utils::modifyColor(color, 0, value / 255.0, 0);
+    }
+    return color;
+}
+}
+
 static QMap<QString, KoBorder::BorderStyle> borderMap = {
     {QString(), KoBorder::BorderNone},
     {"nil", KoBorder::BorderNone},
@@ -4398,17 +4443,35 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_shd(shdCaller caller)
     }
     TRY_READ_ATTR(color)
     // debugDocx << m_callsNames;
-    if (!color.isEmpty() && color != MsooXmlReader::constAuto) {
-        QColor clr(MSOOXML::Utils::ST_HexColorRGB_to_QColor(color));
-        if (caller == shd_rPr && clr.isValid() && val == "solid") {
-            m_currentTextStyleProperties->setBackground(clr);
-        }
+    QColor patternColor = docxThemeColor(m_context->themes,
+                                         attrs.value(QUALIFIED_NAME(themeColor)).toString(),
+                                         attrs.value(QUALIFIED_NAME(themeTint)).toString(),
+                                         attrs.value(QUALIFIED_NAME(themeShade)).toString());
+    if (!patternColor.isValid() && !color.isEmpty() && color != MsooXmlReader::constAuto) {
+        patternColor = QColor(MSOOXML::Utils::ST_HexColorRGB_to_QColor(color));
+    }
+    if (caller == shd_rPr && patternColor.isValid() && val == "solid") {
+        m_currentTextStyleProperties->setBackground(patternColor);
     }
 
-    TRY_READ_ATTR(fill)
-    QString fillColor = fill.toLower();
-    if (!fillColor.isEmpty() && fillColor != MsooXmlReader::constAuto) {
-        fillColor.prepend("#");
+    // The theme fill wins over the hex fallback in w:fill.
+    QString fillColor;
+    const QColor themedFill = docxThemeColor(m_context->themes,
+                                             attrs.value(QUALIFIED_NAME(themeFill)).toString(),
+                                             attrs.value(QUALIFIED_NAME(themeFillTint)).toString(),
+                                             attrs.value(QUALIFIED_NAME(themeFillShade)).toString());
+    if (themedFill.isValid()) {
+        fillColor = themedFill.name();
+    } else {
+        TRY_READ_ATTR(fill)
+        fillColor = fill.toLower();
+        if (!fillColor.isEmpty() && fillColor != MsooXmlReader::constAuto) {
+            fillColor.prepend("#");
+        } else {
+            fillColor.clear();
+        }
+    }
+    if (!fillColor.isEmpty()) {
         if (caller == shd_pPr) {
             m_currentParagraphStyle.addProperty("fo:background-color", fillColor);
         }
@@ -5534,7 +5597,13 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_color()
     const QXmlStreamAttributes attrs(attributes());
     READ_ATTR(val)
     //! @todo more styles
-    if (val == MsooXmlReader::constAuto) {
+    const QColor themed = docxThemeColor(m_context->themes,
+                                         attrs.value(QUALIFIED_NAME(themeColor)).toString(),
+                                         attrs.value(QUALIFIED_NAME(themeTint)).toString(),
+                                         attrs.value(QUALIFIED_NAME(themeShade)).toString());
+    if (themed.isValid()) {
+        m_currentTextStyleProperties->setForeground(QBrush(themed));
+    } else if (val == MsooXmlReader::constAuto) {
         m_currentTextStyle.addProperty("style:use-window-font-color", "true");
     } else {
         QColor color(MSOOXML::Utils::ST_HexColorRGB_to_QColor(val));

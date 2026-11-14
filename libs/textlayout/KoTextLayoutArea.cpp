@@ -1675,6 +1675,13 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
     };
     const bool useFontProperties = style.value(KoParagraphStyle::LineSpacingFromFont).toBool();
 
+    const bool externalLeading = KoTextDocument(d->documentLayout->document()).addExternalLeading();
+    const auto fontHeightStretch = [externalLeading](const QTextCharFormat &format) {
+        const auto property = !externalLeading && format.hasProperty(KoCharacterStyle::FontYStretchWithoutLeading)
+            ? KoCharacterStyle::FontYStretchWithoutLeading : KoCharacterStyle::FontYStretch;
+        return format.hasProperty(property) ? format.property(property).toDouble() : 1.0;
+    };
+
     if (cursor->fragmentIterator.atEnd()) { // no text in parag.
         qreal fontStretch = 1;
         QTextCharFormat charFormat = block.charFormat();
@@ -1692,7 +1699,7 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
             fontStretch = PresenterFontStretch;
         } else if (style.hasProperty(KoCharacterStyle::FontYStretch)) {
             // stretch line height to ms-word size
-            fontStretch = charFormat.property(KoCharacterStyle::FontYStretch).toDouble();
+            fontStretch = fontHeightStretch(charFormat);
         }
         height = charFormat.fontPointSize() * fontStretch;
     } else {
@@ -1703,7 +1710,7 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
             fontStretch = PresenterFontStretch;
         } else if (fragment.charFormat().hasProperty(KoCharacterStyle::FontYStretch)) {
             // stretch line height to ms-word size
-            fontStretch = fragment.charFormat().property(KoCharacterStyle::FontYStretch).toDouble();
+            fontStretch = fontHeightStretch(fragment.charFormat());
         }
         // read max font height
         noteFont(fragment.charFormat());
@@ -1745,7 +1752,7 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
                     fontStretch = PresenterFontStretch;
                 } else if (fragment.charFormat().hasProperty(KoCharacterStyle::FontYStretch)) {
                     // stretch line height to ms-word size
-                    fontStretch = fragment.charFormat().property(KoCharacterStyle::FontYStretch).toDouble();
+                    fontStretch = fontHeightStretch(fragment.charFormat());
                 }
                 // read max font height
                 noteFont(fragment.charFormat());

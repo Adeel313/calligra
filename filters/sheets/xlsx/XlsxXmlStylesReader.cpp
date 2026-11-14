@@ -1160,8 +1160,11 @@ KoFilter::ConversionStatus XlsxXmlStylesReader::read_patternFill()
         // 100% background
         percent = 1;
     } else if (p == "solid") {
-        // 100% foreground
+        // 100% foreground. Conditional formats (dxf) often give only bgColor for a solid fill.
         percent = 0;
+        if (!m_currentFgColor.isValid()) {
+            m_currentFgColor = m_currentBgColor;
+        }
     } else if (p.startsWith("dark")) {
         if (p == "darkDown") {
             percent = 0.5;

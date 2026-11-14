@@ -443,6 +443,10 @@ public:
 
     void visitBlock(QTextBlock &block, const QTextCursor &) override
     {
+        // Page assignments and numbering belong to the document structure,
+        // not its paragraph appearance. Capture them before unapplying the
+        // old style, which may itself carry the imported page assignment.
+        const QTextBlockFormat originalFormat = block.blockFormat();
         if (m_styleManager) {
             QTextBlockFormat bf = block.blockFormat();
             KoParagraphStyle *old = m_styleManager->paragraphStyle(bf.intProperty(KoParagraphStyle::StyleId));
@@ -450,13 +454,18 @@ public:
                 old->unapplyStyle(block);
         }
         // The above should unapply the style and it's lists part, but we want to clear everything
-        // except section info.
+        // except section and page-layout info.
         QTextCursor cursor(block);
         QVariant sectionStartings = cursor.blockFormat().property(KoParagraphStyle::SectionStartings);
         QVariant sectionEndings = cursor.blockFormat().property(KoParagraphStyle::SectionEndings);
         QTextBlockFormat fmt;
         fmt.setProperty(KoParagraphStyle::SectionStartings, sectionStartings);
         fmt.setProperty(KoParagraphStyle::SectionEndings, sectionEndings);
+        for (const auto property : {KoParagraphStyle::MasterPageName, KoParagraphStyle::PageNumber}) {
+            if (originalFormat.hasProperty(property)) {
+                fmt.setProperty(property, originalFormat.property(property));
+            }
+        }
         cursor.setBlockFormat(fmt);
         m_style->applyStyle(block);
     }

@@ -96,6 +96,34 @@ public:
     KoDocumentRdfBase m_rdfBase;
 };
 
+void TestKoTextEditor::testParagraphStylePreservesPageLayout()
+{
+    TestDocument doc;
+    auto *editor = doc.textEditor();
+    auto *manager = KoTextDocument(doc.m_document).styleManager();
+    auto *original = new KoParagraphStyle;
+    original->setName(QStringLiteral("Imported paragraph"));
+    original->setProperty(KoParagraphStyle::MasterPageName, QStringLiteral("Imported page"));
+    original->setProperty(KoParagraphStyle::PageNumber, 1);
+    manager->add(original);
+    editor->insertText(QStringLiteral("Section 3: Logic"));
+    auto block = doc.m_document->firstBlock();
+    original->applyStyle(block);
+
+    auto *heading = new KoParagraphStyle;
+    heading->setName(QStringLiteral("Heading 1"));
+    heading->setOutlineLevel(1);
+    manager->add(heading);
+    editor->setPosition(0);
+    editor->setPosition(block.length() - 1, QTextCursor::KeepAnchor);
+    editor->setStyle(heading);
+
+    QCOMPARE(block.blockFormat().stringProperty(KoParagraphStyle::MasterPageName), QStringLiteral("Imported page"));
+    QCOMPARE(block.blockFormat().intProperty(KoParagraphStyle::PageNumber), 1);
+    QCOMPARE(block.blockFormat().intProperty(KoParagraphStyle::StyleId), heading->styleId());
+    QCOMPARE(doc.m_document->blockCount(), 1);
+}
+
 class TestEditorCommand final : public KUndo2Command
 {
 public:

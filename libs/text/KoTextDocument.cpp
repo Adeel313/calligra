@@ -49,6 +49,7 @@ const QUrl KoTextDocument::HeadingListURL = QUrl("kotext://headingList");
 const QUrl KoTextDocument::SelectionsURL = QUrl("kotext://selections");
 const QUrl KoTextDocument::LayoutTextPageUrl = QUrl("kotext://layoutTextPage");
 const QUrl KoTextDocument::ParaTableSpacingAtStartUrl = QUrl("kotext://spacingAtStart");
+const QUrl KoTextDocument::AddExternalLeadingUrl = QUrl("kotext://addExternalLeading");
 const QUrl KoTextDocument::IndexGeneratorManagerUrl = QUrl("kotext://indexGeneratorManager");
 const QUrl KoTextDocument::FrameCharFormatUrl = QUrl("kotext://frameCharFormat");
 const QUrl KoTextDocument::FrameBlockFormatUrl = QUrl("kotext://frameBlockFormat");
@@ -342,6 +343,16 @@ void KoTextDocument::setParaTableSpacingAtStart(bool spacingAtStart)
 {
     QVariant v(spacingAtStart);
     m_document->addResource(KoTextDocument::ParaTableSpacingAtStart, ParaTableSpacingAtStartUrl, v);
+}
+
+void KoTextDocument::setAddExternalLeading(bool enabled)
+{
+    m_document->addResource(AddExternalLeading, AddExternalLeadingUrl, enabled);
+}
+
+bool KoTextDocument::addExternalLeading() const
+{
+    return m_document->resource(AddExternalLeading, AddExternalLeadingUrl).toBool();
 }
 
 bool KoTextDocument::paraTableSpacingAtStart() const

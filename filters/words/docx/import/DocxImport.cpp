@@ -337,6 +337,12 @@ void DocxImport::writeConfigurationSettings(KoXmlWriter *settings) const
 {
     MsooXmlImport::writeConfigurationSettings(settings);
 
+    settings->startElement("config:config-item");
+    settings->addAttribute("config:name", "AddExternalLeading");
+    settings->addAttribute("config:type", "boolean");
+    settings->addTextSpan("true");
+    settings->endElement();
+
     // This config item is used in KoTextLayoutArea::handleBordersAndSpacing
     // during layouting.  The defined 'Above paragraph' and 'Below paragraph'
     // paragraph spacing (which is written in the ODF as fo:margin-top for the

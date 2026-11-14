@@ -97,3 +97,8 @@ words_part_add_unit_test(TestHeaderFooterLayout
     TestHeaderFooterLayout.cpp
     LINK_LIBRARIES wordsprivate Qt6::Test
 )
+
+words_part_add_unit_test(TestHeadingStyle
+    TestHeadingStyle.cpp
+    LINK_LIBRARIES wordsprivate Qt6::Test
+)
