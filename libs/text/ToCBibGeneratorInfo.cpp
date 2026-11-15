@@ -131,6 +131,7 @@ void IndexEntryTabStop::addAttributes(KoXmlWriter *writer) const
     } else {
         Q_ASSERT(tab.type == QTextOption::RightTab);
         writer->addAttribute("style:type", "right");
+        if (!m_position.isEmpty()) writer->addAttribute("style:position", m_position);
     }
 }
 

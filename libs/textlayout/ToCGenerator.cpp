@@ -96,7 +96,9 @@ bool ToCGenerator::generate()
     QTextCursor cursor = m_ToCDocument->rootFrame()->lastCursorPosition();
     cursor.setPosition(m_ToCDocument->rootFrame()->firstPosition(), QTextCursor::KeepAnchor);
     cursor.beginEditBlock();
-    cursor.insertBlock(QTextBlockFormat(), QTextCharFormat());
+    cursor.removeSelectedText();
+    cursor.setBlockFormat(QTextBlockFormat());
+    cursor.setCharFormat(QTextCharFormat());
 
     KoStyleManager *styleManager = KoTextDocument(m_document).styleManager();
 
@@ -122,7 +124,6 @@ bool ToCGenerator::generate()
             cursor.mergeBlockFormat(blockFormat);
             m_preservePagebreak = false;
         }
-        cursor.insertBlock(QTextBlockFormat(), QTextCharFormat());
     }
 
     // Add TOC
@@ -188,15 +189,16 @@ void ToCGenerator::generateEntry(int outlineLevel, QTextCursor &cursor, QTextBlo
     if (!tocEntryText.isEmpty()) {
         KoParagraphStyle *tocTemplateStyle = nullptr;
 
-        if (outlineLevel >= 1 && (outlineLevel - 1) < m_ToCInfo->m_entryTemplate.size() && outlineLevel <= m_ToCInfo->m_outlineLevel) {
-            // List's index starts with 0, outline level starts with 0
-            const TocEntryTemplate *tocEntryTemplate = &m_ToCInfo->m_entryTemplate.at(outlineLevel - 1);
-
-            // ensure that we fetched correct entry template
-            Q_ASSERT(tocEntryTemplate->outlineLevel == outlineLevel);
-            if (tocEntryTemplate->outlineLevel != outlineLevel) {
-                qDebug() << "TOC outline level not found correctly " << outlineLevel;
+        if (outlineLevel >= 1 && outlineLevel <= m_ToCInfo->m_outlineLevel) {
+            // ODF templates may be sparse or appear in a different order.
+            const TocEntryTemplate *tocEntryTemplate = nullptr;
+            for (const auto &candidate : std::as_const(m_ToCInfo->m_entryTemplate)) {
+                if (candidate.outlineLevel == outlineLevel) {
+                    tocEntryTemplate = &candidate;
+                    break;
+                }
             }
+            if (!tocEntryTemplate) return;
 
             tocTemplateStyle = styleManager->paragraphStyle(tocEntryTemplate->styleId);
             if (tocTemplateStyle == nullptr) {
@@ -208,16 +210,30 @@ void ToCGenerator::generateEntry(int outlineLevel, QTextCursor &cursor, QTextBlo
                 blockFormat.setProperty(KoParagraphStyle::BreakBefore, KoText::PageBreak);
                 m_preservePagebreak = false;
             }
-            cursor.insertBlock(blockFormat, QTextCharFormat());
+            if (!cursor.atStart() || !cursor.block().text().isEmpty()) {
+                cursor.insertBlock(blockFormat, QTextCharFormat());
+            } else {
+                cursor.setBlockFormat(blockFormat);
+            }
 
             QTextBlock tocEntryTextBlock = cursor.block();
             tocTemplateStyle->applyStyle(tocEntryTextBlock);
+            cursor.setCharFormat(tocEntryTextBlock.charFormat());
 
             KoTextBlockData bd(block);
 
             // save the current style due to hyperlinks
             QTextCharFormat savedCharFormat = cursor.charFormat();
+            QTextCharFormat activeCharFormat = savedCharFormat;
             foreach (IndexEntry *entry, tocEntryTemplate->indexEntries) {
+                cursor.setCharFormat(activeCharFormat);
+                if (!entry->styleName.isEmpty()) {
+                    if (KoCharacterStyle *style = styleManager->characterStyle(entry->styleName)) {
+                        QTextCharFormat format = cursor.charFormat();
+                        style->applyStyle(format);
+                        cursor.setCharFormat(format);
+                    }
+                }
                 switch (entry->name) {
                 case IndexEntry::LINK_START: {
                     // IndexEntryLinkStart *linkStart = static_cast<IndexEntryLinkStart*>(entry);
@@ -238,17 +254,20 @@ void ToCGenerator::generateEntry(int outlineLevel, QTextCursor &cursor, QTextBlo
 
                     if (!target.isNull()) {
                         // copy it to alter subset of properties
-                        QTextCharFormat linkCf(savedCharFormat);
+                        QTextCharFormat linkCf(cursor.charFormat());
                         linkCf.setAnchor(true);
                         linkCf.setProperty(KoCharacterStyle::AnchorType, KoCharacterStyle::Anchor);
                         linkCf.setAnchorHref('#' + target);
+                        if (!linkCf.hasProperty(KoCharacterStyle::UnderlineStyle)) {
+                            linkCf.setProperty(KoCharacterStyle::UnderlineStyle, KoCharacterStyle::NoLineStyle);
+                        }
+                        if (!linkCf.hasProperty(QTextFormat::ForegroundBrush)) {
+                            linkCf.setForeground(Qt::black);
+                        }
 
-                        QBrush foreground = linkCf.foreground();
-                        foreground.setColor(Qt::blue);
-
-                        linkCf.setForeground(foreground);
-                        linkCf.setProperty(KoCharacterStyle::UnderlineStyle, KoCharacterStyle::SolidLine);
-                        linkCf.setProperty(KoCharacterStyle::UnderlineType, KoCharacterStyle::SingleLine);
+                        // A link does not imply blue/underlined text. TOCs
+                        // inherit the entry style unless a link style is set.
+                        activeCharFormat = linkCf;
                         cursor.setCharFormat(linkCf);
                     }
                     break;
@@ -279,6 +298,10 @@ void ToCGenerator::generateEntry(int outlineLevel, QTextCursor &cursor, QTextBlo
                     if (tabEntry->m_position.isEmpty()) {
                         tabEntry->tab.position = KoTextLayoutArea::MaximumTabPos;
                     } // else the position is already parsed into tab.position
+                    // The template overrides a paragraph tab at the same position.
+                    tabList.erase(std::remove_if(tabList.begin(), tabList.end(), [tabEntry](const QVariant &value) {
+                        return qFuzzyCompare(value.value<KoText::Tab>().position, tabEntry->tab.position);
+                    }), tabList.end());
                     tabList.append(QVariant::fromValue<KoText::Tab>(tabEntry->tab));
                     std::sort(tabList.begin(), tabList.end(), compareTab);
                     blockFormat.setProperty(KoParagraphStyle::TabPositions, QVariant::fromValue<QList<QVariant>>(tabList));
@@ -293,6 +316,7 @@ void ToCGenerator::generateEntry(int outlineLevel, QTextCursor &cursor, QTextBlo
                 case IndexEntry::LINK_END: {
                     // IndexEntryLinkEnd *linkEnd = static_cast<IndexEntryLinkEnd*>(entry);
                     cursor.setCharFormat(savedCharFormat);
+                    activeCharFormat = savedCharFormat;
                     break;
                 }
                 default: {

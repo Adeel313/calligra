@@ -269,11 +269,14 @@ void KoTextLayoutArea::paint(QPainter *painter, const KoTextDocumentLayout::Pain
                     }
 
                     if (format.isAnchor()) {
-                        if (!format.hasProperty(KoCharacterStyle::UnderlineStyle))
+                        if (!format.hasProperty(KoCharacterStyle::UnderlineStyle)) {
                             format.setFontUnderline(true);
-                        if (!format.hasProperty(QTextFormat::ForegroundBrush))
+                            formatChanged = true;
+                        }
+                        if (!format.hasProperty(QTextFormat::ForegroundBrush)) {
                             format.setForeground(Qt::blue);
-                        formatChanged = true;
+                            formatChanged = true;
+                        }
                     }
 
                     if (format.boolProperty(KoCharacterStyle::UseWindowFontColor)) {
@@ -350,7 +353,13 @@ void KoTextLayoutArea::paint(QPainter *painter, const KoTextDocumentLayout::Pain
             // important for paragraph split across two pages.
             // 20pt enlargement seems safe as pages is split by 50pt and this helps unwanted
             // glyph cutting
-            painter->setClipRect(br.adjusted(-20, -20, 20, 20), Qt::IntersectClip);
+            QRectF textClip = br.adjusted(-20, -20, 20, 20);
+            for (int i = 0; i < layout->lineCount(); ++i) {
+                const QRectF ink = layout->lineAt(i).naturalTextRect();
+                textClip.setLeft(qMin(textClip.left(), ink.left() - 1));
+                textClip.setRight(qMax(textClip.right(), ink.right() + 1));
+            }
+            painter->setClipRect(textClip, Qt::IntersectClip);
 
             layout->draw(painter, QPointF(0, 0), selections);
 
@@ -596,16 +605,24 @@ static void drawDecorationLine(QPainter *painter,
     painter->setPen(penBackup);
 }
 
-static void drawDecorationText(QPainter *painter, const QTextLine &line, const QColor &color, const QString &decorText, qreal x1, qreal x2)
+static void drawDecorationText(QPainter *painter, const QTextLine &line, const QColor &color, const QString &decorText, qreal x1, qreal x2, QPaintDevice *device)
 {
-    qreal y = line.position().y();
-    QPen oldPen = painter->pen();
-    painter->setPen(QPen(color));
-    do {
-        QRectF br;
-        painter->drawText(QRectF(QPointF(x1, y), QPointF(x2, y + line.height())), Qt::AlignLeft | Qt::AlignVCenter, decorText, &br);
-        x1 = br.right();
-    } while (x1 <= x2);
+    // Shape decorations with the document's metrics, just like the paragraph.
+    // QPainter::drawText uses the printer's DPI and can clip away oversized
+    // leaders when the document is printed or exported to PDF.
+    QTextLayout decoration(decorText, painter->font(), device);
+    decoration.beginLayout();
+    QTextLine decorationLine = decoration.createLine();
+    decoration.endLayout();
+    if (!decorationLine.isValid()) return;
+    const qreal advance = decorationLine.naturalTextWidth();
+    if (advance <= 0) return;
+    const QPen oldPen = painter->pen();
+    painter->setPen(color);
+    const qreal y = line.y() + line.ascent() - decorationLine.ascent();
+    for (; x1 + advance <= x2; x1 += advance) {
+        decoration.draw(painter, QPointF(x1, y));
+    }
     painter->setPen(oldPen);
 }
 
@@ -619,7 +636,8 @@ static void drawDecorationWords(QPainter *painter,
                                 qreal width,
                                 const qreal y,
                                 const int fragmentToLineOffset,
-                                const int startOfFragmentInBlock)
+                                const int startOfFragmentInBlock,
+                                QPaintDevice *device)
 {
     qreal wordBeginX = -1;
     int j = line.textStart() + fragmentToLineOffset;
@@ -629,7 +647,7 @@ static void drawDecorationWords(QPainter *painter,
                 if (decorText.isEmpty())
                     drawDecorationLine(painter, color, type, style, width, wordBeginX, line.cursorToX(j), y);
                 else
-                    drawDecorationText(painter, line, color, decorText, wordBeginX, line.cursorToX(j));
+                    drawDecorationText(painter, line, color, decorText, wordBeginX, line.cursorToX(j), device);
             }
             wordBeginX = -1;
         } else if (wordBeginX == -1) {
@@ -641,7 +659,7 @@ static void drawDecorationWords(QPainter *painter,
         if (decorText.isEmpty())
             drawDecorationLine(painter, color, type, style, width, wordBeginX, line.cursorToX(j), y);
         else
-            drawDecorationText(painter, line, color, decorText, wordBeginX, line.cursorToX(j));
+            drawDecorationText(painter, line, color, decorText, wordBeginX, line.cursorToX(j), device);
     }
 }
 
@@ -1004,12 +1022,12 @@ void KoTextLayoutArea::drawStrikeOuts(QPainter *painter,
                                 width,
                                 y,
                                 fragmentToLineOffset,
-                                startOfFragmentInBlock);
+                                startOfFragmentInBlock, d->documentLayout->paintDevice());
         } else {
             if (strikeOutText.isEmpty())
                 drawDecorationLine(painter, color, strikeOutType, strikeOutStyle, width, x1, x2, y);
             else
-                drawDecorationText(painter, line, color, strikeOutText, x1, x2);
+                drawDecorationText(painter, line, color, strikeOutText, x1, x2, d->documentLayout->paintDevice());
         }
     }
 }
@@ -1064,7 +1082,7 @@ void KoTextLayoutArea::drawOverlines(QPainter *painter,
                                 width,
                                 y,
                                 fragmentToLineOffset,
-                                startOfFragmentInBlock);
+                                startOfFragmentInBlock, d->documentLayout->paintDevice());
         } else {
             drawDecorationLine(painter, color, fontOverLineType, fontOverLineStyle, width, x1, x2, y);
         }
@@ -1121,7 +1139,7 @@ void KoTextLayoutArea::drawUnderlines(QPainter *painter,
                                 width,
                                 y,
                                 fragmentToLineOffset,
-                                startOfFragmentInBlock);
+                                startOfFragmentInBlock, d->documentLayout->paintDevice());
         } else {
             drawDecorationLine(painter, color, fontUnderLineType, fontUnderLineStyle, width, x1, x2, y);
         }
@@ -1232,7 +1250,7 @@ int KoTextLayoutArea::decorateTabsAndFormatting(QPainter *painter,
                         if (tab.leaderText.isEmpty()) {
                             drawDecorationLine(painter, tabDecorColor, tab.leaderType, tab.leaderStyle, width, x1, x2, y);
                         } else {
-                            drawDecorationText(painter, line, tabDecorColor, tab.leaderText, x1, x2);
+                            drawDecorationText(painter, line, tabDecorColor, tab.leaderText, x1, x2, d->documentLayout->paintDevice());
                         }
                     }
                 }

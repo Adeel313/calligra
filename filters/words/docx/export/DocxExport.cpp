@@ -1011,6 +1011,7 @@ bool pointsToTwips(qreal points, qint64 *twips)
 struct ScannedTabStop {
     int position = 0; //!< twips
     QString type; //!< ODF style:type (left, right, center, char)
+    QString leader;
 };
 
 struct ScannedParagraphStyle {
@@ -1182,6 +1183,14 @@ void scanStylePart(KoXmlStreamReader &reader,
                                 tab.position = qRound(points * 20.0);
                                 tab.type = reader.attributes().value(QStringLiteral("style:type")).toString();
                                 scanned.tabStops.append(tab);
+                                const QString leaderText = reader.attributes().value(QStringLiteral("style:leader-text")).toString();
+                                const QString leaderStyle = reader.attributes().value(QStringLiteral("style:leader-style")).toString();
+                                if (leaderText == QLatin1String(".") || leaderStyle == QLatin1String("dotted"))
+                                    scanned.tabStops.last().leader = QStringLiteral("dot");
+                                else if (leaderText == QLatin1String("-") || leaderStyle == QLatin1String("dash"))
+                                    scanned.tabStops.last().leader = QStringLiteral("hyphen");
+                                else if (leaderText == QLatin1String("_") || leaderStyle == QLatin1String("solid"))
+                                    scanned.tabStops.last().leader = QStringLiteral("underscore");
                             }
                         }
                         reader.skipCurrentElement();
@@ -1250,6 +1259,7 @@ QByteArray tabStopsXml(const QVector<ScannedTabStop> &tabStops)
             writer.addAttribute("w:val", "left");
         }
         writer.addAttribute("w:pos", tab.position);
+        if (!tab.leader.isEmpty()) writer.addAttribute("w:leader", tab.leader);
         writer.endElement(); // w:tab
     }
     writer.endElement(); // w:tabs
@@ -1360,7 +1370,22 @@ KoFilter::ConversionStatus DocxExport::convert(const QByteArray &from, const QBy
     resolveFontFamilies(docxBackendContext);
 
     DocxStyleWriter styleWriter(&docxBackendContext);
-    styleWriter.read();
+    QMap<int, QString> tocStyles;
+    if (docxBackendContext.odfStore()->open(QStringLiteral("content.xml"))) {
+        KoXmlStreamReader reader;
+        prepareForOdf(reader);
+        reader.setDevice(docxBackendContext.odfStore()->device());
+        while (!reader.atEnd()) {
+            reader.readNext();
+            if (reader.isStartElement() && reader.qualifiedName() == QLatin1StringView("text:table-of-content-entry-template")) {
+                const int level = reader.attributes().value(QStringLiteral("text:outline-level")).toInt();
+                const QString name = reader.attributes().value(QStringLiteral("text:style-name")).toString();
+                if (level >= 1 && level <= 9 && !name.isEmpty() && !tocStyles.contains(level)) tocStyles.insert(level, name);
+            }
+        }
+        docxBackendContext.odfStore()->close();
+    }
+    styleWriter.read(tocStyles);
 
     // Add the styles to the docx file.
     docxFile.addContentFile("", "/word/styles.xml", "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml", styleWriter.documentContent());

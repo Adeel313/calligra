@@ -21,6 +21,7 @@
 
 #include <QSharedPointer>
 #include <QTest>
+#include <QTextTable>
 #include <QVariant>
 
 #include <TextLayoutDebug.h>
@@ -389,6 +390,56 @@ void TestBlockLayout::testAdvancedLineSpacing()
     // qDebug() << blockLayout->lineAt(0).y();
     QEXPECT_FAIL("", "FIXME: setLineSpacingFromFont(true) has been set on line 6, so what will the linespacing be then?", Continue);
     QVERIFY2(qAbs(blockLayout->lineAt(0).y() - line7_y) < ROUNDING, QString("Actual: %1 Expected: %2").arg(blockLayout->lineAt(0).y()).arg(line7_y).toLatin1());
+}
+
+void TestBlockLayout::testContextualSpacing()
+{
+    for (bool sameStyle : {false, true}) {
+        for (bool suppressBefore : {false, true}) {
+            for (bool suppressAfter : {false, true}) {
+                setupTest(QStringLiteral("First\nSecond"));
+                QTextBlock first = m_doc->begin();
+                QTextBlock second = first.next();
+                KoParagraphStyle before;
+                before.setStyleId(101);
+                before.setFontPointSize(12);
+                before.setLineHeightAbsolute(20);
+                before.setBottomMargin(QTextLength(QTextLength::FixedLength, 9));
+                before.setProperty(KoParagraphStyle::ContextualSpacing, suppressAfter);
+                before.applyStyle(first);
+                KoParagraphStyle after;
+                after.setStyleId(sameStyle ? 101 : 102);
+                after.setFontPointSize(12);
+                after.setLineHeightAbsolute(20);
+                after.setTopMargin(QTextLength(QTextLength::FixedLength, 7));
+                after.setProperty(KoParagraphStyle::ContextualSpacing, suppressBefore);
+                after.applyStyle(second);
+                m_layout->layout();
+                const qreal gap = qMax(sameStyle && suppressAfter ? 0 : 9, sameStyle && suppressBefore ? 0 : 7);
+                QCOMPARE(second.layout()->lineAt(0).y() - first.layout()->lineAt(0).y(), 20 + gap);
+            }
+        }
+    }
+
+    // Identical styles in neighbouring cells are not adjacent paragraphs.
+    setupTest(QString());
+    QTextCursor cursor(m_doc);
+    QTextTable *table = cursor.insertTable(1, 2);
+    QTextCursor firstCursor = table->cellAt(0, 0).firstCursorPosition();
+    QTextCursor secondCursor = table->cellAt(0, 1).firstCursorPosition();
+    firstCursor.insertText(QStringLiteral("First"));
+    secondCursor.insertText(QStringLiteral("Second"));
+    QTextBlock first = firstCursor.block();
+    QTextBlock second = secondCursor.block();
+    KoParagraphStyle style;
+    style.setStyleId(101);
+    style.setFontPointSize(12);
+    style.setProperty(KoParagraphStyle::ContextualSpacing, true);
+    style.applyStyle(first);
+    style.setTopMargin(QTextLength(QTextLength::FixedLength, 7));
+    style.applyStyle(second);
+    m_layout->layout();
+    QCOMPARE(second.layout()->lineAt(0).y() - first.layout()->lineAt(0).y(), 7.0);
 }
 
 void TestBlockLayout::testEmptyLineHeights()

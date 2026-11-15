@@ -110,6 +110,8 @@ private:
     int m_insideSection = 0; //!< Number of open <text:section> elements.
     QStack<QString> m_paragraphBreakAfter;
     int m_tocLevels = 3;
+    bool m_tocHyperlinks = false;
+    bool m_tocPageNumbers = false;
     bool m_tocFieldOpen = false; //!< true between TOC field begin and end.
     bool m_bodyHasContent = false; //!< A body paragraph or table has been written.
     bool m_lastWasSectionBreak = false; //!< Last body output was a section break.

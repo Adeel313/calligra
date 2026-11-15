@@ -10,6 +10,7 @@
 
 // Qt
 #include <QBuffer>
+#include <QMap>
 
 class QByteArray;
 
@@ -22,7 +23,7 @@ public:
     explicit DocxStyleWriter(OdfReaderContext *context);
     virtual ~DocxStyleWriter();
 
-    void read();
+    void read(const QMap<int, QString> &tocStyles = {});
 
     QByteArray documentContent() const;
 

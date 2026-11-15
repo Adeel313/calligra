@@ -63,6 +63,7 @@ private Q_SLOTS:
 
     /// Test distance above and below paragraphs.
     void testBlockSpacing();
+    void testContextualSpacing();
 
     /// Test left and right margins of paragraphs.
     void testLeftRightMargins();

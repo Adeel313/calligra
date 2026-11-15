@@ -1855,6 +1855,10 @@ void KoParagraphStyle::loadOdfProperties(KoShapeLoadingContext &scontext)
         setKeepWithNext(styleStack.property(KoXmlNS::fo, "keep-with-next") == "always");
     }
 
+    if (styleStack.hasProperty(KoXmlNS::calligra, "contextual-spacing")) {
+        setProperty(ContextualSpacing, styleStack.property(KoXmlNS::calligra, "contextual-spacing") == "true");
+    }
+
     if (styleStack.hasProperty(KoXmlNS::style, "text-autospace")) {
         const QString autoSpace = styleStack.property(KoXmlNS::style, "text-autospace");
         if (autoSpace == "none")
@@ -2188,6 +2192,8 @@ void KoParagraphStyle::saveOdf(KoGenStyle &style, KoShapeSavingContext &context)
             style.addAttribute("style:default-outline-level", defaultOutlineLevel());
         } else if (key == KoParagraphStyle::AutomaticWritingMode) {
             style.addProperty("style:writing-mode-automatic", automaticWritingMode(), KoGenStyle::ParagraphType);
+        } else if (key == KoParagraphStyle::ContextualSpacing) {
+            style.addProperty("calligra:contextual-spacing", propertyBoolean(ContextualSpacing), KoGenStyle::ParagraphType);
         } else if (key == KoParagraphStyle::TextAutoSpace) {
             if (textAutoSpace() == NoAutoSpace)
                 style.addProperty("style:text-autospace", "none", KoGenStyle::ParagraphType);

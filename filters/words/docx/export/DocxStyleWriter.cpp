@@ -21,6 +21,7 @@
 
 // This filter
 #include "DocxStyleHelper.h"
+#include "OdfReaderDocxContext.h"
 
 // ----------------------------------------------------------------
 //                     class DocxStyleWriter
@@ -43,7 +44,7 @@ QByteArray DocxStyleWriter::documentContent() const
     return m_documentContent;
 }
 
-void DocxStyleWriter::read()
+void DocxStyleWriter::read(const QMap<int, QString> &tocStyles)
 {
     KoOdfStyleManager *manager = m_readerContext->styleManager();
     m_documentWriter->startElement("w:styles");
@@ -89,6 +90,12 @@ void DocxStyleWriter::read()
         }
         QString family = style->family();
         QString parent = style->parent();
+
+        bool replacedTocStyle = false;
+        for (auto it = tocStyles.cbegin(); it != tocStyles.cend(); ++it) {
+            if (style->name() == QStringLiteral("TOC%1").arg(it.key()) && style->name() != it.value()) replacedTocStyle = true;
+        }
+        if (family == QLatin1String("paragraph") && replacedTocStyle) continue;
 
         if (family == "paragraph") {
             m_documentWriter->startElement("w:style");
@@ -146,5 +153,37 @@ void DocxStyleWriter::read()
         }
     }
 
+    // Word regenerates entries using its built-in TOC1..TOC9 styles, not
+    // arbitrary ODF template names. Retain the template's formatting there.
+    for (auto it = tocStyles.cbegin(); it != tocStyles.cend(); ++it) {
+        const QString name = QStringLiteral("TOC%1").arg(it.key());
+        KoOdfStyle *source = manager->style(it.value(), QStringLiteral("paragraph"));
+        if (!source || (name == it.value() && source->isFromStylesXml())) continue;
+        m_documentWriter->startElement("w:style");
+        m_documentWriter->addAttribute("w:type", "paragraph");
+        m_documentWriter->addAttribute("w:styleId", name);
+        m_documentWriter->startElement("w:name");
+        m_documentWriter->addAttribute("w:val", QStringLiteral("toc %1").arg(it.key()));
+        m_documentWriter->endElement();
+        QList<KoOdfStyle *> chain;
+        for (KoOdfStyle *s = source; s && chain.size() < 20; s = manager->style(s->parent(), QStringLiteral("paragraph"))) chain.prepend(s);
+        KoOdfStyleProperties paragraphProperties;
+        KoOdfStyleProperties textProperties;
+        for (KoOdfStyle *s : chain) {
+            if (auto *p = s->properties("style:paragraph-properties")) paragraphProperties.copyPropertiesFrom(*p);
+            if (auto *p = s->properties("style:text-properties")) textProperties.copyPropertiesFrom(*p);
+        }
+        m_documentWriter->startElement("w:pPr");
+        DocxStyleHelper::ParagraphExtras extras;
+        if (auto *context = dynamic_cast<OdfReaderDocxContext *>(m_readerContext)) {
+            extras.tabStops = context->tabStopsForStyle(it.value());
+        }
+        DocxStyleHelper::handleParagraphStyles(&paragraphProperties, m_documentWriter, extras);
+        m_documentWriter->endElement();
+        m_documentWriter->startElement("w:rPr");
+        DocxStyleHelper::handleTextStyles(&textProperties, m_documentWriter);
+        m_documentWriter->endElement();
+        m_documentWriter->endElement();
+    }
     m_documentWriter->endElement(); // w:styles
 }

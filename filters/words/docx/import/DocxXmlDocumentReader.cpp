@@ -36,6 +36,7 @@
 
 #include <QRandomGenerator>
 #include <QRegularExpression>
+#include <QScopedValueRollback>
 
 #define MSOOXML_CURRENT_NS "w"
 #define MSOOXML_CURRENT_CLASS DocxXmlDocumentReader
@@ -347,7 +348,16 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_body()
         }
     }
 
+    if (m_tocBodyWriter) finishToc();
     closeOpenList();
+    if (!m_pendingParagraphBreak.isEmpty()) {
+        KoGenStyle trailingPage(KoGenStyle::ParagraphAutoStyle, "paragraph");
+        trailingPage.addProperty("fo:break-before", m_pendingParagraphBreak);
+        body->startElement("text:p");
+        body->addAttribute("text:style-name", mainStyles->insert(trailingPage));
+        body->endElement();
+        m_pendingParagraphBreak.clear();
+    }
     body = documentBuffer.originalWriter();
     if (!m_trackedChangesXml.isEmpty()) {
         body->startElement("text:tracked-changes");
@@ -1913,10 +1923,13 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_instrText()
 
             if (instruction.startsWith(QLatin1String("TOC"))) {
                 m_startToc = true;
+                m_tocInstruction = instruction;
                 m_tocDepth = m_fieldDepth;
                 const auto levels = QRegularExpression(QStringLiteral("[1-9]-([1-9])")).match(instruction);
                 m_tocLevels = levels.hasMatch() ? levels.captured(1).toInt() : 3;
                 m_complexCharValue.clear();
+            } else if (m_startToc && m_fieldDepth == m_tocDepth) {
+                m_tocInstruction += QLatin1Char(' ') + instruction;
             } else if (instruction.startsWith(QLatin1String("HYPERLINK"))) {
                 // Removes hyperlink, spaces and extra " chars
                 instruction.remove(0, 11);
@@ -2694,6 +2707,30 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
         }
     }
 
+    // Table paragraph defaults sit above document defaults, but below named
+    // paragraph styles and direct formatting. Cell styles alone cannot carry
+    // this cascade through the ODF text loader.
+    if (!m_tableParagraphStyle.isEmpty()) {
+        KoGenStyle merged = m_currentParagraphStyle;
+        merged.removeAllProperties(KoGenStyle::ParagraphType);
+        KoGenStyle::copyPropertiesFromStyle(m_tableParagraphStyle, merged, KoGenStyle::ParagraphType);
+        QList<const KoGenStyle *> parents;
+        QString parentName = m_currentParagraphStyle.parentName();
+        while (!parentName.isEmpty() && parents.size() < 20) {
+            const KoGenStyle *parent = mainStyles->style(parentName, "paragraph");
+            if (!parent) {
+                break;
+            }
+            parents.prepend(parent);
+            parentName = parent->parentName();
+        }
+        for (const KoGenStyle *parent : parents) {
+            KoGenStyle::copyPropertiesFromStyle(*parent, merged, KoGenStyle::ParagraphType);
+        }
+        KoGenStyle::copyPropertiesFromStyle(m_currentParagraphStyle, merged, KoGenStyle::ParagraphType);
+        m_currentParagraphStyle = merged;
+    }
+
     collapseParagraphSpacing();
     // Word defaults to widow/orphan control; ODF does not inherit a minimum
     // from WordprocessingML, so make it explicit.  Without it a paragraph can
@@ -2751,11 +2788,48 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
             body = textPBuf.releaseWriter();
         } else {
             body = textPBuf.originalWriter();
+            const bool hasParagraphContent = !textPBuf.isEmpty();
+            QString paragraphXml;
+            (void)textPBuf.releaseWriter(paragraphXml);
+            QString standaloneBreak;
+            if (!m_insideTableCell && !m_headerActive && !m_footerActive && m_pendingParagraphBreak.isEmpty()) {
+                QXmlStreamReader fragment(QStringLiteral("<root>") + paragraphXml + QStringLiteral("</root>"));
+                fragment.setNamespaceProcessing(false);
+                bool onlyBreak = true;
+                int breaks = 0;
+                while (!fragment.atEnd()) {
+                    fragment.readNext();
+                    if (fragment.isStartElement()) {
+                        if (fragment.qualifiedName() == QLatin1StringView("calligra:hard-break")) {
+                            standaloneBreak = fragment.attributes().value(QStringLiteral("type")).toString();
+                            ++breaks;
+                        } else if (fragment.qualifiedName() != QLatin1StringView("root")
+                                   && fragment.qualifiedName() != QLatin1StringView("text:span")) {
+                            onlyBreak = false;
+                        }
+                    } else if (fragment.isCharacters() && !fragment.isWhitespace()) {
+                        onlyBreak = false;
+                    }
+                }
+                if (!onlyBreak || breaks != 1 || fragment.hasError()) {
+                    standaloneBreak.clear();
+                }
+            }
+            if (!standaloneBreak.isEmpty()) {
+                // A break-only paragraph must not overflow onto a page of its
+                // own before breaking again. Put the break on the next block.
+                m_pendingParagraphBreak = standaloneBreak;
+            }
             // A paragraph carrying sectPr normally only marks the end of the
             // section, but it may also contain visible text (for example a
             // cover-page line followed by the section break). Keep that text
             // and only skip truly empty section markers.
-            if (!m_createSectionToNext || !textPBuf.isEmpty()) {
+            if (standaloneBreak.isEmpty() && (!m_createSectionToNext || hasParagraphContent) && (!m_startToc || hasParagraphContent || m_endToc)) {
+                if (!m_pendingParagraphBreak.isEmpty()) {
+                    m_currentParagraphStyle.addProperty("fo:break-before", m_pendingParagraphBreak);
+                    m_pendingParagraphBreak.clear();
+                    m_currentStyleName.clear();
+                }
                 if (m_listFound) {
                     // update the size of a bullet picture
                     if ((m_currentBulletProperties.m_type == MSOOXML::Utils::ParagraphBulletProperties::PictureType)
@@ -2783,26 +2857,22 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
                 }
 
                 if (m_startToc) {
-                    m_startToc = false;
-                    body->startElement("text:table-of-content");
-                    body->addAttribute("text:name", "Table of Contents");
-                    body->startElement("text:table-of-content-source");
-                    body->addAttribute("text:outline-level", m_tocLevels);
-                    body->addAttribute("text:use-outline-level", "true");
-                    for (int level = 1; level <= m_tocLevels; ++level) {
-                        KoGenStyle entryStyle(KoGenStyle::ParagraphStyle, "paragraph");
-                        const QString entryName = mainStyles->insert(entryStyle, QStringLiteral("Contents%1").arg(level));
-                        body->startElement("text:table-of-content-entry-template");
-                        body->addAttribute("text:outline-level", level);
-                        body->addAttribute("text:style-name", entryName);
-                        body->startElement("text:index-entry-text"); body->endElement();
-                        body->startElement("text:index-entry-tab-stop");
-                        body->addAttribute("style:type", "right"); body->addAttribute("style:leader-char", "."); body->endElement();
-                        body->startElement("text:index-entry-page-number"); body->endElement();
-                        body->endElement();
-                    }
-                    body->endElement();
-                    body->startElement("text:index-body");
+                    beginToc();
+                }
+                if (m_tocBodyWriter) {
+                    collectTocEntry(paragraphXml);
+                }
+                // A trailing hard break ends this paragraph on the old page.
+                // Creating an empty continuation paragraph on the new page
+                // adds a line (and its margins) before the following content.
+                static const QRegularExpression trailingBreak(QStringLiteral(
+                    "<calligra:hard-break type=\"(page|column)\"\\s*/>(?:\\s*</text:span>)*\\s*$"));
+                const auto trailingMatch = trailingBreak.match(paragraphXml);
+                if (trailingMatch.hasMatch() && paragraphXml.count(QLatin1String("<calligra:hard-break")) == 1) {
+                    m_currentParagraphStyle.addProperty("fo:break-after", trailingMatch.captured(1));
+                    const int end = paragraphXml.indexOf(QLatin1String("/>"), trailingMatch.capturedStart()) + 2;
+                    paragraphXml.remove(trailingMatch.capturedStart(), end - trailingMatch.capturedStart());
+                    m_currentStyleName.clear();
                 }
                 body->startElement((outlineLevel > 0) ? "text:h" : "text:p", false);
                 if (outlineLevel > 0) {
@@ -2827,8 +2897,6 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
                     body->addCompleteElement(m_bookmarkSnippet.toUtf8());
                 }
 
-                QString paragraphXml;
-                (void)textPBuf.releaseWriter(paragraphXml);
                 if (!paragraphXml.contains(QLatin1String("calligra:hard-break"))) {
                     body->addCompleteElement(paragraphXml.toUtf8());
                 } else {
@@ -2872,9 +2940,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
                 }
                 body->endElement(); // text:p or text:h
                 if (m_endToc) {
-                    body->endElement(); // text:index-body
-                    body->endElement(); // text:table-of-content
-                    m_endToc = false;
+                    finishToc();
                 }
 
                 // The list stays open: the next paragraph either appends a
@@ -3134,7 +3200,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_r()
     // We want to write to the higher body level
     body = buffer.originalWriter();
     QString currentTextStyleName;
-    if (!m_currentTextStyle.isEmpty() || !m_currentTextStyle.parentName().isEmpty()) {
+    // Field-instruction runs have no visible content. Do not let an empty
+    // styled span start the TOC before its first cached entry is available.
+    if (!(m_startToc && buffer.isEmpty()) && (!m_currentTextStyle.isEmpty() || !m_currentTextStyle.parentName().isEmpty())) {
         currentTextStyleName = mainStyles->insert(m_currentTextStyle);
     }
     if (m_complexCharStatus == ExecuteInstrNow || m_complexCharType == InternalHyperlinkComplexFieldCharType) {
@@ -3420,6 +3488,12 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pPr()
             ELSE_TRY_READ_IF(framePr)
             ELSE_TRY_READ_IF(ind)
             ELSE_TRY_READ_IF(suppressLineNumbers)
+            else if (name() == QLatin1StringView("contextualSpacing")) {
+                const QString val(attributes().value(QLatin1StringView("w:val")).toString());
+                const bool enabled = val.isEmpty() || val == QLatin1String("1") || val == QLatin1String("true") || val == QLatin1String("on");
+                m_currentParagraphStyle.addProperty("calligra:contextual-spacing", enabled ? "true" : "false");
+                skipCurrentElement();
+            }
             else if (name() == QLatin1StringView("keepNext")) {
                 const QString val(attributes().value(QLatin1StringView("w:val")).toString());
                 const bool enabled = val.isEmpty() || val == QLatin1String("1") || val == QLatin1String("true") || val == QLatin1String("on");
@@ -5853,6 +5927,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     m_tableOffset = QPointF();
 
     m_tableMainStyle = KoTblStyle::create();
+    if (!m_pendingParagraphBreak.isEmpty()) {
+        m_tableMainStyle->setBreakBefore(m_pendingParagraphBreak == QLatin1String("column") ? KoTblStyle::ColumnBreak : KoTblStyle::PageBreak);
+        m_pendingParagraphBreak.clear();
+    }
     if (m_moveToStylesXml) {
         m_tableMainStyle->setAutoStyleInStylesDotXml(true);
     }
@@ -6443,6 +6521,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_trHeight()
 //! @todo support all child elements
 KoFilter::ConversionStatus DocxXmlDocumentReader::read_tc()
 {
+    QScopedValueRollback<bool> cellScope(m_insideTableCell, true);
     // Spacing does not collapse across table cell boundaries either.
     m_previousParagraphBottomMargin = 0;
 
@@ -6459,7 +6538,15 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tc()
                 KoXmlWriter *oldBody = body;
                 KoXmlWriter newBody(&buffer, oldBody->indentLevel() + 1);
                 body = &newBody;
+                const KoGenStyle savedTableParagraphStyle = m_tableParagraphStyle;
+                m_tableParagraphStyle = KoGenStyle(KoGenStyle::ParagraphAutoStyle, "paragraph");
+                if (auto *tableStyle = m_context->m_tableStyles.value(m_currentTableStyleName)) {
+                    if (auto *properties = tableStyle->properties(MSOOXML::DrawingTableStyle::WholeTbl)) {
+                        m_tableParagraphStyle = properties->paragraphStyle;
+                    }
+                }
                 TRY_READ(p)
+                m_tableParagraphStyle = savedTableParagraphStyle;
                 closeOpenList();
 
                 KoRawCellChild *textChild = new KoRawCellChild(buffer.data());

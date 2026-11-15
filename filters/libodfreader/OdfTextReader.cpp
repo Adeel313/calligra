@@ -293,7 +293,16 @@ void OdfTextReader::readElementTextTableOfContent(KoXmlStreamReader &reader)
             // Forward the source settings before the cached entries, so the
             // backend can retain the requested outline depth of the field.
             m_backend->elementTextTableOfContent(reader, m_context);
-            reader.skipCurrentElement();
+            int depth = 1;
+            while (depth && !reader.atEnd()) {
+                reader.readNext();
+                if (reader.isStartElement()) {
+                    ++depth;
+                    m_backend->elementTextTableOfContent(reader, m_context);
+                } else if (reader.isEndElement()) {
+                    --depth;
+                }
+            }
         } else if (reader.qualifiedName() == QLatin1StringView("text:index-body")) {
             m_backend->elementTextIndexBody(reader, m_context);
             while (reader.readNextStartElement()) {

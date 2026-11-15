@@ -41,6 +41,7 @@
 #include <QTextTable>
 
 #include <algorithm>
+#include <memory>
 
 // A convenience function to get a listId from a list-format
 static KoListStyle::ListIdType ListId(const QTextListFormat &format)
@@ -871,17 +872,35 @@ void KoTextWriter::Private::saveTableOfContents(QTextDocument *document, QHash<Q
     }
     writer->addAttribute("text:name", info->m_name);
 
-    info->saveOdf(writer);
+    // Saved style names can differ from the names in the imported document.
+    // Resolve template references through the same mapping as paragraphs.
+    std::unique_ptr<KoTableOfContentsGeneratorInfo> savedInfo(info->clone());
+    for (auto &entry : savedInfo->m_entryTemplate) {
+        const QString name = sharedData->styleName(entry.styleId);
+        if (!name.isEmpty()) entry.styleName = name;
+    }
+    const QString titleStyle = sharedData->styleName(savedInfo->m_indexTitleTemplate.styleId);
+    if (!titleStyle.isEmpty()) savedInfo->m_indexTitleTemplate.styleName = titleStyle;
+    for (auto &source : savedInfo->m_indexSourceStyles) {
+        for (auto &style : source.styles) {
+            const QString name = sharedData->styleName(style.styleId);
+            if (!name.isEmpty()) style.styleName = name;
+        }
+    }
+    savedInfo->saveOdf(writer);
 
     writer->startElement("text:index-body");
     // write the title (one p block)
-    QTextCursor localBlock = tocDocument->rootFrame()->firstCursorPosition();
-    localBlock.movePosition(QTextCursor::NextBlock);
-    int endTitle = localBlock.position();
-    writer->startElement("text:index-title");
-    writer->addAttribute("text:name", QString("%1_Head").arg(info->m_name));
-    writeBlocks(tocDocument, 0, endTitle, listStyles);
-    writer->endElement(); // text:index-title
+    int endTitle = 0;
+    if (!info->m_indexTitleTemplate.text.isEmpty()) {
+        QTextCursor localBlock = tocDocument->rootFrame()->firstCursorPosition();
+        localBlock.movePosition(QTextCursor::NextBlock);
+        endTitle = localBlock.position();
+        writer->startElement("text:index-title");
+        writer->addAttribute("text:name", QString("%1_Head").arg(info->m_name));
+        writeBlocks(tocDocument, 0, endTitle, listStyles);
+        writer->endElement(); // text:index-title
+    }
 
     writeBlocks(tocDocument, endTitle, -1, listStyles);
 

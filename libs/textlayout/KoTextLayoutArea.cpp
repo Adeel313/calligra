@@ -833,6 +833,21 @@ static bool compareTab(const QTextOption::Tab &tab1, const QTextOption::Tab &tab
     return tab1.position < tab2.position;
 }
 
+static bool sameParagraphStyleContext(const QTextBlock &first, const QTextBlock &second)
+{
+    if (!first.isValid() || !second.isValid()
+        || first.blockFormat().intProperty(KoParagraphStyle::StyleId) != second.blockFormat().intProperty(KoParagraphStyle::StyleId)) {
+        return false;
+    }
+    const QTextCursor firstCursor(first);
+    const QTextCursor secondCursor(second);
+    if (firstCursor.currentFrame() != secondCursor.currentFrame()) {
+        return false;
+    }
+    const QTextTable *table = firstCursor.currentTable();
+    return !table || table->cellAt(firstCursor).firstPosition() == table->cellAt(secondCursor).firstPosition();
+}
+
 // layoutBlock() method is structured like this:
 //
 // 1) Setup various helper values
@@ -1110,6 +1125,20 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
     //========
     // TODO this conversion is quite expensive to do, and doing it for each block is a performance nightmare.
     const QVector<KoText::Tab> tabs = pStyle.tabPositions();
+    // Word permits a TOC page-number tab beyond the text margin. Keep the
+    // heading's normal wrapping width, but allow its final tab and number to
+    // occupy that margin instead of wrapping the number onto its own line.
+    const int finalTab = block.text().lastIndexOf(QLatin1Char('\t'));
+    bool allowIndexTabOverhang = false;
+    qreal indexTabRight = right() - left();
+    if (block.document() != d->documentLayout->document() && finalTab >= 0) {
+        for (const auto &tab : tabs) {
+            if (tab.type == QTextOption::RightTab && tab.position != MaximumTabPos && tab.position > right() - left()) {
+                allowIndexTabOverhang = true;
+                indexTabRight = qMax(indexTabRight, tab.position);
+            }
+        }
+    }
 
     // Handle tabs relative to startMargin
     qreal tabOffset = -d->indent;
@@ -1370,6 +1399,11 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
         documentLayout()->setAnchoringParagraphRect(anchoringRect);
         documentLayout()->setAnchoringLayoutEnvironmentRect(layoutEnvironmentRect());
         runAroundHelper.fit(/* resetHorizontalPosition */ false, /* rightToLeft */ d->isRtl, QPointF(x(), d->y));
+        if (allowIndexTabOverhang && finalTab >= line.textStart() && finalTab <= line.textStart() + line.textLength()) {
+            line.setLineWidth(indexTabRight - startMargin + 0.01);
+            d->blockRects.last().setRight(qMax(d->blockRects.last().right(), line.naturalTextRect().right()));
+            expandBoundingRight(d->blockRects.last().right());
+        }
 
         documentLayout()->positionAnchorTextRanges(block.position() + line.textStart(), line.textLength(), block.document());
         qreal bottomOfText = line.y() + line.height();
@@ -1501,6 +1535,10 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
     }
 
     d->bottomSpacing = pStyle.bottomMargin();
+    const QTextBlock nextBlock = block.next();
+    if (pStyle.value(KoParagraphStyle::ContextualSpacing).toBool() && sameParagraphStyleContext(block, nextBlock)) {
+        d->bottomSpacing = 0;
+    }
 
     layout->endLayout();
     setVirginPage(false);
@@ -2138,6 +2176,10 @@ void KoTextLayoutArea::handleBordersAndSpacing(KoTextBlockData &blockData, QText
     qreal topMargin = 0;
     if (paraTableSpacingAtStart || block->previous().isValid()) {
         topMargin = formatStyle.topMargin();
+    }
+    const QTextBlock previousBlock = block->previous();
+    if (formatStyle.value(KoParagraphStyle::ContextualSpacing).toBool() && sameParagraphStyleContext(*block, previousBlock)) {
+        topMargin = 0;
     }
     qreal spacing = qMax(d->bottomSpacing, topMargin);
     qreal dx = 0.0;

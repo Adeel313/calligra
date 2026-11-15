@@ -155,7 +155,8 @@ public:
         Shadow, //< KoShadowStyle, the shadow of this paragraph
         NextStyle, ///< holds the styleId of the style to be used on a new paragraph
         ParagraphListStyleId, ///< this holds the listStyleId of the list got from style:list-style-name property from ODF 1.2
-        EndCharStyle // QSharedPointer<KoCharacterStyle>  used when final line is empty
+        EndCharStyle, // QSharedPointer<KoCharacterStyle>  used when final line is empty
+        ContextualSpacing ///< bool, suppress paragraph margins between paragraphs of the same style
     };
 
     enum AutoSpace {

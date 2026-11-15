@@ -30,6 +30,11 @@ set(TestBlockLayout_test_SRCS
 )
 kotextlayout_add_unit_test(TestBlockLayout ${TestBlockLayout_test_SRCS}  LINK_LIBRARIES kotext kotextlayout Qt6::Test)
 
+kotextlayout_add_unit_test(TestToCGenerator
+    TestToCGenerator.cpp MockRootAreaProvider.cpp
+    ../ToCGenerator.cpp ../DummyDocumentLayout.cpp
+    LINK_LIBRARIES kotext kotextlayout Qt6::Test)
+
 ########### next target ###############
 
 set(TestTableLayout_test_SRCS

@@ -360,8 +360,14 @@ void OdfTextReaderDocxBackend::elementTextTableOfContent(KoXmlStreamReader &read
     if (reader.isStartElement()) {
         if (reader.qualifiedName() == QLatin1StringView("text:table-of-content-source")) {
             m_tocLevels = qBound(1, reader.attributes().value("text:outline-level").toInt(), 9);
-        } else {
+        } else if (reader.qualifiedName() == QLatin1StringView("text:table-of-content")) {
             m_tocLevels = 3;
+            m_tocHyperlinks = false;
+            m_tocPageNumbers = false;
+        } else if (reader.qualifiedName() == QLatin1StringView("text:index-entry-link-start")) {
+            m_tocHyperlinks = true;
+        } else if (reader.qualifiedName() == QLatin1StringView("text:index-entry-page-number")) {
+            m_tocPageNumbers = true;
         }
         return;
     }
@@ -402,12 +408,19 @@ void OdfTextReaderDocxBackend::elementTextIndexBody(KoXmlStreamReader &reader, O
     writer->startElement("w:r");
     writer->startElement("w:fldChar");
     writer->addAttribute("w:fldCharType", "begin");
+    // The cached entry pages were produced by a previous layout; mark the field
+    // dirty so Word refreshes them when the document opens.
+    writer->addAttribute("w:dirty", "true");
     writer->endElement(); // w:fldChar
     writer->endElement(); // w:r
     writer->startElement("w:r");
     writer->startElement("w:instrText");
     writer->addAttribute("xml:space", "preserve");
-    writer->addTextNode(QStringLiteral(" TOC \\o \"1-%1\" \\h \\z \\u ").arg(m_tocLevels));
+    QString instruction = QStringLiteral(" TOC \\o \"1-%1\" ").arg(m_tocLevels);
+    if (m_tocHyperlinks) instruction += QStringLiteral("\\h ");
+    if (!m_tocPageNumbers) instruction += QStringLiteral("\\n ");
+    instruction += QStringLiteral("\\z \\u ");
+    writer->addTextNode(instruction);
     writer->endElement(); // w:instrText
     writer->endElement(); // w:r
     writer->startElement("w:r");

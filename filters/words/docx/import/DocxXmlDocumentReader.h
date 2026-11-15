@@ -14,6 +14,7 @@
 
 #include <QBuffer>
 #include <QString>
+#include <memory>
 
 #include <MsooXmlCommonReader.h>
 #include <MsooXmlDrawingTableStyle.h>
@@ -75,6 +76,21 @@ protected:
     int m_tocLevels = 2;
     bool m_startToc = false;
     bool m_endToc = false;
+    struct TocEntryFormatting {
+        KoGenStyle style;
+        int level = 0;
+        qreal indent = 0;
+    };
+    QVector<TocEntryFormatting> m_tocEntryFormatting;
+    QBuffer m_tocBodyBuffer;
+    std::unique_ptr<KoXmlWriter> m_tocBodyWriter;
+    KoXmlWriter *m_tocParentWriter = nullptr;
+    bool m_tocHyperlinks = false;
+    bool m_tocPageNumbers = true;
+    QString m_tocInstruction;
+    void beginToc();
+    void collectTocEntry(const QString &paragraphXml);
+    void finishToc();
     bool m_skipPageFieldResult = false;
     QByteArray m_pageFieldElement;
     QString m_pageFieldCache;
@@ -300,6 +316,9 @@ protected:
     QMap<BorderSide, qreal> m_textBorderPaddings;
 
     KoTable::Ptr m_table;
+    KoGenStyle m_tableParagraphStyle;
+    bool m_insideTableCell = false;
+    QString m_pendingParagraphBreak;
     QString m_currentTableStyleName;
     KoTblStyle::Ptr m_tableMainStyle;
 
