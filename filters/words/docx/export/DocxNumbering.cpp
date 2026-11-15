@@ -125,7 +125,7 @@ QByteArray DocxNumbering::toXml() const
             writer.addAttribute("w:val", level.text);
             writer.endElement(); // w:lvlText
             writer.startElement("w:lvlJc");
-            writer.addAttribute("w:val", "left");
+            writer.addAttribute("w:val", level.alignment.isEmpty() ? QStringLiteral("left") : level.alignment);
             writer.endElement(); // w:lvlJc
             if (level.leftTwips != 0 || level.hangingTwips != 0) {
                 writer.startElement("w:pPr");
@@ -134,6 +134,25 @@ QByteArray DocxNumbering::toXml() const
                 writer.addAttribute("w:hanging", qMax(0, level.hangingTwips));
                 writer.endElement(); // w:ind
                 writer.endElement(); // w:pPr
+            }
+            if (!level.font.isEmpty() || !level.fontSize.isEmpty()) {
+                writer.startElement("w:rPr");
+                if (!level.font.isEmpty()) {
+                    writer.startElement("w:rFonts");
+                    writer.addAttribute("w:ascii", level.font);
+                    writer.addAttribute("w:hAnsi", level.font);
+                    writer.addAttribute("w:hint", "default");
+                    writer.endElement(); // w:rFonts
+                }
+                if (!level.fontSize.isEmpty()) {
+                    writer.startElement("w:sz");
+                    writer.addAttribute("w:val", level.fontSize);
+                    writer.endElement(); // w:sz
+                    writer.startElement("w:szCs");
+                    writer.addAttribute("w:val", level.fontSize);
+                    writer.endElement(); // w:szCs
+                }
+                writer.endElement(); // w:rPr
             }
             writer.endElement(); // w:lvl
         }

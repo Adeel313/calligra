@@ -20,6 +20,9 @@ struct NumberingLevel {
     int start = 1; //!< w:start value
     int leftTwips = 720; //!< w:ind/@w:left
     int hangingTwips = 360; //!< w:ind/@w:hanging
+    QString alignment = QStringLiteral("left"); //!< w:lvlJc value
+    QString font; //!< bullet/number font family (w:rFonts w:ascii/hAnsi/hint)
+    QString fontSize; //!< half-points string for w:sz (e.g. "24" for 12pt); empty = inherit
 };
 
 /** Collects the list definitions used during an export and serializes them as

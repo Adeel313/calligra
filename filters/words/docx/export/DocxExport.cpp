@@ -1038,8 +1038,15 @@ QString wordNumFormat(const QString &odfFormat)
     return QStringLiteral("decimal");
 }
 
+struct ScannedTextStyle {
+    QString fontName; //!< fo:font-family or style:font-name
+    QString fontSizePt; //!< absolute size in pt (e.g. "12"); empty if relative/unknown
+};
+
 // Parses one <text:list-level-style-*> element into a NumberingLevel.
-void readListLevelStyle(KoXmlStreamReader &reader, NumberingLevel *level)
+void readListLevelStyle(KoXmlStreamReader &reader,
+                        NumberingLevel *level,
+                        const QHash<QString, ScannedTextStyle> &textStyles)
 {
     const QString qname = reader.qualifiedName().toString();
     const KoXmlStreamAttributes attributes = reader.attributes();
@@ -1047,6 +1054,7 @@ void readListLevelStyle(KoXmlStreamReader &reader, NumberingLevel *level)
     level->level = odfLevel > 0 ? odfLevel : 1;
     level->leftTwips = 720 * level->level;
     level->hangingTwips = 360;
+    const QString textStyleName = attributes.value(QStringLiteral("text:style-name")).toString();
 
     if (qname == QLatin1StringView("text:list-level-style-number")) {
         const QString format = attributes.value(QStringLiteral("style:num-format")).toString();
@@ -1092,14 +1100,10 @@ void readListLevelStyle(KoXmlStreamReader &reader, NumberingLevel *level)
     } else {
         // Bullet and image levels both become bullet definitions.
         QString bullet = attributes.value(QStringLiteral("text:bullet-char")).toString();
-        if (!bullet.isEmpty()) {
-            const ushort code = bullet.at(0).unicode();
-            if ((code >= 0xE000 && code <= 0xF8FF) || code == 0xE00A) {
-                // Bullet glyphs from the OpenSymbol font live in the Unicode
-                // private use area and would show up as empty boxes in Word.
-                bullet = QStringLiteral("\u2022");
-            }
-        }
+        // Keep PUA bullet glyphs as-is; when paired with their symbol font
+        // (e.g. Symbol's U+F0B7) Word renders them correctly. Replacing them
+        // would lose the original marker. (OpenSymbol-only glyphs that Word
+        // cannot render are rare and better than dropping the bullet.)
         // A zero width space is the importer's marker for "the source had a
         // bullet, but its glyph could not be represented".  Exporting it
         // verbatim makes the bullet invisible, so use the normal bullet.
@@ -1113,9 +1117,29 @@ void readListLevelStyle(KoXmlStreamReader &reader, NumberingLevel *level)
         level->text = bullet;
     }
 
+    const auto applyTextProps = [level](const KoXmlStreamAttributes &props) {
+        const QString font = props.value(QStringLiteral("fo:font-family")).toString().isEmpty()
+            ? props.value(QStringLiteral("style:font-name")).toString()
+            : props.value(QStringLiteral("fo:font-family")).toString();
+        if (!font.isEmpty()) {
+            level->font = font.trimmed().remove(QLatin1Char('\'')).remove(QLatin1Char('"'));
+        }
+        const QString size = props.value(QStringLiteral("fo:font-size")).toString();
+        if (!size.isEmpty() && !size.endsWith(QLatin1Char('%'))) {
+            const qreal pt = KoUnit::parseValue(size, -1.0);
+            if (pt > 0) {
+                level->fontSize = QString::number(qRound(pt * 2.0));
+            }
+        }
+    };
+
     while (reader.readNextStartElement()) {
         if (reader.qualifiedName() == QLatin1StringView("style:list-level-properties")) {
             const KoXmlStreamAttributes listProperties = reader.attributes();
+            const QString align = listProperties.value(QStringLiteral("fo:text-align")).toString();
+            if (!align.isEmpty()) {
+                level->alignment = align;
+            }
             qint64 left = 0;
             qint64 hanging = 0;
             if (pointsToTwips(KoUnit::parseValue(listProperties.value(QStringLiteral("text:space-before")).toString(), -1.0), &left)) {
@@ -1126,23 +1150,63 @@ void readListLevelStyle(KoXmlStreamReader &reader, NumberingLevel *level)
             }
             while (reader.readNextStartElement()) {
                 if (reader.qualifiedName() == QLatin1StringView("style:list-level-label-alignment")) {
+                    const KoXmlStreamAttributes label = reader.attributes();
+                    // fo:margin-left and fo:text-indent on label-alignment are the
+                    // authoritative values as written by our docx importer (and by
+                    // LO for label-alignment mode). Prefer them over the
+                    // space-before/min-label-width approximation above.
+                    qint64 marginLeft = -1;
+                    if (pointsToTwips(KoUnit::parseValue(label.value(QStringLiteral("fo:margin-left")).toString(), -1.0), &marginLeft)) {
+                        level->leftTwips = static_cast<int>(qMax<qint64>(0, marginLeft));
+                        level->hangingTwips = 0;
+                    }
                     qint64 indent = 0;
-                    if (pointsToTwips(KoUnit::parseValue(reader.attributes().value(QStringLiteral("fo:text-indent")).toString(), -1.0), &indent)) {
-                        level->leftTwips = static_cast<int>(qMax<qint64>(0, level->leftTwips + indent));
+                    const qreal indentPt = KoUnit::parseValue(label.value(QStringLiteral("fo:text-indent")).toString(), 0.0);
+                    if (label.hasAttribute(QStringLiteral("fo:text-indent"))) {
+                        indent = qRound64(indentPt * 20.0);
+                        if (marginLeft >= 0) {
+                            if (indent < 0) {
+                                level->hangingTwips = static_cast<int>(-indent);
+                            } else {
+                                level->leftTwips = static_cast<int>(qMax<qint64>(0, marginLeft + indent));
+                                level->hangingTwips = 0;
+                            }
+                        } else {
+                            level->leftTwips = static_cast<int>(qMax<qint64>(0, level->leftTwips + indent));
+                        }
                     }
                 }
                 reader.skipCurrentElement();
             }
             continue;
         }
+        if (reader.qualifiedName() == QLatin1StringView("style:text-properties")) {
+            applyTextProps(reader.attributes());
+            reader.skipCurrentElement();
+            continue;
+        }
         reader.skipCurrentElement();
+    }
+
+    // Text properties referenced by name (importer writes font/size there).
+    if (!textStyleName.isEmpty()) {
+        const auto it = textStyles.constFind(textStyleName);
+        if (it != textStyles.constEnd()) {
+            if (!it->fontName.isEmpty()) {
+                level->font = it->fontName;
+            }
+            if (!it->fontSizePt.isEmpty()) {
+                level->fontSize = QString::number(qRound(it->fontSizePt.toDouble() * 2.0));
+            }
+        }
     }
 }
 
 // Reads the interesting style information from one package part (styles.xml or
-// content.xml): paragraph tab stops and list style definitions.
+// content.xml): paragraph tab stops, text styles and list style definitions.
 void scanStylePart(KoXmlStreamReader &reader,
                    QHash<QString, ScannedParagraphStyle> *paragraphStyles,
+                   QHash<QString, ScannedTextStyle> *textStyles,
                    DocxNumbering *numbering)
 {
     while (!reader.atEnd()) {
@@ -1172,6 +1236,7 @@ void scanStylePart(KoXmlStreamReader &reader,
                 const QString parent = attributes.value(QStringLiteral("style:parent-style-name")).toString();
                 ScannedParagraphStyle scanned;
                 scanned.parent = parent;
+                ScannedTextStyle scannedText;
                 // Tab stops can be a direct child of style:style (in some
                 // documents) or nested in style:paragraph-properties.
                 auto readTabStops = [&reader, &scanned]() {
@@ -1197,7 +1262,8 @@ void scanStylePart(KoXmlStreamReader &reader,
                     }
                 };
                 while (reader.readNextStartElement()) {
-                    if (reader.qualifiedName() == QLatin1StringView("style:paragraph-properties")) {
+                    const QString child = reader.qualifiedName().toString();
+                    if (child == QLatin1StringView("style:paragraph-properties")) {
                         while (reader.readNextStartElement()) {
                             if (reader.qualifiedName() == QLatin1StringView("style:tab-stops")) {
                                 readTabStops();
@@ -1207,14 +1273,35 @@ void scanStylePart(KoXmlStreamReader &reader,
                         }
                         continue;
                     }
-                    if (reader.qualifiedName() == QLatin1StringView("style:tab-stops")) {
+                    if (child == QLatin1StringView("style:tab-stops")) {
                         readTabStops();
+                        continue;
+                    }
+                    if (child == QLatin1StringView("style:text-properties")) {
+                        const KoXmlStreamAttributes props = reader.attributes();
+                        scannedText.fontName = props.value(QStringLiteral("fo:font-family")).toString();
+                        if (scannedText.fontName.isEmpty()) {
+                            scannedText.fontName = props.value(QStringLiteral("style:font-name")).toString();
+                        }
+                        scannedText.fontName = scannedText.fontName.trimmed().remove(QLatin1Char('\'')).remove(QLatin1Char('"'));
+                        const QString size = props.value(QStringLiteral("fo:font-size")).toString();
+                        if (!size.isEmpty() && !size.endsWith(QLatin1Char('%'))) {
+                            const qreal pt = KoUnit::parseValue(size, -1.0);
+                            if (pt > 0) {
+                                scannedText.fontSizePt = QString::number(pt);
+                            }
+                        }
+                        reader.skipCurrentElement();
                         continue;
                     }
                     reader.skipCurrentElement();
                 }
                 if (family == QLatin1StringView("paragraph") && !name.isEmpty() && !scanned.tabStops.isEmpty()) {
                     paragraphStyles->insert(name, scanned);
+                }
+                if (family == QLatin1StringView("text") && !name.isEmpty() && textStyles
+                    && (!scannedText.fontName.isEmpty() || !scannedText.fontSizePt.isEmpty())) {
+                    textStyles->insert(name, scannedText);
                 }
             } else if (qname == QLatin1StringView("text:list-style")) {
                 const QString name = reader.attributes().value(QStringLiteral("style:name")).toString();
@@ -1224,7 +1311,7 @@ void scanStylePart(KoXmlStreamReader &reader,
                     if (levelName.startsWith(QLatin1StringView("text:list-level-style"))) {
                         NumberingLevel level;
                         level.level = levels.size() + 1;
-                        readListLevelStyle(reader, &level);
+                        readListLevelStyle(reader, &level, textStyles ? *textStyles : QHash<QString, ScannedTextStyle>());
                         levels.append(level);
                     } else {
                         reader.skipCurrentElement();
@@ -1276,6 +1363,7 @@ void collectStyleExtras(OdfReaderDocxContext &context)
     }
 
     QHash<QString, ScannedParagraphStyle> paragraphStyles;
+    QHash<QString, ScannedTextStyle> textStyles;
     for (const QString &part : {QStringLiteral("styles.xml"), QStringLiteral("content.xml")}) {
         if (!store->open(part)) {
             continue;
@@ -1283,7 +1371,7 @@ void collectStyleExtras(OdfReaderDocxContext &context)
         KoXmlStreamReader reader;
         prepareForOdf(reader);
         reader.setDevice(store->device());
-        scanStylePart(reader, &paragraphStyles, &context.numbering());
+        scanStylePart(reader, &paragraphStyles, &textStyles, &context.numbering());
         store->close();
     }
 
