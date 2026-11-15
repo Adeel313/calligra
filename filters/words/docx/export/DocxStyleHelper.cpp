@@ -342,7 +342,7 @@ void DocxStyleHelper::handleParagraphStyles(KoOdfStyleProperties *properties, Ko
     // silently drops or misinterprets elements that appear out of sequence,
     // so this function writes them in schema order:
     // keepNext, keepLines, pageBreakBefore, numPr, pBdr, shd, tabs, bidi,
-    // spacing, ind, jc, outlineLvl.
+    // spacing, ind, contextualSpacing, jc, outlineLvl.
 
     QString breakBefore;
     QString keepTogether;
@@ -520,6 +520,23 @@ void DocxStyleHelper::handleParagraphStyles(KoOdfStyleProperties *properties, Ko
         }
         writer->endElement(); // w:ind
     }
+
+    // Word only suppresses the margins between consecutive paragraphs of the
+    // same style when the style asks for it.  Without the flag, exporting an
+    // ODF document that has it makes Word (and LibreOffice) add every list
+    // paragraph's space-before/after again, which pushes long documents over
+    // extra pages.
+    if (properties) {
+        const QString contextualSpacing = properties->attribute(QStringLiteral("calligra:contextual-spacing"));
+        if (!contextualSpacing.isEmpty()) {
+            writer->startElement("w:contextualSpacing");
+            if (contextualSpacing != QLatin1String("true")) {
+                writer->addAttribute("w:val", "0");
+            }
+            writer->endElement(); // w:contextualSpacing
+        }
+    }
+
     if (!textAlign.isEmpty()) {
         QString value;
         if (textAlign == QLatin1String("center")) {

@@ -2177,6 +2177,15 @@ void KoTextLayoutArea::handleBordersAndSpacing(KoTextBlockData &blockData, QText
     if (paraTableSpacingAtStart || block->previous().isValid()) {
         topMargin = formatStyle.topMargin();
     }
+    // Word and LibreOffice do not show the space above a paragraph that starts
+    // a page or a column: the margin would otherwise push the first line down
+    // on every page whose first block is a heading.  This only applies to the
+    // top level text flow, and only to a continuation from an earlier block,
+    // so a document's own first paragraph still follows
+    // AddParaTableSpacingAtStart and a table cell keeps its own top spacing.
+    if (!d->parent && virginPage() && block->previous().isValid()) {
+        topMargin = 0;
+    }
     const QTextBlock previousBlock = block->previous();
     if (formatStyle.value(KoParagraphStyle::ContextualSpacing).toBool() && sameParagraphStyleContext(*block, previousBlock)) {
         topMargin = 0;

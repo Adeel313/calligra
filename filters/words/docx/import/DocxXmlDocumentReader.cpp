@@ -763,7 +763,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pgMar()
     headerWriter.addAttribute("style:dynamic-spacing", "true");
     if (m_headerActive) {
         if (topNum > headerNum) {
-            headerWriter.addAttributePt("fo:min-height", TWIP_TO_POINT(topNum - headerNum));
+            // topNum and headerNum are already in points; the difference is the
+            // header height, which fills the space between the page edge and
+            // the body text.
+            headerWriter.addAttributePt("fo:min-height", topNum - headerNum);
         }
     }
     headerWriter.endElement(); // style:header-footer-properties
@@ -781,7 +784,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pgMar()
     footerWriter.addAttribute("style:dynamic-spacing", "true");
     if (m_footerActive) {
         if (bottomNum > footerNum) {
-            footerWriter.addAttributePt("fo:min-height", TWIP_TO_POINT(bottomNum - footerNum));
+            // Both values are in points already; see the header note above.
+            footerWriter.addAttributePt("fo:min-height", bottomNum - footerNum);
         }
     }
     footerWriter.endElement(); // style:header-footer-properties
@@ -5918,6 +5922,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     m_currentTableRowNumber = 0;
     m_currentTableColumnNumber = 0;
 
+    m_tableColumnWidths.clear();
+    m_currentCellWidth = 0;
+    m_tableGridWidth = 0;
+
     m_currentDefaultCellStyle = nullptr;
     m_currentTableStyleProperties = nullptr;
     m_currentLocalTableStyles = new MSOOXML::LocalTableStyles;
@@ -6001,6 +6009,48 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     m_tableMainStyle->setTableOffset(m_tableOffset);
 
     m_table->setTableStyle(m_tableMainStyle);
+
+    // Preferred cell widths (tcW) take precedence over the grid columns.  Word
+    // often writes a grid that only sums to the text width while the real
+    // column widths live in the cells; trusting the grid alone made every
+    // column the same width, so cells with long text wrapped far more than in
+    // Word and the table stopped fitting on its pages.
+    if (!m_tableColumnWidths.isEmpty()) {
+        qreal preferred = 0;
+        for (qreal width : m_tableColumnWidths) {
+            preferred += width;
+        }
+        // An autofit table that would be wider than the grid is scaled back to
+        // the grid width, which is the text area Word fits it into.
+        const qreal scale = (m_tableGridWidth > 0 && preferred > m_tableGridWidth)
+            ? m_tableGridWidth / preferred
+            : 1.0;
+        for (auto it = m_tableColumnWidths.cbegin(); it != m_tableColumnWidths.cend(); ++it) {
+            KoColumn *column = m_table->columnAt(it.key());
+            KoColumnStyle::Ptr style = column->style();
+            if (!style) {
+                style = KoColumnStyle::create();
+                if (m_moveToStylesXml) {
+                    style->setAutoStyleInStylesDotXml(true);
+                }
+                column->setStyle(style);
+            }
+            style->setWidth(it.value() * scale);
+        }
+        // Keep the table width in step with the columns it now contains.
+        qreal total = 0;
+        const int columnCount = m_table->columnCount();
+        for (int index = 0; index < columnCount; ++index) {
+            if (KoColumn *column = m_table->columnAt(index)) {
+                if (KoColumnStyle::Ptr style = column->style()) {
+                    total += style->width();
+                }
+            }
+        }
+        if (total > 0) {
+            m_tableMainStyle->setWidth(total);
+        }
+    }
 
     defineTableStyles();
 
@@ -6211,8 +6261,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tblGrid()
 
     // Use the grid width as the table width. Without it the style keeps the
     // default rel-width of 0%, which makes LibreOffice collapse the table.
+    m_tableGridWidth = TWIP_TO_POINT(m_svgWidth);
     if (m_svgWidth > 0) {
-        m_tableMainStyle->setWidth(TWIP_TO_POINT(m_svgWidth));
+        m_tableMainStyle->setWidth(m_tableGridWidth);
     }
 
     READ_EPILOGUE
@@ -6561,6 +6612,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tc()
                 MSOOXML::TableStyleProperties *currentStyleProperties = m_currentTableStyleProperties;
                 MSOOXML::LocalTableStyles *currentLocalStyles = m_currentLocalTableStyles;
                 QString currentTableStyle = m_currentTableStyleName;
+                const qreal currentGridWidth = m_tableGridWidth;
+                const QHash<int, qreal> currentColumnWidths = m_tableColumnWidths;
                 KoCell *cell = m_table->cellAt(m_currentTableRowNumber, m_currentTableColumnNumber);
 
                 QBuffer buffer;
@@ -6582,6 +6635,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tc()
                 m_currentTableStyleProperties = currentStyleProperties;
                 m_currentLocalTableStyles = currentLocalStyles;
                 m_currentTableStyleName = currentTableStyle;
+                m_tableGridWidth = currentGridWidth;
+                m_tableColumnWidths = currentColumnWidths;
             } else if (QUALIFIED_NAME_IS(tcPr)) {
                 m_currentTableStyleProperties = new MSOOXML::TableStyleProperties;
                 TRY_READ(tcPr)
@@ -6659,11 +6714,14 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tcPr()
 {
     READ_PROLOGUE
 
+    m_currentCellWidth = 0;
+
     while (!atEnd()) {
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             TRY_READ_IF(gridSpan)
+            ELSE_TRY_READ_IF(tcW)
             ELSE_TRY_READ_IF(cnfStyle)
             ELSE_TRY_READ_IF_IN_CONTEXT(shd)
             ELSE_TRY_READ_IF(tcBorders)
@@ -6674,6 +6732,52 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tcPr()
             //! @todo add ELSE_WRONG_FORMAT
         }
     }
+
+    // Word frequently leaves tblGrid at default widths and stores the real
+    // column widths in each cell.  Remember the preferred width of a
+    // single-column cell; read_tbl() applies it once the whole table is known
+    // (a spanning cell's tcW covers the whole span and cannot be a column).
+    if (m_currentCellWidth > 0) {
+        KoCell *cell = m_table->cellAt(m_currentTableRowNumber, m_currentTableColumnNumber);
+        if (cell->columnSpan() <= 1) {
+            m_tableColumnWidths.insert(m_currentTableColumnNumber, m_currentCellWidth);
+        }
+        m_currentCellWidth = 0;
+    }
+
+    READ_EPILOGUE
+}
+
+#undef CURRENT_EL
+#define CURRENT_EL tcW
+//! tcW handler (Preferred Table Cell Width)
+/*! ECMA-376, 17.4.72, p. 530.
+
+ Parent elements:
+ - [done] tcPr (§17.4.70)
+
+ No child elements.
+*/
+KoFilter::ConversionStatus DocxXmlDocumentReader::read_tcW()
+{
+    READ_PROLOGUE
+
+    const QXmlStreamAttributes attrs(attributes());
+
+    TRY_READ_ATTR(w)
+    TRY_READ_ATTR(type)
+
+    // "dxa" is twips; "auto" and "pct" (percentage in fiftieths) do not
+    // describe a usable column width.  Strict documents write universal
+    // measures such as "155.80pt" instead of plain twips.
+    if (!w.isEmpty() && (type.isEmpty() || type == QLatin1String("dxa"))) {
+        const qreal width = pgMarToPoints(w, QString("w:tcW"));
+        if (width > 0) {
+            m_currentCellWidth = width;
+        }
+    }
+
+    readNext();
 
     READ_EPILOGUE
 }

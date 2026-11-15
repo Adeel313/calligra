@@ -13,6 +13,7 @@
 #define DOCXXMLDOCUMENTREADER_H
 
 #include <QBuffer>
+#include <QHash>
 #include <QString>
 #include <memory>
 
@@ -205,6 +206,7 @@ protected:
     KoFilter::ConversionStatus read_tr();
     KoFilter::ConversionStatus read_tc();
     KoFilter::ConversionStatus read_tcPr();
+    KoFilter::ConversionStatus read_tcW();
     KoFilter::ConversionStatus read_vAlign();
     KoFilter::ConversionStatus read_textDirectionTc();
     KoFilter::ConversionStatus read_vMerge();
@@ -425,6 +427,9 @@ private:
     uint m_currentTableNumber; //!< table counter, from 0
     uint m_currentTableRowNumber; //!< row counter, from 0, initialized in read_tbl()
     uint m_currentTableColumnNumber; //!< column counter, from 0, initialized in read_tr()
+    qreal m_tableGridWidth = 0; //!< width of the current table grid, in points
+    QHash<int, qreal> m_tableColumnWidths; //!< preferred cell widths (points) by column
+    qreal m_currentCellWidth = 0; //!< preferred width of the cell being read, in points
     KoGenStyle m_currentTableRowStyle;
     QString m_currentTableName;
     qreal m_currentTableWidth; //!< in cm
