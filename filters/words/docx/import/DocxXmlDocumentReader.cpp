@@ -1541,7 +1541,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::readBorderElement(BorderSide b
     if (!space.isEmpty()) {
         int sp = 0;
         STRING_TO_INT(space, sp, QString("w:%1@space").arg(borderSideName));
-        sourcePadding.insert(borderSide, sp);
+        // w:space is in points (1/20th of a point, i.e. twips); padding
+        // properties are written in points.
+        sourcePadding.insert(borderSide, TWIP_TO_POINT(sp));
     }
     readNext();
     return KoFilter::OK;
@@ -4436,7 +4438,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_spacing()
     const QXmlStreamAttributes attrs(attributes());
 
     bool ok = true;
-    int marginBottom = 10;
+    qreal marginBottom = 10.0;
     bool afterAutospacing = MSOOXML::Utils::convertBooleanAttr(attrs.value("w:afterAutospacing").toString());
     if (!afterAutospacing) {
         TRY_READ_ATTR(after)
@@ -4447,7 +4449,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_spacing()
     }
 
     ok = true;
-    int marginTop = 5;
+    qreal marginTop = 5.0;
     bool beforeAutospacing = MSOOXML::Utils::convertBooleanAttr(attrs.value("w:beforeAutospacing").toString());
     if (!beforeAutospacing) {
         TRY_READ_ATTR(before)
