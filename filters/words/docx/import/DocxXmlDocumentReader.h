@@ -338,7 +338,10 @@ protected:
     //! bookmark-end, which MUST be inserted into the following paragraph.
     QString m_bookmarkSnippet;
 
+protected:
     QList<MSOOXML::Utils::ParagraphBulletProperties> m_currentBulletList;
+    bool m_listFound = false; // was there numPr element in ppr
+    QString m_currentNumId;
 
 private:
     void init();
@@ -437,10 +440,7 @@ private:
 
     bool m_wasCaption; // bookkeeping to ensure next para is suppressed if a caption is encountered
     bool m_closeHyperlink; // should read_r close hyperlink
-    bool m_listFound; // was there numPr element in ppr
     bool m_insideParagraph;
-
-    QString m_currentNumId;
 
     //! List currently open in the generated ODF body. Numbered/bulleted
     //! paragraphs are appended to it instead of starting a new list for every
@@ -527,6 +527,11 @@ public:
     QMap<QString, QString> m_comments;
     QMap<QString, MSOOXML::DrawingTableStyle *> m_tableStyles;
     QMap<QString, QList<MSOOXML::Utils::ParagraphBulletProperties>> m_bulletStyles;
+
+    // Paragraph style -> (numId, ilvl). Styles in styles.xml can carry their
+    // own w:numPr (e.g. ListBullet), so every paragraph using such a style is a
+    // list item unless the paragraph overrides it.
+    QMap<QString, QPair<QString, int>> m_styleNumbering;
 
     // The map contains names of default styles applied to objects that do not
     // explicitly declare a style.  The object type (family) is the key.

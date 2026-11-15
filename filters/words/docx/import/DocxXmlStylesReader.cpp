@@ -439,12 +439,30 @@ KoFilter::ConversionStatus DocxXmlStylesReader::read_style()
                     if (m_currentTableStyleProperties == nullptr) {
                         m_currentTableStyleProperties = new MSOOXML::TableStyleProperties;
                     }
-                }
-                TRY_READ(pPr)
-                if (type == "table") {
+                    TRY_READ(pPr)
                     m_currentTableStyleProperties->paragraphStyle = m_currentParagraphStyle;
                     m_currentStyle->addProperties(MSOOXML::DrawingTableStyle::WholeTbl, m_currentTableStyleProperties);
                     m_currentTableStyleProperties = nullptr;
+                } else {
+                    // Paragraph styles can carry their own numbering (w:numPr). The
+                    // document reader applies it when a paragraph uses this style,
+                    // unless the paragraph overrides it.
+                    const bool hadList = m_listFound;
+                    const QString hadNumId = m_currentNumId;
+                    m_listFound = false;
+                    m_currentNumId.clear();
+                    m_currentListLevel = 0;
+                    TRY_READ(pPr)
+                    if (m_context && type == QLatin1String("paragraph")) {
+                        if (m_listFound && !m_currentNumId.isEmpty()) {
+                            m_context->m_styleNumbering.insert(styleName, qMakePair(m_currentNumId, m_currentListLevel));
+                        } else if (m_listFound && m_currentNumId.isEmpty()) {
+                            // w:numId w:val="0" removes numbering from a based-on style.
+                            m_context->m_styleNumbering.insert(styleName, qMakePair(QStringLiteral("0"), 0));
+                        }
+                    }
+                    m_listFound = hadList;
+                    m_currentNumId = hadNumId;
                 }
             }
             else if (name() == QLatin1StringView("tblPr"))

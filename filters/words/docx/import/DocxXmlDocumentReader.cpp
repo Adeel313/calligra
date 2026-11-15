@@ -4689,6 +4689,35 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pStyle()
     TRY_READ_ATTR(val)
 
     m_currentParagraphStyle.setParentName(val);
+
+    // Paragraph styles may define numbering in styles.xml (e.g. ListBullet).
+    // Apply it now so a later w:numPr in the paragraph can still override it.
+    // Walk basedOn parents because numbering is inherited when not overridden.
+    if (m_context) {
+        QString styleId = val;
+        for (int depth = 0; depth < 20 && !styleId.isEmpty(); ++depth) {
+            const auto numbering = m_context->m_styleNumbering.constFind(styleId);
+            if (numbering != m_context->m_styleNumbering.constEnd()) {
+                if (numbering->first == QLatin1String("0")) {
+                    m_listFound = false;
+                    m_currentNumId.clear();
+                    m_currentBulletList.clear();
+                } else if (m_context->m_bulletStyles.contains(numbering->first)) {
+                    m_currentNumId = numbering->first;
+                    m_currentListLevel = numbering->second;
+                    m_currentBulletList = m_context->m_bulletStyles.value(m_currentNumId);
+                    m_listFound = !m_currentBulletList.isEmpty();
+                }
+                break;
+            }
+            const KoGenStyle *style = mainStyles ? mainStyles->style(styleId, "paragraph") : nullptr;
+            if (!style) {
+                break;
+            }
+            styleId = style->parentName();
+        }
+    }
+
     readNext();
     READ_EPILOGUE
 }
