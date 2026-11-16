@@ -76,6 +76,13 @@ class KOMAIN_EXPORT KoDocument : public QObject, public KoDocumentBase
 
 public:
     /**
+     * Returns the mime type to use for the file at @a localPath. A file whose
+     * extension names one format but whose contents are another (for example
+     * an OpenDocument package saved as .xlsx) gets the contents' type.
+     */
+    static QString correctMimeTypeFromContents(const QString &typeName, const QString &localPath);
+
+    /**
      * Constructor.
      *
      * @param parent The KoPart that owns the document. XXX: should be removed!

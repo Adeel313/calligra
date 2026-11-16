@@ -77,6 +77,7 @@ QString KoFilterManager::importDocument(const QString &url, const QString &docum
         QMimeType t = QMimeDatabase().mimeTypeForUrl(u);
         if (t.isValid()) {
             typeName = t.name();
+            typeName = KoDocument::correctMimeTypeFromContents(typeName, u.scheme().isEmpty() ? url : u.toLocalFile());
         }
     }
     m_graph.setSourceMimeType(typeName.toLatin1()); // .latin1() is okay here (Werner)
@@ -198,7 +199,8 @@ KoFilter::ConversionStatus KoFilterManager::exportDocument(const QString &url, Q
             errorFilter << "No mimetype found for" << m_importUrl;
             return KoFilter::BadMimeType;
         }
-        m_graph.setSourceMimeType(t.name().toLatin1());
+        const QString typeName = KoDocument::correctMimeTypeFromContents(t.name(), m_importUrl);
+        m_graph.setSourceMimeType(typeName.toLatin1());
 
         if (!m_graph.isValid()) {
             warnFilter << "Can't open" << t.name() << ", trying filter chooser";

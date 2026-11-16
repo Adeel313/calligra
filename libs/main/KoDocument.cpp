@@ -1303,6 +1303,11 @@ static const struct MimetypeReplacement {
     {"application/vnd.ms-excel", "application/zip", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
     {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "application/vnd.ms-excel"},
     {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/x-ole-storage", "application/vnd.ms-excel"},
+    // An ODS package saved under an Excel name must not go through the XLSX filter.
+    {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+     "application/vnd.oasis.opendocument.spreadsheet",
+     "application/vnd.oasis.opendocument.spreadsheet"},
+    {"application/vnd.ms-excel", "application/vnd.oasis.opendocument.spreadsheet", "application/vnd.oasis.opendocument.spreadsheet"},
 
     // ppt / pptx
     {"application/vnd.ms-powerpoint",
@@ -1311,6 +1316,21 @@ static const struct MimetypeReplacement {
     {"application/vnd.ms-powerpoint", "application/zip", "application/vnd.openxmlformats-officedocument.presentationml.presentation"},
     {"application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/vnd.ms-powerpoint", "application/vnd.ms-powerpoint"},
     {"application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/x-ole-storage", "application/vnd.ms-powerpoint"}};
+
+QString KoDocument::correctMimeTypeFromContents(const QString &typeName, const QString &localPath)
+{
+    for (uint i = 0; i < sizeof(replacementMimetypes) / sizeof(struct MimetypeReplacement); ++i) {
+        const MimetypeReplacement *replacement = &replacementMimetypes[i];
+
+        if (typeName == replacement->typeFromName) {
+            QString typeFromContents = QMimeDatabase().mimeTypeForFile(localPath, QMimeDatabase::MatchContent).name();
+            if (typeFromContents == replacement->typeFromContents) {
+                return replacement->useThisType;
+            }
+        }
+    }
+    return typeName;
+}
 
 bool KoDocument::openFile()
 {
@@ -1382,23 +1402,8 @@ bool KoDocument::openFile()
     }
     // debugMain << "mimetypes 3:" << typeName;
 
-    // In some cases docx files are saved as doc and similar.  We have
-    // a small hardcoded table for those cases.  Check if this is
-    // applicable here.
-    for (uint i = 0; i < sizeof(replacementMimetypes) / sizeof(struct MimetypeReplacement); ++i) {
-        const MimetypeReplacement *replacement = &replacementMimetypes[i];
-
-        if (typeName == replacement->typeFromName) {
-            // debugMain << "found potential replacement target:" << typeName;
-            QString typeFromContents = QMimeDatabase().mimeTypeForFile(localFilePath(), QMimeDatabase::MatchContent).name();
-            // debugMain << "found potential replacement:" << typeFromContents;
-            if (typeFromContents == replacement->typeFromContents) {
-                typeName = replacement->useThisType;
-                // debugMain << "So really use this:" << typeName;
-                break;
-            }
-        }
-    }
+    // In some cases docx files are saved as doc and similar, see replacementMimetypes.
+    typeName = correctMimeTypeFromContents(typeName, localFilePath());
     // debugMain << "mimetypes 4:" << typeName;
 
     // Allow to open backup files, don't keep the mimetype application/x-trash.
