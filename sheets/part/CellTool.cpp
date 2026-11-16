@@ -36,6 +36,7 @@
 #include <KLocalizedString>
 
 #include <KoCanvasController.h>
+#include <KoPointerEvent.h>
 #include <KoSelection.h>
 #include <KoShapeManager.h>
 #include <KoViewConverter.h>
@@ -69,6 +70,18 @@ CellTool::CellTool(KoCanvasBase *canvas)
 CellTool::~CellTool()
 {
     delete d;
+}
+
+void CellTool::mousePressEvent(KoPointerEvent *event)
+{
+    // Shapes and charts are drawn above the cells, so a press on one selects
+    // the shape. Otherwise the cell selection takes the press and the object
+    // can never be selected.
+    if (event->button() == Qt::LeftButton && canvas()->shapeManager()->shapeAt(event->point)) {
+        canvas()->shapeManager()->suggestChangeTool(event);
+        return;
+    }
+    CellToolBase::mousePressEvent(event);
 }
 
 void CellTool::paint(QPainter &painter, const KoViewConverter &viewConverter)

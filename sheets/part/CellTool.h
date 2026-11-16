@@ -28,6 +28,7 @@ public:
     ~CellTool() override;
 
     void paint(QPainter &painter, const KoViewConverter &converter) override;
+    void mousePressEvent(KoPointerEvent *event) override;
     SheetView *sheetView(Sheet *sheet) const override;
 
 public Q_SLOTS:
