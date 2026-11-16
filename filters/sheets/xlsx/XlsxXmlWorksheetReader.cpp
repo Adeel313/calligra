@@ -726,7 +726,9 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
                 for (const auto &validation : m_context->validationCells) {
                     if (validation.first.contains(c + 1, r + 1)) { hasValidation = true; break; }
                 }
-                const bool collapsible = (cell == nullptr)
+                // Even a missing cell needs an element when it has validation;
+                // otherwise the empty-cell run below cannot advance past it.
+                const bool collapsible = ((cell == nullptr)
                     || (cell->valueType == Cell::ConstNone
                         && cell->text.isEmpty()
                         && !cell->formula
@@ -734,8 +736,8 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
                         && cell->columnsMerged == 1
                         && cell->embedded == nullptr
                         && cell->hyperlink().isEmpty()
-                        && cell->charStyleName.isEmpty()
-                        && !hasValidation);
+                        && cell->charStyleName.isEmpty()))
+                    && !hasValidation;
                 if (!collapsible) {
                     body->startElement("table:table-cell");
                     for (const auto &validation : m_context->validationCells) {
@@ -1994,7 +1996,11 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_mergeCell()
                         }
                     }
                 }
-                cell->styleName = mainStyles->insert(cellStyle, "ce");
+                // An unstyled merged cell has nothing to carry over; an empty
+                // style would be matched against an unrelated existing style.
+                if (origCellStyle || !cellStyle.isEmpty()) {
+                    cell->styleName = mainStyles->insert(cellStyle, "ce");
+                }
             }
         }
     }
