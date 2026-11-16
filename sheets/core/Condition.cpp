@@ -207,6 +207,10 @@ bool Conditions::isTrueFormula(const CellBase &cell, const QString &formula, con
                         int delta = pos.x() - basePoint.x();
                         pos.setX(cell.column() + delta);
                     }
+                    if (!Region::isValid(pos)) {
+                        newFormula.append(QStringLiteral("#REF!"));
+                        continue;
+                    }
                     newFormula.append(Region(pos, cell.sheet()).name());
                 } else {
                     Region::Range *range = static_cast<Region::Range *>(element);
@@ -226,6 +230,10 @@ bool Conditions::isTrueFormula(const CellBase &cell, const QString &formula, con
                     if (!range->isRightFixed()) {
                         int delta = r.right() - basePoint.x();
                         r.setRight(cell.column() + delta);
+                    }
+                    if (!Region::isValid(r)) {
+                        newFormula.append(QStringLiteral("#REF!"));
+                        continue;
                     }
                     newFormula.append(Region(r, cell.sheet()).name());
                 }
