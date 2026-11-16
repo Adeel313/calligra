@@ -184,6 +184,8 @@ public:
     QString styleName;
     int rowIndex;
     bool hidden : 1;
+    //! Largest font size of the cells in this row, in points
+    qreal fontSize = 0;
 
     Row(int index)
         : rowIndex(index)

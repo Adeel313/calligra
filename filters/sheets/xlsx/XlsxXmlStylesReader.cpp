@@ -564,6 +564,7 @@ KoFilter::ConversionStatus XlsxXmlStylesReader::read_fonts()
     uint countNumber = 0;
     STRING_TO_INT(count, countNumber, "styleSheet/fonts@count")
     m_context->styles->fontStyles.resize(countNumber);
+    m_context->styles->fontSizes.resize(countNumber);
     uint fontStyleIndex = 0;
 
     while (!atEnd()) {
@@ -577,8 +578,10 @@ KoFilter::ConversionStatus XlsxXmlStylesReader::read_fonts()
                     raiseError(i18n("Declared number of font styles too small (%1)", m_context->styles->fontStyles.size()));
                     return KoFilter::WrongFormat;
                 }
+                m_currentFontSize = 0;
                 TRY_READ(font)
                 m_context->styles->fontStyles[fontStyleIndex] = m_currentFontStyle;
+                m_context->styles->fontSizes[fontStyleIndex] = m_currentFontSize;
                 m_currentFontStyle = nullptr;
                 fontStyleIndex++;
             }
@@ -731,6 +734,7 @@ KoFilter::ConversionStatus XlsxXmlStylesReader::read_font()
         }
     }
 
+    m_currentFontSize = m_currentTextStyleProperties->fontPointSize();
     m_currentTextStyleProperties->saveOdf(*m_currentFontStyle);
     delete m_currentTextStyleProperties;
     m_currentTextStyleProperties = nullptr;

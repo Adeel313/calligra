@@ -701,8 +701,14 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
         Row *row = m_context->sheet->row(r, false);
         body->startElement("table:table-row");
         if (row) {
+            // Rows without a height in the file are auto-fitted by Excel to
+            // their largest font; a 20pt value in a default-height row is cut off.
+            const qreal defaultHeight = m_context->sheet->m_defaultRowHeight > 0 ? m_context->sheet->m_defaultRowHeight : 15.0;
+            const qreal fittedHeight = row->fontSize * 1.36;
             if (!row->styleName.isEmpty()) {
                 body->addAttribute("table:style-name", row->styleName);
+            } else if (fittedHeight > defaultHeight) {
+                body->addAttribute("table:style-name", processRowStyle(fittedHeight));
             } else if (m_context->sheet->m_defaultRowHeight != -1.0) {
                 QString styleName = processRowStyle(m_context->sheet->m_defaultRowHeight); // in pt
                 body->addAttribute("table:style-name", styleName);
@@ -1554,6 +1560,11 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
     bool ok;
     uint styleId = s.toUInt(&ok);
     const XlsxCellFormat *cellFormat = m_context->styles->cellFormat(styleId);
+    if (cellFormat) {
+        // Without a row height, the row has to grow to fit the largest font in it.
+        Row *row = m_context->sheet->row(m_currentRow, true);
+        row->fontSize = qMax(row->fontSize, m_context->styles->fontSize(cellFormat->fontId));
+    }
 
     QString formattedStyle;
     if (cellFormat->applyNumberFormat)

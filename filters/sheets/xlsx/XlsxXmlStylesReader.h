@@ -152,6 +152,14 @@ public:
         return fontStyles[id];
     }
 
+    //! @return font size in points for id @a id (counted from 0), or 0 if unknown
+    qreal fontSize(int id) const
+    {
+        if (id < 0 || id >= fontSizes.size())
+            return 0;
+        return fontSizes[id];
+    }
+
     //! @return fill style for id @a id (counted from 0)
     KoGenStyle *fillStyle(int id) const
     {
@@ -203,6 +211,7 @@ protected:
     void setCellFormat(XlsxCellFormat *format, int cellFormatIndex);
 
     QVector<KoGenStyle *> fontStyles;
+    QVector<qreal> fontSizes;
     QVector<KoGenStyle *> fillStyles;
     QVector<KoGenStyle *> borderStyles;
     QVector<XlsxCellFormat *> cellFormats;
@@ -286,6 +295,7 @@ protected:
     QColor m_currentBgColor;
 
     KoGenStyle *m_currentFontStyle;
+    qreal m_currentFontSize = 0;
     KoGenStyle *m_currentFillStyle;
     XlsxCellFormat *m_currentCellFormat;
     KoGenStyle *m_currentBorderStyle;
