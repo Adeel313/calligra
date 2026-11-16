@@ -4418,15 +4418,6 @@ void DocxXmlDocumentReader::collapseParagraphSpacing()
         return;
     }
 
-    const qreal marginTop = paragraphMargin(QStringLiteral("fo:margin-top"));
-    if (marginTop > 0.0 && m_previousParagraphBottomMargin > 0.0) {
-        // Word uses max(after, before) between adjacent paragraphs, while ODF
-        // adds the two margins.  Keep only the part of the top margin that
-        // exceeds the previous paragraph's bottom margin.
-        m_currentParagraphStyle.addPropertyPt("fo:margin-top",
-                                             qMax<qreal>(0.0, marginTop - m_previousParagraphBottomMargin));
-    }
-
     m_previousParagraphBottomMargin = paragraphMargin(QStringLiteral("fo:margin-bottom"));
 }
 

@@ -1706,10 +1706,17 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
     // sentence's own font even at the same point size. Compressed line spacing
     // must leave room for it, or the expression overlaps the line above/below.
     bool hasMathFont = false;
+    // Fonts without a measured height stretch above one still get the
+    // word-processing leading: an unmeasured stretch is 1.0, and a stretch
+    // below one means the Linux font is shorter than its Windows counterpart.
+    bool needsLeading = false;
     const auto noteFont = [&](const QTextCharFormat &format) {
         tallestFont = qMax(tallestFont, format.fontPointSize());
         if (format.font().family().contains(QLatin1String("Math"), Qt::CaseInsensitive))
             hasMathFont = true;
+        const qreal stretch = format.hasProperty(KoCharacterStyle::FontYStretch) ? format.property(KoCharacterStyle::FontYStretch).toDouble() : 1.0;
+        if (stretch <= 1.0)
+            needsLeading = true;
     };
     const bool useFontProperties = style.value(KoParagraphStyle::LineSpacingFromFont).toBool();
 
@@ -1869,7 +1876,7 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
                 if (percent != 0) {
                     height *= percent / 100.0;
                 }
-                if (!useFontProperties && line.textLength() != 0) height *= 1.16; // default word-processing leading
+                if (!useFontProperties && line.textLength() != 0 && needsLeading) height *= 1.16; // default word-processing leading
                 if (!useFontProperties && line.textLength() == 0) height *= 1.115; // empty paragraphs: match LibreOffice leading
                 // A line that carries math keeps the height its glyphs really
                 // occupy: math fonts have a taller ascent/descent than the
