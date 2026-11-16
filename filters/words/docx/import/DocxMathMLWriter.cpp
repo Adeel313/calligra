@@ -254,9 +254,6 @@ void writeDelimiter(KoXmlWriter &writer, const QDomElement &element)
         writer.endElement(); // mrow
         return;
     }
-    if (separators.isEmpty()) {
-        separators = QStringLiteral(",");
-    }
     writer.startElement("mfenced");
     writer.addAttribute("open", open);
     writer.addAttribute("close", close);
