@@ -3,6 +3,8 @@
 """Check DOCX table, page margin, contextual-spacing and TOC round trips."""
 import argparse
 import os
+import re
+import shutil
 from pathlib import Path
 import subprocess
 import zipfile
@@ -11,7 +13,7 @@ from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, Twips
-from docx.enum.text import WD_BREAK
+from docx.enum.text import WD_BREAK, WD_TAB_ALIGNMENT, WD_TAB_LEADER
 
 ROOT = Path(__file__).resolve().parents[5]
 W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
@@ -53,6 +55,11 @@ def check(output):
     p = doc.add_paragraph()
     p.paragraph_format.space_after = Pt(3)
     run = p.add_run('Entry\t1'); run.font.name = 'Arial'; run.font.size = Pt(11)
+    # Word-generated tables of contents often keep the page-number tab in the
+    # right margin (this template's text is 6" wide; the tab is at 7.6").
+    # Word pulls the number back to the right indent, so the layout must keep
+    # it inside the text area instead of painting it in the margin.
+    p.paragraph_format.tab_stops.add_tab_stop(Twips(11000), WD_TAB_ALIGNMENT.RIGHT, WD_TAB_LEADER.DOTS)
     end = OxmlElement('w:fldChar'); end.set(qn('w:fldCharType'), 'end')
     doc.add_paragraph().add_run()._r.append(end)
     doc.add_heading('Entry', level=1)
@@ -184,6 +191,25 @@ def check(output):
     with zipfile.ZipFile(reimported) as package:
         reimported_styles = E.fromstring(package.read('styles.xml'))
     assert page_heights(reimported_styles) == expected_margins
+
+    # The generated TOC entry keeps Word's out-of-margin page-number tab.  Word
+    # pulls the number back to the right indent, so it may not be painted in
+    # the margin.
+    if shutil.which('pdftotext'):
+        pdf = output / 'imported.pdf'
+        subprocess.run([str(ROOT / 'build/bin/calligraconverter'), '--batch', str(target), str(pdf)],
+                       env=env, check=True, timeout=60)
+        boxes = output / 'page.html'
+        subprocess.run(['pdftotext', '-f', '1', '-l', '1', '-bbox-layout', str(pdf), str(boxes)],
+                       check=True, timeout=60)
+        markup = boxes.read_text(errors='replace')
+        entry = next(m for m in re.finditer(r'<line[^>]*xMax="([\d.]+)"[^>]*>(.*?)</line>', markup, re.S)
+                     if 'Entry' in m.group(2))
+        layout = roots[0].xpath('//style:page-layout/style:page-layout-properties', namespaces=NS)[0]
+        right_edge = points(layout.get(qn_odf('fo:page-width'))) - points(layout.get(qn_odf('fo:margin-right')))
+        assert float(entry.group(1)) <= right_edge + 0.5, \
+            'TOC page number painted at %s, past the %s pt right margin' % (entry.group(1), right_edge)
+
     print('PASS: contextual spacing, table defaults/direct overrides, cell widths/grid, '
           'page margins, TOC entry formatting, hard breaks')
 
@@ -191,6 +217,11 @@ def check(output):
 def qn_odf(name):
     prefix, local = name.split(':')
     return '{' + NS[prefix] + '}' + local
+
+
+def points(value):
+    number, unit = float(value[:-2]), value[-2:]
+    return number * {'pt': 1.0, 'cm': 72.0 / 2.54, 'in': 72.0, 'mm': 72.0 / 25.4}[unit]
 
 
 if __name__ == '__main__':

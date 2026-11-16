@@ -1125,20 +1125,6 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
     //========
     // TODO this conversion is quite expensive to do, and doing it for each block is a performance nightmare.
     const QVector<KoText::Tab> tabs = pStyle.tabPositions();
-    // Word permits a TOC page-number tab beyond the text margin. Keep the
-    // heading's normal wrapping width, but allow its final tab and number to
-    // occupy that margin instead of wrapping the number onto its own line.
-    const int finalTab = block.text().lastIndexOf(QLatin1Char('\t'));
-    bool allowIndexTabOverhang = false;
-    qreal indexTabRight = right() - left();
-    if (block.document() != d->documentLayout->document() && finalTab >= 0) {
-        for (const auto &tab : tabs) {
-            if (tab.type == QTextOption::RightTab && tab.position != MaximumTabPos && tab.position > right() - left()) {
-                allowIndexTabOverhang = true;
-                indexTabRight = qMax(indexTabRight, tab.position);
-            }
-        }
-    }
 
     // Handle tabs relative to startMargin
     qreal tabOffset = -d->indent;
@@ -1165,6 +1151,17 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
         value *= qt_defaultDpiY() / 72.0;
 
         value += tabOffset * qt_defaultDpiY() / 72.0;
+
+        // Word does not align tabbed text outside the text area: a right tab
+        // stop past the right indent is treated as one at the right edge.  A
+        // generated index keeps its page-number tab in the page margin, and
+        // without this the numbers hang outside the body text.
+        if (kTab.type == QTextOption::RightTab || kTab.type == QTextOption::DelimiterTab) {
+            const qreal rightEdge = (d->width - d->indent) * qt_defaultDpiY() / 72.0;
+            if (value > rightEdge) {
+                value = rightEdge - 2.0 * qt_defaultDpiY() / 72.0; // stay clear of the wrap edge
+            }
+        }
 
         QTextOption::Tab tab;
         tab.position = value;
@@ -1399,11 +1396,6 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
         documentLayout()->setAnchoringParagraphRect(anchoringRect);
         documentLayout()->setAnchoringLayoutEnvironmentRect(layoutEnvironmentRect());
         runAroundHelper.fit(/* resetHorizontalPosition */ false, /* rightToLeft */ d->isRtl, QPointF(x(), d->y));
-        if (allowIndexTabOverhang && finalTab >= line.textStart() && finalTab <= line.textStart() + line.textLength()) {
-            line.setLineWidth(indexTabRight - startMargin + 0.01);
-            d->blockRects.last().setRight(qMax(d->blockRects.last().right(), line.naturalTextRect().right()));
-            expandBoundingRight(d->blockRects.last().right());
-        }
 
         documentLayout()->positionAnchorTextRanges(block.position() + line.textStart(), line.textLength(), block.document());
         qreal bottomOfText = line.y() + line.height();
