@@ -7194,8 +7194,12 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_anchor()
         m_z_index = relativeHeight.toInt();
     }
 
-    TRY_READ_ATTR_WITHOUT_NS(layoutInCell)
-    m_currentDrawStyle->addProperty("style:flow-with-text", MSOOXML::Utils::convertBooleanAttr(layoutInCell, false));
+    // layoutInCell only controls whether Word clips the drawing to its table
+    // cell; it says nothing about how the drawing relates to the surrounding
+    // text. Mapping it to style:flow-with-text clamped every anchored shape to
+    // the text area, which moved e.g. a full-page cover frame down by 17pt.
+    // ODF has no equivalent of the cell-clipping rule, so the attribute is
+    // deliberately not carried over.
 
     behindDoc = MSOOXML::Utils::convertBooleanAttr(attrs.value("behindDoc").toString());
     allowOverlap = MSOOXML::Utils::convertBooleanAttr(attrs.value("allowOverlap").toString());
@@ -8075,8 +8079,44 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_wsp()
             m_currentTextStyle = textStyle;
             m_insideParagraph = insideParagraph;
             if (status != KoFilter::OK) { popCurrentDrawStyle(); return status; }
+        } else if (name() == QLatin1String("bodyPr")) {
+            // Text anchoring and insets live on wps:bodyPr in
+            // WordprocessingML shapes (the DrawingML a:bodyPr handler only
+            // accepts the DrawingML name). A wps:bodyPr that omits them falls
+            // back to the same Word defaults as a:bodyPr.
+            const QXmlStreamAttributes bodyAttributes = attributes();
+            m_shapeTextPosition.clear();
+            m_shapeTextTopOff.clear();
+            m_shapeTextBottomOff.clear();
+            m_shapeTextLeftOff.clear();
+            m_shapeTextRightOff.clear();
+            const QString leftInset = bodyAttributes.value(QLatin1String("lIns")).toString();
+            const QString rightInset = bodyAttributes.value(QLatin1String("rIns")).toString();
+            const QString topInset = bodyAttributes.value(QLatin1String("tIns")).toString();
+            const QString bottomInset = bodyAttributes.value(QLatin1String("bIns")).toString();
+            const QString anchor = bodyAttributes.value(QLatin1String("anchor")).toString();
+            if (!leftInset.isEmpty()) { m_shapeTextLeftOff = leftInset; }
+            if (!rightInset.isEmpty()) { m_shapeTextRightOff = rightInset; }
+            if (!topInset.isEmpty()) { m_shapeTextTopOff = topInset; }
+            if (!bottomInset.isEmpty()) { m_shapeTextBottomOff = bottomInset; }
+            if (anchor == QLatin1String("t")) {
+                m_shapeTextPosition = "top";
+            } else if (anchor == QLatin1String("b")) {
+                m_shapeTextPosition = "bottom";
+            } else if (anchor == QLatin1String("ctr")) {
+                m_shapeTextPosition = "middle";
+            } else if (anchor == QLatin1String("just")) {
+                m_shapeTextPosition = "justify";
+            }
+            skipCurrentElement();
         } else { skipCurrentElement(); }
     }
+    inheritDefaultBodyProperties();
+    m_currentDrawStyle->addProperty("draw:textarea-vertical-align", m_shapeTextPosition);
+    m_currentDrawStyle->addProperty("fo:padding-left", EMU_TO_CM_STRING(m_shapeTextLeftOff.toInt()));
+    m_currentDrawStyle->addProperty("fo:padding-right", EMU_TO_CM_STRING(m_shapeTextRightOff.toInt()));
+    m_currentDrawStyle->addProperty("fo:padding-top", EMU_TO_CM_STRING(m_shapeTextTopOff.toInt()));
+    m_currentDrawStyle->addProperty("fo:padding-bottom", EMU_TO_CM_STRING(m_shapeTextBottomOff.toInt()));
     // Unknown geometry must not discard a text box's content.
     const QString preset = m_context->import->m_shapeHelper.attributes.contains(shapePreset)
         ? shapePreset : QStringLiteral("rect");

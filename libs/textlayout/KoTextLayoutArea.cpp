@@ -1738,6 +1738,10 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
             // stretch line height to ms-word size
             fontStretch = fontHeightStretch(charFormat);
         }
+        // An empty paragraph is still one text line: Word and LibreOffice give
+        // it exactly the height of a line of the paragraph's font. So the same
+        // leading decision as for a line with text has to be taken here.
+        noteFont(charFormat);
         height = charFormat.fontPointSize() * fontStretch;
     } else {
         qreal fontStretch = 1;
@@ -1868,8 +1872,7 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
                 if (percent != 0) {
                     height *= percent / 100.0;
                 }
-                if (!useFontProperties && line.textLength() != 0 && needsLeading) height *= 1.16; // default word-processing leading
-                if (!useFontProperties && line.textLength() == 0) height *= 1.115; // empty paragraphs: match LibreOffice leading
+                if (!useFontProperties && needsLeading) height *= 1.16; // default word-processing leading
                 // A line that carries math keeps the height its glyphs really
                 // occupy: math fonts have a taller ascent/descent than the
                 // sentence font, and lines mixing in larger formula runs (like

@@ -29,6 +29,7 @@
 #include <KoSectionModel.h>
 #include <KoShapeFactoryBase.h>
 #include <KoShapeLoadingContext.h>
+#include <KoShapeContainer.h>
 #include <KoStyleManager.h>
 #include <KoTextDocument.h>
 #include <KoTextEditor.h>
@@ -47,6 +48,29 @@
 #include <QTextCursor>
 
 #include <KoDocumentRdfBase.h>
+
+namespace
+{
+// Applies the document's external-leading setting to a shape and every text
+// document below it. Shapes that carry text keep their own QTextDocument.
+void applyExternalLeading(KoShape *shape, bool addExternalLeading)
+{
+    if (!shape) {
+        return;
+    }
+    if (KoTextShapeDataBase *data = qobject_cast<KoTextShapeDataBase *>(shape->userData())) {
+        if (QTextDocument *document = data->document()) {
+            KoTextDocument(document).setAddExternalLeading(addExternalLeading);
+        }
+    }
+    if (KoShapeContainer *container = dynamic_cast<KoShapeContainer *>(shape)) {
+        const QList<KoShape *> children = container->shapes();
+        for (KoShape *child : children) {
+            applyExternalLeading(child, addExternalLeading);
+        }
+    }
+}
+}
 
 KWOdfLoader::KWOdfLoader(KWDocument *document)
     : QObject(document)
@@ -297,7 +321,21 @@ void KWOdfLoader::loadSettings(const KoXmlDocument &settingsDoc, QTextDocument *
         KoTextDocument(textDoc).setRelativeTabs(configurationSettings.parseConfigItemBool("TabsRelativeToIndent", true));
 
         KoTextDocument(textDoc).setParaTableSpacingAtStart(configurationSettings.parseConfigItemBool("AddParaTableSpacingAtStart", true));
-        KoTextDocument(textDoc).setAddExternalLeading(configurationSettings.parseConfigItemBool("AddExternalLeading", false));
+        const bool addExternalLeading = configurationSettings.parseConfigItemBool("AddExternalLeading", false);
+        KoTextDocument(textDoc).setAddExternalLeading(addExternalLeading);
+
+        // Text in shapes - drawings, text boxes, headers and footers - lives in
+        // its own QTextDocument. How font metrics turn into line heights is a
+        // property of the document format, not of one text frame, so the setting
+        // has to reach those documents as well. Without this, an imported Word
+        // document would use Word's leading in the body and Calligra's native
+        // leading inside every shape, which shortens the text block there (and
+        // changes its vertical centring).
+        for (KWFrameSet *frameSet : m_document->frameSets()) {
+            for (KoShape *shape : frameSet->shapes()) {
+                applyExternalLeading(shape, addExternalLeading);
+            }
+        }
     }
     // 1.6: m_document->variableCollection()->variableSetting()->loadOasis(settings);
 }
