@@ -30,6 +30,7 @@ private Q_SLOTS:
 
     void testDocumentToCellCoordinates_data();
     void testDocumentToCellCoordinates();
+    void testValidationInSelectedRows();
 
     //    void testCompareRows();
 

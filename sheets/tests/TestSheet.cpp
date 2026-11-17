@@ -6,8 +6,10 @@
 #include "TestSheet.h"
 
 #include <core/Cell.h>
+#include <core/CellStorage.h>
 #include <core/Map.h>
 #include <core/Sheet.h>
+#include <engine/Validity.h>
 
 #include <QTest>
 
@@ -132,6 +134,32 @@ void SheetTest::testDocumentToCellCoordinates()
     QFETCH(QRect, result);
 
     QCOMPARE(m_sheet->documentToCellCoordinates(area), result);
+}
+
+void SheetTest::testValidationInSelectedRows()
+{
+    // Whole-row formatting must not force the toolbar to inspect all 16,384
+    // cells in each selected row just to find that no validation rules exist.
+    const Region rows(QRect(1, 3, KS_colMax, 5), m_sheet);
+    Style style;
+    style.setFontBold(true);
+    m_sheet->fullCellStorage()->setStyle(rows, style);
+    QElapsedTimer timer;
+    timer.start();
+    QVERIFY(m_sheet->areaIsEmpty(rows, Sheet::Validity));
+    qInfo() << "Validation check for five styled full rows:" << timer.nsecsElapsed() / 1000000.0 << "ms";
+
+    Validity validity;
+    validity.setRestriction(Validity::Integer);
+    validity.setCondition(Validity::SuperiorEqual);
+    validity.setMinimumValue(Value(0));
+    m_sheet->fullCellStorage()->setValidity(Region(QPoint(2, 4), m_sheet), validity);
+    QVERIFY(!m_sheet->areaIsEmpty(rows, Sheet::Validity));
+    QVERIFY(m_sheet->areaIsEmpty(Region(QRect(1, 6, KS_colMax, 2), m_sheet), Sheet::Validity));
+
+    // Validation on a covered cell is ignored, as before.
+    m_sheet->fullCellStorage()->mergeCells(1, 4, 1, 0);
+    QVERIFY(m_sheet->areaIsEmpty(rows, Sheet::Validity));
 }
 
 QTEST_MAIN(SheetTest)

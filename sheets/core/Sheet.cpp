@@ -22,6 +22,7 @@
 #include "engine/NamedAreaManager.h"
 #include "engine/ValueConverter.h"
 #include "engine/ValueStorage.h"
+#include "engine/ValidityStorage.h"
 
 #include "CellStorage.h"
 #include "ColFormatStorage.h"
@@ -615,6 +616,10 @@ bool Sheet::cellIsEmpty(const Cell &cell, TestType _type)
 bool Sheet::areaIsEmpty(const Region &region, TestType _type)
 {
     CellStorage *storage = fullCellStorage();
+    // The action toolbar checks this on every selection change. In a styled
+    // row VisitAll walks every column, even when there are no validation rules.
+    if (_type == Validity && storage->validityStorage()->intersectingPairs(region).isEmpty())
+        return true;
     Region::ConstIterator endOfList = region.constEnd();
     QRect used = usedArea();
     for (Region::ConstIterator it = region.constBegin(); it != endOfList; ++it) {

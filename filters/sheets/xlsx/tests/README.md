@@ -1,5 +1,34 @@
 # XLSX export precision regression
 
+Check XLSX package content types (including absence of the ODF `mimetype`
+entry, which causes Excel to report damaged content):
+
+```sh
+/usr/bin/python3 filters/sheets/xlsx/tests/package_content_types.py \
+  --output build/xlsx-package-check
+```
+
+This uses the locally built and installed native exporter. The output directory
+must be new; the generated ODS, XLSX and converter log are retained.
+It also checks that whole-sheet column formatting stops at Excel's last column,
+XFD (16,384), rather than Sheets' internal limit of 32,767.
+
+Check that common and individually resized row heights survive export and
+reimport:
+
+```sh
+/usr/bin/python3 filters/sheets/xlsx/tests/row_heights.py \
+  --output build/xlsx-row-heights-check
+```
+
+Check borders on empty cells and covered cells along merged-cell edges
+(requires openpyxl):
+
+```sh
+/usr/bin/python3 filters/sheets/xlsx/tests/empty_cell_borders.py \
+  --output build/xlsx-empty-cell-borders-check
+```
+
 Run against the locally built and installed native XLSX exporter:
 
 ```sh

@@ -27,6 +27,7 @@
 #include <sheets/core/Sheet.h>
 #include <sheets/core/Style.h>
 #include <sheets/core/StyleManager.h>
+#include <sheets/core/StyleStorage.h>
 #include <sheets/engine/CellBase.h>
 #include <sheets/engine/MapBase.h>
 #include <sheets/engine/NamedAreaManager.h>
@@ -44,9 +45,11 @@
 #include <QImage>
 #include <QHash>
 #include <QRegularExpression>
+#include <QRegion>
 #include <QSet>
 #include <QXmlStreamWriter>
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 
@@ -707,11 +710,15 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
             xml.writeEndElement();
             xml.writeEndElement();
         }
+        xml.writeEmptyElement(QStringLiteral("sheetFormatPr"));
+        xml.writeAttribute(QStringLiteral("defaultRowHeight"), QString::number(sheet->fullMap()->defaultRowFormat().height, 'f', 2));
         const ColFormatStorage *columns = sheet->columnFormats();
         // Width of a column outside the used area: the sheet's default width.
         // Columns that still carry it keep the default and are not written.
         const double defaultColumnWidth = columns->getColFormat(area.isEmpty() ? 1 : area.right() + 1).width;
-        const int lastColumn = qMax(area.right(), columns->lastNonDefaultCol());
+        // Sheets supports 32,767 columns. Whole-sheet column formatting must
+        // stop at Excel's XFD (16,384), or Excel repairs the worksheet.
+        const int lastColumn = qMin(16384, qMax(area.right(), columns->lastNonDefaultCol()));
         bool wroteCols = false;
         for (int col = 1; col <= lastColumn;) {
             int last = col;
@@ -738,23 +745,11 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
         xml.writeStartElement(QStringLiteral("sheetData"));
         qint64 emptyNanos = 0, styleNanos = 0, valueNanos = 0, writeNanos = 0, iterNanos = 0;
         const RowFormatStorage *rowFormats = sheet->rowFormats();
-        // The sheet's default row height is the most common one inside the
-        // used area (the import sets it for every row it reads); writing it on
-        // each row would turn the default into an explicit custom height.
-        double defaultRowHeight = rowFormats->getRowFormat(area.isEmpty() ? 1 : area.bottom() + 1).height;
         if (!area.isEmpty()) {
-            QHash<int, int> heightCounts;
-            for (int row = 1; row <= area.bottom(); ++row) {
-                const double height = rowFormats->getRowFormat(row).height;
-                if (height > 0) ++heightCounts[qRound(height * 100)];
+            QHash<int, QList<int>> rowColumns;
+            for (auto it = cellStyleIds.cbegin(); it != cellStyleIds.cend(); ++it) {
+                rowColumns[int(it.key() >> 32)].append(int(quint32(it.key())));
             }
-            int bestCount = 0;
-            for (auto it = heightCounts.cbegin(); it != heightCounts.cend(); ++it) {
-                if (it.value() > bestCount) { bestCount = it.value(); defaultRowHeight = it.key() / 100.0; }
-            }
-        }
-        if (!area.isEmpty()) {
-            auto *storage = static_cast<CellStorage *>(sheet->cellStorage());
             // Row formats are often defined for the whole sheet (LibreOffice
             // writes one table-row style covering all rows), which makes
             // lastNonDefaultRow() return the sheet limit. Iterating to it
@@ -764,22 +759,24 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
             // by the default row height, exactly like LibreOffice exports them.
             const int lastRow = area.bottom();
             for (int row = 1; row <= lastRow; ++row) {
-                Cell cell = storage->firstInRow(row, CellStorage::VisitContent);
+                QList<int> columns = rowColumns.value(row);
+                std::sort(columns.begin(), columns.end());
                 const RowFormat format = rowFormats->getRowFormat(row);
-                // CellStorage returns a null Cell when the row has no content.
-                // Check nullness before inspecting its default state or position.
-                const bool hasCells = !cell.isNull() && !cell.isDefault() && cell.column() <= area.right();
+                const bool hasCells = !columns.isEmpty();
                 if (!hasCells && rowFormats->isDefaultRow(row)) continue;
                 xml.writeStartElement(QStringLiteral("row"));
                 xml.writeAttribute(QStringLiteral("r"), QString::number(row));
-                if (format.height > 0 && qRound(format.height * 100) != qRound(defaultRowHeight * 100)) { xml.writeAttribute(QStringLiteral("ht"), QString::number(format.height, 'f', 2)); xml.writeAttribute(QStringLiteral("customHeight"), QStringLiteral("1")); }
+                // Preserve the stored height even when it is the most common
+                // height: Excel otherwise uses its default or auto-fits the row.
+                if (format.height > 0) { xml.writeAttribute(QStringLiteral("ht"), QString::number(format.height, 'f', 2)); xml.writeAttribute(QStringLiteral("customHeight"), QStringLiteral("1")); }
                 if (format.hidden || format.filtered) xml.writeAttribute(QStringLiteral("hidden"), QStringLiteral("1"));
-                while (!cell.isNull() && !cell.isDefault() && cell.column() <= area.right()) {
+                for (int col : columns) {
+                    const Cell cell(const_cast<Sheet *>(sheet), col, row);
                     QElapsedTimer cellTimer;
                     cellTimer.start();
                     const bool cellEmpty = cell.isEmpty();
                     emptyNanos += cellTimer.nsecsElapsed();
-                    if (!cellEmpty) {
+                    if (!cellEmpty || cellStyleIds.value(cellStyleKey(col, row)) > 0) {
                         xml.writeStartElement(QStringLiteral("c"));
                         xml.writeAttribute(QStringLiteral("r"), columnName(cell.column()) + QString::number(row));
                         cellTimer.restart();
@@ -792,59 +789,58 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
                         }
                         styleNanos += cellTimer.nsecsElapsed();
                         cellTimer.restart();
-                        const Value value = cell.value();
-                        valueNanos += cellTimer.nsecsElapsed();
-                        cellTimer.restart();
-                        const QString hyperlink = cell.link();
-                        if (!hyperlink.isEmpty() && links) {
-                            links->append(qMakePair(columnName(cell.column()) + QString::number(row), hyperlink));
-                        }
-                        const bool isFormula = cell.isFormula();
-                        if (!isFormula) {
-                            if (value.isError()) xml.writeAttribute(QStringLiteral("t"), QStringLiteral("e"));
-                            else if (value.isBoolean()) xml.writeAttribute(QStringLiteral("t"), QStringLiteral("b"));
-                            else if (!value.isNumber()) xml.writeAttribute(QStringLiteral("t"), QStringLiteral("inlineStr"));
-                        } else if (value.isError()) {
-                            xml.writeAttribute(QStringLiteral("t"), QStringLiteral("e"));
-                        } else if (value.isBoolean()) {
-                            xml.writeAttribute(QStringLiteral("t"), QStringLiteral("b"));
-                        } else if (value.isString()) {
-                            xml.writeAttribute(QStringLiteral("t"), QStringLiteral("str"));
-                        }
-                        if (isFormula) {
-                            const QString formula = excelFormula(cell.userInput());
-                            xml.writeStartElement(QStringLiteral("f"));
-                            xml.writeCharacters(formula);
-                            xml.writeEndElement();
-                            if (value.isError()) {
+                        if (!cellEmpty) {
+                            const Value value = cell.value();
+                            valueNanos += cellTimer.nsecsElapsed();
+                            cellTimer.restart();
+                            const QString hyperlink = cell.link();
+                            if (!hyperlink.isEmpty() && links) {
+                                links->append(qMakePair(columnName(cell.column()) + QString::number(row), hyperlink));
+                            }
+                            const bool isFormula = cell.isFormula();
+                            if (!isFormula) {
+                                if (value.isError()) xml.writeAttribute(QStringLiteral("t"), QStringLiteral("e"));
+                                else if (value.isBoolean()) xml.writeAttribute(QStringLiteral("t"), QStringLiteral("b"));
+                                else if (!value.isNumber()) xml.writeAttribute(QStringLiteral("t"), QStringLiteral("inlineStr"));
+                            } else if (value.isError()) {
+                                xml.writeAttribute(QStringLiteral("t"), QStringLiteral("e"));
+                            } else if (value.isBoolean()) {
+                                xml.writeAttribute(QStringLiteral("t"), QStringLiteral("b"));
+                            } else if (value.isString()) {
+                                xml.writeAttribute(QStringLiteral("t"), QStringLiteral("str"));
+                            }
+                            if (isFormula) {
+                                const QString formula = excelFormula(cell.userInput());
+                                xml.writeStartElement(QStringLiteral("f"));
+                                xml.writeCharacters(formula);
+                                xml.writeEndElement();
+                                if (value.isError()) {
+                                    xml.writeTextElement(QStringLiteral("v"), value.errorMessage());
+                                } else if (value.isNumber()) {
+                                    xml.writeTextElement(QStringLiteral("v"), QString::number(value.asFloat(), 'g', 15));
+                                } else if (value.isBoolean()) {
+                                    xml.writeTextElement(QStringLiteral("v"), value.asBoolean() ? QStringLiteral("1") : QStringLiteral("0"));
+                                } else if (value.isString()) {
+                                    xml.writeTextElement(QStringLiteral("v"), value.asString());
+                                }
+                            } else if (value.isError()) {
                                 xml.writeTextElement(QStringLiteral("v"), value.errorMessage());
                             } else if (value.isNumber()) {
                                 xml.writeTextElement(QStringLiteral("v"), QString::number(value.asFloat(), 'g', 15));
                             } else if (value.isBoolean()) {
                                 xml.writeTextElement(QStringLiteral("v"), value.asBoolean() ? QStringLiteral("1") : QStringLiteral("0"));
-                            } else if (value.isString()) {
-                                xml.writeTextElement(QStringLiteral("v"), value.asString());
+                            } else {
+                                xml.writeStartElement(QStringLiteral("is"));
+                                xml.writeStartElement(QStringLiteral("t"));
+                                xml.writeAttribute(QStringLiteral("xml:space"), QStringLiteral("preserve"));
+                                xml.writeCharacters(value.isString() ? value.asString() : cell.displayText());
+                                xml.writeEndElement();
+                                xml.writeEndElement();
                             }
-                        } else if (value.isError()) {
-                            xml.writeTextElement(QStringLiteral("v"), value.errorMessage());
-                        } else if (value.isNumber()) {
-                            xml.writeTextElement(QStringLiteral("v"), QString::number(value.asFloat(), 'g', 15));
-                        } else if (value.isBoolean()) {
-                            xml.writeTextElement(QStringLiteral("v"), value.asBoolean() ? QStringLiteral("1") : QStringLiteral("0"));
-                        } else {
-                            xml.writeStartElement(QStringLiteral("is"));
-                            xml.writeStartElement(QStringLiteral("t"));
-                            xml.writeAttribute(QStringLiteral("xml:space"), QStringLiteral("preserve"));
-                            xml.writeCharacters(value.isString() ? value.asString() : cell.displayText());
-                            xml.writeEndElement();
-                            xml.writeEndElement();
                         }
                         xml.writeEndElement();
                     }
                     writeNanos += cellTimer.nsecsElapsed();
-                    cellTimer.restart();
-                    cell = storage->nextInRow(cell.column(), row, CellStorage::VisitContent);
-                    iterNanos += cellTimer.nsecsElapsed();
                 }
                 xml.writeEndElement();
             }
@@ -1157,7 +1153,8 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
     timer.start();
     qCDebug(lcXlsxTiming, "XLSX export: start");
 
-    std::unique_ptr<KoStore> store(KoStore::createStore(m_chain->outputFile(), KoStore::Write, QByteArray(), KoStore::Zip));
+    // OPC packages must not contain the ODF-specific, untyped mimetype entry.
+    std::unique_ptr<KoStore> store(KoStore::createStore(m_chain->outputFile(), KoStore::Write, QByteArray(), KoStore::Zip, false));
     if (!store) return CreationError;
 
     const QList<SheetBase *> bases = document->map()->sheetList();
@@ -1180,6 +1177,15 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
         qCDebug(lcXlsxTiming, "XLSX styles: sheet %s area %d,%d %dx%d", qPrintable(sheet->sheetName()), area.left(), area.top(), area.width(), area.height());
         int cellCount = 0;
         QHash<qint64, int> cellStyleIds;
+        auto registerStyle = [&](const Style &style) {
+            if (style.isDefault()) return 0;
+            const auto existing = styleIds.constFind(style);
+            if (existing != styleIds.cend()) return existing.value();
+            styles.append(style);
+            const int id = styles.size();
+            styleIds.insert(style, id);
+            return id;
+        };
         qint64 styleNanos = 0, hashNanos = 0, iterNanos = 0;
         for (int row = area.top(); !area.isEmpty() && row <= area.bottom(); ++row) {
             QElapsedTimer it;
@@ -1191,23 +1197,75 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
                 const Style style = cell.style();
                 styleNanos += it.nsecsElapsed();
                 it.restart();
-                int styleId = 0;
-                if (!style.isDefault()) {
-                    const auto styleIt = styleIds.constFind(style);
-                    if (styleIt == styleIds.cend()) {
-                        styles.append(style);
-                        styleId = styles.size();
-                        styleIds.insert(style, styleId);
-                    } else {
-                        styleId = styleIt.value();
-                    }
-                }
+                const int styleId = registerStyle(style);
                 cellStyleIds.insert(cellStyleKey(cell.column(), row), styleId);
                 hashNanos += it.nsecsElapsed();
                 it.restart();
                 cell = storage->nextInRow(cell.column(), row, CellStorage::VisitContent);
                 iterNanos += it.nsecsElapsed();
                 ++cellCount;
+            }
+        }
+        // Content iterators omit empty cells carrying borders, fills or other
+        // formatting. Visit actual styled ranges within the export area, rather
+        // than scanning the bounding rectangle of a sparse sheet cell by cell.
+        QRegion styledCells;
+        const auto styleEntries = storage->styleStorage()->currentData(Region(area, const_cast<Sheet *>(sheet)));
+        for (const auto &entry : styleEntries) {
+            if (entry.second.data() && entry.second->type() != Style::DefaultStyleKey)
+                styledCells += entry.first.toRect();
+        }
+        for (const QRect &rect : styledCells) {
+            for (int row = rect.top(); row <= rect.bottom(); ++row) {
+                for (int col = rect.left(); col <= rect.right(); ++col) {
+                    const qint64 key = cellStyleKey(col, row);
+                    if (cellStyleIds.contains(key)) continue;
+                    const int id = registerStyle(Cell(const_cast<Sheet *>(sheet), col, row).style());
+                    if (id > 0) cellStyleIds.insert(key, id);
+                }
+            }
+        }
+        // Sheets draws a merged master's border around the whole merged
+        // rectangle. Excel needs the corresponding sides on its perimeter
+        // cells too; merely exporting the covered cells leaves gaps.
+        const auto mergedCells = storage->masterCells(Region(area, const_cast<Sheet *>(sheet)));
+        for (const Cell &master : mergedCells) {
+            const int left = master.column(), top = master.row();
+            const int right = left + master.mergedXCells();
+            const int bottom = top + master.mergedYCells();
+            if (left == right && top == bottom) continue;
+            const Style masterStyle = master.style();
+            auto extendBorder = [&](int col, int row) {
+                const qint64 key = cellStyleKey(col, row);
+                const int oldId = cellStyleIds.value(key);
+                Style style = oldId > 0 ? styles[oldId - 1] : Cell(const_cast<Sheet *>(sheet), col, row).style();
+                style.clearAttribute(Style::DefaultStyleKey);
+                if (col == left && style.leftBorderPen().style() == Qt::NoPen && masterStyle.leftBorderPen().style() != Qt::NoPen) {
+                    style.setLeftBorderPen(masterStyle.leftBorderPen());
+                    style.setLeftBorderStyle(masterStyle.leftBorderStyle());
+                }
+                if (col == right && style.rightBorderPen().style() == Qt::NoPen && masterStyle.rightBorderPen().style() != Qt::NoPen) {
+                    style.setRightBorderPen(masterStyle.rightBorderPen());
+                    style.setRightBorderStyle(masterStyle.rightBorderStyle());
+                }
+                if (row == top && style.topBorderPen().style() == Qt::NoPen && masterStyle.topBorderPen().style() != Qt::NoPen) {
+                    style.setTopBorderPen(masterStyle.topBorderPen());
+                    style.setTopBorderStyle(masterStyle.topBorderStyle());
+                }
+                if (row == bottom && style.bottomBorderPen().style() == Qt::NoPen && masterStyle.bottomBorderPen().style() != Qt::NoPen) {
+                    style.setBottomBorderPen(masterStyle.bottomBorderPen());
+                    style.setBottomBorderStyle(masterStyle.bottomBorderStyle());
+                }
+                const int id = registerStyle(style);
+                if (id > 0) cellStyleIds.insert(key, id);
+            };
+            for (int col = left; col <= right; ++col) {
+                extendBorder(col, top);
+                if (bottom != top) extendBorder(col, bottom);
+            }
+            for (int row = top + 1; row < bottom; ++row) {
+                extendBorder(left, row);
+                if (right != left) extendBorder(right, row);
             }
         }
         qCDebug(lcXlsxTiming, "XLSX styles: sheet %s %d cells, %d styles, %lld ms (style %lld, hash %lld, iter %lld)", qPrintable(sheet->sheetName()), cellCount, styles.size(), (long long)sheetTimer.elapsed(), (long long)(styleNanos/1000000), (long long)(hashNanos/1000000), (long long)(iterNanos/1000000));
