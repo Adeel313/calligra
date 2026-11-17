@@ -407,7 +407,7 @@ QTextTable *TestTableLayout::addTable(QTextCursor cursor, int rows, int columns,
     QTextTable *table = cursor.insertTable(rows, columns, tableFormat);
     for (int r = 0; r < table->rows(); ++r) {
         for (int c = 0; c < table->columns(); ++c) {
-            QString s = QString("Cell %1, %2").arg(r, c);
+            QString s = QString("Cell %1, %2").arg(r).arg(c);
             table->cellAt(r, c).firstCursorPosition().insertText(s);
             QTextBlock b2 = table->cellAt(r, c).firstCursorPosition().block();
             while (b2.isValid()) {
@@ -848,6 +848,37 @@ void TestTableLayout::testHeaderRowHeightLargerThanAreaHeight()
     KoPointedAt p = provider->area(0)->hitTest(point, Qt::FuzzyHit);
     QEXPECT_FAIL("", "TODO: Table shall be placed in area 0 & 1", Continue);
     QVERIFY2(table1 == p.table, "table1 not found in area 0");
+}
+
+void TestTableLayout::testInsertColumnAfterLayout()
+{
+    QTextCursor c = setupTest();
+    QTextTable *table = addTable(c, 20, 3);
+
+    MockRootAreaProvider *provider = dynamic_cast<MockRootAreaProvider *>(m_layout->provider());
+    QVERIFY(provider);
+    provider->setSuggestedRect(QRect(100, 100, 200, 90));
+    provider->maxPosition = 30; // guard against loop
+
+    m_layout->layout();
+    QVERIFY2(provider->m_areas.count() > 1, "Table should span several root areas");
+
+    // Inserting a column changes the live table geometry while the root areas
+    // still hold cursors saved with the old geometry. Relayouting them must not
+    // read outside those saved per-column arrays.
+    table->insertColumns(1, 1);
+    QCOMPARE(table->columns(), 4);
+    m_layout->layout();
+
+    QCOMPARE(table->columns(), 4);
+    QCOMPARE(table->rows(), 20);
+    QCOMPARE(table->cellAt(0, 0).firstCursorPosition().block().text(), QString("Cell 0, 0"));
+    QCOMPARE(table->cellAt(0, 1).firstCursorPosition().block().text(), QString());
+    QCOMPARE(table->cellAt(0, 2).firstCursorPosition().block().text(), QString("Cell 0, 1"));
+
+    QPointF point = provider->area(0)->referenceRect().topLeft() + QPointF(0., TABLE_OFFSET_FIRST_AREA);
+    KoPointedAt p = provider->area(0)->hitTest(point, Qt::FuzzyHit);
+    QVERIFY2(table == p.table, "table not found in area 0 after inserting a column");
 }
 
 QTEST_MAIN(TestTableLayout)

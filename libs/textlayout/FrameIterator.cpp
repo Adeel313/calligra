@@ -8,6 +8,8 @@
 
 #include "TableIterator.h"
 
+#include <KoTableStyle.h>
+
 #include <QTextFrame>
 #include <QTextTableCell>
 
@@ -86,7 +88,13 @@ TableIterator *FrameIterator::tableIterator(QTextTable *table)
     if (table == nullptr) {
         delete currentTableIterator;
         currentTableIterator = nullptr;
-    } else if (currentTableIterator == nullptr) {
+    } else if (currentTableIterator == nullptr || currentTableIterator->table != table
+               || currentTableIterator->frameIterators.size() != table->columns()
+               || currentTableIterator->headerRows != table->format().property(KoTableStyle::NumberHeadingRows).toInt()) {
+        // The table may have gained or lost columns (or header rows) since the
+        // iterator was created. Reusing it would index outside its per-column
+        // arrays, so start over from the current table geometry.
+        delete currentTableIterator;
         currentTableIterator = new TableIterator(table);
         currentTableIterator->masterPageName = masterPageName;
     }

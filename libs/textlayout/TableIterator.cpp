@@ -33,8 +33,12 @@ TableIterator::TableIterator(QTextTable *t)
 TableIterator::TableIterator(TableIterator *other)
 {
     table = other->table;
-    frameIterators.resize(table->columns());
-    for (int col = 0; col < table->columns(); ++col) {
+    // A copy must be a snapshot of the source. The table itself may have gained
+    // or lost columns since the source iterator was created (for example while
+    // relayouting after inserting a column), so the source's own dimensions
+    // have to be used instead of the current table geometry.
+    frameIterators.resize(other->frameIterators.size());
+    for (int col = 0; col < other->frameIterators.size(); ++col) {
         if (other->frameIterators[col]) {
             frameIterators[col] = new FrameIterator(other->frameIterators[col]);
         } else {
@@ -44,16 +48,11 @@ TableIterator::TableIterator(TableIterator *other)
     row = other->row;
     headerRows = other->headerRows;
     headerPositionX = other->headerPositionX;
-    headerRowPositions.resize(headerRows + 1);
-    headerCellAreas.resize(headerRows);
-    for (int row = 0; row < headerRows; ++row) {
-        headerCellAreas[row].resize(table->columns());
-        for (int col = 0; col < table->columns(); ++col) {
-            headerCellAreas[row][col] = other->headerCellAreas[row][col];
-        }
-        headerRowPositions[row] = other->headerRowPositions[row];
+    headerRowPositions = other->headerRowPositions;
+    headerCellAreas.resize(other->headerCellAreas.size());
+    for (int row = 0; row < other->headerCellAreas.size(); ++row) {
+        headerCellAreas[row] = other->headerCellAreas[row];
     }
-    headerRowPositions[headerRows] = other->headerRowPositions[headerRows];
 }
 
 TableIterator::~TableIterator()
@@ -74,14 +73,22 @@ bool TableIterator::operator==(const TableIterator &other) const
     if (headerRows != other.headerRows)
         return false;
 
+    if (frameIterators.size() != other.frameIterators.size())
+        return false;
+
+    if (headerCellAreas.size() != other.headerCellAreas.size())
+        return false;
+
     for (int row = 0; row < headerRows; ++row) {
-        for (int col = 0; col < table->columns(); ++col) {
+        if (headerCellAreas[row].size() != other.headerCellAreas[row].size())
+            return false;
+        for (int col = 0; col < headerCellAreas[row].size(); ++col) {
             if (headerCellAreas[row][col] != other.headerCellAreas[row][col])
                 return false;
         }
     }
 
-    for (int col = 0; col < table->columns(); ++col) {
+    for (int col = 0; col < frameIterators.size(); ++col) {
         if (frameIterators[col] && other.frameIterators[col]) {
             if (!(*frameIterators[col] == *(other.frameIterators[col])))
                 return false;

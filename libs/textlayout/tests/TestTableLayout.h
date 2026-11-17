@@ -107,6 +107,10 @@ private Q_SLOTS:
     /// with height > root area height
     void testHeaderRowHeightLargerThanAreaHeight();
 
+    /// Inserting a column in a table spanning several root areas must relayout
+    /// without using saved cursors whose column count is out of date.
+    void testInsertColumnAfterLayout();
+
 private:
     QTextCursor setupTest();
     void setupTest(const QString &mergedText,
