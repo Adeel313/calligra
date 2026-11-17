@@ -37,6 +37,7 @@
 #include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QScopedValueRollback>
+#include <QXmlStreamReader>
 
 #define MSOOXML_CURRENT_NS "w"
 #define MSOOXML_CURRENT_CLASS DocxXmlDocumentReader
@@ -59,6 +60,27 @@
 
 namespace
 {
+bool paragraphXmlHasVisibleContent(const QString &xml)
+{
+    QXmlStreamReader reader(xml);
+    reader.setNamespaceProcessing(false);
+    while (!reader.atEnd()) {
+        reader.readNext();
+        if (reader.isCharacters() && !reader.isWhitespace()) return true;
+        if (!reader.isStartElement()) continue;
+
+        const QString name = reader.qualifiedName().toString();
+        if (name == QLatin1String("text:s") || name == QLatin1String("text:tab") || name == QLatin1String("text:line-break")
+            || name == QLatin1String("text:soft-page-break") || name == QLatin1String("text:page-number")
+            || name == QLatin1String("text:page-count") || name == QLatin1String("text:date") || name == QLatin1String("text:time")
+            || name == QLatin1String("text:sequence") || name == QLatin1String("text:note") || name == QLatin1String("draw:frame")
+            || name == QLatin1String("draw:image") || name == QLatin1String("draw:object") || name == QLatin1String("calligra:hard-break")) {
+            return true;
+        }
+    }
+    return false;
+}
+
 //! Maps a WordprocessingML w:themeColor name to the key of the DrawingML colour scheme.
 QString docxThemeKey(const QString &themeColor)
 {
@@ -411,6 +433,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     m_headerActive = false;
 
     m_currentPageStyle = KoGenStyle(KoGenStyle::PageLayoutStyle);
+    m_sectionColumnsXml.clear();
     m_currentPageStyle.setAutoStyleInStylesDotXml(true);
     m_currentPageStyle.addProperty("style:writing-mode", "lr-tb");
     //! @todo handle all valued of style:print-orientation
@@ -477,6 +500,15 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     }
 
     applyPageBorders(m_currentPageStyle, m_pageMargins, m_pageBorderStyles, m_pageBorderPaddings, m_pageBorderOffsetFrom);
+
+    // A continuous section's properties describe the section ending at its
+    // paragraph mark.  Attaching its column definition to the next section
+    // turns following single-column text into columns (notably when the
+    // continuous break is after a heading).  We cannot retroactively change
+    // the preceding page layout here, so leave that next section unchanged.
+    if (!sectionContinuous && !m_sectionColumnsXml.isEmpty()) {
+        m_currentPageStyle.addChildElement("style:columns", m_sectionColumnsXml);
+    }
 
     bool useEvenAndOddHeaders = false;
     if (m_context->import->documentSettings().contains("evenAndOddHeaders")) {
@@ -545,12 +577,26 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
         // properties of a body that begins with a table would otherwise move
         // that table one page down.
         const bool startsSectionWithTable = m_currentSectionStyleFamily == QLatin1String("table");
-        sectionStyle->addAttribute("style:master-page-name", currentMasterPageName);
-        sectionStyle->addProperty("fo:break-before", (sectionContinuous || startsSectionWithTable) ? "auto" : "page");
-        if (m_sectionPageNumberStart > 0) {
-            sectionStyle->addProperty("style:page-number", QString::number(m_sectionPageNumberStart));
+        const QString sectionBreakBefore = (sectionContinuous || startsSectionWithTable) ? QStringLiteral("auto") : QStringLiteral("page");
+        if (m_currentSectionHasContent) {
+            sectionStyle->addAttribute("style:master-page-name", currentMasterPageName);
+            if (sectionBreakBefore == QLatin1String("page")) sectionStyle->addProperty("fo:break-before", sectionBreakBefore);
+            if (m_sectionPageNumberStart > 0) {
+                sectionStyle->addProperty("style:page-number", QString::number(m_sectionPageNumberStart));
+            }
+        } else {
+            // The section can end with several empty marker paragraphs. Defer
+            // its page and master style until the first paragraph with content.
+            m_pendingMasterPageName = currentMasterPageName;
+            if (sectionBreakBefore == QLatin1String("page")) m_pendingSectionBreakBefore = sectionBreakBefore;
+            m_pendingSectionPageNumberStart = m_sectionPageNumberStart;
         }
+    } else if (!m_currentSectionHasContent) {
+        const bool startsSectionWithTable = m_currentSectionStyleFamily == QLatin1String("table");
+        if (!sectionContinuous && !startsSectionWithTable) m_pendingSectionBreakBefore = QStringLiteral("page");
+        m_pendingSectionPageNumberStart = m_sectionPageNumberStart;
     }
+    m_currentSectionHasContent = false;
 
     // The header/footer flags only describe this section: while its
     // references and margins are read they map positions into the header
@@ -1292,34 +1338,56 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_cols()
 
     TRY_READ_ATTR(num)
     TRY_READ_ATTR(space)
+    TRY_READ_ATTR(equalWidth)
 
-    QBuffer columnBuffer;
-    KoXmlWriter columnWriter(&columnBuffer);
-
-    columnWriter.startElement("style:columns");
-    if (!num.isEmpty()) {
-        columnWriter.addAttribute("fo:column-count", num);
-    }
+    QVector<qreal> columnWidths;
+    qreal columnGap = 0.0;
+    bool hasColumnGap = false;
+    bool ok = false;
     if (!space.isEmpty()) {
-        bool ok;
-        const qreal distance = qreal(TWIP_TO_POINT(space.toDouble(&ok)));
-        if (ok) {
-            columnWriter.addAttributePt("fo:column-gap", distance);
-        }
+        columnGap = TWIP_TO_POINT(space.toDouble(&ok));
+        hasColumnGap = ok;
     }
 
     while (!atEnd()) {
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
-        if (isStartElement()) { }
+        if (isStartElement() && name() == QLatin1StringView("col")) {
+            bool widthOk = false;
+            const qreal width = attributes().value("w:w").toDouble(&widthOk);
+            if (widthOk && width > 0) columnWidths.append(width);
+
+            if (!hasColumnGap) {
+                bool gapOk = false;
+                const qreal gap = attributes().value("w:space").toDouble(&gapOk);
+                if (gapOk) {
+                    columnGap = TWIP_TO_POINT(gap);
+                    hasColumnGap = true;
+                }
+            }
+            skipCurrentElement();
+        }
+    }
+
+    const bool unequalColumns = equalWidth == QLatin1String("0") || equalWidth == QLatin1String("false");
+
+    QBuffer columnBuffer;
+    KoXmlWriter columnWriter(&columnBuffer);
+    columnWriter.startElement("style:columns");
+    if (!num.isEmpty()) columnWriter.addAttribute("fo:column-count", num);
+    if (hasColumnGap) columnWriter.addAttributePt("fo:column-gap", columnGap);
+    if (unequalColumns && !columnWidths.isEmpty()) {
+        for (qreal width : columnWidths) {
+            columnWriter.startElement("style:column");
+            columnWriter.addAttribute("style:rel-width", QString::number(width, 'g', 12) + QLatin1Char('*'));
+            columnWriter.endElement();
+        }
     }
 
     columnWriter.endElement(); // style:columns;
 
     const QString elementContents = QString::fromUtf8(columnBuffer.buffer(), columnBuffer.buffer().size());
-    if (!num.isEmpty()) {
-        m_currentPageStyle.addChildElement("style:columns", elementContents);
-    }
+    if (!num.isEmpty()) m_sectionColumnsXml = elementContents;
 
     READ_EPILOGUE
 }
@@ -2638,11 +2706,12 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
 
     // Whether section starts from this paragraph
     bool sectionAdded = false;
+    bool sectionStyleCandidate = false;
 
     if (m_createSectionStyle) {
         // To avoid the style to become a duplicate or being duplicated.
         m_currentParagraphStyle.addAttribute("style:master-page-name", "placeholder");
-        m_createSectionStyle = false;
+        sectionStyleCandidate = true;
         sectionAdded = true;
     }
 
@@ -2794,9 +2863,38 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
             body = textPBuf.releaseWriter();
         } else {
             body = textPBuf.originalWriter();
-            const bool hasParagraphContent = !textPBuf.isEmpty();
             QString paragraphXml;
             (void)textPBuf.releaseWriter(paragraphXml);
+            const bool hasParagraphContent = paragraphXmlHasVisibleContent(paragraphXml);
+            if (sectionStyleCandidate) {
+                if (hasParagraphContent) {
+                    m_createSectionStyle = false;
+                } else {
+                    m_currentParagraphStyle.removeAttribute("style:master-page-name");
+                    sectionAdded = false;
+                }
+            }
+            if (hasParagraphContent) {
+                if (!m_pendingMasterPageName.isEmpty()) {
+                    m_currentParagraphStyle.removeAttribute("style:master-page-name");
+                    m_currentParagraphStyle.addAttribute("style:master-page-name", m_pendingMasterPageName);
+                    m_pendingMasterPageName.clear();
+                }
+                if (!m_pendingSectionBreakBefore.isEmpty()) {
+                    m_currentParagraphStyle.addProperty("fo:break-before", m_pendingSectionBreakBefore);
+                    m_pendingSectionBreakBefore.clear();
+                    m_currentStyleName.clear();
+                }
+                if (m_pendingSectionPageNumberStart > 0) {
+                    m_currentParagraphStyle.addProperty("style:page-number", QString::number(m_pendingSectionPageNumberStart));
+                    m_pendingSectionPageNumberStart = 0;
+                    m_currentStyleName.clear();
+                }
+                // A paragraph with sectPr closes the current section, so its
+                // text must not make the following (possibly empty) section
+                // look populated.
+                if (!m_createSectionToNext) m_currentSectionHasContent = true;
+            }
             QString standaloneBreak;
             if (!m_insideTableCell && !m_headerActive && !m_footerActive && m_pendingParagraphBreak.isEmpty()) {
                 QXmlStreamReader fragment(QStringLiteral("<root>") + paragraphXml + QStringLiteral("</root>"));
@@ -2830,7 +2928,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
             // section, but it may also contain visible text (for example a
             // cover-page line followed by the section break). Keep that text
             // and only skip truly empty section markers.
-            if (standaloneBreak.isEmpty() && (!m_createSectionToNext || hasParagraphContent) && (!m_startToc || hasParagraphContent || m_endToc)) {
+            if (standaloneBreak.isEmpty() && (!sectionStyleCandidate || hasParagraphContent) && (!m_createSectionToNext || hasParagraphContent)
+                && (!m_startToc || hasParagraphContent || m_endToc)) {
                 if (!m_pendingParagraphBreak.isEmpty()) {
                     m_currentParagraphStyle.addProperty("fo:break-before", m_pendingParagraphBreak);
                     m_pendingParagraphBreak.clear();
@@ -4046,7 +4145,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_drawing()
             m_currentDrawStyle->addProperty("style:horizontal-rel", "page-start-margin");
             body->addAttribute("text:anchor-type", "paragraph");
         } else if (m_relativeFromH == "margin") {
-            m_currentDrawStyle->addProperty("style:horizontal-rel", "page-content");
+            m_currentDrawStyle->addProperty("style:horizontal-rel", (m_headerActive || m_footerActive) ? "frame" : "page-content");
             body->addAttribute("text:anchor-type", "paragraph");
         } else if (m_relativeFromH == "outsideMargin") {
             m_currentDrawStyle->addProperty("style:horizontal-rel", "page-end-margin");
@@ -4471,7 +4570,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_spacing()
             lineSpace = TWIP_TO_POINT(lineSpace);
             m_currentParagraphStyle.addPropertyPt("fo:line-height", lineSpace);
         } else {
-            lineSpace = lineSpace / 2.4; // converting to percentage
+            // Word's automatic line spacing stores percentages in 240ths:
+            // 240 means 100%, matching the export path's percentage * 2.4.
+            lineSpace = lineSpace / 2.4;
             QString space = "%1";
             space = space.arg(lineSpace);
             space.append('%');
@@ -7834,7 +7935,23 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_oMath()
 {
     READ_PROLOGUE
 
-    const QByteArray mathml = DocxMathMLWriter::readMathML(*this);
+    // Equations without explicit run properties inherit the paragraph font.
+    QString fontSize = m_currentParagraphStyle.property("fo:font-size", KoGenStyle::TextType);
+    QString parentName = m_currentParagraphStyle.parentName();
+    if (parentName.isEmpty()) {
+        parentName = m_context->m_namedDefaultStyles.value("paragraph");
+    }
+    for (int depth = 0; fontSize.isEmpty() && !parentName.isEmpty() && depth < 20; ++depth) {
+        const KoGenStyle *parent = mainStyles->style(parentName, "paragraph");
+        if (!parent) {
+            break;
+        }
+        fontSize = parent->property("fo:font-size", KoGenStyle::TextType);
+        parentName = parent->parentName();
+    }
+    bool valid = false;
+    const qreal points = QString(fontSize).remove(QStringLiteral("pt")).toDouble(&valid);
+    const QByteArray mathml = DocxMathMLWriter::readMathML(*this, valid && points > 0 ? points : 12.0);
     if (!mathml.isEmpty()) {
         writeInlineFormula(mathml);
     }
@@ -7922,11 +8039,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_jc_m()
     TRY_READ_ATTR(val)
 
     if (!val.isEmpty()) {
-        if (val == "centerGroup") {
+        if (val == "centerGroup" || val == "center") {
             m_currentParagraphStyle.addProperty("fo:text-align", "center");
         } else {
-            // Fix this based on possible values,
-            m_currentParagraphStyle.addProperty("fo:text-align", "left");
+            m_currentParagraphStyle.addProperty("fo:text-align", val == "right" ? "right" : "left");
         }
     }
 

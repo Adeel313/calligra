@@ -9,6 +9,10 @@
 #include <QFontMetrics>
 
 #include "AttributeManager.h"
+#include "FormulaRenderer.h"
+#include "RowElement.h"
+#include "UnderOverElement.h"
+#include "TextElement.h"
 #include "FencedElement.h"
 #include "FractionElement.h"
 #include "IdentifierElement.h"
@@ -158,3 +162,48 @@ void TestLayout::emptyElements()
 }
 
 QTEST_MAIN(TestLayout)
+
+void TestLayout::nestedFencesAndLimits()
+{
+    KoXmlDocument doc;
+    doc.setContent(QStringLiteral("<mrow><mfenced open='[' close=']' separators=''><munderover><mo>∑</mo><mi>i</mi><mi>T</mi></munderover><mi>x</mi></mfenced><mi>y</mi></mrow>"));
+    RowElement row;
+    QVERIFY(row.readMathML(doc.documentElement()));
+    FormulaRenderer renderer;
+    renderer.layoutElement(&row);
+    BasicElement *fence = row.childElements().first();
+    BasicElement *limits = fence->childElements().first();
+    BasicElement *x = fence->childElements().last();
+    QVERIFY(fence->width() > limits->width() + x->width());
+    QVERIFY(x->origin().x() >= limits->origin().x() + limits->width());
+    QVERIFY(row.childElements().last()->origin().x() >= fence->width());
+    QVERIFY(limits->childElements().at(1)->scaleFactor() < limits->childElements().first()->scaleFactor());
+    QVERIFY(limits->childElements().at(2)->scaleFactor() < limits->childElements().first()->scaleFactor());
+    const auto limitParts = limits->childElements();
+    QVERIFY(limitParts.at(1)->origin().y() + limitParts.at(1)->height() <= limitParts.first()->origin().y());
+    QVERIFY(limitParts.at(2)->origin().y() >= limitParts.first()->origin().y() + limitParts.first()->height());
+    const QSizeF size(row.width(), row.height());
+    renderer.layoutElement(&row);
+    QCOMPARE(QSizeF(row.width(), row.height()), size);
+    KoXmlDocument spaceDoc;
+    spaceDoc.setContent(QStringLiteral("<mtext>\u2001\u2001</mtext>"));
+    TextElement spaces;
+    QVERIFY(spaces.readMathML(spaceDoc.documentElement()));
+    QCOMPARE(spaces.text(), QStringLiteral("\u2001\u2001"));
+    renderer.layoutElement(&spaces);
+    QVERIFY(spaces.width() > 0);
+    KoXmlDocument scriptDoc;
+    scriptDoc.setContent(QStringLiteral("<msubsup><mi>x</mi><mi>i</mi><mi>T</mi></msubsup>"));
+    SubSupElement script(nullptr, SubSupScript);
+    QVERIFY(script.readMathML(scriptDoc.documentElement()));
+    renderer.layoutElement(&script);
+    const auto parts = script.childElements();
+    for (BasicElement *part : parts) {
+        QVERIFY(part->origin().y() >= 0);
+        QVERIFY(part->origin().y() + part->height() <= script.height() + 0.001);
+    }
+    fence->setAttribute("open", QStringLiteral(""));
+    fence->setAttribute("close", QStringLiteral(""));
+    renderer.layoutElement(&row);
+    QVERIFY(fence->width() < size.width() - row.childElements().last()->width());
+}

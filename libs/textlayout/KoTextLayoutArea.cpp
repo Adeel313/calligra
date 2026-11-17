@@ -86,9 +86,19 @@ KoTextLayoutArea::~KoTextLayoutArea()
 
 KoPointedAt KoTextLayoutArea::hitTest(const QPointF &p, Qt::HitTestAccuracy accuracy) const
 {
+    // Edits invalidate the stored frame/block iterators before the scheduled
+    // layout runs. Mouse events must not traverse that previous layout.
+    const KoTextLayoutArea *root = this;
+    while (root->d->parent) {
+        root = root->d->parent;
+    }
+    const auto *rootArea = dynamic_cast<const KoTextLayoutRootArea *>(root);
+    if (rootArea && rootArea->isDirty()) {
+        return KoPointedAt();
+    }
     QPointF point = p - QPointF(0, d->verticalAlignOffset);
 
-    if (d->startOfArea == nullptr) // We have not been layouted yet
+    if (d->startOfArea == nullptr || d->endOfArea == nullptr) // No complete layout yet
         return KoPointedAt();
 
     KoPointedAt pointedAt;
@@ -147,6 +157,9 @@ KoPointedAt KoTextLayoutArea::hitTest(const QPointF &p, Qt::HitTestAccuracy accu
             return pointedAt;
 
         QTextLayout *layout = block.layout();
+        if (!layout || layout->lineCount() == 0) {
+            continue;
+        }
         QTextFrame::iterator next = it;
         ++next;
         if (next != stop && next.currentFrame() == nullptr && point.y() > layout->boundingRect().bottom()) {
@@ -1838,7 +1851,10 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
         }
     }
 
-    height = qMax(height, ascent + descent);
+    // Inline shapes reserve their own extent. Paragraph line spacing applies
+    // to the text metrics, not to the image height (otherwise a 1.5-line
+    // paragraph adds half an image of blank space below an inline picture).
+    const qreal inlineObjectHeight = ascent + descent;
 
     if (height < 0.01) {
         height = 12; // default size for uninitialized styles.
@@ -1894,6 +1910,9 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
     } else {
         // for drop caps we just work with a basic linespacing for the dropped characters
         height *= 1.16;
+    }
+    if (style.value(KoParagraphStyle::FixedLineHeight).toDouble() == 0.0) {
+        height = qMax(height, inlineObjectHeight);
     }
     const KoTextLayoutArea *root = this;
     while (root->d->parent) root = root->d->parent;

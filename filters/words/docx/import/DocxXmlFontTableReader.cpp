@@ -17,6 +17,7 @@
 #include <MsooXmlUtils.h>
 
 #include <KoGenStyles.h>
+#include <QFontDatabase>
 
 #define MSOOXML_CURRENT_NS "w"
 #define BIND_READ_CLASS MSOOXML::MsooXmlStylesReader
@@ -175,7 +176,16 @@ KoFilter::ConversionStatus DocxXmlFontTableReader::read_font()
         debugDocx << *this;
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
-            TRY_READ_IF(family)
+            if (qualifiedName() == QLatin1StringView("w:altName")) {
+                const QString alternate = attributes().value(QLatin1StringView("w:val")).toString();
+                // Use the document's explicit alternate before Qt chooses an
+                // unrelated default for an unavailable family.
+                if (!alternate.isEmpty() && !QFontDatabase::families().contains(currentFontFaceName, Qt::CaseInsensitive)) {
+                    m_currentFontFace.setFamily(alternate);
+                }
+                skipCurrentElement();
+            }
+            ELSE_TRY_READ_IF(family)
             ELSE_TRY_READ_IF(pitch)
             SKIP_UNKNOWN
             //! @todo add ELSE_WRONG_FORMAT

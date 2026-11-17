@@ -16,6 +16,7 @@
 #include <KoXmlWriter.h>
 
 #include <QPainter>
+#include <QRegularExpression>
 
 TokenElement::TokenElement(BasicElement *parent)
     : BasicElement(parent)
@@ -122,8 +123,11 @@ void TokenElement::layout(const AttributeManager *am)
             }
         }
     }
-    // FIXME: This is only a temporary solution
+    // Keep logical horizontal space (including operator spacing and blank
+    // text), but use ink extents vertically for script positioning.
+    const qreal logicalRight = boundingrect.right();
     boundingrect = m_contentPath.boundingRect();
+    boundingrect.setRight(qMax(boundingrect.right(), logicalRight));
     m_offsets.removeLast();
     m_offsets.append(m_contentPath.boundingRect().right());
     // The left side may be negative, because of italised letters etc. we need to adjust for this when painting
@@ -320,7 +324,17 @@ bool TokenElement::readMathMLContent(const KoXmlElement &element)
 
         node = node.nextSibling();
     }
-    m_rawString = m_rawString.simplified();
+    // Math spacing characters (thin/em spaces) are intentional content.
+    // QString::simplified() erases them, including whitespace-only mtext.
+    if (elementType() != Text) {
+        m_rawString.replace(QRegularExpression(QStringLiteral("[ \\t\\r\\n]+")), QStringLiteral(" "));
+        if (m_rawString.startsWith(QLatin1Char(' '))) {
+            m_rawString.remove(0, 1);
+        }
+        if (m_rawString.endsWith(QLatin1Char(' '))) {
+            m_rawString.chop(1);
+        }
+    }
     return true;
 }
 

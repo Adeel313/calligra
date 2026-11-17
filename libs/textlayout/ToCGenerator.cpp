@@ -25,6 +25,9 @@
 
 #include <KoBookmark.h>
 #include <KoTextRangeManager.h>
+#include <QMap>
+#include <QRegularExpression>
+#include <QSet>
 #include <QTextDocument>
 #include <TextLayoutDebug.h>
 
@@ -84,10 +87,41 @@ static QString removeWhitespacePrefix(const QString &text)
     return text.right(length - firstNonWhitespaceCharIndex);
 }
 
+static QString normalizedTocEntry(QString text)
+{
+    text.remove(QChar::ObjectReplacementCharacter);
+    text = text.section(QLatin1Char('\t'), 0, 0).simplified();
+    text.remove(QLatin1Char(' '));
+    return text;
+}
+
+static int cachedTocLevel(const KoParagraphStyle *style)
+{
+    if (!style) return 1;
+    const KoParagraphStyle *parent = style->parentStyle();
+    const QString name = parent ? parent->name() : style->name();
+    const auto match = QRegularExpression(QStringLiteral("^(?:TOC|Contents)[ _]?([1-9])$"),
+                                          QRegularExpression::CaseInsensitiveOption)
+                           .match(name);
+    return match.hasMatch() ? match.captured(1).toInt() : 1;
+}
+
 bool ToCGenerator::generate()
 {
     if (!m_ToCInfo)
         return true;
+
+    QMap<QString, int> cachedEntries;
+    KoStyleManager *styleManager = KoTextDocument(m_document).styleManager();
+    if (m_ToCInfo->m_preserveCachedResults) {
+        for (QTextBlock cachedBlock = m_ToCDocument->begin(); cachedBlock.isValid(); cachedBlock = cachedBlock.next()) {
+            const QString entry = normalizedTocEntry(cachedBlock.text());
+            if (!entry.isEmpty()) {
+                const int styleId = cachedBlock.blockFormat().intProperty(KoParagraphStyle::StyleId);
+                cachedEntries.insert(entry, cachedTocLevel(styleManager->paragraphStyle(styleId)));
+            }
+        }
+    }
 
     m_preservePagebreak = m_ToCDocument->begin().blockFormat().intProperty(KoParagraphStyle::BreakBefore) & KoText::PageBreak;
 
@@ -99,8 +133,6 @@ bool ToCGenerator::generate()
     cursor.removeSelectedText();
     cursor.setBlockFormat(QTextBlockFormat());
     cursor.setCharFormat(QTextCharFormat());
-
-    KoStyleManager *styleManager = KoTextDocument(m_document).styleManager();
 
     if (!m_ToCInfo->m_indexTitleTemplate.text.isEmpty()) {
         KoParagraphStyle *titleStyle = styleManager->paragraphStyle(m_ToCInfo->m_indexTitleTemplate.styleId);
@@ -131,6 +163,21 @@ bool ToCGenerator::generate()
     QTextBlock block = m_document->rootFrame()->firstCursorPosition().block();
     int blockId = 0;
     for (; block.isValid(); block = block.next()) {
+        if (m_ToCInfo->m_preserveCachedResults && !cachedEntries.isEmpty()) {
+            const QString text = normalizedTocEntry(block.text());
+            int level = cachedEntries.value(text, 0);
+            if (level == 0) {
+                for (auto it = cachedEntries.cbegin(); it != cachedEntries.cend(); ++it) {
+                    if (text.startsWith(it.key()) && text.size() - it.key().size() <= 8) {
+                        level = it.value();
+                        break;
+                    }
+                }
+            }
+            if (level > 0) generateEntry(level, cursor, block, blockId);
+            continue;
+        }
+
         // Choose only TOC blocks
         if (m_ToCInfo->m_useOutlineLevel) {
             if (block.blockFormat().hasProperty(KoParagraphStyle::OutlineLevel)) {

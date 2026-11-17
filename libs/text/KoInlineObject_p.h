@@ -8,6 +8,8 @@
 #define KOINLINEOBJECT_P_H
 
 #include "TextDebug.h"
+#include "KoInlineTextObjectManager.h"
+#include <QPointer>
 class KoTextInlineRdf;
 
 class KoInlineObjectPrivate
@@ -22,7 +24,8 @@ public:
     }
     virtual ~KoInlineObjectPrivate();
 
-    KoInlineTextObjectManager *manager;
+    // Removed objects can remain in undo history after their manager is gone.
+    QPointer<KoInlineTextObjectManager> manager;
     int id;
     bool propertyChangeListener;
     KoTextInlineRdf *rdf; //< An inline object might have RDF, we own it.

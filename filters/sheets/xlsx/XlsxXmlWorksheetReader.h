@@ -129,7 +129,7 @@ protected:
     QString m_value;
 
     //! Cache of already-inserted cell style names, keyed by style id.
-    QHash<int, QString> m_cellStyleCache;
+    QHash<QString, QString> m_cellStyleCache;
 
     // for optimization
     static const char officeValue[];

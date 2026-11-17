@@ -17,7 +17,7 @@ macro(WORDS_PART_ADD_UNIT_TEST _TEST_NAME)
         NAME_PREFIX "words-part-"
     )
     set_tests_properties(words-part-${_TEST_NAME} PROPERTIES
-        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_PLUGIN_PATH=${CMAKE_BINARY_DIR}/bin:${KDE_INSTALL_FULL_PLUGINDIR};XDG_DATA_DIRS=${CMAKE_INSTALL_PREFIX}/share:/usr/local/share:/usr/share;LSAN_OPTIONS=suppressions=${CMAKE_SOURCE_DIR}/sanitizers.supp")
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_PLUGIN_PATH=${CMAKE_BINARY_DIR}/bin:${KDE_INSTALL_FULL_PLUGINDIR};XDG_DATA_DIRS=${CMAKE_INSTALL_PREFIX}/share:/usr/local/share:/usr/share;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/${_TEST_NAME}-config;XDG_CACHE_HOME=${CMAKE_CURRENT_BINARY_DIR}/${_TEST_NAME}-cache;LSAN_OPTIONS=suppressions=${CMAKE_SOURCE_DIR}/sanitizers.supp")
 endmacro()
 
 # call: words_part_frame_add_unit_test(<test-name> <sources> LINK_LIBRARIES <library> [<library> [...]] [GUI])
@@ -95,6 +95,8 @@ endif()
 
 words_part_add_unit_test(TestHeaderFooterLayout
     TestHeaderFooterLayout.cpp
+    ${CMAKE_SOURCE_DIR}/plugins/defaultTools/defaulttool/ShapeMoveStrategy.cpp
+    ${CMAKE_SOURCE_DIR}/plugins/defaultTools/defaulttool/SelectionDecorator.cpp
     LINK_LIBRARIES wordsprivate Qt6::Test
 )
 

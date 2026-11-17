@@ -238,6 +238,7 @@ public:
 
     /// @return The value of the attribute if it is set for this element
     QString attribute(const QString &attribute) const;
+    bool hasAttribute(const QString &attribute) const;
 
     /// @return The value of the attribute if it is inherited
     virtual QString inheritsAttribute(const QString &attribute) const;

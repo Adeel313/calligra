@@ -15,3 +15,8 @@ ElementType StyleElement::elementType() const
 {
     return Style;
 }
+
+QString StyleElement::inheritsAttribute(const QString &name) const
+{
+    return attribute(name);
+}

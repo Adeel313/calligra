@@ -146,6 +146,18 @@ static QString printCm(double cm)
     return QString::asprintf("%3.3fcm", cm);
 }
 
+static QString cellStyleCacheKey(const QString &styleId, const QList<QMap<QString, QString>> &conditionalMaps)
+{
+    QString key = styleId + QLatin1Char('|');
+    for (const QMap<QString, QString> &map : conditionalMaps) {
+        for (auto it = map.constBegin(); it != map.constEnd(); ++it) {
+            key += it.key() + QLatin1Char('=') + it.value() + QLatin1Char(';');
+        }
+        key += QLatin1Char('|');
+    }
+    return key;
+}
+
 QList<QMap<QString, QString>> XlsxXmlWorksheetReaderContext::conditionalStyleForPosition(const QString &positionLetter, int positionNumber)
 {
     QString startLetter, endLetter;
@@ -1670,72 +1682,58 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
     }
 
     // cell style
+    // Conditional formats are matched per cell, but the resulting styles are
+    // shared: cells with the same style and the same matching rules use one
+    // style instead of each creating and inserting their own.
+    const bool hasConditionals = !m_context->conditionalStyles.isEmpty();
+    QList<QMap<QString, QString>> conditionalMaps;
+    if (hasConditionals) {
+        QString positionLetter;
+        int positionNumber;
+        splitToRowAndColumn(r.toLatin1().constData(), 0, r.size(), positionLetter, positionNumber);
+        conditionalMaps = m_context->conditionalStyleForPosition(positionLetter, positionNumber);
+    }
     if (!s.isEmpty()) {
         if (!ok || !cellFormat) {
             raiseUnexpectedAttributeValueError(s, "c@s");
             return KoFilter::WrongFormat;
         }
 
-        const bool hasConditionals = !m_context->conditionalStyles.isEmpty();
-        QString cachedName;
-        bool cached = false;
-        if (!hasConditionals && m_cellStyleCache.contains((int)styleId)) {
-            cachedName = m_cellStyleCache.value((int)styleId);
-            cached = true;
-        }
-        if (!cached) {
+        // Without a row height, the row has to grow to fit the largest font in it.
+        Row *row = m_context->sheet->row(m_currentRow, true);
+        row->fontSize = qMax(row->fontSize, m_context->styles->fontSize(cellFormat->fontId));
+    }
+    if (!s.isEmpty() || !conditionalMaps.isEmpty()) {
+        const QString cacheKey = cellStyleCacheKey(s.isEmpty() ? QString() : QString::number(styleId), conditionalMaps);
+        if (m_cellStyleCache.contains(cacheKey)) {
+            cell->styleName = m_cellStyleCache.value(cacheKey);
+        } else {
             KoGenStyle cellStyle(KoGenStyle::TableCellAutoStyle, "table-cell");
+            if (!s.isEmpty()) {
+                QString formattedStyle;
+                if (cellFormat->applyNumberFormat)
+                    formattedStyle = m_context->styles->numberFormatStyleName(cellFormat->numFmtId);
 
-            if (charStyleName.isEmpty()) {
                 KoGenStyle *fontStyle = m_context->styles->fontStyle(cellFormat->fontId);
                 if (!fontStyle) {
                     qCWarning(lcXlsxImport) << "No font with ID:" << cellFormat->fontId;
                 } else {
                     KoGenStyle::copyPropertiesFromStyle(*fontStyle, cellStyle, KoGenStyle::TextType);
                 }
-            }
-            if (!cellFormat->setupCellStyle(m_context->styles, &cellStyle)) {
-                return KoFilter::WrongFormat;
-            }
-
-            if (!formattedStyle.isEmpty()) {
-                cellStyle.addAttribute("style:data-style-name", formattedStyle);
-            }
-
-            if (hasConditionals) {
-                QString positionLetter;
-                int positionNumber;
-                splitToRowAndColumn(r.toLatin1().constData(), 0, r.size(), positionLetter, positionNumber);
-                QList<QMap<QString, QString>> maps = m_context->conditionalStyleForPosition(positionLetter, positionNumber);
-                int index = maps.size();
-                // Adding the lists in reversed priority order, as KoGenStyle when creating the style
-                // adds last added first
-                while (index > 0) {
-                    cellStyle.addStyleMap(maps.at(index - 1));
-                    --index;
+                if (!cellFormat->setupCellStyle(m_context->styles, &cellStyle)) {
+                    return KoFilter::WrongFormat;
+                }
+                if (!formattedStyle.isEmpty()) {
+                    cellStyle.addAttribute("style:data-style-name", formattedStyle);
                 }
             }
-
-            cachedName = mainStyles->insert(cellStyle, "ce");
-            if (!hasConditionals)
-                m_cellStyleCache.insert((int)styleId, cachedName);
-        }
-        cell->styleName = cachedName;
-    } else if (!m_context->conditionalStyles.isEmpty()) {
-        // Conditional formatting applies to cells without an explicit style
-        // too; those need a style of their own to carry the style maps.
-        QString positionLetter;
-        int positionNumber;
-        splitToRowAndColumn(r.toLatin1().constData(), 0, r.size(), positionLetter, positionNumber);
-        QList<QMap<QString, QString>> maps = m_context->conditionalStyleForPosition(positionLetter, positionNumber);
-        if (!maps.isEmpty()) {
-            KoGenStyle cellStyle(KoGenStyle::TableCellAutoStyle, "table-cell");
-            int index = maps.size();
-            while (index > 0) {
-                cellStyle.addStyleMap(maps.at(index - 1));
-                --index;
+            // Adding the lists in reversed priority order, as KoGenStyle when creating the style
+            // adds last added first
+            for (int index = conditionalMaps.size(); index > 0; --index) {
+                cellStyle.addStyleMap(conditionalMaps.at(index - 1));
             }
             cell->styleName = mainStyles->insert(cellStyle, "ce");
+            m_cellStyleCache.insert(cacheKey, cell->styleName);
         }
     }
 

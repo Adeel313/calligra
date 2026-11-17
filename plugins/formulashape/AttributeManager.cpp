@@ -176,17 +176,17 @@ int AttributeManager::scriptLevel(const BasicElement *parent, int index) const
     case SubSupScript:
         return current_scaleLevel + 1;
     case Under:
-        if (boolOf("accentunder", parent))
+        if (!boolOf("accentunder", parent))
             return current_scaleLevel + 1;
         else
             return current_scaleLevel;
     case Over:
-        if (boolOf("accent", parent))
+        if (!boolOf("accent", parent))
             return current_scaleLevel + 1;
         else
             return current_scaleLevel;
     case UnderOver:
-        if ((index == 1 && boolOf("accentunder", parent)) || (index == 2 && boolOf("accent", parent)))
+        if ((index == 1 && !boolOf("accent", parent)) || (index == 2 && !boolOf("accentunder", parent)))
             return current_scaleLevel + 1;
         else
             return current_scaleLevel;
@@ -336,26 +336,30 @@ static const qreal DefaultFontSize = 12.0;
 
 QFont AttributeManager::font(const BasicElement *element) const
 {
-    // TODO process the mathvariant values partly
-    // normal -> do nothing.
-    // if contains bold -> font.setBold( true )
-    // if contains italic -> font.setItalic( true )
-    // if contains sans-serif setStyleHint( SansSerif ) --> Helvetica
-
     QFont font;
-    Length unit = parseUnit(findValue("fontsize", element), element);
-    if (unit.type == Length::Absolute) {
-        font.setPointSizeF(lengthToPixels(unit, element, "fontsize"));
-    } else if (unit.type == Length::Relative) {
-        font.setPointSizeF(lengthToPixels(unit, element, "fontsize") * element->scaleFactor());
-    } else if (unit.type == Length::Pixel) {
-        font.setPixelSize(lengthToPixels(unit, element, "fontsize") * element->scaleFactor());
-    } else {
-        // No explicit size: do not inherit the (usually much smaller) desktop
-        // application font, or formulas end up tiny compared to the text they
-        // are inserted into.
-        font.setPointSizeF(DefaultFontSize);
+    const QString family = findValue("fontfamily", element);
+    font.setFamily(family.isEmpty() ? QStringLiteral("STIX Two Math") : family);
+    font.setStyleHint(QFont::Serif);
+    const QString variant = findValue("mathvariant", element);
+    font.setBold(variant.contains(QLatin1String("bold")));
+    font.setItalic(variant.contains(QLatin1String("italic")));
+    if (variant.contains(QLatin1String("sans-serif"))) {
+        font.setFamily(QStringLiteral("sans-serif"));
+        font.setStyleHint(QFont::SansSerif);
+    } else if (variant == QLatin1String("monospace")) {
+        font.setFamily(QStringLiteral("monospace"));
+        font.setStyleHint(QFont::Monospace);
     }
+    const Length unit = parseUnit(findValue("fontsize", element), element);
+    qreal size = DefaultFontSize;
+    if (unit.type != Length::NoType) {
+        size = lengthToPixels(unit, element, "fontsize");
+    }
+    // Formula coordinates are document points, while QFont point sizes are
+    // converted to device pixels by Qt. Compensate for that conversion so a
+    // formula's 11pt text has the same extent as 11pt surrounding text.
+    const qreal dpi = QFontMetricsF(font).fontDpi();
+    font.setPointSizeF(size * element->scaleFactor() * 72.0 / dpi);
     return font;
 }
 

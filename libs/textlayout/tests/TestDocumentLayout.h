@@ -32,6 +32,8 @@ private Q_SLOTS:
      * Test the hittest of KoTextDocumentLayout.
      */
     void testHitTest();
+    void testInvalidBlockBoundingRect();
+    void testHitTestDirtyArea();
 
     /**
      * Test root-area with zero width.

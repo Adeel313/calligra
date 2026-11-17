@@ -11,6 +11,8 @@
 #include "AttributeManager.h"
 #include "OperatorElement.h"
 #include <QPainter>
+#include <QFontMetricsF>
+#include <QRegularExpression>
 
 FencedElement::FencedElement(BasicElement *parent)
     : RowElement(parent)
@@ -19,35 +21,61 @@ FencedElement::FencedElement(BasicElement *parent)
 
 void FencedElement::paint(QPainter &painter, AttributeManager *am)
 {
-    Q_UNUSED(am)
-
-    QPen pen(painter.pen());
-    pen.setWidth(1);
-    painter.setPen(pen);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(am->colorOf("mathcolor", this));
     painter.drawPath(m_fence);
 }
 
 void FencedElement::layout(const AttributeManager *am)
 {
-    m_fence = QPainterPath(); // empty path buffer
-    OperatorElement op;
-    m_fence.addPath(op.renderForFence(am->stringOf("open", this), Prefix));
-
-    const QString separators = am->stringOf("separators", this);
-    int count = 0;
-    foreach (const BasicElement *tmp, childElements()) {
-        m_fence.moveTo(m_fence.currentPosition() + QPointF(tmp->width(), 0.0));
-        if (tmp != childElements().last())
-            m_fence.addPath(op.renderForFence(separators.at(count), Infix));
-        if (count < separators.size() - 1) {
-            count++;
+    RowElement::layout(am);
+    m_fence = QPainterPath();
+    const QFont font = am->font(this);
+    const QFontMetricsF metrics(font);
+    const qreal contentHeight = height();
+    const qreal contentBaseline = baseLine();
+    qreal x = 0;
+    auto append = [&](const QString &text, bool stretch) {
+        if (text.isEmpty()) {
+            return;
+        }
+        QPainterPath glyph;
+        glyph.addText(QPointF(0, 0), font, text);
+        const QRectF bounds = glyph.boundingRect();
+        if (stretch && bounds.height() > 0 && contentHeight > bounds.height()) {
+            QTransform scale;
+            scale.scale(1, contentHeight / bounds.height());
+            glyph = scale.map(glyph);
+            glyph.translate(x - qMin(qreal(0), bounds.left()), -glyph.boundingRect().top());
+        } else {
+            glyph.translate(x - qMin(qreal(0), bounds.left()), contentBaseline);
+        }
+        m_fence.addPath(glyph);
+        x += qMax(metrics.horizontalAdvance(text), bounds.width());
+    };
+    append((hasAttribute("open") ? attribute("open") : am->stringOf("open", this)), true);
+    const QString separators = (hasAttribute("separators") ? attribute("separators") : am->stringOf("separators", this)).remove(QRegularExpression(QStringLiteral("\\s")));
+    const auto children = childElements();
+    for (int i = 0; i < children.size(); ++i) {
+        BasicElement *child = children.at(i);
+        child->setOrigin(QPointF(x, contentBaseline - child->baseLine()));
+        x += child->width();
+        if (i + 1 < children.size() && !separators.isEmpty()) {
+            append(QString(separators.at(qMin(i, int(separators.size()) - 1))), false);
         }
     }
-
-    m_fence.addPath(op.renderForFence(am->stringOf("close", this), Postfix));
-
-    setWidth(m_fence.boundingRect().width());
-    setHeight(m_fence.boundingRect().height());
+    append((hasAttribute("close") ? attribute("close") : am->stringOf("close", this)), true);
+    const qreal top = qMin(qreal(0), m_fence.boundingRect().top());
+    if (top < 0) {
+        m_fence.translate(0, -top);
+        for (BasicElement *child : children) {
+            child->setOrigin(child->origin() + QPointF(0, -top));
+        }
+    }
+    setWidth(x);
+    setHeight(qMax(contentHeight - top, m_fence.boundingRect().bottom()));
+    setBaseLine(contentBaseline - top);
+    setChildrenBoundingRect(QRectF(0, 0, width(), height()));
 }
 
 QString FencedElement::attributesDefaultValue(const QString &attribute) const

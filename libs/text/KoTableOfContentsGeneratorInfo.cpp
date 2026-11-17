@@ -108,6 +108,7 @@ void KoTableOfContentsGeneratorInfo::loadOdf(KoTextSharedLoadingData *sharedLoad
     m_useIndexMarks = element.attribute("use-index-marks", "f") == "true";
     m_useIndexSourceStyles = element.attribute("use-index-source-styles", "false") == "true";
     m_useOutlineLevel = element.attribute("use-outline-level", "true") == "true";
+    m_preserveCachedResults = element.attributeNS(KoXmlNS::calligra, "preserve-cached-results") == "true";
 
     // three other children to visit
     KoXmlElement p;
@@ -211,6 +212,9 @@ void KoTableOfContentsGeneratorInfo::saveOdf(KoXmlWriter *writer) const
     writer->addAttribute("text:use-index-marks", m_useIndexMarks);
     writer->addAttribute("text:use-index-source-styles", m_useIndexSourceStyles);
     writer->addAttribute("text:use-outline-level", m_useOutlineLevel);
+    if (m_preserveCachedResults) {
+        writer->addAttribute("calligra:preserve-cached-results", true);
+    }
 
     m_indexTitleTemplate.saveOdf(writer);
 
@@ -237,6 +241,7 @@ KoTableOfContentsGeneratorInfo *KoTableOfContentsGeneratorInfo::clone()
     newToCInfo->m_useIndexMarks = m_useIndexMarks;
     newToCInfo->m_useIndexSourceStyles = m_useIndexSourceStyles;
     newToCInfo->m_useOutlineLevel = m_useOutlineLevel;
+    newToCInfo->m_preserveCachedResults = m_preserveCachedResults;
     newToCInfo->m_indexTitleTemplate = m_indexTitleTemplate;
 
     foreach (const TocEntryTemplate &tocTemplate, m_entryTemplate) {

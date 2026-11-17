@@ -54,29 +54,20 @@ void UnderOverElement::paint(QPainter &painter, AttributeManager *am)
 
 void UnderOverElement::layout(const AttributeManager *am)
 {
-    //     qreal thinSpace   = am->layoutSpacing( this );
-    //     qreal accent      = m_elementType != Under && am->boolOf( "accent", this );     //Whether to add a space above
-    //     qreal accentUnder = m_elementType != Over && am->boolOf( "accentunder", this );//Whether to add a space below
-
-    // Set whether to stretch the element.  Set it to true if it doesn't exist to make it easy to check if any are non-stretchy
-    bool underStretchy = m_elementType == Over || am->boolOf("stretchy", m_underElement.get());
-    bool overStretchy = m_elementType == Under || am->boolOf("stretchy", m_overElement.get());
-    bool baseStretchy = (underStretchy && overStretchy) || am->boolOf("stretchy", m_baseElement.get()); // For sanity, make sure at least one is not stretchy
-
-    qreal largestWidth = 0;
-    if (!baseStretchy)
-        largestWidth = m_baseElement->width();
-
-    if (m_elementType != Over && !underStretchy)
-        largestWidth = qMax(m_underElement->width(), largestWidth);
-    if (m_elementType != Under && !overStretchy)
-        largestWidth = qMax(m_overElement->width(), largestWidth);
+    const qreal gap = am->layoutSpacing(this);
+    qreal largestWidth = m_baseElement->width();
+    if (m_underElement) {
+        largestWidth = qMax(largestWidth, m_underElement->width());
+    }
+    if (m_overElement) {
+        largestWidth = qMax(largestWidth, m_overElement->width());
+    }
 
     QPointF origin(0.0, 0.0);
     if (m_elementType != Under) {
         origin.setX((largestWidth - m_overElement->width()) / 2.0);
         m_overElement->setOrigin(origin);
-        origin.setY(m_overElement->height());
+        origin.setY(m_overElement->height() + gap);
     }
 
     origin.setX((largestWidth - m_baseElement->width()) / 2.0);
@@ -89,7 +80,7 @@ void UnderOverElement::layout(const AttributeManager *am)
         //	if(m_baseElement->baseLine() + 1.5*thinSpace > m_baseElement->height())
         //          origin.setY( origin.y() + m_baseElement->baseLine() );
         //	else
-        origin.setY(origin.y() + m_baseElement->height());
+        origin.setY(origin.y() + m_baseElement->height() + gap);
         m_underElement->setOrigin(origin);
         setHeight(origin.y() + m_underElement->height());
     } else {

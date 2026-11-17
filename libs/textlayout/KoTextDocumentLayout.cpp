@@ -226,7 +226,7 @@ void KoTextDocumentLayout::setStyleManager(KoStyleManager *manager)
 QRectF KoTextDocumentLayout::blockBoundingRect(const QTextBlock &block) const
 {
     QTextLayout *layout = block.layout();
-    return layout->boundingRect();
+    return layout ? layout->boundingRect() : QRectF();
 }
 
 QSizeF KoTextDocumentLayout::documentSize() const

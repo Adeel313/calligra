@@ -219,9 +219,13 @@ KoFilter::ConversionStatus DocxXmlStylesReader::read_docDefaults()
         m_currentTextStyle.addProperty("style:use-window-font-color", "true");
     }
 
-    if (!m_currentTextStyle.property("fo:font-size").isEmpty()) {
-        m_context->m_defaultFontSizePt = m_currentTextStyle.property("fo:font-size");
+    // WordprocessingML's run default is 10 pt when w:sz is omitted.  Leaving
+    // the ODF default style without a size makes Calligra apply its own 12 pt
+    // fallback, which changes line wrapping and pagination on import.
+    if (m_currentTextStyle.property("fo:font-size").isEmpty()) {
+        m_currentTextStyle.addProperty("fo:font-size", "10pt");
     }
+    m_context->m_defaultFontSizePt = m_currentTextStyle.property("fo:font-size");
 
     KoGenStyle::copyPropertiesFromStyle(m_currentTextStyle, m_currentParagraphStyle, KoGenStyle::TextType);
 

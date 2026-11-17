@@ -10,6 +10,12 @@ class TestHeaderFooterLayout : public QObject
 private Q_SLOTS:
     void testStableHeight_data();
     void testStableHeight();
+    void testImageDrag_data();
+    void testImageDrag();
+    void testFloatingImageBounds_data();
+    void testFloatingImageBounds();
+    void testTypingBesideNewImage_data();
+    void testTypingBesideNewImage();
 };
 
 #endif

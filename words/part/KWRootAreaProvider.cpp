@@ -534,14 +534,29 @@ void KWRootAreaProvider::doPostLayout(KoTextLayoutRootArea *rootArea, bool isNew
         // A content/format edit or a width change permits shrinking again.
         const int revision = frameSet()->document()->revision();
         const qreal contentWidth = rootArea->right() - rootArea->left();
-        const qreal contentHeight = rootArea->bottom() - rootArea->top();
+        const qreal textHeight = rootArea->bottom() - rootArea->top();
+        qreal contentHeight = textHeight;
+        // Text wrapping beside a floating logo can be much shorter than the
+        // logo itself. Reserve its extent too, so the body starts below the
+        // entire header and the next drag is constrained to the right height.
+        if (auto *container = dynamic_cast<KoShapeContainer *>(shape)) {
+            const QTransform toFrame = shape->absoluteTransformation(nullptr).inverted();
+            const qreal contentTop = data->topPadding() + (border ? border->borderWidth(KoBorder::TopBorder) : 0);
+            for (KoShape *child : container->shapes()) {
+                const KoShapeAnchor *anchor = child->anchor();
+                if (!child->isVisible() || !anchor || anchor->anchorType() == KoShapeAnchor::AnchorPage) {
+                    continue;
+                }
+                contentHeight = qMax(contentHeight, toFrame.mapRect(child->boundingRect()).bottom() - contentTop);
+            }
+        }
         if (m_headerFooterRevision != revision || !qFuzzyCompare(m_headerFooterWidth, contentWidth)) {
             m_headerFooterHeight = 0;
             m_headerFooterRevision = revision;
             m_headerFooterWidth = contentWidth;
         }
         m_headerFooterHeight = qMax(m_headerFooterHeight, contentHeight);
-        newSize.rheight() += m_headerFooterHeight - contentHeight;
+        newSize.rheight() += m_headerFooterHeight - textHeight;
     }
 
     if (newSize != rootArea->associatedShape()->size()) {

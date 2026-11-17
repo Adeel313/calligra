@@ -159,6 +159,11 @@ void BasicElement::setAttribute(const QString &name, const QVariant &value)
         m_attributes.insert(name, value.toString());
 }
 
+bool BasicElement::hasAttribute(const QString &attribute) const
+{
+    return m_attributes.contains(attribute);
+}
+
 QString BasicElement::attribute(const QString &attribute) const
 {
     QString tmp = m_attributes.value(attribute);
@@ -361,7 +366,7 @@ void BasicElement::setScaleLevel(int scaleLevel)
     }
     m_scaleLevel = qMax(scaleLevel, 0);
     int level = scaleLevel;
-    m_scaleFactor = 1.9;
+    m_scaleFactor = 1.0;
     while (level-- > 0) { // raise multiplier to the power of level
         m_scaleFactor *= 0.71;
     }

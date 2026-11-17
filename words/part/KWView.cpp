@@ -77,6 +77,7 @@
 #include <KoTextEditor.h>
 #include <KoTextRangeManager.h>
 #include <KoTextShapeData.h>
+#include <commands/ChangeAnchorPropertiesCommand.h>
 #include <KoToolManager.h>
 #include <KoToolProxy.h>
 #include <tools/KoInteractionTool.h>
@@ -1690,6 +1691,18 @@ void KWView::insertImagesIntoTextFrame(KWTextFrameSet *textFrameSet, const QVect
         return;
     }
 
+    KoShapeContainer *headerFooterContainer = nullptr;
+    if (Words::isHeaderFooter(textFrameSet)) {
+        for (KoShape *frame : textFrameSet->shapes()) {
+            if ((headerFooterContainer = dynamic_cast<KoShapeContainer *>(frame))) {
+                break;
+            }
+        }
+        if (!headerFooterContainer) {
+            return;
+        }
+    }
+
     KoShapeFactoryBase *factory = KoShapeRegistry::instance()->value(QStringLiteral("PictureShape"));
     if (!factory) {
         warnWords << "No picture shape found, cannot insert images.";
@@ -1716,18 +1729,36 @@ void KWView::insertImagesIntoTextFrame(KWTextFrameSet *textFrameSet, const QVect
             size.scale(QSizeF(maxWidth * 0.6, maxHeight), Qt::KeepAspectRatio);
             shape->setSize(size);
         }
-        shape->setTextRunAroundSide(KoShape::NoRunAround);
+        // Header/footer logos allow text alongside them from the first edit.
+        shape->setTextRunAroundSide(Words::isHeaderFooter(textFrameSet) ? KoShape::BothRunAroundSide : KoShape::NoRunAround);
 
         KoShapeAnchor *anchor = new KoShapeAnchor(shape);
-        anchor->setAnchorType(KoShapeAnchor::AnchorAsCharacter);
+        anchor->setAnchorType(headerFooterContainer ? KoShapeAnchor::AnchorPage : KoShapeAnchor::AnchorAsCharacter);
         anchor->setHorizontalRel(KoShapeAnchor::HChar);
         anchor->setHorizontalPos(KoShapeAnchor::HLeft);
         anchor->setVerticalRel(KoShapeAnchor::VBaseline);
         anchor->setVerticalPos(KoShapeAnchor::VTop);
         shape->setAnchor(anchor);
 
-        m_canvas->addCommand(new KWShapeCreateCommand(kwdocument(), shape));
-        editor->insertInlineObject(new KoAnchorInlineObject(anchor));
+        // The shape and its text anchor must be undone together. Otherwise
+        // undo can leave a live shape whose anchor character has disappeared.
+        KUndo2Command *command = editor->beginEditBlock(kundo2_i18n("Insert Image"));
+        editor->addCommand(new KWShapeCreateCommand(kwdocument(), shape, command));
+        if (headerFooterContainer) {
+            // A floating text anchor reserves no inline character or baseline
+            // height. Keep it in the header/footer document, with the logo at
+            // the frame's top left and the cursor ready for text beside it.
+            KoShapeAnchor properties(nullptr);
+            properties.setAnchorType(KoShapeAnchor::AnchorToCharacter);
+            properties.setHorizontalRel(KoShapeAnchor::HFrame);
+            properties.setHorizontalPos(KoShapeAnchor::HFromLeft);
+            properties.setVerticalRel(KoShapeAnchor::VFrame);
+            properties.setVerticalPos(KoShapeAnchor::VFromTop);
+            editor->addCommand(new ChangeAnchorPropertiesCommand(anchor, properties, headerFooterContainer, command));
+        } else {
+            editor->insertInlineObject(new KoAnchorInlineObject(anchor), command);
+        }
+        editor->endEditBlock();
 
         KoSelection *selection = m_canvas->shapeManager()->selection();
         selection->deselectAll();

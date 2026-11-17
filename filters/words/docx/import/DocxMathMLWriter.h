@@ -19,7 +19,7 @@ namespace DocxMathMLWriter
  * @return the content.xml bytes, or an empty array if no formula could be
  *         built (the subtree is consumed either way).
  */
-QByteArray readMathML(QXmlStreamReader &reader);
+QByteArray readMathML(QXmlStreamReader &reader, qreal fontSize = 12.0);
 }
 
 #endif // DOCXMATHMLWRITER_H

@@ -150,7 +150,7 @@ namespace
 {
 /// A ribbon group: a title plus the actions to show in it (action name, button label).
 struct RibbonGroup {
-    enum Layout { LargeButtons, LargeAndStacked, Stacked, CheckBoxes, PreviewNavigation, ZoomButtons };
+    enum Layout { LargeButtons, LargeAndStacked, Stacked, SingleColumn, CheckBoxes, PreviewNavigation, ZoomButtons };
     QString title;
     QList<QPair<QString, QString>> actions;
     Layout layout = LargeButtons;
@@ -372,15 +372,18 @@ private:
 
     void updatePresentation()
     {
+        QAction *action = defaultAction();
         setText(m_label);
-        if (defaultAction() && defaultAction()->icon().isNull()) {
+        if (action && action->icon().isNull()) {
             const QIcon fallback = property("ribbonFallbackIcon").value<QIcon>();
             if (!fallback.isNull()) {
                 setIcon(fallback);
             }
         }
-        if (defaultAction() && defaultAction()->menu()) {
-            setPopupMode(m_name == QLatin1String("add_shape") || defaultAction()->property("ribbonMenuOnly").toBool()
+        // The arrow for a command that has a drop-down comes from the default
+        // action's menu; the body of the button still runs the command.
+        if (action && action->menu()) {
+            setPopupMode(m_name == QLatin1String("add_shape") || action->property("ribbonMenuOnly").toBool()
                              ? QToolButton::InstantPopup : QToolButton::MenuButtonPopup);
         }
     }
@@ -631,6 +634,10 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
             const int compactIndex = buttonIndex - largeCount;
             if (large) {
                 buttonLayout->addWidget(button, 0, buttonIndex, 2, 1, Qt::AlignTop);
+            } else if (groupInfo.layout == RibbonGroup::SingleColumn) {
+                // A narrow band like Word's Editing group: one compact command
+                // per row, with the rarer commands inside their drop-downs.
+                buttonLayout->addWidget(button, buttonIndex, 0, Qt::AlignLeft);
             } else if (groupInfo.layout == RibbonGroup::PreviewNavigation) {
                 KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly);
                 button->setAccessibleName(label);
@@ -1145,6 +1152,50 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
         const ActionFinder findRibbonAction = [ribbonView](const QString &name) {
             return ribbonView ? findFileAction(ribbonView->mainWindow(), ribbonView->actionCollection(), name) : nullptr;
         };
+        // Word keeps its Editing group narrow: Find, Replace and Select in one
+        // column, with Find Next/Previous, Go To and Select Current Frame in
+        // the drop-downs instead of taking a wide band of their own.
+        auto *ribbonFind = new QAction(KoRibbonIcons::forCommand(QStringLiteral("edit_find")), i18n("Find"), this);
+        auto *ribbonFindMenu = new QMenu(this);
+        connect(ribbonFindMenu, &QMenu::aboutToShow, ribbonFindMenu, [ribbonFindMenu, findRibbonAction] {
+            ribbonFindMenu->clear();
+            for (const QString &name : {QStringLiteral("edit_find"),
+                                        QStringLiteral("edit_findnext"),
+                                        QStringLiteral("edit_findprevious")}) {
+                if (QAction *action = findRibbonAction(name)) {
+                    ribbonFindMenu->addAction(action);
+                }
+            }
+            ribbonFindMenu->addSeparator();
+            if (QAction *action = findRibbonAction(QStringLiteral("ribbon_go_to_page"))) {
+                ribbonFindMenu->addAction(action);
+            }
+        });
+        ribbonFind->setMenu(ribbonFindMenu);
+        m_view->actionCollection()->addAction(QStringLiteral("ribbon_edit_find"), ribbonFind);
+        connect(ribbonFind, &QAction::triggered, this, [findRibbonAction] {
+            if (QAction *action = findRibbonAction(QStringLiteral("edit_find"))) {
+                action->trigger();
+            }
+        });
+        auto *ribbonSelect = new QAction(KoRibbonIcons::forCommand(QStringLiteral("edit_select_all")), i18n("Select"), this);
+        auto *ribbonSelectMenu = new QMenu(this);
+        connect(ribbonSelectMenu, &QMenu::aboutToShow, ribbonSelectMenu, [ribbonSelectMenu, findRibbonAction] {
+            ribbonSelectMenu->clear();
+            for (const QString &name : {QStringLiteral("edit_select_all"),
+                                        QStringLiteral("edit_selectcurrentframe")}) {
+                if (QAction *action = findRibbonAction(name)) {
+                    ribbonSelectMenu->addAction(action);
+                }
+            }
+        });
+        ribbonSelect->setMenu(ribbonSelectMenu);
+        m_view->actionCollection()->addAction(QStringLiteral("ribbon_edit_select"), ribbonSelect);
+        connect(ribbonSelect, &QAction::triggered, this, [findRibbonAction] {
+            if (QAction *action = findRibbonAction(QStringLiteral("edit_select_all"))) {
+                action->trigger();
+            }
+        });
         const auto addHomeGroup = [&modeBoxFactory, &findRibbonAction](const QString &title, const QList<QPair<QString, QString>> &actions, int order, RibbonGroup::Layout layout) {
             auto *groupWidget = new QWidget;
             groupWidget->setWindowTitle(title);
@@ -1160,14 +1211,10 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
                       {QStringLiteral("format_painter"), i18n("Format painter")}},
                      10, RibbonGroup::LargeAndStacked);
         addHomeGroup(i18n("Editing"),
-                     {{QStringLiteral("edit_find"), i18n("Search")},
+                     {{QStringLiteral("ribbon_edit_find"), i18n("Find")},
                       {QStringLiteral("edit_replace"), i18n("Replace")},
-                      {QStringLiteral("edit_findnext"), i18n("Search again")},
-                      {QStringLiteral("edit_findprevious"), i18n("Search previous")},
-                      {QStringLiteral("ribbon_go_to_page"), i18n("Go To")},
-                      {QStringLiteral("edit_select_all"), i18n("Select")},
-                      {QStringLiteral("edit_selectcurrentframe"), i18n("Select Current Frame")}},
-                     50, RibbonGroup::LargeAndStacked);
+                      {QStringLiteral("ribbon_edit_select"), i18n("Select")}},
+                     50, RibbonGroup::SingleColumn);
 
 
         // Microsoft Office 2026 style ribbon pages: Insert, Draw and Design

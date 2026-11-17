@@ -116,6 +116,12 @@ void DocxXmlDocumentReader::finishToc()
     body->addAttribute("text:outline-level", m_tocLevels);
     body->addAttribute("text:use-outline-level", "true");
     body->addAttribute("text:relative-tab-stop-position", "false");
+    if (!m_tocEntryFormatting.isEmpty()) {
+        // DOCX field results are the document's last rendered TOC. Preserve
+        // them until an explicit update so paragraphs accidentally carrying
+        // Heading styles do not expand into pages of prose during import.
+        body->addAttribute("calligra:preserve-cached-results", "true");
+    }
     for (int level = 1; level <= m_tocLevels; ++level) {
         KoGenStyle entry(KoGenStyle::ParagraphStyle, "paragraph");
         if (entries.contains(level)) {

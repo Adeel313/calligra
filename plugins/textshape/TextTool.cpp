@@ -2030,6 +2030,10 @@ KoPointedAt TextTool::hitTest(const QPointF &point) const
     if (!m_textShape || !m_textShapeData) {
         return KoPointedAt();
     }
+    // An edit or an anchor move may still be waiting for its queued layout.
+    // Refresh before converting the mouse position; layout can move the frame
+    // and replace its root area.
+    m_textShape->waitUntilReady(*canvas()->viewConverter(), false);
     QPointF p = m_textShape->convertScreenPos(point);
     KoTextLayoutRootArea *rootArea = m_textShapeData->rootArea();
     return rootArea ? rootArea->hitTest(p, Qt::FuzzyHit) : KoPointedAt();

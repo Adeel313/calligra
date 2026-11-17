@@ -212,7 +212,7 @@ void ShapeMoveStrategy::promoteInlineAnchors()
         // shape.  It still has to be draggable inside the header/footer, so it
         // becomes a floating shape anchored to a character of that same text.
         if (isHeaderFooterAnchor(anchor)) {
-            if (makeInlineShapeFloating(shape, anchor, KoShapeAnchor::HChar, KoShapeAnchor::VChar)) {
+            if (makeInlineShapeFloating(shape, anchor, KoShapeAnchor::HFrame, KoShapeAnchor::VFrame)) {
                 m_previousOffsets[i] = anchor->offset();
                 m_newOffsets[i] = anchor->offset();
             }
@@ -262,7 +262,21 @@ void ShapeMoveStrategy::moveSelection()
             // on the next relayout (and be lost on save).  Apply the same
             // delta to the offset; KoShapeMoveCommand already stores and
             // restores both values for undo/redo.
-            shape->anchor()->setOffset(shape->anchor()->offset() + delta);
+            KoShapeAnchor *anchor = shape->anchor();
+            QPointF offset = anchor->offset() + delta;
+            if (isHeaderFooterAnchor(anchor)) {
+                // Layout can clamp an imported/stale offset back onto the
+                // page. A drag starts at that visible position, so store the
+                // new frame coordinates rather than accumulating a delta on
+                // the old offset and snapping back on the next layout pass.
+                if (anchor->horizontalRel() == KoShapeAnchor::HFrame && anchor->horizontalPos() == KoShapeAnchor::HFromLeft) {
+                    offset.setX(newPos.x());
+                }
+                if (anchor->verticalRel() == KoShapeAnchor::VFrame && anchor->verticalPos() == KoShapeAnchor::VFromTop) {
+                    offset.setY(newPos.y());
+                }
+            }
+            anchor->setOffset(offset);
             m_newOffsets[i] = shape->anchor()->offset();
         }
         i++;

@@ -33,7 +33,7 @@ QRectF OperatorElement::renderToPath(const QString &raw, QPainterPath &path) con
     path.moveTo(path.currentPosition() + QPointF(lSpace, 0.0));
     QFont font = manager.font(this);
     path.addText(path.currentPosition(), font, raw);
-    QRectF rect = path.boundingRect().adjusted(0, 0, lSpace + rSpace, 0);
+    QRectF rect = path.boundingRect().adjusted(0, 0, rSpace, 0);
     return rect;
     //    QFontMetricsF fm(font);
     //    return fm.boundingRect(QRect(), Qt::TextIncludeTrailingSpaces, raw).adjusted(0,0,lSpace+rSpace,0).adjusted(0,-fm.ascent(), 0, -fm.ascent());
@@ -68,9 +68,17 @@ void OperatorElement::stretch()
         break;
     case Under:
     case Over:
-    case UnderOver:
-        m_stretchHorizontally = true;
+    case UnderOver: {
+        // Only accents stretch over the base. A large operator carrying limits
+        // must retain its natural width, especially before its parent is laid out.
+        AttributeManager manager;
+        const auto siblings = parentElement()->childElements();
+        const bool isBase = !siblings.isEmpty() && siblings.first() == this;
+        m_stretchHorizontally = !isBase
+            && (manager.boolOf("accent", parentElement()) || manager.boolOf("accentunder", parentElement()))
+            && parentElement()->width() > 0;
         break;
+    }
     default:
         // There are many element types that inherit Row, so just try casting to
         // a row to see if it inherits from a row

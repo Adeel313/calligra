@@ -41,6 +41,9 @@ public:
     bool m_useIndexMarks;
     bool m_useIndexSourceStyles;
     bool m_useOutlineLevel;
+    // DOCX stores the last rendered TOC alongside its field instruction. Use
+    // its linked entries as the source list when refreshing the page numbers.
+    bool m_preserveCachedResults = false;
 
     IndexTitleTemplate m_indexTitleTemplate;
     QList<TocEntryTemplate> m_entryTemplate; // N-entries

@@ -74,6 +74,8 @@ private:
     qreal m_framePosY = 0.0; //!< Parsed from svg:y in the draw:frame
     bool m_frameFloating = false; //!< Anchored frames stay floating even at (0, 0)
     QString m_frameWrap;
+    QString m_frameHorizontalRel;
+    QString m_frameVerticalRel;
     QString m_frameRunThrough;
     bool m_frameWrapContour = false;
     QString m_frameWrapContourMode;

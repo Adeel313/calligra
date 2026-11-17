@@ -8,6 +8,7 @@
 #include "SubSupElement.h"
 
 #include "AttributeManager.h"
+#include <QFontMetricsF>
 #include "FormulaCursor.h"
 #include "FormulaDebug.h"
 
@@ -42,44 +43,41 @@ void SubSupElement::paint(QPainter &painter, AttributeManager *am)
 
 void SubSupElement::layout(const AttributeManager *am)
 {
-    // Get the minimum amount of shifting
-    qreal subscriptshift = am->doubleOf("subscriptshift", this);
-    qreal superscriptshift = am->doubleOf("superscriptshift", this);
-    qreal halfthinSpace = 0;
-
-    if (m_elementType == SubSupScript) {
-        // Add half a thin space between both sup and superscript, so there is a minimum
-        // of a whole thin space between them.
-        halfthinSpace = am->layoutSpacing(this) / 2.0;
-    }
-
-    // The yOffset is the amount the base element is moved down to make
-    // room for the superscript
-    qreal yOffset = 0;
-    if (m_superScript) {
-        yOffset = m_superScript->height() - m_baseElement->height() / 2 + halfthinSpace;
-        yOffset = qMax(yOffset, superscriptshift);
-    }
-    qreal largestWidth = 0;
+    // Position scripts by their baselines, not half the base's ink box:
+    // a short glyph such as x must still lower its subscript visibly.
+    const QFontMetricsF metrics(am->font(this));
+    const qreal subShift = qMax(am->doubleOf("subscriptshift", this), metrics.xHeight() * 0.45);
+    const qreal supShift = qMax(am->doubleOf("superscriptshift", this), metrics.xHeight() * 0.9);
+    qreal subY = 0;
+    qreal supY = 0;
     if (m_subScript) {
-        largestWidth = m_subScript->width();
+        subY = qMax(m_baseElement->baseLine() + subShift - m_subScript->baseLine(),
+                    m_baseElement->baseLine() - metrics.xHeight() * 0.65);
     }
     if (m_superScript) {
-        largestWidth = qMax(largestWidth, m_superScript->width());
-        m_superScript->setOrigin(QPointF(m_baseElement->width(), 0));
+        supY = qMin(m_baseElement->baseLine() - supShift - m_superScript->baseLine(),
+                    m_baseElement->height() * 0.35 - m_superScript->height());
     }
-
-    setWidth(m_baseElement->width() + largestWidth);
-    setBaseLine(yOffset + m_baseElement->baseLine());
-    m_baseElement->setOrigin(QPointF(0, yOffset));
-
+    if (m_subScript && m_superScript) {
+        subY = qMax(subY, supY + m_superScript->height() + am->layoutSpacing(this));
+    }
+    const qreal offset = qMax(qreal(0), -supY);
+    m_baseElement->setOrigin(QPointF(0, offset));
+    qreal width = 0;
+    qreal bottom = offset + m_baseElement->height();
     if (m_subScript) {
-        qreal yPos = yOffset + qMax(m_baseElement->height() / 2 + halfthinSpace, m_baseElement->height() - m_subScript->baseLine() + subscriptshift);
-        m_subScript->setOrigin(QPointF(m_baseElement->width(), yPos));
-        setHeight(yPos + m_subScript->height());
-    } else {
-        setHeight(yOffset + m_baseElement->height());
+        m_subScript->setOrigin(QPointF(m_baseElement->width(), subY + offset));
+        width = m_subScript->width();
+        bottom = qMax(bottom, subY + offset + m_subScript->height());
     }
+    if (m_superScript) {
+        m_superScript->setOrigin(QPointF(m_baseElement->width(), supY + offset));
+        width = qMax(width, m_superScript->width());
+        bottom = qMax(bottom, supY + offset + m_superScript->height());
+    }
+    setWidth(m_baseElement->width() + width);
+    setHeight(bottom);
+    setBaseLine(offset + m_baseElement->baseLine());
 }
 
 const QList<BasicElement *> SubSupElement::childElements() const

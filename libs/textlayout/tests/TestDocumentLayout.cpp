@@ -20,6 +20,7 @@
 #include <KoTextDocument.h>
 #include <KoTextDocumentLayout.h>
 #include <KoTextLayoutRootArea.h>
+#include <KoPointedAt.h>
 
 void TestDocumentLayout::initTestCase()
 {
@@ -77,6 +78,36 @@ void TestDocumentLayout::cleanupTest()
 void TestDocumentLayout::cleanupTestCase()
 {
     cleanupTest();
+}
+
+void TestDocumentLayout::testInvalidBlockBoundingRect()
+{
+    setupTest(QStringLiteral("Header text"));
+    QCOMPARE(m_layout->blockBoundingRect(QTextBlock()), QRectF());
+    QCOMPARE(m_layout->blockBoundingRect(m_doc->end()), QRectF());
+    QCOMPARE(m_layout->blockBoundingRect(m_doc->firstBlock()), m_doc->firstBlock().layout()->boundingRect());
+}
+
+void TestDocumentLayout::testHitTestDirtyArea()
+{
+    setupTest(QStringLiteral("Header image\nText after image"));
+    m_layout->layout();
+    auto *area = m_provider->area();
+    QVERIFY(area);
+    const QPointF point = area->boundingRect().topLeft() + QPointF(1, 1);
+    QVERIFY(area->hitTest(point, Qt::FuzzyHit).position >= 0);
+    area->setDirty();
+    QCOMPARE(area->hitTest(point, Qt::FuzzyHit).position, -1);
+    m_layout->layout();
+    QVERIFY(area->hitTest(point, Qt::FuzzyHit).position >= 0);
+
+    QTextCursor cursor(m_doc);
+    cursor.select(QTextCursor::Document);
+    cursor.removeSelectedText();
+    QVERIFY(area->isDirty());
+    QCOMPARE(area->hitTest(point, Qt::FuzzyHit).position, -1);
+    m_layout->layout();
+    QCOMPARE(area->hitTest(point, Qt::FuzzyHit).position, 0);
 }
 
 void TestDocumentLayout::testHitTest()

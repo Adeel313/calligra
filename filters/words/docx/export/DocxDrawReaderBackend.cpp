@@ -214,6 +214,8 @@ void DocxDrawReaderBackend::elementDrawFrame(KoXmlStreamReader &reader, OdfReade
         // is floating. Valid floating images are often positioned at (0, 0).
         m_frameFloating = attributes.value(QStringLiteral("text:anchor-type")) != QLatin1StringView("as-char");
         m_frameWrap.clear();
+        m_frameHorizontalRel.clear();
+        m_frameVerticalRel.clear();
         m_frameRunThrough.clear();
         m_frameWrapContour = false;
         m_frameWrapContourMode.clear();
@@ -222,6 +224,8 @@ void DocxDrawReaderBackend::elementDrawFrame(KoXmlStreamReader &reader, OdfReade
         if (KoOdfStyle *style = m_context->styleManager()->style(styleName, QStringLiteral("graphic"))) {
             if (KoOdfStyleProperties *properties = style->properties(QStringLiteral("style:graphic-properties"))) {
                 m_frameWrap = properties->attribute(QStringLiteral("style:wrap"));
+                m_frameHorizontalRel = properties->attribute(QStringLiteral("style:horizontal-rel"));
+                m_frameVerticalRel = properties->attribute(QStringLiteral("style:vertical-rel"));
                 m_frameRunThrough = properties->attribute(QStringLiteral("style:run-through"));
                 m_frameWrapContour = properties->attribute(QStringLiteral("style:wrap-contour")) == QLatin1String("true");
                 m_frameWrapContourMode = properties->attribute(QStringLiteral("style:wrap-contour-mode"));
@@ -279,6 +283,8 @@ void DocxDrawReaderBackend::elementDrawFrame(KoXmlStreamReader &reader, OdfReade
         m_framePosY = 0.0;
         m_frameFloating = false;
         m_frameWrap.clear();
+        m_frameHorizontalRel.clear();
+        m_frameVerticalRel.clear();
         m_frameRunThrough.clear();
         m_frameWrapContour = false;
         m_frameWrapContourMode.clear();
@@ -448,6 +454,8 @@ void DocxDrawReaderBackend::writePrimitive(KoXmlStreamReader &reader, const QStr
     const QString anchorType = attributes.value(QStringLiteral("text:anchor-type")).toString();
     m_frameFloating = !anchorType.isEmpty() && anchorType != QLatin1String("as-char");
     m_frameWrap = QStringLiteral("run-through");
+    m_frameHorizontalRel.clear();
+    m_frameVerticalRel.clear();
     m_frameRunThrough.clear();
     m_frameWrapContour = false;
     m_frameWrapContourMode.clear();
@@ -590,14 +598,38 @@ void DocxDrawReaderBackend::writeDrawing(const EmbeddedImage &image, bool chart,
         writer->addAttribute("x", 0);
         writer->addAttribute("y", 0);
         writer->endElement();
+        // Offsets must keep their reference rectangle. In a header/footer,
+        // frame (0,0) is the start of its text area, not the paper's corner.
+        const bool headerFooter = m_context->outputPart().startsWith(QLatin1String("word/header"))
+            || m_context->outputPart().startsWith(QLatin1String("word/footer"));
+        QString horizontalReference = QStringLiteral("page");
+        QString verticalReference = QStringLiteral("page");
+        if (headerFooter) {
+            if (m_frameHorizontalRel == QLatin1String("page-content") || m_frameHorizontalRel == QLatin1String("frame")
+                || m_frameHorizontalRel == QLatin1String("frame-content")) {
+                horizontalReference = QStringLiteral("margin");
+            } else if (m_frameHorizontalRel == QLatin1String("paragraph") || m_frameHorizontalRel == QLatin1String("paragraph-content")) {
+                horizontalReference = QStringLiteral("column");
+            } else if (m_frameHorizontalRel == QLatin1String("char")) {
+                horizontalReference = QStringLiteral("character");
+            }
+            if (m_frameVerticalRel == QLatin1String("page-content")) {
+                verticalReference = QStringLiteral("margin");
+            } else if (m_frameVerticalRel == QLatin1String("frame") || m_frameVerticalRel == QLatin1String("frame-content")
+                       || m_frameVerticalRel == QLatin1String("paragraph") || m_frameVerticalRel == QLatin1String("paragraph-content")) {
+                verticalReference = QStringLiteral("paragraph");
+            } else if (m_frameVerticalRel == QLatin1String("line") || m_frameVerticalRel == QLatin1String("char")) {
+                verticalReference = QStringLiteral("line");
+            }
+        }
         writer->startElement("wp:positionH");
-        writer->addAttribute("relativeFrom", "page");
+        writer->addAttribute("relativeFrom", horizontalReference);
         writer->startElement("wp:posOffset");
         writer->addTextNode(QString::number(qRound64(m_framePosX * EmusPerPoint)));
         writer->endElement(); // wp:posOffset
         writer->endElement(); // wp:positionH
         writer->startElement("wp:positionV");
-        writer->addAttribute("relativeFrom", "page");
+        writer->addAttribute("relativeFrom", verticalReference);
         writer->startElement("wp:posOffset");
         writer->addTextNode(QString::number(qRound64(m_framePosY * EmusPerPoint)));
         writer->endElement(); // wp:posOffset

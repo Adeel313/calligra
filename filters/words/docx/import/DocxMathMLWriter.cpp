@@ -95,6 +95,7 @@ TokenKind classifyToken(const QString &text)
 {
     bool allDigits = true;
     bool allLetters = true;
+    bool hasDigit = false;
     bool hasSpace = false;
     for (const QChar character : text) {
         if (character.isSpace()) {
@@ -103,6 +104,7 @@ TokenKind classifyToken(const QString &text)
             allLetters = false;
             continue;
         }
+        hasDigit = hasDigit || character.isDigit();
         if (!character.isDigit() && character != QLatin1Char('.') && character != QLatin1Char(',')) {
             allDigits = false;
         }
@@ -113,7 +115,7 @@ TokenKind classifyToken(const QString &text)
     if (hasSpace) {
         return TokenKind::Text;
     }
-    if (allDigits) {
+    if (allDigits && hasDigit) {
         return TokenKind::Number;
     }
     if (allLetters) {
@@ -221,6 +223,27 @@ void writeRun(KoXmlWriter &writer, const QDomElement &run)
     if (!variant.isEmpty()) {
         writer.addAttribute("mathvariant", variant);
     }
+    // WordprocessingML run properties override the inherited equation size.
+    const QString wordNs = QStringLiteral("http://schemas.openxmlformats.org/wordprocessingml/2006/main");
+    QDomElement wordSize;
+    for (QDomElement properties = run.firstChildElement(); !properties.isNull(); properties = properties.nextSiblingElement()) {
+        if (properties.namespaceURI() != wordNs || localName(properties) != QLatin1String("rPr")) {
+            continue;
+        }
+        for (QDomElement child = properties.firstChildElement(); !child.isNull(); child = child.nextSiblingElement()) {
+            if (child.namespaceURI() == wordNs && localName(child) == QLatin1String("sz")) {
+                wordSize = child;
+                break;
+            }
+        }
+    }
+    bool validSize = false;
+    const qreal halfPoints = wordSize.attributeNS(wordNs, QStringLiteral("val")).toDouble(&validSize);
+    if (validSize && halfPoints > 0) {
+        const QString size = QString::number(halfPoints / 2.0) + QStringLiteral("pt");
+        writer.addAttribute("fontsize", size);
+        writer.addAttribute("mathsize", size);
+    }
     writer.addTextNode(text);
     writer.endElement(); // token element
 }
@@ -286,9 +309,9 @@ void writeNary(KoXmlWriter &writer, const QDomElement &element)
         const QDomElement subHide = firstChild(properties, "subHide");
         const QDomElement supHide = firstChild(properties, "supHide");
         subHidden = !subHide.isNull() && ommlAttribute(subHide, "val") != QLatin1String("0")
-            && ommlAttribute(subHide, "val") != QLatin1String("false");
+            && ommlAttribute(subHide, "val") != QLatin1String("false") && ommlAttribute(subHide, "val") != QLatin1String("off");
         supHidden = !supHide.isNull() && ommlAttribute(supHide, "val") != QLatin1String("0")
-            && ommlAttribute(supHide, "val") != QLatin1String("false");
+            && ommlAttribute(supHide, "val") != QLatin1String("false") && ommlAttribute(supHide, "val") != QLatin1String("off");
     }
 
     writer.startElement("mrow");
@@ -524,7 +547,7 @@ void appendElement(QXmlStreamReader &reader, QDomDocument &document, QDomElement
 
 namespace DocxMathMLWriter
 {
-QByteArray readMathML(QXmlStreamReader &reader)
+QByteArray readMathML(QXmlStreamReader &reader, qreal fontSize)
 {
     if (!reader.isStartElement()) {
         return QByteArray();
@@ -544,7 +567,11 @@ QByteArray readMathML(QXmlStreamReader &reader)
     writer.startDocument("math");
     writer.startElement("math");
     writer.addAttribute("xmlns", MathNs);
+    writer.startElement("mstyle");
+    writer.addAttribute("fontsize", QString::number(fontSize) + QStringLiteral("pt"));
+    writer.addAttribute("mathsize", QString::number(fontSize) + QStringLiteral("pt"));
     writeRowContents(writer, root);
+    writer.endElement(); // mstyle
     writer.endElement(); // math
     writer.endDocument();
     return result;

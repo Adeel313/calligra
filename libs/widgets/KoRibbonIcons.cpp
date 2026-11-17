@@ -360,7 +360,8 @@ const CommandIcon commandIcons[] = {
     {"ribbon_fit_width", "width_normal"}, {"ribbon_full_page", "fit_screen"},
     {"ribbon_fit_text", "fit_screen"}, {"ribbon_zoom_menu", "zoom_in"},
     {"ribbon_grid_guides", "border_all"}, {"ribbon_sidebars", "splitscreen"},
-    {"ribbon_windows", "open_in_new"},
+    {"ribbon_windows", "open_in_new"}, {"ribbon_edit_find", "search"},
+    {"ribbon_edit_select", "select_all"},
     {"convert-to-path", "polyline"}, {"rotate-left", "restart_alt"}, {"rotate-right", "restart_alt"},
     // Words: Mail merge
     {"mailmerge_select_recipients", "database"}, {"mailmerge_edit_recipients", "database"},

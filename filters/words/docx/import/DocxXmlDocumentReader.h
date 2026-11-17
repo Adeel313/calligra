@@ -270,6 +270,11 @@ protected:
     QString m_sectionPageNumberFormat;
     int m_sectionPageNumberStart;
     KoGenStyle m_currentPageStyle;
+    QString m_sectionColumnsXml;
+    QString m_pendingSectionBreakBefore;
+    QString m_pendingMasterPageName;
+    int m_pendingSectionPageNumberStart = 0;
+    bool m_currentSectionHasContent = false;
     KoGenStyle m_masterPageStyle;
 
     DocxXmlDocumentReaderContext *m_context;

@@ -20,6 +20,7 @@ private Q_SLOTS:
     void fencedElement();
 
     void fixedElements();
+    void nestedFencesAndLimits();
     void tableElement();
     void emptyElements();
 };

@@ -19,6 +19,7 @@ private Q_SLOTS:
 
     /// Test for correct conversion of color attributes
     void testColorConversion();
+    void testDocumentPointFontSize();
 
 private:
     AttributeManager *m_attributeManager;

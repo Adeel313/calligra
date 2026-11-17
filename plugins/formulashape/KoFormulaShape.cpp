@@ -106,8 +106,10 @@ void KoFormulaShape::updateLayout()
         hintFont.setItalic(true);
         minimumWidth = QFontMetricsF(hintFont).horizontalAdvance(i18n("Type equation here.")) + 16.0;
     }
-    size.setWidth(qMax(size.width(), minimumWidth));
-    size.setHeight(qMax(size.height(), MinimumHeight));
+    if (m_formulaData->formulaElement()->childElements().isEmpty()) {
+        size.setWidth(qMax(size.width(), minimumWidth));
+        size.setHeight(qMax(size.height(), MinimumHeight));
+    }
     // While the formula is edited the frame covers the enlarged drawing, so the
     // surrounding text makes room for it; it shrinks back when editing ends.
     size *= editingScale();

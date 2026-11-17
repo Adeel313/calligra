@@ -10,6 +10,7 @@
 #include "KoTextRangeManager.h"
 
 #include "TextDebug.h"
+#include <QPointer>
 #include <QTextCursor>
 
 class KoTextRangePrivate
@@ -26,7 +27,9 @@ public:
     }
     virtual ~KoTextRangePrivate();
 
-    KoTextRangeManager *manager;
+    // Undo commands can retain removed ranges after the document's range
+    // manager has been destroyed.
+    QPointer<KoTextRangeManager> manager;
     int id;
     QTextCursor cursor;
     KoTextInlineRdf *rdf; //< A textrange might have RDF, we own it.
