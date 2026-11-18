@@ -547,6 +547,8 @@ public:
     QMap<QString, QString> m_abstractNumIDs;
 
     QString m_defaultFontSizePt;
+    // Font family from w:docDefaults, inherited by runs that do not name one.
+    QString m_defaultFontFamily;
 
 private:
 };

@@ -34,6 +34,8 @@
 
 #include <MsooXmlTableStyle.h>
 
+#include <QFont>
+#include <QFontInfo>
 #include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QScopedValueRollback>
@@ -3302,6 +3304,27 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_r()
         }
     }
 
+    // A run can override only the size or colour (table cells usually do).
+    // Its generated character style then has no font name, and Calligra does
+    // not inherit the document default face into such a style: it fell back to
+    // Noto Sans while the rest of the document used Calibri, making table
+    // cells wider than in Word/LibreOffice and changing pagination. Carry the
+    // effective family down explicitly, as Word's style inheritance implies.
+    if (!m_currentTextStyle.isEmpty() && m_currentTextStyle.property("style:font-name", KoGenStyle::TextType).isEmpty()) {
+        QString family;
+        if (!m_currentTextStyle.parentName().isEmpty()) {
+            if (const KoGenStyle *parent = mainStyles->style(m_currentTextStyle.parentName(), "text")) {
+                family = parent->property("style:font-name", KoGenStyle::TextType);
+            }
+        }
+        if (family.isEmpty()) {
+            family = m_context->m_defaultFontFamily;
+        }
+        if (!family.isEmpty()) {
+            m_currentTextStyle.addProperty("style:font-name", family, KoGenStyle::TextType);
+        }
+    }
+
     // We want to write to the higher body level
     body = buffer.originalWriter();
     QString currentTextStyleName;
@@ -4695,11 +4718,20 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
             mainStyles->insertFontFace(face);
         }
     };
+    // Word fonts that are not installed on this system have to be substituted.
+    // Declare the generic family LibreOffice uses for them so that the
+    // substitute (and its line metrics) agree between the two applications.
+    const auto isFontAvailable = [](const QString &family) {
+        return QFontInfo(QFont(family)).family().compare(family, Qt::CaseInsensitive) == 0;
+    };
     // CASE #1153
     TRY_READ_ATTR(ascii)
     if (!ascii.isEmpty()) {
         ensureFontFace(ascii);
         m_currentTextStyle.addProperty("style:font-name", ascii, KoGenStyle::TextType);
+        if (!isFontAvailable(ascii)) {
+            m_currentTextStyle.addProperty("style:font-family-generic", "roman", KoGenStyle::TextType);
+        }
     }
     // CASE #1152
     if (ascii.isEmpty()) {

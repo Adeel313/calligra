@@ -93,6 +93,15 @@ def check(output):
     width_table('Width fits', 'Width fits right', 1440, 7200)
     width_table('Width scaled', 'Width scaled right', 2880, 11520)
 
+    # A run that overrides only its size (as table cells typically do) must
+    # still carry the document's default font.  Without it Calligra rendered
+    # the cell with Noto Sans instead of the theme's Cambria and shifted
+    # pagination by a page.
+    sized = doc.add_paragraph().add_run('Sized only')
+    sized.font.size = Pt(9)
+    missing = doc.add_paragraph().add_run('Missing face')
+    missing.font.name = 'ZZZUninstalledTestFont'
+
     source = output / 'input.docx'; target = output / 'imported.odt'
     doc.save(source)
     install = ROOT / 'build/install'
@@ -151,6 +160,17 @@ def check(output):
     # 2880+11520 twips is wider than the 8640-twip grid, so Word would shrink
     # the table to the text area; the 1:4 proportion has to survive that.
     assert column_widths('Width scaled') == [86.4, 345.6]
+
+    # A style that overrides only the size must still name the default face:
+    # otherwise Calligra substitutes Noto Sans and pagination changes.
+    sized_style = paragraph('Sized only').find(qn_odf('text:span')).get(qn_odf('text:style-name'))
+    assert properties(sized_style).get(qn_odf('style:font-name')) == 'Cambria'
+    # An uninstalled font must declare the generic family so that the
+    # substitute (and therefore its line height) matches other applications.
+    missing_style = paragraph('Missing face').find(qn_odf('text:span')).get(qn_odf('text:style-name'))
+    missing_props = properties(missing_style)
+    assert missing_props.get(qn_odf('style:font-name')) == 'ZZZUninstalledTestFont'
+    assert missing_props.get(qn_odf('style:font-family-generic')) == 'roman'
 
     def page_heights(root):
         props = root.xpath('//style:page-layout/style:page-layout-properties', namespaces=NS)[0]

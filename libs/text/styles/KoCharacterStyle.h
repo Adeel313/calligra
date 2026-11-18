@@ -94,7 +94,8 @@ public:
         InlineInstanceId = 577297549, // Internal: Reserved for KoInlineTextObjectManager
         ChangeTrackerId = 577297550, // Internal: Reserved for ChangeTracker
         FontYStretch = 577297551, // Internal: Ratio between Linux font pt size and Windows font height
-        FontYStretchWithoutLeading // Internal: Font height without external leading
+        FontYStretchWithoutLeading, // Internal: Font height without external leading
+        FontYStretchIsFallback // Internal: The requested family was substituted, so keep the generic leading
     };
 
     /// List of possible combine mode

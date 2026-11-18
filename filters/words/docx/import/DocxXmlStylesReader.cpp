@@ -226,6 +226,7 @@ KoFilter::ConversionStatus DocxXmlStylesReader::read_docDefaults()
         m_currentTextStyle.addProperty("fo:font-size", "10pt");
     }
     m_context->m_defaultFontSizePt = m_currentTextStyle.property("fo:font-size");
+    m_context->m_defaultFontFamily = m_currentTextStyle.property("style:font-name");
 
     KoGenStyle::copyPropertiesFromStyle(m_currentTextStyle, m_currentParagraphStyle, KoGenStyle::TextType);
 

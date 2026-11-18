@@ -1720,7 +1720,12 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
         if (format.font().family().contains(QLatin1String("Math"), Qt::CaseInsensitive))
             hasMathFont = true;
         const qreal stretch = format.hasProperty(KoCharacterStyle::FontYStretch) ? format.property(KoCharacterStyle::FontYStretch).toDouble() : 1.0;
-        if (stretch <= 1.0)
+        // A substituted face has measured metrics now, but the requested font
+        // is still absent.  Keep the generic leading for it: without that
+        // factor its line box is shorter than the one Word/LibreOffice use.
+        const bool substituted = format.hasProperty(KoCharacterStyle::FontYStretchIsFallback)
+            && format.property(KoCharacterStyle::FontYStretchIsFallback).toBool();
+        if (stretch <= 1.0 || substituted)
             needsLeading = true;
     };
     const bool useFontProperties = style.value(KoParagraphStyle::LineSpacingFromFont).toBool();

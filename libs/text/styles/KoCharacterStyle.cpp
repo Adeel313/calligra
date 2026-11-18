@@ -12,6 +12,7 @@
 #include "Styles_p.h"
 
 #include <QFontDatabase>
+#include <QFontInfo>
 #include <QRegularExpression>
 #include <QTextBlock>
 #include <QTextCursor>
@@ -60,6 +61,16 @@ public:
     void setProperty(int key, const QVariant &value)
     {
         stylesPrivate.add(key, value);
+    }
+    bool hasProperty(int key) const
+    {
+        if (stylesPrivate.contains(key))
+            return true;
+        if (parentStyle)
+            return parentStyle->d->hasProperty(key);
+        if (defaultStyle)
+            return defaultStyle->d->hasProperty(key);
+        return false;
     }
     qreal propertyDouble(int key) const
     {
@@ -133,7 +144,7 @@ public:
     // this font stretch is needed if we want to have exact line height as in ms-word and oo
     //
     // font_size * font_stretch = windows_font_height
-    qreal calculateFontYStretch(const QString &fontFamily, bool externalLeading = true);
+    qreal calculateFontYStretch(const QString &fontFamily, bool externalLeading = true, QFont::StyleHint hint = QFont::AnyStyle);
 
     StylePrivate hardCodedDefaultStyle;
 
@@ -196,12 +207,27 @@ void KoCharacterStyle::ensureMinimalProperties(QTextCharFormat &format) const
     }
 }
 
-qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily, bool externalLeading)
+qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily, bool externalLeading, QFont::StyleHint hint)
 {
     qreal stretch = 1;
+    if (fontFamily.isEmpty()) {
+        setProperty(FontYStretchIsFallback, false);
+        return 1;
+    }
 #ifdef SHOULD_BUILD_FONT_CONVERSION
 
-    const QString cacheKey = fontFamily + (externalLeading ? QStringLiteral("/leading") : QStringLiteral("/no-leading"));
+    // Measure the face Qt will actually render with.  A DOCX can name a font
+    // that is not installed here; in that case the substitute's metrics, not
+    // the absent font's, decide how tall a line is.  Remember that the face
+    // was substituted: KoTextLayoutArea then keeps the generic leading that
+    // makes the line box match the other applications' fallback.
+    QFont query(fontFamily);
+    query.setStyleHint(hint);
+    const QString resolvedFamily = QFontInfo(query).family();
+    const bool substituted = resolvedFamily.compare(fontFamily, Qt::CaseInsensitive) != 0;
+    setProperty(FontYStretchIsFallback, substituted);
+
+    const QString cacheKey = resolvedFamily + (externalLeading ? QStringLiteral("/leading") : QStringLiteral("/no-leading"));
     if (textScaleMap.contains(cacheKey)) {
         return textScaleMap.value(cacheKey);
     }
@@ -211,7 +237,7 @@ qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily
     FT_Face face;
     int id = 0;
     int error = 0;
-    QByteArray fontName = fontFamily.toLatin1();
+    QByteArray fontName = resolvedFamily.toLatin1();
 
     // TODO http://freedesktop.org/software/fontconfig/fontconfig-devel/x19.html
     //  we should specify slant and weight too
@@ -814,8 +840,13 @@ static QString exportOdfFontStyleHint(QFont::StyleHint hint)
 void KoCharacterStyle::setFontFamily(const QString &family)
 {
     d->setProperty(QTextFormat::FontFamily, family);
-    setFontYStretch(d->calculateFontYStretch(family));
-    d->setProperty(FontYStretchWithoutLeading, d->calculateFontYStretch(family, false));
+    // An unset property reads back as 0 (Helvetica), not AnyStyle, so only
+    // use the hint when it was actually set on this style.
+    const auto hint = d->hasProperty(QTextFormat::FontStyleHint)
+        ? static_cast<QFont::StyleHint>(d->propertyInt(QTextFormat::FontStyleHint))
+        : QFont::AnyStyle;
+    setFontYStretch(d->calculateFontYStretch(family, true, hint));
+    d->setProperty(FontYStretchWithoutLeading, d->calculateFontYStretch(family, false, hint));
 }
 QString KoCharacterStyle::fontFamily() const
 {
@@ -871,6 +902,13 @@ bool KoCharacterStyle::fontFixedPitch() const
 void KoCharacterStyle::setFontStyleHint(QFont::StyleHint styleHint)
 {
     d->setProperty(QTextFormat::FontStyleHint, styleHint);
+    // A style hint can change which face is substituted for a missing font,
+    // so the measured line height has to follow it.
+    const QString family = fontFamily();
+    if (!family.isEmpty()) {
+        setFontYStretch(d->calculateFontYStretch(family, true, styleHint));
+        d->setProperty(FontYStretchWithoutLeading, d->calculateFontYStretch(family, false, styleHint));
+    }
 }
 QFont::StyleHint KoCharacterStyle::fontStyleHint() const
 {
@@ -1433,23 +1471,6 @@ void KoCharacterStyle::loadOdfProperties(KoShapeLoadingContext &scontext)
             setFontFixedPitch(fontPitch == "fixed");
         }
 
-        const QString genericFamily(styleStack.property(KoXmlNS::style, "font-family-generic"));
-        if (!genericFamily.isEmpty()) {
-            if (genericFamily == "roman")
-                setFontStyleHint(QFont::Serif);
-            else if (genericFamily == "swiss")
-                setFontStyleHint(QFont::SansSerif);
-            else if (genericFamily == "modern")
-                setFontStyleHint(QFont::TypeWriter);
-            else if (genericFamily == "decorative")
-                setFontStyleHint(QFont::Decorative);
-            else if (genericFamily == "system")
-                setFontStyleHint(QFont::System);
-            else if (genericFamily == "script") {
-                ; // TODO: no hint available in Qt yet, we should at least store it as a property internally!
-            }
-        }
-
         const QString fontCharset(styleStack.property(KoXmlNS::style, "font-charset"));
         if (!fontCharset.isEmpty()) {
             // this property is not required by Qt, since Qt auto selects the right font based on the text
@@ -1510,6 +1531,27 @@ void KoCharacterStyle::loadOdfProperties(KoShapeLoadingContext &scontext)
         static const QRegularExpression centralEuropeanSuffix(QStringLiteral("\\sCE$"));
         fontName.remove(centralEuropeanSuffix); // Arial CE -> Arial
         setFontFamily(fontName);
+    }
+
+    // The generic family applies however the specific family was named. In
+    // particular font-face references (style:font-name) are common in files
+    // written by Calligra's DOCX import, and ignoring the hint there picked a
+    // different substitute with different line metrics.
+    const QString genericFamily(styleStack.property(KoXmlNS::style, "font-family-generic"));
+    if (!genericFamily.isEmpty()) {
+        if (genericFamily == "roman")
+            setFontStyleHint(QFont::Serif);
+        else if (genericFamily == "swiss")
+            setFontStyleHint(QFont::SansSerif);
+        else if (genericFamily == "modern")
+            setFontStyleHint(QFont::TypeWriter);
+        else if (genericFamily == "decorative")
+            setFontStyleHint(QFont::Decorative);
+        else if (genericFamily == "system")
+            setFontStyleHint(QFont::System);
+        else if (genericFamily == "script") {
+            ; // TODO: no hint available in Qt yet, we should at least store it as a property internally!
+        }
     }
 
     // Specify the size of a font. The value of these attribute is either an absolute length or a percentage
