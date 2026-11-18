@@ -228,21 +228,28 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
             }
             const bool large = position < largeCount;
             const bool iconOnly = action->property("ribbonIconOnly").toBool();
+            const bool insertPage = page->objectName() == QLatin1String("stageInsertPage");
+            const bool textUnderIcon = insertPage || large;
             KoRibbonLayout::configureButton(button, iconOnly ? Qt::ToolButtonIconOnly
-                                                            : (large ? Qt::ToolButtonTextUnderIcon
-                                                                     : Qt::ToolButtonTextBesideIcon), sheetsPage);
-            if (page->objectName() == QLatin1String("stageInsertPage")) {
-                button->setProperty("ribbonPreferredIconSize", large ? QSize(36, 36) : QSize(24, 24));
-                button->setProperty("ribbonPreferredMinimumSize", large ? QSize(72, 76) : QSize(36, 36));
-                button->setIconSize(large ? QSize(36, 36) : QSize(24, 24));
-                button->setMinimumSize(button->sizeHint().expandedTo(large ? QSize(72, 76) : QSize(36, 36)));
+                                                            : (textUnderIcon ? Qt::ToolButtonTextUnderIcon
+                                                                             : Qt::ToolButtonTextBesideIcon), sheetsPage);
+            if (insertPage) {
+                // The Insert tab has room for captions. Give every command the
+                // same icon size and keep its label instead of collapsing the
+                // whole page to unlabelled icons when the page is measured.
+                const QSize iconSize(32, 32);
+                button->setProperty("ribbonPreferredIconSize", iconSize);
+                button->setProperty("ribbonCompactable", false);
+                button->setIconSize(iconSize);
+                button->setMinimumSize(button->sizeHint().expandedTo(QSize(64, 56)));
             }
             if (iconOnly) {
                 button->setToolTip(action->text());
             }
             // Small command buttons drop their labels when the tab would
-            // otherwise overflow; the tooltip keeps the full caption.
-            else if (!large) {
+            // otherwise overflow; the tooltip keeps the full caption. The
+            // Insert tab keeps every caption, as above.
+            else if (!large && !insertPage) {
                 button->setProperty("ribbonCompactable", true);
             }
             if (button->icon().isNull()) {
