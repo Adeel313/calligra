@@ -95,6 +95,28 @@ QString KoTextWriter::saveParagraphStyle(const QTextBlockFormat &blockFormat,
             paragStyle.removeDuplicates(*originalParagraphStyle);
             paragStyle.setParentStyle(originalParagraphStyle);
         }
+        // Character properties that merely repeat the document default are
+        // already defined by the default text style in styles.xml.  Keeping
+        // them in the automatic style changes how a reload substitutes fonts
+        // in contexts that do not apply that default (notably table cells),
+        // which reflows the document and changes its page count.  Drop only
+        // properties that the parent style resolves to the same default; a
+        // local value that overrides a differently configured parent style is
+        // still significant and must be written out.
+        if (KoCharacterStyle *defaultCharStyle = styleManager->defaultCharacterStyle()) {
+            const QMap<int, QVariant> charProperties = charFormat.properties();
+            for (QMap<int, QVariant>::ConstIterator it = charProperties.constBegin(); it != charProperties.constEnd(); ++it) {
+                const int key = it.key();
+                if (!defaultCharStyle->hasProperty(key)) {
+                    continue;
+                }
+                const QVariant defaultValue = defaultCharStyle->value(key);
+                if (paragStyle.KoCharacterStyle::value(key) == defaultValue
+                    && (!originalParagraphStyle || originalParagraphStyle->KoCharacterStyle::value(key) == defaultValue)) {
+                    paragStyle.KoCharacterStyle::remove(key);
+                }
+            }
+        }
         paragStyle.saveOdf(style, context);
         generatedName = context.mainStyles().insert(style, "P");
     }
