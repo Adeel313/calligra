@@ -71,8 +71,14 @@ public:
     void addProperties(Type type, TableStyleProperties *properties);
     TableStyleProperties *properties(Type type) const;
 
+    /// Copy properties that are not set locally from an inherited table style.
+    void inheritFrom(const DrawingTableStyle *parent);
+
     // Style of the whole table, not cell styles
     KoTblStyle::Ptr mainStyle;
+
+    // w:basedOn style id, resolved by the reader after all styles are parsed.
+    QString parentId;
 
 private:
     QMap<Type, TableStyleProperties *> m_properties;

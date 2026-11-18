@@ -527,7 +527,10 @@ void DocxStyleHelper::handleParagraphStyles(KoOdfStyleProperties *properties, Ko
     // paragraph's space-before/after again, which pushes long documents over
     // extra pages.
     if (properties) {
-        const QString contextualSpacing = properties->attribute(QStringLiteral("calligra:contextual-spacing"));
+        QString contextualSpacing = properties->attribute(QStringLiteral("style:contextual-spacing"));
+        if (contextualSpacing.isEmpty()) {
+            contextualSpacing = properties->attribute(QStringLiteral("calligra:contextual-spacing"));
+        }
         if (!contextualSpacing.isEmpty()) {
             writer->startElement("w:contextualSpacing");
             if (contextualSpacing != QLatin1String("true")) {

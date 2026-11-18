@@ -125,12 +125,24 @@ def check(output):
     def paragraph(text):
         return next(p for p in roots[1].xpath('//text:p', namespaces=NS) if ''.join(p.itertext()) == text)
 
-    assert properties(paragraph('Bullet one').get(qn_odf('text:style-name')))[qn_odf('calligra:contextual-spacing')] == 'true'
-    assert properties(paragraph('Context disabled').get(qn_odf('text:style-name')))[qn_odf('calligra:contextual-spacing')] == 'false'
+    assert properties(paragraph('Bullet one').get(qn_odf('text:style-name')))[qn_odf('style:contextual-spacing')] == 'true'
+    assert properties(paragraph('Context disabled').get(qn_odf('text:style-name')))[qn_odf('style:contextual-spacing')] == 'false'
+
+    # A zero list-tab position makes other renderers advance to the next default
+    # tab stop instead of aligning the text at fo:margin-left.
+    for root in roots:
+        for alignment in root.xpath('//style:list-level-label-alignment', namespaces=NS):
+            tab = alignment.get(qn_odf('text:list-tab-stop-position'))
+            if tab is not None:
+                assert points(tab) > 0, 'zero list-tab-stop-position was exported'
+
     for text, spacing in [('Table default', 0), ('Table direct', 7)]:
         props = properties(paragraph(text).get(qn_odf('text:style-name')))
         assert props[qn_odf('fo:line-height')] == '100%'
         assert float(props[qn_odf('fo:margin-bottom')][:-2]) == spacing
+    # Table Grid inherits its cell margins from Table Normal (108 twips).
+    cell_style = paragraph('Table default').getparent().get(qn_odf('table:style-name'))
+    assert points(properties(cell_style)[qn_odf('fo:padding-left')]) == 5.4
     template = roots[1].xpath('//text:table-of-content-entry-template', namespaces=NS)[0]
     props = properties(template.get(qn_odf('text:style-name')))
     assert float(props[qn_odf('fo:margin-bottom')][:-2]) == 3

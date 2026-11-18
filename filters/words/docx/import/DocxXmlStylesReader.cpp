@@ -18,6 +18,8 @@
 #include <MsooXmlUnits.h>
 #include <MsooXmlUtils.h>
 
+#include <QSet>
+
 #define MSOOXML_CURRENT_NS "w"
 #define BIND_READ_CLASS MSOOXML::MsooXmlStylesReader
 #define MSOOXML_CURRENT_CLASS DocxXmlStylesReader
@@ -152,6 +154,32 @@ KoFilter::ConversionStatus DocxXmlStylesReader::read(MSOOXML::MsooXmlReaderConte
 
     if (!expectElEnd("w:styles")) {
         return KoFilter::WrongFormat;
+    }
+
+    // Table styles can inherit margins, borders and text styles through
+    // w:basedOn.  Resolve the chains now that every style has been read, so
+    // properties such as TableNormal's cell margins reach styles like
+    // TableGrid that only define their borders locally.
+    QSet<MSOOXML::DrawingTableStyle *> resolvedTableStyles;
+    for (MSOOXML::DrawingTableStyle *style : m_context->m_tableStyles) {
+        QList<MSOOXML::DrawingTableStyle *> chain;
+        QSet<MSOOXML::DrawingTableStyle *> visited;
+        MSOOXML::DrawingTableStyle *current = style;
+        while (current && !resolvedTableStyles.contains(current)) {
+            if (visited.contains(current)) {
+                break;
+            }
+            visited.insert(current);
+            chain.append(current);
+            current = m_context->m_tableStyles.value(current->parentId);
+        }
+        for (int i = chain.size() - 1; i >= 0; --i) {
+            current = chain.at(i);
+            if (MSOOXML::DrawingTableStyle *parent = m_context->m_tableStyles.value(current->parentId)) {
+                current->inheritFrom(parent);
+            }
+            resolvedTableStyles.insert(current);
+        }
     }
 
     // add default styles:
@@ -500,6 +528,8 @@ KoFilter::ConversionStatus DocxXmlStylesReader::read_style()
                     m_currentTextStyle.setParentName(val);
                 } else if (type == "paragraph") {
                     m_currentParagraphStyle.setParentName(val);
+                } else if (type == "table" && m_currentStyle) {
+                    m_currentStyle->parentId = val;
                 }
             }
             else if (QUALIFIED_NAME_IS(next)){READ_ATTR_INTO(val, nextStyleName)} SKIP_UNKNOWN

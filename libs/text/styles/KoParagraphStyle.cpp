@@ -1855,7 +1855,12 @@ void KoParagraphStyle::loadOdfProperties(KoShapeLoadingContext &scontext)
         setKeepWithNext(styleStack.property(KoXmlNS::fo, "keep-with-next") == "always");
     }
 
-    if (styleStack.hasProperty(KoXmlNS::calligra, "contextual-spacing")) {
+    // ODF defines style:contextual-spacing on paragraph properties.  Read the
+    // old Calligra-specific spelling too so documents saved by older versions
+    // keep suppressing spacing between consecutive list paragraphs.
+    if (styleStack.hasProperty(KoXmlNS::style, "contextual-spacing")) {
+        setProperty(ContextualSpacing, styleStack.property(KoXmlNS::style, "contextual-spacing") == "true");
+    } else if (styleStack.hasProperty(KoXmlNS::calligra, "contextual-spacing")) {
         setProperty(ContextualSpacing, styleStack.property(KoXmlNS::calligra, "contextual-spacing") == "true");
     }
 
@@ -2193,7 +2198,9 @@ void KoParagraphStyle::saveOdf(KoGenStyle &style, KoShapeSavingContext &context)
         } else if (key == KoParagraphStyle::AutomaticWritingMode) {
             style.addProperty("style:writing-mode-automatic", automaticWritingMode(), KoGenStyle::ParagraphType);
         } else if (key == KoParagraphStyle::ContextualSpacing) {
-            style.addProperty("calligra:contextual-spacing", propertyBoolean(ContextualSpacing), KoGenStyle::ParagraphType);
+            // Use the ODF attribute so other applications honor the flag and
+            // do not add the paragraph's bottom margin between list items.
+            style.addProperty("style:contextual-spacing", propertyBoolean(ContextualSpacing), KoGenStyle::ParagraphType);
         } else if (key == KoParagraphStyle::TextAutoSpace) {
             if (textAutoSpace() == NoAutoSpace)
                 style.addProperty("style:text-autospace", "none", KoGenStyle::ParagraphType);

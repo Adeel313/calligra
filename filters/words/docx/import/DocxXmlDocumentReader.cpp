@@ -3619,7 +3619,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pPr()
             else if (name() == QLatin1StringView("contextualSpacing")) {
                 const QString val(attributes().value(QLatin1StringView("w:val")).toString());
                 const bool enabled = val.isEmpty() || val == QLatin1String("1") || val == QLatin1String("true") || val == QLatin1String("on");
-                m_currentParagraphStyle.addProperty("calligra:contextual-spacing", enabled ? "true" : "false");
+                m_currentParagraphStyle.addProperty("style:contextual-spacing", enabled ? "true" : "false");
                 skipCurrentElement();
             }
             else if (name() == QLatin1StringView("keepNext")) {

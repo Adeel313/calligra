@@ -303,3 +303,67 @@ TableStyleProperties *DrawingTableStyle::properties(DrawingTableStyle::Type type
 {
     return m_properties.value(type);
 }
+
+namespace
+{
+void inheritProperties(TableStyleProperties *child, const TableStyleProperties *parent)
+{
+    const TableStyleProperties::Properties missing = parent->setProperties & ~child->setProperties;
+#define COPY_IF_MISSING(flag, member)                                                                                                  \
+    if (missing & TableStyleProperties::flag) {                                                                                          \
+        child->member = parent->member;                                                                                                    \
+        child->setProperties |= TableStyleProperties::flag;                                                                                \
+    }
+    COPY_IF_MISSING(BottomBorder, bottom)
+    COPY_IF_MISSING(InsideHBorder, insideH)
+    COPY_IF_MISSING(InsideVBorder, insideV)
+    COPY_IF_MISSING(LeftBorder, left)
+    COPY_IF_MISSING(RightBorder, right)
+    COPY_IF_MISSING(Tl2brBorder, tl2br)
+    COPY_IF_MISSING(TopBorder, top)
+    COPY_IF_MISSING(Tr2blBorder, tr2bl)
+    COPY_IF_MISSING(BackgroundColor, backgroundColor)
+    COPY_IF_MISSING(BackgroundOpacity, backgroundOpacity)
+    COPY_IF_MISSING(TopMargin, topMargin)
+    COPY_IF_MISSING(RightMargin, rightMargin)
+    COPY_IF_MISSING(BottomMargin, bottomMargin)
+    COPY_IF_MISSING(LeftMargin, leftMargin)
+    COPY_IF_MISSING(VerticalAlign, verticalAlign)
+    COPY_IF_MISSING(GlyphOrientation, glyphOrientation)
+#undef COPY_IF_MISSING
+
+    if (child->textStyle.isEmpty() && !parent->textStyle.isEmpty()) {
+        child->textStyle = parent->textStyle;
+    }
+    if (child->paragraphStyle.isEmpty() && !parent->paragraphStyle.isEmpty()) {
+        child->paragraphStyle = parent->paragraphStyle;
+    }
+}
+}
+
+void DrawingTableStyle::inheritFrom(const DrawingTableStyle *parent)
+{
+    if (!parent) {
+        return;
+    }
+
+    if (!mainStyle && parent->mainStyle) {
+        mainStyle = parent->mainStyle;
+    }
+
+    for (auto it = parent->m_properties.constBegin(); it != parent->m_properties.constEnd(); ++it) {
+        const Type type = it.key();
+        const TableStyleProperties *parentProperties = it.value();
+        if (!parentProperties) {
+            continue;
+        }
+
+        TableStyleProperties *childProperties = m_properties.value(type);
+        if (!childProperties) {
+            childProperties = new TableStyleProperties;
+            childProperties->target = parentProperties->target;
+            addProperties(type, childProperties);
+        }
+        inheritProperties(childProperties, parentProperties);
+    }
+}

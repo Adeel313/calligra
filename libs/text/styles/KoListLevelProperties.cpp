@@ -634,7 +634,15 @@ void KoListLevelProperties::loadOdf(KoShapeLoadingContext &scontext, const KoXml
                             QString tabStop(p.attributeNS(KoXmlNS::text, "list-tab-stop-position"));
                             if (!tabStop.isEmpty()) {
                                 qreal tabStopPos = KoUnit::parseValue(tabStop);
-                                setTabStopPosition(qMax<qreal>(0.0, tabStopPos));
+                                // A zero tab stop is not a meaningful list-tab position: Calligra
+                                // falls back to fo:margin-left when no position is set.  Importing
+                                // an explicit 0pt would instead place the list text at the next
+                                // default tab stop, shifting it away from the label.
+                                if (tabStopPos > 0) {
+                                    setTabStopPosition(tabStopPos);
+                                } else {
+                                    clearTabStopPosition();
+                                }
                             }
 
                         } else if (labelFollowedBy.compare("nothing", Qt::CaseInsensitive) == 0) {
@@ -779,7 +787,11 @@ void KoListLevelProperties::saveOdf(KoXmlWriter *writer, KoShapeSavingContext &c
 
         if (labelFollowedBy() == KoListStyle::ListTab) {
             writer->addAttribute("text:label-followed-by", "listtab");
-            writer->addAttributePt("text:list-tab-stop-position", tabStopPosition());
+            // An unset or zero position means "use fo:margin-left".  Writing an explicit
+            // 0pt makes reload use a default tab stop instead, moving list text right.
+            if (hasTabStopPosition() && tabStopPosition() > 0) {
+                writer->addAttributePt("text:list-tab-stop-position", tabStopPosition());
+            }
         } else if (labelFollowedBy() == KoListStyle::Nothing) {
             writer->addAttribute("text:label-followed-by", "nothing");
         } else {
