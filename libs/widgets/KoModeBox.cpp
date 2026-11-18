@@ -495,8 +495,9 @@ void KoModeBox::updateRibbonCompactness(QWidget *page)
     fitRibbonBand();
 }
 
-// Sheets sizes the band to the active page. Other ribbons share a height
-// across their visible pages. Wide pages can scroll horizontally.
+// Sheets and Stage size the band to the active page so a tab with fewer
+// commands does not leave empty space below it. Words shares one height
+// across its visible pages. Wide pages can scroll horizontally.
 void KoModeBox::fitRibbonBand()
 {
     if (d->orientation != Qt::Horizontal || d->fittingRibbonBand) {
@@ -504,9 +505,10 @@ void KoModeBox::fitRibbonBand()
     }
     QScopedValueRollback<bool> fitting(d->fittingRibbonBand, true);
     const bool sheetsRibbon = applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive);
+    const bool activePageBand = sheetsRibbon || applicationName.contains(QLatin1String("stage"), Qt::CaseInsensitive);
     int band = 0;
     auto *currentWrapper = qobject_cast<QScrollArea *>(d->stack->currentWidget());
-    if (sheetsRibbon) {
+    if (activePageBand) {
         QWidget *currentPage = currentWrapper ? currentWrapper->widget() : nullptr;
         if (!currentPage || !currentPage->layout()) {
             return;
