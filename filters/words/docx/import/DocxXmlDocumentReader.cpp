@@ -62,7 +62,7 @@ namespace
 {
 bool paragraphXmlHasVisibleContent(const QString &xml)
 {
-    QXmlStreamReader reader(xml);
+    QXmlStreamReader reader(QStringLiteral("<root>") + xml + QStringLiteral("</root>"));
     reader.setNamespaceProcessing(false);
     while (!reader.atEnd()) {
         reader.readNext();
