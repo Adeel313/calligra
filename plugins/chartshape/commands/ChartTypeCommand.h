@@ -66,6 +66,7 @@ private:
     ChartType m_newType;
     ChartSubtype m_oldSubtype;
     ChartSubtype m_newSubtype;
+    bool m_oldVertical;
     // KChart::AbstractCoordinatePlane  *m_oldCoordinatePlane;
     // KChart::AbstractDiagram          *m_oldDiagram;
 };

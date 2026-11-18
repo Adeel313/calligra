@@ -180,7 +180,7 @@ private:
     void updateRibbonCompactness(QWidget *page);
     /// Fit the ribbon band to its command rows, so a tall contextual tab cannot
     /// leave a blank strip under the other tabs.
-    void fitRibbonBand(QWidget *page = nullptr);
+    void fitRibbonBand();
     enum IconMode {
         IconAndText,
         IconOnly

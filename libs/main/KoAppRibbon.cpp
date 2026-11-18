@@ -132,6 +132,7 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
     if (actions.isEmpty()) {
         return;
     }
+    const bool sheetsPage = page->objectName().startsWith(QLatin1String("sheets"));
     auto *layout = qobject_cast<QHBoxLayout *>(page->layout());
     if (!layout) {
         layout = new QHBoxLayout(page);
@@ -173,19 +174,19 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
     const bool tightPage = page->objectName() == QLatin1String("sheetsFormulasPage");
     const int sideMargin = tightPage ? 3 : 6;
     vertical->setContentsMargins(sideMargin, 0, sideMargin, 0);
-    vertical->setSpacing(tightPage ? 1 : 2);
+    vertical->setSpacing(sheetsPage ? 1 : 2);
     // A squeezed caption is worse than a scrollbar: report the real minimum.
     vertical->setSizeConstraint(QLayout::SetMinimumSize);
     auto *grid = new QGridLayout;
     grid->setContentsMargins(0, 0, 0, 0);
-    grid->setSpacing(tightPage ? 1 : 3);
+    grid->setHorizontalSpacing(tightPage ? 1 : 3);
+    grid->setVerticalSpacing(sheetsPage ? 1 : 3);
     grid->setAlignment(Qt::AlignTop);
     // Every ribbon page uses the same two command rows, so one band height
     // serves all tabs. The Function Library is the exception: it stacks three
     // category rows like the Office formula ribbon, which keeps the group
     // narrow enough to show every caption instead of falling back to icons.
-    const bool compact = page->objectName().startsWith(QLatin1String("sheets"));
-    const bool formulaLibrary = compact && page->objectName() == QLatin1String("sheetsFormulasPage")
+    const bool formulaLibrary = sheetsPage && page->objectName() == QLatin1String("sheetsFormulasPage")
         && title == i18n("Function Library");
     const int rows = formulaLibrary ? 3 : 2;
     const int largeCount = largeButtons < 0 ? (actions.size() <= 4 ? actions.size() : 0) : largeButtons;
@@ -229,7 +230,7 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
             const bool iconOnly = action->property("ribbonIconOnly").toBool();
             KoRibbonLayout::configureButton(button, iconOnly ? Qt::ToolButtonIconOnly
                                                             : (large ? Qt::ToolButtonTextUnderIcon
-                                                                     : Qt::ToolButtonTextBesideIcon));
+                                                                     : Qt::ToolButtonTextBesideIcon), sheetsPage);
             if (page->objectName() == QLatin1String("stageInsertPage")) {
                 button->setProperty("ribbonPreferredIconSize", large ? QSize(36, 36) : QSize(24, 24));
                 button->setProperty("ribbonPreferredMinimumSize", large ? QSize(72, 76) : QSize(36, 36));
@@ -401,7 +402,7 @@ QWidgetAction *sheetInsertGallery(KoView *view, KoCanvasBase *canvas, QWidget *p
         if (!shape) {
             continue;
         }
-        const QSize previewSize = charts ? QSize(60, 42) : QSize(30, 30);
+        const QSize previewSize = charts ? QSize(52, 34) : QSize(24, 24);
         QPixmap preview(previewSize * 2);
         preview.setDevicePixelRatio(2);
         preview.fill(Qt::transparent);
@@ -441,10 +442,10 @@ QWidgetAction *sheetInsertGallery(KoView *view, KoCanvasBase *canvas, QWidget *p
         if (charts) {
             button->setText(labels.value(index, item.name));
             button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-            button->setMinimumSize(68, 76);
+            button->setMinimumSize(68, 58);
         } else {
             button->setToolButtonStyle(Qt::ToolButtonIconOnly);
-            button->setFixedSize(36, 36);
+            button->setFixedSize(32, 28);
         }
         QObject::connect(button, &QToolButton::clicked, view, [view, canvas, shapeId, item] {
             if (!view->koDocument()->isReadWrite()) {
@@ -471,8 +472,8 @@ QWidgetAction *sheetInsertGallery(KoView *view, KoCanvasBase *canvas, QWidget *p
         more->setToolButtonStyle(Qt::ToolButtonIconOnly);
         more->setPopupMode(QToolButton::InstantPopup);
         more->setAutoRaise(true);
-        more->setIconSize(QSize(24, 24));
-        more->setMinimumSize(36, 76);
+        more->setIconSize(QSize(18, 18));
+        more->setMinimumSize(32, 58);
         more->setToolTip(charts ? i18n("More charts") : i18n("More shapes"));
         more->setAccessibleName(more->toolTip());
         layout->addWidget(more, 0, charts ? count : 6, charts ? 1 : 2, 1);
@@ -528,12 +529,9 @@ void populateSheetsLayout(KoView *view, QWidget *page)
     if (!page)
         return;
 
-    // Page Setup follows the office layout: the three main commands are tall
-    // buttons, and the print-area and break actions are individual icons
-    // beside them instead of hidden in drop-downs.
     addSheetGroup(view, page, i18n("Page Setup"),
                   {"pageMarginsMenu", "pageOrientationMenu", "pageSizeMenu", "setPrintArea",
-                   "clearPrintArea", "breakRow", "breakColumn", "printTitles"}, 3);
+                   "clearPrintArea", "breakRow", "breakColumn", "printTitles"}, 0);
     addSheetGroup(view, page, i18n("Scale to Fit"), {"pageScaleFit"});
     addSheetGroup(view, page, i18n("Sheet Options"), {"pageSheetOptions"});
     QList<QAction *> arrange;
@@ -552,8 +550,7 @@ void populateSheetsLayout(KoView *view, QWidget *page)
     if (QAction *rotate = submenuAction(view, i18n("Rotate"), "object-rotate-right", {"shapeRotateLeft", "shapeRotateRight"})) {
         arrange.append(rotate);
     }
-    addGroup(page, i18n("Arrange"), arrange, 1);
-
+    addGroup(page, i18n("Arrange"), arrange, 0);
 }
 
 void populateSheetsData(KoView *view, QWidget *page)
@@ -631,12 +628,7 @@ void populateSheetsFormulas(KoView *view, QWidget *page)
         // clicked (these category buttons have no single default command).
         button->setPopupMode(QToolButton::MenuButtonPopup);
         button->setToolTip(title);
-        KoRibbonLayout::configureButton(button, Qt::ToolButtonTextBesideIcon);
-        // A touch shorter than the standard small ribbon button, which keeps
-        // the three-row group from making the Formulas band tower over the
-        // other tabs.
-        const QSize minSize = button->minimumSize();
-        button->setMinimumSize(minSize.width(), qMin(minSize.height(), 30));
+        KoRibbonLayout::configureButton(button, Qt::ToolButtonTextBesideIcon, true);
         QObject::connect(button, &QToolButton::clicked, button, [button, menu] {
             if (menu) {
                 menu->popup(button->mapToGlobal(QPoint(0, button->height())));

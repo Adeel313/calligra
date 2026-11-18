@@ -35,8 +35,8 @@ DefaultToolArrangeWidget::DefaultToolArrangeWidget(KoInteractionTool *tool, QWid
 
     group->setDefaultAction(m_tool->action("object_group"));
     ungroup->setDefaultAction(m_tool->action("object_ungroup"));
-    if (qApp->applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)
-        || qApp->applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive)) {
+    const bool sheetsRibbon = qApp->applicationName().contains(QLatin1String("sheets"), Qt::CaseInsensitive);
+    if (sheetsRibbon || qApp->applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)) {
         SpecialSpacer->hide();
         gridLayout_4->setContentsMargins(2, 0, 2, 0);
         for (QGridLayout *layout : {gridLayout, gridLayout_2, gridLayout_3}) {
@@ -46,9 +46,13 @@ DefaultToolArrangeWidget::DefaultToolArrangeWidget(KoInteractionTool *tool, QWid
         for (QToolButton *button : {bringToFront, raiseLevel, lowerLevel, sendBack,
                                    leftAlign, hCenterAlign, rightAlign, topAlign, vCenterAlign,
                                    bottomAlign, group, ungroup}) {
-            KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly);
-            button->setIconSize(QSize(28, 28));
-            button->setFixedSize(36, 36);
+            KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly, sheetsRibbon);
+            if (sheetsRibbon) {
+                button->setFixedSize(30, 24);
+            } else {
+                button->setIconSize(QSize(28, 28));
+                button->setFixedSize(36, 36);
+            }
         }
     }
     if (qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {

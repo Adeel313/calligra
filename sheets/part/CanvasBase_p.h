@@ -9,6 +9,7 @@
 #define CANVASBASE_PRIVATE_H
 
 #include "CanvasBase.h"
+#include <QMap>
 #include <QPointer>
 
 class KoShapeManager;
@@ -29,6 +30,7 @@ public:
     // Example: If the first visible row is '5', then offset stores
     // the height of the invisible rows '1' to '4'.
     QPointF offset;
+    QMap<QString, QList<QRect>> chartSourceRanges;
 
     // flake
     KoShapeManager *shapeManager;

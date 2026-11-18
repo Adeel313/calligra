@@ -141,6 +141,23 @@ CellRegion ChartProxyModel::cellRangeAddress() const
     return d->selection;
 }
 
+bool ChartProxyModel::canRebuildSeriesFromCellRange() const
+{
+    if (!d->selection.isValid()) {
+        return false;
+    }
+
+    // Imported charts may have per-series ranges outside the plot area's range.
+    const QRect bounds = d->selection.boundingRect();
+    for (const DataSet *dataSet : d->dataSets) {
+        const CellRegion values = dataSet->yDataRegion();
+        if (values.isValid() && (values.table() != d->selection.table() || !bounds.contains(values.boundingRect()))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void ChartProxyModel::Private::rebuildDataMap()
 {
     if (manualControl || isLoading) {
@@ -816,7 +833,9 @@ void ChartProxyModel::setDataDimensions(int dimensions)
         return;
 
     d->dataDimensions = dimensions;
-    d->rebuildDataMap();
+    if (canRebuildSeriesFromCellRange()) {
+        d->rebuildDataMap();
+    }
 }
 
 bool ChartProxyModel::firstRowIsLabel() const

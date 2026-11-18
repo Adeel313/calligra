@@ -174,6 +174,7 @@ PlotAreaConfigWidget::Private::Private(PlotAreaConfigWidget *parent)
     , cellRegionDialog(nullptr)
 {
     selectedDataSet = 0;
+    selectedDataSet_CellRegionDialog = -1;
     tableSource = nullptr;
 
     type = KoChart::LastChartType;
@@ -400,6 +401,7 @@ void PlotAreaConfigWidget::deactivate()
 void PlotAreaConfigWidget::open(KoShape *shape)
 {
     debugChartUiPlotArea;
+    deactivate();
     ConfigWidgetBase::open(shape);
     if (!chart) {
         return;
@@ -660,6 +662,7 @@ void PlotAreaConfigWidget::slotShowTableEditor()
         default: {
             if (!d->cellRegionDialog) {
                 d->cellRegionDialog = new CellRegionDialog;
+                d->selectedDataSet_CellRegionDialog = -1;
                 // FIXME: CellRegion itself together with a TableSource should now be used
                 // to validate  the correctness of a table range address.
 #if 0
@@ -878,6 +881,7 @@ void PlotAreaConfigWidget::ui_dataSetSelectionChanged_CellRegionDialog(int index
         d->cellRegionDialog->xDataRegion->setEnabled(true);
         d->cellRegionDialog->xDataRegion->setText(dataSet->xDataRegion().toString());
     } else {
+        d->cellRegionDialog->xDataRegion->clear();
         d->cellRegionDialog->xDataRegion->setEnabled(false);
     }
     d->cellRegionDialog->yDataRegion->setText(dataSet->yDataRegion().toString());

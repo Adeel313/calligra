@@ -74,6 +74,8 @@ public:
      */
     CellRegion cellRangeAddress() const;
 
+    bool canRebuildSeriesFromCellRange() const;
+
     /**
      * Load series from ODF
      */

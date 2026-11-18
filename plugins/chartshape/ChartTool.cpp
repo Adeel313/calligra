@@ -71,6 +71,7 @@
 #include "StockDataEditor.h"
 #include "Surface.h"
 #include "TableEditorDialog.h"
+#include "TableSource.h"
 #include "TitlesConfigWidget.h"
 #include "commands/AddRemoveAxisCommand.h"
 #include "commands/AxisCommand.h"
@@ -535,6 +536,7 @@ QWidget *ribbonGroup(QWidget *page, const QString &title, int order, QWidget **c
     vertical->setContentsMargins(3, 0, 3, 0);
     vertical->setSpacing(0);
     auto *row = new QWidget(group);
+    row->setProperty("sheetsRibbon", page->objectName() == QLatin1String("sheetsChartDesignPage"));
     vertical->addWidget(row, 0, Qt::AlignTop);
     vertical->addStretch();
     auto *caption = new QLabel(title, group);
@@ -560,7 +562,7 @@ QToolButton *ribbonButton(QWidget *parent, const QString &text, const QString &i
     button->setText(text);
     button->setToolTip(text);
     button->setIcon(ribbonIcon(iconName));
-    KoRibbonLayout::configureButton(button, Qt::ToolButtonTextUnderIcon);
+    KoRibbonLayout::configureButton(button, Qt::ToolButtonTextUnderIcon, parent->property("sheetsRibbon").toBool());
     return button;
 }
 
@@ -604,13 +606,9 @@ void ChartTool::configureRibbon(QWidget *page)
 
 ChartShape *ChartTool::currentChart() const
 {
-    if (d->shape) {
-        return d->shape;
-    }
-    // Stage builds the tab before the first chart is activated, so fall back to
-    // the chart in the canvas selection.
+    // Sheets can activate the chart tool without adding the chart to the shape selection.
     if (!canvas() || !canvas()->shapeManager()) {
-        return nullptr;
+        return d->shape;
     }
     const QList<KoShape *> selected = canvas()->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
     for (KoShape *shape : selected) {
@@ -620,7 +618,7 @@ ChartShape *ChartTool::currentChart() const
             }
         }
     }
-    return nullptr;
+    return d->shape;
 }
 
 QList<Axis *> ChartTool::chartAxes(ChartShape *chart) const
@@ -713,14 +711,16 @@ QWidget *ChartTool::createStylesGroup(QWidget *page)
     auto *grid = new QGridLayout(gallery);
     grid->setContentsMargins(0, 0, 0, 0);
     grid->setSpacing(2);
+    const bool sheetsRibbon = content->property("sheetsRibbon").toBool();
+    const QSize previewSize = sheetsRibbon ? QSize(44, 24) : QSize(44, 30);
     for (int style = 0; style < stylePresetCount(); ++style) {
         const StylePreset &preset = stylePresets[style];
         auto *button = new QToolButton(gallery);
         button->setAutoRaise(true);
         const QList<QColor> colors = colorSchemeColors(preset.scheme).mid(0, 3);
-        button->setIcon(QIcon(chartPreview(colors, preset.gridLines, preset.valueLabels, QSize(44, 30))));
-        button->setIconSize(QSize(44, 30));
-        button->setFixedSize(48, 36);
+        button->setIcon(QIcon(chartPreview(colors, preset.gridLines, preset.valueLabels, previewSize)));
+        button->setIconSize(previewSize);
+        button->setFixedSize(sheetsRibbon ? QSize(52, 28) : QSize(48, 36));
         button->setToolTip(i18n("Chart Style %1", style + 1));
         connect(button, &QToolButton::clicked, this, [this, style] { applyStylePreset(style); });
         grid->addWidget(button, style / 3, style % 3);
@@ -952,7 +952,7 @@ QMenu *ChartTool::createChartTypeMenu(QWidget *parent)
 void ChartTool::changeChartType(ChartType type, ChartSubtype subtype)
 {
     ChartShape *chart = currentChart();
-    if (!chart) {
+    if (!chart || (chart->chartType() == type && chart->chartSubType() == subtype)) {
         return;
     }
     auto *command = new ChartTypeCommand(chart);
@@ -966,6 +966,30 @@ void ChartTool::showDataEditor()
     if (!chart || !canvas()) {
         return;
     }
+    if (!chart->usesInternalModelOnly() && chart->plotArea()) {
+        const auto isSheetRange = [chart](const CellRegion &region) {
+            const Table *table = region.table();
+            return table && table->model() != chart->internalModel();
+        };
+        const auto dataSets = chart->plotArea()->dataSets();
+        const bool usesSheetRanges = std::any_of(dataSets.cbegin(), dataSets.cend(), [&](const DataSet *dataSet) {
+            return isSheetRange(dataSet->labelDataRegion()) || isSheetRange(dataSet->categoryDataRegion())
+                || isSheetRange(dataSet->xDataRegion()) || isSheetRange(dataSet->yDataRegion()) || isSheetRange(dataSet->customDataRegion());
+        });
+        if (usesSheetRanges) {
+            for (QWidget *widget : optionWidgets()) {
+                if (auto *plotArea = qobject_cast<PlotAreaConfigWidget *>(widget)) {
+                    d->shape = chart;
+                    if (plotArea->chart != chart) {
+                        plotArea->open(chart);
+                    }
+                    plotArea->slotShowTableEditor();
+                    return;
+                }
+            }
+        }
+    }
+
     QWidget *parent = canvas()->canvasWidget();
     QDialog *editor = nullptr;
     // Pie, bubble, scatter and stock charts have editors of their own; every
@@ -1114,15 +1138,7 @@ void ChartTool::applyStylePreset(int style)
 
 void ChartTool::setChartType(ChartType type, ChartSubtype subtype)
 {
-    Q_ASSERT(d->shape);
-    if (!d->shape) {
-        return;
-    }
-    ChartTypeCommand *command = new ChartTypeCommand(d->shape);
-    if (command != nullptr) {
-        command->setChartType(type, subtype);
-        canvas()->addCommand(command);
-    }
+    changeChartType(type, subtype);
     foreach (QWidget *w, optionWidgets()) {
         ConfigWidgetBase *cw = dynamic_cast<ConfigWidgetBase *>(w);
         if (cw) {
@@ -1133,12 +1149,9 @@ void ChartTool::setChartType(ChartType type, ChartSubtype subtype)
 
 void ChartTool::setChartSubType(ChartSubtype subtype)
 {
-    Q_ASSERT(d->shape);
-    if (!d->shape)
-        return;
-
-    d->shape->setChartSubType(subtype);
-    d->shape->update();
+    if (ChartShape *chart = currentChart()) {
+        changeChartType(chart->chartType(), subtype);
+    }
 }
 
 void ChartTool::setDataSetXDataRegion(DataSet *dataSet, const CellRegion &region)

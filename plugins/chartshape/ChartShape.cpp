@@ -568,6 +568,31 @@ bool ChartShape::isThreeD() const
     return d->plotArea->isThreeD();
 }
 
+QMap<QString, QList<QRect>> ChartShape::worksheetSourceRanges() const
+{
+    QMap<QString, QList<QRect>> result;
+    const auto append = [&](const CellRegion &region) {
+        if (!region.isValid() || region.table()->model() == internalModel()) {
+            return;
+        }
+        auto &ranges = result[region.sheetName()];
+        for (const QRect &rect : region.rects()) {
+            if (!ranges.contains(rect)) {
+                ranges.append(rect);
+            }
+        }
+    };
+
+    for (const DataSet *dataSet : proxyModel()->dataSets()) {
+        append(dataSet->yDataRegion());
+        append(dataSet->xDataRegion());
+        append(dataSet->customDataRegion());
+        append(dataSet->categoryDataRegion());
+        append(dataSet->labelDataRegion());
+    }
+    return result;
+}
+
 void ChartShape::setSheetAccessModel(QAbstractItemModel *model)
 {
     d->tableSource.setSheetAccessModel(model);

@@ -164,6 +164,7 @@ public:
      * See sheets/SheetAccessModel.h for details.
      */
     void setSheetAccessModel(QAbstractItemModel *model) override;
+    QMap<QString, QList<QRect>> worksheetSourceRanges() const override;
 
     /**
      * Re-initializes the chart with data from an arbitrary region.

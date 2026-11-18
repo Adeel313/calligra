@@ -370,6 +370,28 @@ void CanvasBase::paint(QPainter *painter, const QRectF &painterRect)
     sheetView(sheet)->setPaintCellRange(visibleRect);
     sheetView(sheet)->paintCells(*painter, paintRect, topLeft, this);
 
+    const auto sourceRanges = d->chartSourceRanges.constFind(sheet->sheetName());
+    if (sourceRanges != d->chartSourceRanges.cend()) {
+        const QColor border = canvasWidget()->palette().highlight().color();
+        QColor fill = border;
+        fill.setAlpha(45);
+        QPen pen(border);
+        pen.setCosmetic(true);
+        pen.setWidth(2);
+        painter->setPen(pen);
+        painter->setBrush(fill);
+        for (const QRect &range : sourceRanges.value()) {
+            if (!range.intersects(visibleRect)) {
+                continue;
+            }
+            QRectF area = sheet->cellCoordinatesToDocument(range);
+            if (layoutReversed) {
+                area.moveLeft(paintRect.width() - area.right());
+            }
+            painter->drawRect(area);
+        }
+    }
+
     // flake
     painter->restore();
     // d->offset is the negated CanvasController offset in document coordinates.

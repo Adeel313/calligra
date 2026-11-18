@@ -553,8 +553,9 @@ void PlotArea::setChartType(ChartType type)
         }
         d->automaticallyHiddenAxisTitles.clear();
     }
-    CellRegion region = d->shape->proxyModel()->cellRangeAddress();
-    if (type == CircleChartType || type == RingChartType) {
+    const CellRegion region = d->shape->proxyModel()->cellRangeAddress();
+    const bool rebuildPolarSeries = (type == CircleChartType || type == RingChartType) && d->shape->proxyModel()->canRebuildSeriesFromCellRange();
+    if (rebuildPolarSeries) {
         d->shape->proxyModel()->setManualControl(false);
         xAxis()->clearDataSets();
         yAxis()->clearDataSets();
@@ -582,7 +583,7 @@ void PlotArea::setChartType(ChartType type)
     foreach (Axis *axis, d->axes) {
         axis->plotAreaChartTypeChanged(type);
     }
-    if (type == CircleChartType || type == RingChartType) {
+    if (rebuildPolarSeries) {
         d->shape->proxyModel()->reset(region);
     }
     if (type != BarChartType) {

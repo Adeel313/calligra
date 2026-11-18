@@ -69,7 +69,8 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
     QLayout *layout = ribbonLayout ? static_cast<QLayout *>(ribbonLayout) : new GroupFlowLayout(this);
     layout->setContentsMargins({});
     if (ribbonLayout) {
-        ribbonLayout->setSpacing(3);
+        ribbonLayout->setHorizontalSpacing(3);
+        ribbonLayout->setVerticalSpacing(1);
         ribbonLayout->setAlignment(Qt::AlignTop);
         const QStringList order = {QStringLiteral("Font"), QStringLiteral("Alignment"), QStringLiteral("Number")};
         const int index = order.indexOf(name);
@@ -129,7 +130,7 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
                 }
                 button->setMenu(popup);
                 if (ribbon) {
-                    KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly);
+                    KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly, true);
                     button->setToolTip(menuName);
                     button->setAccessibleName(menuName);
                 }
@@ -168,7 +169,7 @@ ActionOptionWidget::ActionOptionWidget(CellToolBase *cellTool, const QDomElement
                 b->setDefaultAction(a);
                 b->setAutoRaise(true);
                 if (ribbon) {
-                    KoRibbonLayout::configureButton(b, a->icon().isNull() ? Qt::ToolButtonTextOnly : Qt::ToolButtonIconOnly);
+                    KoRibbonLayout::configureButton(b, a->icon().isNull() ? Qt::ToolButtonTextOnly : Qt::ToolButtonIconOnly, true);
                 }
                 w = b;
             }

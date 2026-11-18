@@ -22,16 +22,18 @@
 #include "ChartDebug.h"
 #include "ChartShape.h"
 #include "Legend.h"
+#include "PlotArea.h"
 
 using namespace KoChart;
 using namespace KChart;
 
 ChartTypeCommand::ChartTypeCommand(ChartShape *chart)
     : m_chart(chart)
-    , m_oldType(BarChartType)
+    , m_oldType(chart->chartType())
     , m_newType(BarChartType)
-    , m_oldSubtype(NormalChartSubtype)
+    , m_oldSubtype(chart->chartSubType())
     , m_newSubtype(NormalChartSubtype)
+    , m_oldVertical(chart->plotArea()->isVertical())
 {
 }
 
@@ -39,9 +41,6 @@ ChartTypeCommand::~ChartTypeCommand() = default;
 
 void ChartTypeCommand::redo()
 {
-    // save the old type
-    m_oldType = m_chart->chartType();
-    m_oldSubtype = m_chart->chartSubType();
     if (m_oldType == m_newType && m_oldSubtype == m_newSubtype)
         return;
 
@@ -58,6 +57,7 @@ void ChartTypeCommand::undo()
         return;
 
     m_chart->setChartType(m_oldType);
+    m_chart->plotArea()->setVertical(m_oldVertical);
     m_chart->setChartSubType(m_oldSubtype, m_oldType == StockChartType);
     m_chart->update();
     m_chart->legend()->update();

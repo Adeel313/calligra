@@ -7,6 +7,8 @@
 #ifndef KOCHART_INTERFACE
 #define KOCHART_INTERFACE
 
+#include <QMap>
+#include <QRect>
 #include <Qt>
 #include <QtPlugin>
 
@@ -44,10 +46,13 @@ public:
      *                           to be interpreted as one data set, columns with Qt::Vertical.
      */
     virtual void reset(const QString &region, bool firstRowIsLabel, bool firstColumnIsLabel, Qt::Orientation dataDirection) = 0;
+
+    /// Worksheet source cells grouped by sheet name, using one-based coordinates.
+    virtual QMap<QString, QList<QRect>> worksheetSourceRanges() const = 0;
 };
 
 } // namespace KoChart
 
-Q_DECLARE_INTERFACE(KoChart::ChartInterface, "org.calligra.KoChart.ChartInterface:1.0")
+Q_DECLARE_INTERFACE(KoChart::ChartInterface, "org.calligra.KoChart.ChartInterface:1.1")
 
 #endif // KOCHART_INTERFACE

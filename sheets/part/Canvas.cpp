@@ -31,6 +31,7 @@
 // Local
 #include "Canvas.h"
 #include "CanvasBase_p.h"
+#include "Doc.h"
 #include "HeaderWidgets.h"
 #include "View.h"
 
@@ -45,6 +46,9 @@
 #include <kxmlguifactory.h>
 
 // Calligra
+#include <KoCanvasController.h>
+#include <KoChartInterface.h>
+#include <KoShapeContainer.h>
 #include <KoShapeManager.h>
 #include <KoToolManager.h>
 #include <KoToolProxy.h>
@@ -52,9 +56,12 @@
 
 // Sheets
 #include "core/Cell.h"
+#include "core/Map.h"
 #include "core/Sheet.h"
 #include "engine/SheetsDebug.h"
 #include "ui/Selection.h"
+
+#include <algorithm>
 
 #define MIN_SIZE 10
 
@@ -143,6 +150,11 @@ void Canvas::validateSelection()
 
 void Canvas::mousePressEvent(QMouseEvent *event)
 {
+    if (!d->chartSourceRanges.isEmpty()) {
+        d->chartSourceRanges.clear();
+        update();
+    }
+
     // KoPointerEvent pev(event, QPointF());
     // mousePressed(&pev);
 
@@ -250,9 +262,7 @@ void Canvas::mouseMoveEvent(QMouseEvent *event)
 
 void Canvas::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    //    KoPointerEvent pev(event, QPointF());
-    //    mouseDoubleClicked(&pev);
-
+    QMouseEvent *originalEvent = event;
     QPointF documentPosition;
     if (layoutDirection() == Qt::LeftToRight) {
         documentPosition = viewConverter()->viewToDocument(event->position().toPoint()) + offset();
@@ -261,6 +271,16 @@ void Canvas::mouseDoubleClickEvent(QMouseEvent *event)
         const QPointF offset(this->offset().x(), this->offset().y());
         documentPosition = viewConverter()->viewToDocument(position) + offset;
         event = new QMouseEvent(QEvent::MouseButtonDblClick, position, mapToGlobal(position), event->button(), event->buttons(), event->modifiers());
+    }
+
+    QMap<QString, QList<QRect>> sourceRanges;
+    if (event->button() == Qt::LeftButton) {
+        for (KoShape *shape = shapeManager()->shapeAt(documentPosition, KoFlake::ShapeOnTop); shape; shape = shape->parent()) {
+            if (auto *chart = qobject_cast<KoChart::ChartInterface *>(dynamic_cast<QObject *>(shape))) {
+                sourceRanges = chart->worksheetSourceRanges();
+                break;
+            }
+        }
     }
 
     // flake
@@ -272,6 +292,9 @@ void Canvas::mouseDoubleClickEvent(QMouseEvent *event)
         if (KoToolManager::instance()->activeToolId() != "KSpreadCellToolId") {
             if (!shapeManager()->shapeAt(documentPosition, KoFlake::ShapeOnTop)) {
                 KoToolManager::instance()->switchToolRequested("KSpreadCellToolId");
+                if (event != originalEvent) {
+                    delete event;
+                }
                 return;
             }
         }
@@ -279,9 +302,34 @@ void Canvas::mouseDoubleClickEvent(QMouseEvent *event)
         d->toolProxy->mouseDoubleClickEvent(event, documentPosition);
     }
 
-    if (layoutDirection() == Qt::RightToLeft) {
-        // delete event;
+    if (event != originalEvent) {
+        originalEvent->setAccepted(event->isAccepted());
+        delete event;
     }
+    if (sourceRanges.isEmpty()) {
+        return;
+    }
+
+    d->chartSourceRanges = std::move(sourceRanges);
+    Sheet *sheet = activeSheet();
+    if (!d->chartSourceRanges.contains(sheet->sheetName())) {
+        for (auto it = d->chartSourceRanges.cbegin(); it != d->chartSourceRanges.cend(); ++it) {
+            auto *source = static_cast<Sheet *>(doc()->map()->findSheet(it.key()));
+            if (source && !source->isHidden()) {
+                view()->setActiveSheet(source);
+                sheet = source;
+                break;
+            }
+        }
+    }
+
+    const auto ranges = d->chartSourceRanges.value(sheet->sheetName());
+    const QRect visible = visibleCells();
+    if (!ranges.isEmpty() && std::none_of(ranges.cbegin(), ranges.cend(), [&](const QRect &range) { return visible.intersects(range); })) {
+        const QRectF firstCell = sheet->cellCoordinatesToDocument(QRect(ranges.first().topLeft(), QSize(1, 1)));
+        canvasController()->ensureVisible(viewConverter()->documentToView(firstCell), true);
+    }
+    update();
 }
 
 bool Canvas::event(QEvent *e)

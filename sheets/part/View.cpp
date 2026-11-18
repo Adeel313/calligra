@@ -456,8 +456,8 @@ void View::Private::initActions()
     QWidget *scaleWidget = new QWidget(view);
     auto *scaleLayout = new QGridLayout(scaleWidget);
     scaleLayout->setContentsMargins(0, 0, 0, 0);
-    scaleLayout->setHorizontalSpacing(4);
-    scaleLayout->setVerticalSpacing(2);
+    scaleLayout->setHorizontalSpacing(6);
+    scaleLayout->setVerticalSpacing(1);
     auto *widthLabel = new QLabel(i18n("Width:"), scaleWidget);
     auto *heightLabel = new QLabel(i18n("Height:"), scaleWidget);
     auto *scaleLabel = new QLabel(i18n("Scale:"), scaleWidget);
@@ -475,12 +475,15 @@ void View::Private::initActions()
     actions->scalePercent->setRange(10, 400);
     actions->scalePercent->setSuffix(i18n("%"));
     actions->scalePercent->setFixedSize(96, 22);
+    widthLabel->setBuddy(actions->scaleWidth);
+    heightLabel->setBuddy(actions->scaleHeight);
+    scaleLabel->setBuddy(actions->scalePercent);
     scaleLayout->addWidget(widthLabel, 0, 0);
-    scaleLayout->addWidget(actions->scaleWidth, 0, 1);
-    scaleLayout->addWidget(heightLabel, 1, 0);
+    scaleLayout->addWidget(heightLabel, 0, 1);
+    scaleLayout->addWidget(scaleLabel, 0, 2);
+    scaleLayout->addWidget(actions->scaleWidth, 1, 0);
     scaleLayout->addWidget(actions->scaleHeight, 1, 1);
-    scaleLayout->addWidget(scaleLabel, 2, 0);
-    scaleLayout->addWidget(actions->scalePercent, 2, 1);
+    scaleLayout->addWidget(actions->scalePercent, 1, 2);
     connect(actions->scaleWidth, QOverload<int>::of(&QComboBox::currentIndexChanged), view, [this, applyPrintSettings](int index) {
         const int width = actions->scaleWidth->itemData(index).toInt();
         applyPrintSettings([width](PrintSettings &settings) {
@@ -510,8 +513,9 @@ void View::Private::initActions()
     QWidget *optionsWidget = new QWidget(view);
     auto *optionsLayout = new QGridLayout(optionsWidget);
     optionsLayout->setContentsMargins(0, 0, 0, 0);
-    optionsLayout->setHorizontalSpacing(12);
-    optionsLayout->setVerticalSpacing(2);
+    optionsLayout->setHorizontalSpacing(6);
+    optionsLayout->setVerticalSpacing(1);
+    optionsLayout->setColumnMinimumWidth(2, 4);
     auto *gridlinesLabel = new QLabel(i18n("Gridlines"), optionsWidget);
     auto *headingsLabel = new QLabel(i18n("Headings"), optionsWidget);
     actions->gridViewCheck = new QCheckBox(i18n("View"), optionsWidget);
@@ -522,12 +526,12 @@ void View::Private::initActions()
     actions->gridPrintCheck->setToolTip(i18n("Print the cell grid"));
     actions->headingsViewCheck->setToolTip(i18n("Show column and row headings on screen"));
     actions->headingsPrintCheck->setToolTip(i18n("Print column and row headings"));
-    optionsLayout->addWidget(gridlinesLabel, 0, 0);
-    optionsLayout->addWidget(headingsLabel, 0, 1);
+    optionsLayout->addWidget(gridlinesLabel, 0, 0, 1, 2);
+    optionsLayout->addWidget(headingsLabel, 0, 3, 1, 2);
     optionsLayout->addWidget(actions->gridViewCheck, 1, 0);
-    optionsLayout->addWidget(actions->headingsViewCheck, 1, 1);
-    optionsLayout->addWidget(actions->gridPrintCheck, 2, 0);
-    optionsLayout->addWidget(actions->headingsPrintCheck, 2, 1);
+    optionsLayout->addWidget(actions->gridPrintCheck, 1, 1);
+    optionsLayout->addWidget(actions->headingsViewCheck, 1, 3);
+    optionsLayout->addWidget(actions->headingsPrintCheck, 1, 4);
     connect(actions->gridViewCheck, &QCheckBox::toggled, view, [this](bool checked) {
         if (!activeSheet) {
             return;

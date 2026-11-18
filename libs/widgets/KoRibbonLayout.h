@@ -15,7 +15,7 @@ namespace KoRibbonLayout
 {
 // Use logical pixels and the active style's size hint, which also reserves
 // space for split-menu arrows and themed button margins.
-inline void configureButton(QToolButton *button, Qt::ToolButtonStyle presentation)
+inline void configureButton(QToolButton *button, Qt::ToolButtonStyle presentation, bool compactHeight = false)
 {
     button->setProperty("ribbonPresentationStyle", int(presentation));
     button->setProperty("ribbonCompactable", !button->icon().isNull() && (presentation == Qt::ToolButtonTextUnderIcon || presentation == Qt::ToolButtonTextBesideIcon));
@@ -27,7 +27,7 @@ inline void configureButton(QToolButton *button, Qt::ToolButtonStyle presentatio
     }
     button->setToolButtonStyle(presentation);
     const bool large = presentation == Qt::ToolButtonTextUnderIcon;
-    const int icon = qMax(large ? 36 : 24,
+    const int icon = compactHeight ? (large ? 28 : 18) : qMax(large ? 36 : 24,
                          button->style()->pixelMetric(large ? QStyle::PM_LargeIconSize : QStyle::PM_SmallIconSize, nullptr, button));
     const QSize preferredIcon = button->property("ribbonPreferredIconSize").toSize();
     button->setIconSize(preferredIcon.isValid() ? preferredIcon : QSize(icon, icon));
@@ -35,8 +35,9 @@ inline void configureButton(QToolButton *button, Qt::ToolButtonStyle presentatio
     button->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
     button->ensurePolished();
     const QSize hint = button->sizeHint();
-    button->setMinimumSize(hint.expandedTo(QSize(large ? 72 : 34,
-                                               large ? qMax(76, icon + button->fontMetrics().lineSpacing() + 16) : icon + 10))
+    const int height = compactHeight ? (large ? icon + button->fontMetrics().lineSpacing() + 8 : icon + 6)
+                                     : (large ? qMax(76, icon + button->fontMetrics().lineSpacing() + 16) : icon + 10);
+    button->setMinimumSize(hint.expandedTo(QSize(large ? 72 : 34, height))
                                .expandedTo(button->property("ribbonPreferredMinimumSize").toSize()));
     button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 }
