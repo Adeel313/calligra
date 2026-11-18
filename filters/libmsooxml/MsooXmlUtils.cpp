@@ -62,6 +62,65 @@
 
 #include <memory>
 
+namespace {
+
+// Microsoft symbol fonts encode their glyphs in the private-use range
+// U+F000..U+F0FF. OOXML bullet characters are written either with those code
+// points or with just the corresponding Latin-1 byte, and a:buFont carries the
+// font name. Without that font installed the raw byte is rendered as e.g. 'l'
+// or '\u00a1' instead of the intended round marker, so map the common list
+// marker glyphs to their Unicode equivalents while importing.
+QChar unicodeBulletForSymbolFont(const QString &font, const QString &bulletChar)
+{
+    if (bulletChar.size() != 1) {
+        return QChar();
+    }
+
+    const QString fontName = font.trimmed().toLower();
+    const bool wingdings = fontName == QLatin1String("wingdings");
+    const bool symbol = fontName == QLatin1String("symbol") || fontName == QLatin1String("ms symbol")
+        || fontName == QLatin1String("microsoft symbol");
+    if (!wingdings && !symbol) {
+        return QChar();
+    }
+
+    ushort code = bulletChar.at(0).unicode();
+    if ((code & 0xff00) == 0xf000) {
+        code &= 0x00ff;
+    } else if (code > 0x00ff) {
+        return QChar();
+    }
+
+    // Meaningful list markers from the Wingdings and Symbol character sets.
+    // The low byte is the value used by both the private-use and the Latin-1
+    // forms found in OOXML files.
+    static const QMap<ushort, ushort> wingdingsBullets = {
+        { 0x6c, 0x25cf }, // circle6    -> BLACK CIRCLE
+        { 0x6e, 0x25a0 }, // square6    -> BLACK SQUARE
+        { 0x6f, 0x25a1 }, // box3       -> WHITE SQUARE
+        { 0x75, 0x25c6 }, // rhombus6   -> BLACK DIAMOND
+        { 0x9f, 0x2022 }, // circle4    -> BULLET
+        { 0xa0, 0x25aa }, // square2    -> BLACK SMALL SQUARE
+        { 0xa1, 0x25cb }, // ring2      -> WHITE CIRCLE
+        { 0xa7, 0x25aa }, // square4    -> BLACK SMALL SQUARE
+        { 0xa8, 0x25a1 }, // box2       -> WHITE SQUARE
+        { 0xd8, 0x27a2 }, //            -> THREE-D TOP-LIGHTED RIGHTWARDS ARROWHEAD
+        { 0xe8, 0x2794 }, //            -> WIDE RIGHTWARDS ARROW
+        { 0xfb, 0x2717 }, //            -> BALLOT X
+        { 0xfc, 0x2714 }  //            -> CHECK MARK
+    };
+    static const QMap<ushort, ushort> symbolBullets = {
+        { 0x2d, 0x2013 }, //             -> EN DASH
+        { 0xb7, 0x2022 }  // bullet     -> BULLET
+    };
+
+    const QMap<ushort, ushort> &bullets = wingdings ? wingdingsBullets : symbolBullets;
+    const auto it = bullets.constFind(code);
+    return it == bullets.constEnd() ? QChar() : QChar(*it);
+}
+
+} // namespace
+
 // common officedocument content types
 const char MSOOXML::ContentTypes::coreProps[] = "application/vnd.openxmlformats-package.core-properties+xml";
 const char MSOOXML::ContentTypes::extProps[] = "application/vnd.openxmlformats-officedocument.extended-properties+xml";
@@ -1371,6 +1430,15 @@ QString Utils::ParagraphBulletProperties::convertToListProperties(KoGenStyles &m
     buf.open(QIODevice::WriteOnly);
     KoXmlWriter out(&buf);
 
+    QString bulletChar = m_bulletChar;
+    QChar mappedBullet;
+    if (m_type == ParagraphBulletProperties::BulletType) {
+        mappedBullet = unicodeBulletForSymbolFont(m_bulletFont, m_bulletChar);
+        if (!mappedBullet.isNull()) {
+            bulletChar = mappedBullet;
+        }
+    }
+
     //---------------------------------------------
     // list-level-style-*
     //---------------------------------------------
@@ -1394,7 +1462,7 @@ QString Utils::ParagraphBulletProperties::convertToListProperties(KoGenStyles &m
         out.addAttribute("xlink:actuate", "onLoad");
     } else {
         out.startElement("text:list-level-style-bullet");
-        if (m_bulletChar.length() != 1) {
+        if (bulletChar.length() != 1) {
             // TODO: if there is no bullet char this should not be
             // saved as list but as normal paragraph. Both LO and MSO
             // do export it just as paragraph and no list until there
@@ -1402,7 +1470,7 @@ QString Utils::ParagraphBulletProperties::convertToListProperties(KoGenStyles &m
             // Space to not generate invalid xml
             out.addAttribute("text:bullet-char", QChar(0x200B));
         } else {
-            out.addAttribute("text:bullet-char", m_bulletChar);
+            out.addAttribute("text:bullet-char", bulletChar);
         }
     }
     out.addAttribute("text:level", m_level);
@@ -1565,7 +1633,7 @@ QString Utils::ParagraphBulletProperties::convertToListProperties(KoGenStyles &m
         out.addAttribute("fo:font-size", bulletSize);
 
         // MSPowerPoint: UI does not enable to change font of a numbered lists.
-        if (m_bulletFont != UNUSED) {
+        if (m_bulletFont != UNUSED && mappedBullet.isNull()) {
             if ((currentFilter != Utils::PptxFilter) || (m_type == ParagraphBulletProperties::BulletType)) {
                 out.addAttribute("fo:font-family", m_bulletFont);
             }
