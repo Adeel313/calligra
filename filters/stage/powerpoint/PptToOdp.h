@@ -264,13 +264,17 @@ private:
      * @param TextCFException10 address
      * @param TextSIException address
      * @param chunk might represent a symbol
+     * @param isSymbolEncoded true when the run's text was decoded from a
+     *        legacy symbol-font encoding to Unicode; such runs must not carry
+     *        the symbol font family or the decoded glyphs render as Latin text
      */
     void defineTextProperties(KoGenStyle &style,
                               const PptTextCFRun &cf,
                               const MSO::TextCFException9 *cf9,
                               const MSO::TextCFException10 *cf10,
                               const MSO::TextSIException *si,
-                              const bool isSymbol = false);
+                              const bool isSymbol = false,
+                              const bool isSymbolEncoded = false);
 
     /**
      * Extract data from TextPFException into the style

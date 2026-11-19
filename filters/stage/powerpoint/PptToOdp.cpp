@@ -48,6 +48,249 @@
 using namespace MSO;
 using namespace writeodf;
 
+namespace
+{
+
+bool isSymbolFontFamily(const QString &name)
+{
+    const QString n = name.trimmed().toLower();
+    return n == QLatin1String("symbol") || n == QLatin1String("ms symbol")
+        || n == QLatin1String("microsoft symbol");
+}
+
+bool isWingdingsFontFamily(const QString &name)
+{
+    return name.trimmed().compare(QLatin1String("wingdings"), Qt::CaseInsensitive) == 0;
+}
+
+QString fontEntityName(const MSO::FontEntityAtom *font)
+{
+    if (!font) {
+        return QString();
+    }
+    // lfFaceName is a fixed-size vector; strip the trailing NUL padding so
+    // comparisons and ODF attributes see just the actual family name.
+    QString name = QString::fromUtf16(reinterpret_cast<const char16_t *>(font->lfFaceName.data()), font->lfFaceName.size());
+    const int nul = name.indexOf(QChar());
+    if (nul >= 0) {
+        name.truncate(nul);
+    }
+    return name;
+}
+
+/**
+ * Decode one byte of the legacy Microsoft Symbol encoding to Unicode.  The
+ * Symbol font puts its glyphs at 0xF020..0xF0FF, but PowerPoint stores only
+ * the low byte in the text atom.  If the Symbol font is not installed (it is
+ * proprietary and usually missing on Linux) that byte renders as a Latin-1
+ * character, e.g. "a" instead of alpha.  Returning 0 means "leave unchanged".
+ *
+ * Source: Microsoft Windows Symbol Encoding Vector.
+ */
+ushort symbolByteToUnicode(ushort code)
+{
+    if (code >= 0x30 && code <= 0x39) {
+        return code; // digits are the same in Symbol and Unicode
+    }
+    switch (code) {
+    case 0x20: return 0x0020;
+    case 0x21: return 0x0021;
+    case 0x22: return 0x2200; // FOR ALL
+    case 0x23: return 0x0023;
+    case 0x24: return 0x2203; // THERE EXISTS
+    case 0x25: return 0x0025;
+    case 0x26: return 0x0026;
+    case 0x27: return 0x220b; // CONTAINS AS MEMBER
+    case 0x28: return 0x0028;
+    case 0x29: return 0x0029;
+    case 0x2a: return 0x2217; // ASTERISK OPERATOR
+    case 0x2b: return 0x002b;
+    case 0x2c: return 0x002c;
+    case 0x2d: return 0x2212; // MINUS SIGN
+    case 0x2e: return 0x002e;
+    case 0x2f: return 0x002f;
+    case 0x3a: return 0x003a;
+    case 0x3b: return 0x003b;
+    case 0x3c: return 0x003c;
+    case 0x3d: return 0x003d;
+    case 0x3e: return 0x003e;
+    case 0x3f: return 0x003f;
+    case 0x40: return 0x2245; // APPROXIMATELY EQUAL TO
+    case 0x41: return 0x0391; // GREEK CAPITAL LETTER ALPHA
+    case 0x42: return 0x0392;
+    case 0x43: return 0x03a7;
+    case 0x44: return 0x0394;
+    case 0x45: return 0x0395;
+    case 0x46: return 0x03a6;
+    case 0x47: return 0x0393;
+    case 0x48: return 0x0397;
+    case 0x49: return 0x0399;
+    case 0x4a: return 0x03d1; // GREEK THETA SYMBOL
+    case 0x4b: return 0x039a;
+    case 0x4c: return 0x039b;
+    case 0x4d: return 0x039c;
+    case 0x4e: return 0x039d;
+    case 0x4f: return 0x039f;
+    case 0x50: return 0x03a0;
+    case 0x51: return 0x0398;
+    case 0x52: return 0x03a1;
+    case 0x53: return 0x03a3;
+    case 0x54: return 0x03a4;
+    case 0x55: return 0x03a5;
+    case 0x56: return 0x03c2; // GREEK SMALL LETTER FINAL SIGMA
+    case 0x57: return 0x03a9;
+    case 0x58: return 0x039e;
+    case 0x59: return 0x03a8;
+    case 0x5a: return 0x0396;
+    case 0x5b: return 0x005b;
+    case 0x5c: return 0x2234; // THEREFORE
+    case 0x5d: return 0x005d;
+    case 0x5e: return 0x22a5; // UP TACK
+    case 0x5f: return 0x005f;
+    case 0x60: return 0x203e; // OVERLINE
+    case 0x61: return 0x03b1; // GREEK SMALL LETTER ALPHA
+    case 0x62: return 0x03b2;
+    case 0x63: return 0x03c7;
+    case 0x64: return 0x03b4;
+    case 0x65: return 0x03b5;
+    case 0x66: return 0x03c6;
+    case 0x67: return 0x03b3;
+    case 0x68: return 0x03b7;
+    case 0x69: return 0x03b9;
+    case 0x6a: return 0x03d5; // GREEK PHI SYMBOL
+    case 0x6b: return 0x03ba;
+    case 0x6c: return 0x03bb;
+    case 0x6d: return 0x03bc; // GREEK SMALL LETTER MU
+    case 0x6e: return 0x03bd;
+    case 0x6f: return 0x03bf;
+    case 0x70: return 0x03c0;
+    case 0x71: return 0x03b8; // GREEK SMALL LETTER THETA
+    case 0x72: return 0x03c1;
+    case 0x73: return 0x03c3;
+    case 0x74: return 0x03c4;
+    case 0x75: return 0x03c5;
+    case 0x76: return 0x03d6; // GREEK PI SYMBOL
+    case 0x77: return 0x03c9;
+    case 0x78: return 0x03be;
+    case 0x79: return 0x03c8;
+    case 0x7a: return 0x03b6;
+    case 0x7b: return 0x007b;
+    case 0x7c: return 0x007c;
+    case 0x7d: return 0x007d;
+    case 0x7e: return 0x223c; // TILDE OPERATOR
+    case 0xa1: return 0x03d2; // GREEK UPSILON WITH HOOK SYMBOL
+    case 0xa2: return 0x2032; // PRIME
+    case 0xa3: return 0x2264; // LESS-THAN OR EQUAL TO
+    case 0xa4: return 0x2215; // DIVISION SLASH
+    case 0xa5: return 0x221e; // INFINITY
+    case 0xa6: return 0x0192; // LATIN SMALL LETTER F WITH HOOK
+    case 0xa7: return 0x2663; // BLACK CLUB SUIT
+    case 0xa8: return 0x2666; // BLACK DIAMOND SUIT
+    case 0xa9: return 0x2665; // BLACK HEART SUIT
+    case 0xaa: return 0x2660; // BLACK SPADE SUIT
+    case 0xab: return 0x2194; // LEFT RIGHT ARROW
+    case 0xac: return 0x2190; // LEFTWARDS ARROW
+    case 0xad: return 0x2191; // UPWARDS ARROW
+    case 0xae: return 0x2192; // RIGHTWARDS ARROW
+    case 0xaf: return 0x2193; // DOWNWARDS ARROW
+    case 0xb0: return 0x00b0; // DEGREE SIGN
+    case 0xb1: return 0x00b1; // PLUS-MINUS SIGN
+    case 0xb2: return 0x2033; // DOUBLE PRIME
+    case 0xb3: return 0x2265; // GREATER-THAN OR EQUAL TO
+    case 0xb4: return 0x00d7; // MULTIPLICATION SIGN
+    case 0xb5: return 0x221d; // PROPORTIONAL TO
+    case 0xb6: return 0x2202; // PARTIAL DIFFERENTIAL
+    case 0xb7: return 0x2219; // BULLET OPERATOR
+    case 0xb8: return 0x00f7; // DIVISION SIGN
+    case 0xb9: return 0x2260; // NOT EQUAL TO
+    case 0xba: return 0x2261; // IDENTICAL TO
+    case 0xbb: return 0x2248; // ALMOST EQUAL TO
+    case 0xbc: return 0x22ef; // MIDLINE HORIZONTAL ELLIPSIS
+    case 0xbf: return 0x21b5; // DOWNWARDS ARROW WITH CORNER LEFTWARDS
+    case 0xc1: return 0x2131; // BLACK-LETTER CAPITAL I
+    case 0xc2: return 0x211c; // BLACK-LETTER CAPITAL R
+    case 0xc3: return 0x2118; // SCRIPT CAPITAL P
+    case 0xc4: return 0x2297; // CIRCLED TIMES
+    case 0xc5: return 0x2295; // CIRCLED PLUS
+    case 0xc6: return 0x2205; // EMPTY SET
+    case 0xc7: return 0x2229; // INTERSECTION
+    case 0xc8: return 0x222a; // UNION
+    case 0xc9: return 0x2283; // SUPERSET OF
+    case 0xca: return 0x2287; // SUPERSET OF OR EQUAL TO
+    case 0xcb: return 0x2284; // NOT A SUBSET OF
+    case 0xcc: return 0x2282; // SUBSET OF
+    case 0xcd: return 0x2286; // SUBSET OF OR EQUAL TO
+    case 0xce: return 0x2208; // ELEMENT OF
+    case 0xcf: return 0x2209; // NOT AN ELEMENT OF
+    case 0xd0: return 0x2220; // ANGLE
+    case 0xd1: return 0x2207; // NABLA
+    case 0xd2: return 0x00ae; // REGISTERED SIGN
+    case 0xd3: return 0x00a9; // COPYRIGHT SIGN
+    case 0xd4: return 0x2122; // TRADE MARK SIGN
+    case 0xd5: return 0x220f; // N-ARY PRODUCT
+    case 0xd6: return 0x221a; // SQUARE ROOT
+    case 0xd7: return 0x22c5; // DOT OPERATOR
+    case 0xd8: return 0x00ac; // NOT SIGN
+    case 0xd9: return 0x2227; // LOGICAL AND
+    case 0xda: return 0x2228; // LOGICAL OR
+    case 0xdb: return 0x21d4; // LEFT RIGHT DOUBLE ARROW
+    case 0xdc: return 0x21d0; // LEFTWARDS DOUBLE ARROW
+    case 0xdd: return 0x21d1; // UPWARDS DOUBLE ARROW
+    case 0xde: return 0x21d2; // RIGHTWARDS DOUBLE ARROW
+    case 0xdf: return 0x21d3; // DOWNWARDS DOUBLE ARROW
+    case 0xe0: return 0x25ca; // LOZENGE
+    case 0xe1: return 0x2329; // LEFT-POINTING ANGLE BRACKET
+    case 0xe5: return 0x2211; // N-ARY SUMMATION
+    case 0xf1: return 0x232a; // RIGHT-POINTING ANGLE BRACKET
+    case 0xf2: return 0x222b; // INTEGRAL
+    case 0xf3: return 0x2320; // TOP HALF INTEGRAL
+    case 0xf5: return 0x2321; // BOTTOM HALF INTEGRAL
+    default: return 0;
+    }
+}
+
+/** Decode a whole run of Symbol-encoded text to Unicode. */
+QString decodeSymbolText(QString text)
+{
+    for (int i = 0; i < text.size(); ++i) {
+        ushort code = text.at(i).unicode();
+        if (code >= 0xf020 && code <= 0xf0ff) {
+            code &= 0x00ff;
+        } else if (code > 0x00ff) {
+            continue;
+        }
+        const ushort mapped = symbolByteToUnicode(code);
+        if (mapped) {
+            text[i] = QChar(mapped);
+        }
+    }
+    return text;
+}
+
+/** Decode a Wingdings-encoded bullet character to Unicode. */
+ushort wingdingsByteToUnicode(ushort code)
+{
+    switch (code) {
+    case 0x6c: return 0x25cf; // BLACK CIRCLE
+    case 0x6e: return 0x25a0; // BLACK SQUARE
+    case 0x6f: return 0x25a1; // WHITE SQUARE
+    case 0x71: return 0x2751; // LOWER RIGHT SHADOWED WHITE SQUARE
+    case 0x72: return 0x2752; // UPPER RIGHT SHADOWED WHITE SQUARE
+    case 0x75: return 0x25c6; // BLACK DIAMOND
+    case 0x9f: return 0x2022; // BULLET
+    case 0xa1: return 0x25cb; // WHITE CIRCLE
+    case 0xa7: return 0x25aa; // BLACK SMALL SQUARE
+    case 0xa8: return 0x25a1; // WHITE SQUARE
+    case 0xd8: return 0x27a2; // THREE-D TOP-LIGHTED RIGHTWARDS ARROWHEAD
+    case 0xe8: return 0x2794; // WIDE RIGHTWARDS ARROW
+    case 0xfb: return 0x2717; // BALLOT X
+    case 0xfc: return 0x2714; // CHECK MARK
+    default: return 0;
+    }
+}
+
+} // namespace
+
 QUrl urlFromArg(const QString &arg)
 {
 #if QT_VERSION >= 0x050400
@@ -1287,7 +1530,8 @@ void PptToOdp::defineTextProperties(KoGenStyle &style,
                                     const TextCFException9 * /*cf9*/,
                                     const TextCFException10 * /*cf10*/,
                                     const TextSIException * /*si*/,
-                                    const bool isSymbol)
+                                    const bool isSymbol,
+                                    const bool isSymbolEncoded)
 {
     // Getting information for all the possible attributes in
     // style:text-properties for clarity in alphabetical order.
@@ -1325,8 +1569,13 @@ void PptToOdp::defineTextProperties(KoGenStyle &style,
         debugPpt << "> fNoFontSubstitution:" << font->fNoFontSubstitution;
         debugPpt << "DEBUG END: FontEntityAtom";
 #endif
-        const QString name = QString::fromUtf16(reinterpret_cast<const char16_t *>(font->lfFaceName.data()), font->lfFaceName.size());
-        style.addProperty("fo:font-family", name, text);
+        const QString name = fontEntityName(font);
+        // The run's text has already been decoded to Unicode.  Keeping the
+        // symbol font here would make the decoded glyphs render as Latin
+        // characters again (the proprietary Symbol font is usually absent).
+        if (!isSymbolEncoded) {
+            style.addProperty("fo:font-family", name, text);
+        }
     }
     // fo:font-size
     if (cf.fontSize() > 0) {
@@ -1689,29 +1938,24 @@ void PptToOdp::defineListStyle(KoGenStyle &style,
 
 namespace
 {
-QChar getBulletChar(const PptTextPFRun &pf)
+QChar getBulletChar(const PptTextPFRun &pf, const QString &bulletFontName)
 {
     quint16 v = (quint16)pf.bulletChar();
-    //     if ((v == 0xf06c) || (v == 0x006c)) { // 0xF06C from "Windings" is similar to ●
-    //         return QChar(0x25cf); //  "●"
-    //     }
-    //     if (v == 0xf02d) { // 0xF02D from "Symbol" is similar to –
-    //         return QChar(0x2013);
-    //     }
-    //     if (v == 0xf0e8) { // 0xF0E8 is similar to ➔
-    //         return QChar(0x2794);
-    //     }
-    //     if (v == 0xf0d8) { // 0xF0D8 is similar to ➢
-    //         return QChar(0x27a2);
-    //     }
-    //     if (v == 0xf0fb) { // 0xF0FB is similar to ✗
-    //         return QChar(0x2717);
-    //     }
-    //     if (v == 0xf0fc) { // 0xF0FC is similar to ✔
-    //         return QChar(0x2714);
-    //     }
+    if (v >= 0xf020 && v <= 0xf0ff) {
+        v &= 0x00ff;
+    }
+    if (isWingdingsFontFamily(bulletFontName)) {
+        const ushort mapped = wingdingsByteToUnicode(v);
+        if (mapped) {
+            return QChar(mapped);
+        }
+    } else if (isSymbolFontFamily(bulletFontName)) {
+        const ushort mapped = symbolByteToUnicode(v);
+        if (mapped) {
+            return QChar(mapped);
+        }
+    }
     return QChar(v);
-    //     return QChar(0x25cf); //  "●"
 }
 
 /**
@@ -1814,8 +2058,12 @@ void PptToOdp::defineListStyleTextProperties(KoXmlWriter &out, const QString &bu
     }
 
     if (font) {
-        QString family = QString::fromUtf16(reinterpret_cast<const char16_t *>(font->lfFaceName.data()), font->lfFaceName.size());
-        ts.addProperty("fo:font-family", family, text);
+        const QString family = fontEntityName(font);
+        // Bullet characters from symbol fonts are decoded to Unicode above;
+        // keeping the symbol font would render them as unrelated Latin glyphs.
+        if (!isSymbolFontFamily(family) && !isWingdingsFontFamily(family)) {
+            ts.addProperty("fo:font-family", family, text);
+        }
     }
 
     // MSPowerPoint: A label does NOT inherit Underline from
@@ -1878,7 +2126,11 @@ void PptToOdp::defineListStyle(KoGenStyle &style, const quint16 depth, const Lis
             defineListStyleTextProperties(out, bulletSize, i.pf);
         } else {
             elementName = "text:list-level-style-bullet";
-            text_list_level_style_bullet bullet(&out, getBulletChar(i.pf), depth + 1);
+            QString bulletFontName;
+            if (i.pf.fBulletHasFont() && !i.pf.fBulletHasAutoNumber()) {
+                bulletFontName = fontEntityName(getFont(i.pf.bulletFontRef()));
+            }
+            text_list_level_style_bullet bullet(&out, getBulletChar(i.pf, bulletFontName), depth + 1);
             defineListStyleProperties(out, imageBullet, bulletSize, i.pf);
             defineListStyleTextProperties(out, bulletSize, i.pf);
             // text:bullet-relative-size
@@ -2669,9 +2921,18 @@ int PptToOdp::processTextSpan(Writer &out, PptTextCFRun &cf, const MSO::TextCont
         end = mouseover->text.range.end;
     }
 
+    // A run formatted with a legacy Microsoft symbol font stores glyph indices
+    // as plain bytes in the text atom.  Decode those bytes to Unicode so the
+    // mathematical symbols render without the proprietary font installed.
+    const MSO::FontEntityAtom *symbolFont = cf.symbolFontRef() ? getFont(cf.symbolFontRef()) : nullptr;
+    if (!symbolFont) {
+        symbolFont = getFont(cf.fontRef());
+    }
+    const bool isSymbolEncodedRun = isSymbolFontFamily(fontEntityName(symbolFont));
+
     KoGenStyle style(KoGenStyle::TextAutoStyle, "text");
     style.setAutoStyleInStylesDotXml(out.stylesxml);
-    defineTextProperties(style, cf, nullptr, nullptr, si, isSymbol);
+    defineTextProperties(style, cf, nullptr, nullptr, si, isSymbol, isSymbolEncodedRun);
     text_span span(&out.xml);
     span.set_text_style_name(out.styles.insert(style));
 
@@ -2730,7 +2991,10 @@ int PptToOdp::processTextSpan(Writer &out, PptTextCFRun &cf, const MSO::TextCont
         }
     } else {
         int len = end - start;
-        const QString txt = text.mid(start, len).replace('\r', '\n').replace('\v', '\n');
+        QString txt = text.mid(start, len).replace('\r', '\n').replace('\v', '\n');
+        if (isSymbolEncodedRun) {
+            txt = decodeSymbolText(txt);
+        }
         if (!href.isNull()) {
             text_a a(span.add_text_a(urlFromArg(href)));
             addTextSpan(a, txt);
