@@ -22,6 +22,11 @@ target_link_libraries(calligra_filter_ppt2odp ppttoodplib komain)
 
 install(TARGETS calligra_filter_ppt2odp  DESTINATION ${KDE_INSTALL_PLUGINDIR}/calligra/formatfilters)
 
+add_library(calligra_filter_odp2ppt MODULE PptExport.cpp)
+target_include_directories(calligra_filter_odp2ppt PRIVATE ${KOPAGEAPP_INCLUDES})
+target_link_libraries(calligra_filter_odp2ppt komain kopageapp)
+install(TARGETS calligra_filter_odp2ppt DESTINATION ${KDE_INSTALL_PLUGINDIR}/calligra/formatfilters)
+
 if(SHOULD_BUILD_OKULAR_GENERATOR_PPT)
     kcoreaddons_add_plugin(okularGenerator_powerpoint_calligra
         INSTALL_NAMESPACE "okular_generators"

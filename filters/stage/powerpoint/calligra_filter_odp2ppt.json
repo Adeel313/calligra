@@ -1,0 +1,9 @@
+{
+    "KPlugin": {
+        "Name": "Microsoft PowerPoint Export Filter for Stage",
+        "ServiceTypes": ["Calligra/Filter"]
+    },
+    "X-KDE-Import": "application/vnd.oasis.opendocument.presentation",
+    "X-KDE-Export": "application/vnd.ms-powerpoint",
+    "X-KDE-Weight": 1
+}

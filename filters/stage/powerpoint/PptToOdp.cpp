@@ -10,6 +10,8 @@
 
 #include "PptToOdp.h"
 
+#include <algorithm>
+
 #include "ODrawToOdf.h"
 #include "PowerPointImport.h"
 #include "PptDebug.h"
@@ -2309,7 +2311,12 @@ QByteArray PptToOdp::createMeta()
 
         const MSO::PropertySet &ps = p->summaryInfo.propertySet.propertySet1;
 
-        for (uint i = 0; i < ps.numProperties; i++) {
+        // numProperties is not initialised when the optional SummaryInformation
+        // stream is absent (e.g. in files produced by our own PPT exporter),
+        // so bound the loop by the actual parsed property lists as well.
+        const uint propertyCount = std::min(ps.numProperties,
+                                            std::min(uint(ps.property.size()), uint(ps.propertyIdentifierAndOffset.size())));
+        for (uint i = 0; i < propertyCount; i++) {
             const QSharedPointer<CodePageString> &vt_lpstr = ps.property.at(i).vt_lpstr;
             if (vt_lpstr) {
                 switch (ps.propertyIdentifierAndOffset.at(i).propertyIdentifier) {

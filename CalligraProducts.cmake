@@ -161,6 +161,7 @@ calligra_define_product(FILTER_KPR_TO_ODP "KPresenter to ODP filter"  REQUIRES L
 calligra_define_product(FILTER_PPT_TO_ODP "PPT to OPD filter"  REQUIRES LIB_MSO LIB_KOMAIN)
 calligra_define_product(FILTER_PPTX_TO_ODP "PPTX to ODP filter"  REQUIRES LIB_KOMSOOXML LIB_KOODF2 LIB_KOMAIN)
 calligra_define_product(FILTER_ODP_TO_PPTX "ODP to PPTX filter" REQUIRES LIB_KOMAIN)
+calligra_define_product(FILTER_ODP_TO_PPT "ODP to PPT (binary) filter" REQUIRES LIB_KOMAIN)
 
 # Words filters
 calligra_define_product(FILTER_DOC_TO_ODT "DOC to ODT filter"  REQUIRES LIB_MSO LIB_KOMSOOXML LIB_KOMAIN)
@@ -261,7 +262,7 @@ calligra_define_productset(FILTERS_STAGE_IMPORT "All Stage import filters"
         FILTER_PPT_TO_ODP
         FILTER_PPTX_TO_ODP
 )
-calligra_define_productset(FILTERS_STAGE_EXPORT "All Stage export filters" OPTIONAL FILTER_ODP_TO_PPTX)
+calligra_define_productset(FILTERS_STAGE_EXPORT "All Stage export filters" OPTIONAL FILTER_ODP_TO_PPTX FILTER_ODP_TO_PPT)
 calligra_define_productset(FILTERS_STAGE "All Stage filters"
     OPTIONAL
         FILTERS_STAGE_IMPORT
