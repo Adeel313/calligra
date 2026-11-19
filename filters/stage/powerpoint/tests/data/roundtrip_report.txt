@@ -1,0 +1,65 @@
+Native binary .ppt round-trip benchmark
+============================================================
+
+[features_text]
+  speed (avg over 2 run(s)):
+    ppt -> odp (import)      :  0.064 s
+    odp -> ppt (export)      :  0.315 s
+    ppt -> odp (re-import)   :  0.064 s
+    full round-trip          :  0.444 s
+  fidelity (original vs round-tripped):
+    slides    : 5 -> 5
+    texts     : 40 -> 40
+    images    : 0 -> 0
+    text lost : none
+    text added: none
+    max geom drift: 0.000 cm
+    parse errors: 0
+  modify -> save -> compare:
+    edit: 'Text Feature Slide 1' -> 'Text Feature Slide 1 EDITED'
+    edit: frame x 9.965972mm -> 1.5cm
+    edited text present in saved file : True
+    original text absent in saved file: True
+    slides 5 -> 5, images 0 -> 0
+
+[features_images]
+  speed (avg over 2 run(s)):
+    ppt -> odp (import)      :  0.064 s
+    odp -> ppt (export)      :  0.340 s
+    ppt -> odp (re-import)   :  0.064 s
+    full round-trip          :  0.469 s
+  fidelity (original vs round-tripped):
+    slides    : 4 -> 4
+    texts     : 7 -> 7
+    images    : 7 -> 7
+    text lost : none
+    text added: none
+    max geom drift: 0.000 cm
+    parse errors: 0
+  modify -> save -> compare:
+    edit: 'Images Feature - Slide 1' -> 'Images Feature - Slide 1 EDITED'
+    edit: frame x 9.965972mm -> 1.5cm
+    edited text present in saved file : True
+    original text absent in saved file: True
+    slides 4 -> 4, images 7 -> 7
+
+[features_mixed]
+  speed (avg over 2 run(s)):
+    ppt -> odp (import)      :  0.064 s
+    odp -> ppt (export)      :  0.365 s
+    ppt -> odp (re-import)   :  0.064 s
+    full round-trip          :  0.494 s
+  fidelity (original vs round-tripped):
+    slides    : 6 -> 6
+    texts     : 16 -> 16
+    images    : 6 -> 6
+    text lost : none
+    text added: none
+    max geom drift: 0.000 cm
+    parse errors: 0
+  modify -> save -> compare:
+    edit: 'Mixed Feature Deck' -> 'Mixed Feature Deck EDITED'
+    edit: frame x 9.965972mm -> 1.5cm
+    edited text present in saved file : True
+    original text absent in saved file: True
+    slides 6 -> 6, images 6 -> 6

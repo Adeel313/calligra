@@ -10,20 +10,32 @@
 #include <KoPAPageBase.h>
 #include <KoShape.h>
 #include <KoShapeContainer.h>
+#include <KoShapeGroup.h>
+#include <KoShapeLayer.h>
+#include <KoShapePainter.h>
 #include <KoTextShapeDataBase.h>
+#include <styles/KoCharacterStyle.h>
 
 #include <KPluginFactory>
 
 #include <QBuffer>
+#include <QColor>
 #include <QCryptographicHash>
 #include <QFile>
+#include <QFont>
+#include <QHash>
+#include <QImage>
 #include <QList>
 #include <QPair>
 #include <QRectF>
 #include <QSaveFile>
 #include <QString>
+#include <QTextBlock>
+#include <QTextCharFormat>
 #include <QTextDocument>
+#include <QTextFormat>
 #include <QVariant>
+#include <QVector>
 
 #include <algorithm>
 #include <cstring>
@@ -94,6 +106,10 @@ static void writeU16(QByteArray &b, int p, quint16 v)
 static void writeU32(QByteArray &b, int p, quint32 v)
 {
     for (int i = 0; i < 4; ++i) b[p + i] = char((v >> (8 * i)) & 0xFF);
+}
+static void appendU16(QByteArray &b, quint16 v)
+{
+    Record::appendU16(b, v);
 }
 static void appendU32(QByteArray &b, quint32 v)
 {
@@ -322,11 +338,50 @@ static QByteArray buildCfb(const QList<CfbStream> &streams)
 // Slide content extraction
 // ---------------------------------------------------------------------------
 
-// A text run together with the bounding box of the shape that owns it,
+// Character formatting for one run of text.  Each field is only written to
+// the binary CF exception when it is actually present, so unset properties
+// fall back to the master/default style on import.
+struct CharFmt {
+    bool bold = false;
+    bool italic = false;
+    bool underline = false;
+    bool hasSize = false;
+    quint16 size = 0;             // points, 1..4000
+    bool hasColor = false;
+    quint8 red = 0, green = 0, blue = 0;
+    bool hasFont = false;
+    QString fontFamily;
+
+    bool operator==(const CharFmt &o) const
+    {
+        return bold == o.bold && italic == o.italic && underline == o.underline
+               && hasSize == o.hasSize && size == o.size
+               && hasColor == o.hasColor && red == o.red && green == o.green && blue == o.blue
+               && hasFont == o.hasFont && fontFamily == o.fontFamily;
+    }
+};
+
+// Paragraph formatting.  The alignment values match the legacy PPT
+// TextAlignment enum: 0 left, 1 centre, 2 right, 3 justify.
+struct ParaFmt {
+    int alignment = -1;           // -1 = not set
+    int start = 0;                // index into SlideText::text
+    int length = 0;               // including trailing CR, if any
+};
+
+struct TextSpan {
+    int start = 0;                // index into SlideText::text (UTF-16 units)
+    int length = 0;
+    CharFmt fmt;
+};
+
+// A text shape together with the bounding box of the shape that owns it,
 // in points (1/72 inch).  PowerPoint's binary format uses master units
 // (1/576 inch), so positions are multiplied by 8 when written.
 struct SlideText {
-    QString text;
+    QString text;                 // plain text, paragraphs separated by CR
+    QVector<TextSpan> spans;      // character-format runs covering the text
+    QVector<ParaFmt> paras;       // one entry per paragraph
     QRectF rect;
 };
 
@@ -350,40 +405,101 @@ struct ExportedImage {
     QByteArray rgbUid;
 };
 
+// Render an arbitrary shape into a PNG so visual content that has no native
+// binary-PPT representation (charts, tables, autoshapes, paths, connectors,
+// SVG/WMF images, ...) survives the round-trip as a picture instead of being
+// dropped entirely.  Rasterising is lossy for editability, but faithful to the
+// rendered appearance, which is the priority for a legacy binary format.
+static QByteArray rasterizeShape(KoShape *shape)
+{
+    if (!shape) return QByteArray();
+    const QSizeF shapeSize = shape->size();
+    if (shapeSize.isEmpty()) return QByteArray();
+    const QSize pixelSize(qBound(1, qRound(shapeSize.width() * 2.0), 8192),
+                          qBound(1, qRound(shapeSize.height() * 2.0), 8192));
+    QImage image(pixelSize, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    KoShapePainter painter;
+    painter.setShapes({shape});
+    painter.paint(image);
+    QByteArray data;
+    QBuffer buffer(&data);
+    if (!buffer.open(QIODevice::WriteOnly) || !image.save(&buffer, "PNG")) return QByteArray();
+    return data;
+}
+
+static SlideText extractSlideText(QTextDocument *doc, const QRectF &rect);
+
+static void addImageShape(KoShape *shape, const QByteArray &data, const QString &suffix,
+                          QList<SlideImage> &images)
+{
+    if (data.isEmpty()) return;
+    SlideImage img;
+    img.data = data;
+    img.suffix = suffix;
+    img.rgbUid = QCryptographicHash::hash(data, QCryptographicHash::Md5).left(16);
+    const QPointF pos = shape->absolutePosition(KoFlake::TopLeftCorner);
+    // Rasterised shapes are rendered from their local origin; use their own
+    // size/position rather than the (possibly larger) boundingRect.
+    img.rect = QRectF(pos, shape->size());
+    images.append(img);
+}
+
 static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<SlideImage> &images)
 {
+    if (!shape) return;
+
+    // Native picture payload.
+    bool handled = false;
     if (auto *imageData = qobject_cast<KoImageData *>(shape->userData())) {
         QByteArray data;
         QBuffer buffer(&data);
         QString suffix;
-        if (buffer.open(QIODevice::WriteOnly) && imageData->saveData(buffer)) {
+        if (buffer.open(QIODevice::WriteOnly) && imageData->saveData(buffer))
             suffix = imageData->suffix().toLower();
+        if (!data.isEmpty() && (suffix == QLatin1String("png") || suffix == QLatin1String("jpg")
+                                || suffix == QLatin1String("jpeg"))) {
+            addImageShape(shape, data,
+                          suffix == QLatin1String("png") ? QStringLiteral("png") : QStringLiteral("jpeg"),
+                          images);
+            handled = true;
         }
-        if (!data.isEmpty() && (suffix == QLatin1String("png") || suffix == QLatin1String("jpg") || suffix == QLatin1String("jpeg"))) {
-            SlideImage img;
-            img.data = data;
-            img.suffix = (suffix == QLatin1String("png")) ? QStringLiteral("png") : QStringLiteral("jpeg");
-            img.rgbUid = QCryptographicHash::hash(data, QCryptographicHash::Md5).left(16);
-            const QPointF pos = shape->absolutePosition(KoFlake::TopLeftCorner);
-            img.rect = QRectF(pos, shape->size());
-            images.append(img);
-        }
+        // Unsupported image formats (SVG, WMF, ...) fall through to rasterise.
     }
+
+    // Native text payload.  A text shape with no characters (e.g. an empty
+    // placeholder inside a picture frame) contributes nothing and must not be
+    // rasterised into a phantom image, so it is handled either way.
     if (auto *data = qobject_cast<KoTextShapeDataBase *>(shape->userData())) {
+        handled = true;
         if (QTextDocument *doc = data->document()) {
-            const QString t = doc->toPlainText().trimmed();
-            if (!t.isEmpty()) {
-                SlideText st;
-                st.text = t;
-                const QPointF pos = shape->absolutePosition(KoFlake::TopLeftCorner);
-                st.rect = QRectF(pos, shape->size());
-                texts.append(st);
-            }
+            const SlideText st = extractSlideText(doc,
+                QRectF(shape->absolutePosition(KoFlake::TopLeftCorner), shape->size()));
+            if (!st.text.isEmpty()) texts.append(st);
         }
     }
+
+    // Recurse into every container, not just layers/groups.  draw:custom-shape
+    // loads as a KoTosContainer (e.g. KoPathShape) whose text lives in a child
+    // text shape; skipping these children would silently drop all that text.
+    const int textsBefore = texts.size();
+    const int imagesBefore = images.size();
     if (auto *container = dynamic_cast<KoShapeContainer *>(shape)) {
-        for (KoShape *child : container->shapes()) collectShapeContent(child, texts, images);
+        for (KoShape *child : container->shapes())
+            collectShapeContent(child, texts, images);
     }
+    const bool childContent = texts.size() > textsBefore || images.size() > imagesBefore;
+
+    // Pure organisational containers have no visual representation of their
+    // own and must never be rasterised, even when empty.
+    if (dynamic_cast<KoShapeLayer *>(shape) || dynamic_cast<KoShapeGroup *>(shape)) return;
+
+    if (handled || childContent) return;
+
+    // A leaf shape with no native representation (chart, table, autoshape,
+    // connector, ...) has no editable equivalent in binary PPT.  Rasterise it
+    // as a picture so its visual content survives the round-trip.
+    addImageShape(shape, rasterizeShape(shape), QStringLiteral("png"), images);
 }
 
 static SlideInfo pageContent(KoPAPageBase *page)
@@ -411,6 +527,151 @@ static QByteArray toUtf16(const QString &s)
         out.append(char((c >> 8) & 0xFF));
     }
     return out;
+}
+
+static CharFmt charFormatFrom(const QTextCharFormat &fmt, const QFont &defaultFont)
+{
+    CharFmt cf;
+    cf.bold = fmt.fontWeight() >= QFont::DemiBold;
+    cf.italic = fmt.fontItalic();
+    // ODF keeps underline in Calligra's character properties; applyStyle()
+    // does not always lift it into QTextCharFormat::fontUnderline().
+    cf.underline = fmt.fontUnderline()
+        || (fmt.hasProperty(KoCharacterStyle::UnderlineStyle)
+            && fmt.intProperty(KoCharacterStyle::UnderlineStyle) != KoCharacterStyle::NoLineStyle);
+    const qreal pt = fmt.fontPointSize() > 0 ? fmt.fontPointSize() : defaultFont.pointSizeF();
+    if (pt > 0 && pt <= 4000) {
+        cf.hasSize = true;
+        cf.size = quint16(qRound(pt));
+    }
+    const QStringList families = fmt.fontFamilies().toStringList();
+    if (!families.isEmpty() && !families.first().isEmpty()) {
+        cf.hasFont = true;
+        cf.fontFamily = families.first();
+    } else if (!defaultFont.families().isEmpty() && !defaultFont.families().first().isEmpty()) {
+        cf.hasFont = true;
+        cf.fontFamily = defaultFont.families().first();
+    }
+    // A direct RGB colour is emitted with ColorIndexStruct::index = 0xFE,
+    // which the legacy importer reads back verbatim.
+    const QColor c = fmt.foreground().color();
+    if (c.isValid()) {
+        cf.hasColor = true;
+        cf.red = quint8(c.red());
+        cf.green = quint8(c.green());
+        cf.blue = quint8(c.blue());
+    }
+    return cf;
+}
+
+static int alignmentFrom(const QTextBlockFormat &fmt)
+{
+    // Qt6's AlignHorizontal_Mask also includes AlignAbsolute (0x10); strip it
+    // so "right" (AlignRight | AlignAbsolute) maps to the legacy value 2.
+    const int a = int(fmt.alignment()) & (Qt::AlignLeft | Qt::AlignRight
+                                           | Qt::AlignHCenter | Qt::AlignJustify);
+    switch (a) {
+    case Qt::AlignHCenter: return 1;
+    case Qt::AlignRight:   return 2;
+    case Qt::AlignJustify: return 3;
+    case Qt::AlignLeft:    return 0;
+    default:               return -1;
+    }
+}
+
+// Extract plain text plus per-run/per-paragraph formatting from a text shape.
+static SlideText extractSlideText(QTextDocument *doc, const QRectF &rect)
+{
+    SlideText st;
+    st.rect = rect;
+    if (!doc) return st;
+
+    // Build the untrimmed plain text (blocks separated by '\n', as
+    // QTextDocument::toPlainText() does) while recording fragment spans and
+    // paragraph starts in that same coordinate space.
+    QString raw;
+    QVector<TextSpan> rawSpans;
+    QVector<ParaFmt> rawParas;
+    QVector<int> rawParaStarts;
+    const QFont defaultFont = doc->defaultFont();
+
+    for (QTextBlock block = doc->begin(); block.isValid(); block = block.next()) {
+        if (!raw.isEmpty()) raw += QLatin1Char('\n');
+        rawParaStarts.append(raw.size());
+        ParaFmt pf;
+        pf.alignment = alignmentFrom(block.blockFormat());
+        rawParas.append(pf);
+        for (QTextBlock::Iterator it = block.begin(); !it.atEnd(); ++it) {
+            const QTextFragment frag = it.fragment();
+            const QString ft = frag.text();
+            if (ft.isEmpty()) continue;
+            QTextCharFormat fmt = block.charFormat();
+            fmt.merge(frag.charFormat());
+            TextSpan span;
+            span.start = raw.size();
+            span.length = ft.size();
+            span.fmt = charFormatFrom(fmt, defaultFont);
+            rawSpans.append(span);
+            raw += ft;
+        }
+    }
+
+    // Trim leading/trailing whitespace, matching the previous
+    // toPlainText().trimmed() behaviour, then switch paragraph separators
+    // from LF to CR (the importer splits on [\v\r]).
+    int first = 0;
+    while (first < raw.size() && raw.at(first).isSpace()) ++first;
+    int last = raw.size();
+    while (last > first && raw.at(last - 1).isSpace()) --last;
+    st.text = raw.mid(first, last - first);
+    for (int i = 0; i < st.text.size(); ++i) {
+        if (st.text.at(i) == QLatin1Char('\n')) st.text[i] = QLatin1Char('\r');
+    }
+
+    // Clip spans to the trimmed text.
+    for (const TextSpan &rs : rawSpans) {
+        const int s = qMax(rs.start, first);
+        const int e = qMin(rs.start + rs.length, last);
+        if (e <= s) continue;
+        TextSpan ts = rs;
+        ts.start = s - first;
+        ts.length = e - s;
+        st.spans.append(ts);
+    }
+    // Merge adjacent spans with identical formatting.
+    QVector<TextSpan> merged;
+    for (const TextSpan &ts : st.spans) {
+        if (!merged.isEmpty() && merged.last().start + merged.last().length == ts.start
+            && merged.last().fmt == ts.fmt) {
+            merged.last().length += ts.length;
+        } else {
+            merged.append(ts);
+        }
+    }
+    st.spans = merged;
+
+    // Recompute paragraph boundaries in the trimmed text and attach the
+    // matching alignment from the original block.
+    int p = 0;
+    for (int i = 0; i < st.text.size();) {
+        int j = i;
+        while (j < st.text.size() && st.text.at(j) != QLatin1Char('\r')) ++j;
+        if (j < st.text.size()) ++j; // include the separator in this run
+        const int rawIdx = i + first;
+        while (p + 1 < rawParaStarts.size() && rawParaStarts[p + 1] <= rawIdx) ++p;
+        ParaFmt pf = rawParas.value(p);
+        pf.start = i;
+        pf.length = j - i;
+        st.paras.append(pf);
+        i = j;
+    }
+    if (st.paras.isEmpty()) {
+        ParaFmt pf;
+        pf.start = 0;
+        pf.length = st.text.size();
+        st.paras.append(pf);
+    }
+    return st;
 }
 
 // ---------------------------------------------------------------------------
@@ -514,33 +775,153 @@ static Record buildPictureShape(const SlideImage &img)
 // Document stream construction
 // ---------------------------------------------------------------------------
 
-// The importer reads paragraph/character-format runs from StyleTextPropAtom
-// until their cumulative count exceeds the TextCharsAtom length.  If the
-// counts are left at the template values while the text is shortened, the
-// parser stops early, leaves the remaining runs unread, and the stream becomes
-// misaligned.  Rebuild the style atom with a single run pair whose counts are
-// len+1, preserving the formatting data of the template's first run.
-static void patchTextStyleAtom(Record *styleAtom, int originalChars, int newChars)
+// Build a TextPFException: a 32-bit PFMasks word followed by only the fields
+// whose mask bit is set, in the order the legacy parser expects.
+static QByteArray buildPFException(const ParaFmt &pf)
 {
-    QByteArray &p = styleAtom->payload;
-    // A PF run is 20 bytes (u32 count + 2 indent + 16 exception data).
-    // A CF run is 12 bytes (u32 count + 8 exception data).
-    int off = 0;
-    int cumulative = 0;
-    while (off + 20 <= p.size()) {
-        cumulative += int(readU32(p, off));
-        off += 20;
-        if (cumulative > originalChars) break;
+    quint32 masks = 0;
+    if (pf.alignment >= 0 && pf.alignment <= 3) masks |= (1u << 11); // align
+    QByteArray out;
+    appendU32(out, masks);
+    if (masks & (1u << 11)) appendU16(out, quint16(pf.alignment));
+    return out;
+}
+
+// Build a TextCFException: CFMasks, optional CFStyle, font size and a direct
+// RGB colour (ColorIndexStruct::index = 0xFE).
+static QByteArray buildCFException(const CharFmt &cf, const QHash<QString, quint16> &fonts)
+{
+    const bool style = cf.bold || cf.italic || cf.underline;
+    const bool font = cf.hasFont && fonts.contains(cf.fontFamily);
+    quint32 masks = 0;
+    if (cf.bold)      masks |= (1u << 0);
+    if (cf.italic)    masks |= (1u << 1);
+    if (cf.underline) masks |= (1u << 2);
+    if (font)         masks |= (1u << 16); // typeface
+    if (cf.hasSize)   masks |= (1u << 17);
+    if (cf.hasColor)  masks |= (1u << 18);
+    QByteArray out;
+    appendU32(out, masks);
+    if (style) {
+        quint16 st = 0;
+        if (cf.bold)      st |= 1;
+        if (cf.italic)    st |= 2;
+        if (cf.underline) st |= 4;
+        appendU16(out, st); // CFStyle: 10 style bits + pp9rt = 0
     }
-    if (off < 20 || off + 12 > p.size()) return;
-    const QByteArray pfData = p.mid(4, 16);
-    const QByteArray cfData = p.mid(off + 4, 8);
-    QByteArray rebuilt;
-    appendU32(rebuilt, quint32(newChars + 1));
-    rebuilt += pfData;
-    appendU32(rebuilt, quint32(newChars + 1));
-    rebuilt += cfData;
-    p = rebuilt;
+    if (font) appendU16(out, fonts.value(cf.fontFamily));
+    if (cf.hasSize) appendU16(out, cf.size);
+    if (cf.hasColor) {
+        out.append(char(cf.red));
+        out.append(char(cf.green));
+        out.append(char(cf.blue));
+        out.append(char(0xFE));
+    }
+    return out;
+}
+
+// Rebuild a StyleTextPropAtom payload with real per-paragraph and per-run
+// formatting.  The importer reads runs until their cumulative count exceeds
+// the TextCharsAtom length, so the final count of each list is padded to
+// guarantee that condition (and never reads past the atom).
+static QByteArray writeStyleAtomPayload(const SlideText &st, const QHash<QString, quint16> &fonts)
+{
+    const int textLen = st.text.size();
+    QByteArray pf, cf;
+
+    int pfSum = 0;
+    for (int i = 0; i < st.paras.size(); ++i) {
+        const ParaFmt &p = st.paras.at(i);
+        quint32 count = quint32(qMax(p.length, 1));
+        if (i == st.paras.size() - 1) count = quint32(qMax(textLen - pfSum + 1, 1));
+        appendU32(pf, count);
+        appendU16(pf, 0); // indentLevel
+        pf += buildPFException(p);
+        pfSum += int(count);
+    }
+    if (st.paras.isEmpty()) {
+        appendU32(pf, quint32(qMax(textLen + 1, 1)));
+        appendU16(pf, 0);
+        pf += buildPFException(ParaFmt());
+    }
+
+    // Character runs must cover every character including paragraph
+    // separators.  Extending each run to the next span's start keeps the
+    // importer's per-run capping from splitting a paragraph mid-way.
+    for (int i = 0; i < st.spans.size(); ++i) {
+        const TextSpan &sp = st.spans.at(i);
+        const int nextStart = (i + 1 < st.spans.size()) ? st.spans.at(i + 1).start : textLen + 1;
+        quint32 count = quint32(qMax(nextStart - sp.start, 1));
+        appendU32(cf, count);
+        cf += buildCFException(sp.fmt, fonts);
+    }
+    if (st.spans.isEmpty()) {
+        appendU32(cf, quint32(qMax(textLen + 1, 1)));
+        cf += buildCFException(CharFmt(), fonts);
+    }
+    return pf + cf;
+}
+
+// Minimal style atom for a deliberately empty text shape.
+static QByteArray emptyStyleAtomPayload()
+{
+    QByteArray out;
+    appendU32(out, 1); appendU16(out, 0); appendU32(out, 0); // PF run
+    appendU32(out, 1); appendU32(out, 0);                   // CF run
+    return out;
+}
+
+// Build the FontEntityAtom (0xFB7) payload for a font family name.
+static QByteArray fontEntityPayload(const QString &family)
+{
+    const QString name = family.left(31);
+    QByteArray out;
+    for (int i = 0; i < 32; ++i) {
+        const ushort ch = (i < name.size()) ? name.at(i).unicode() : 0;
+        out.append(char(ch & 0xFF));
+        out.append(char((ch >> 8) & 0xFF));
+    }
+    out.append(char(0)); out.append(char(0));
+    out.append(char(0x06)); out.append(char(0x10));
+    return out;
+}
+
+// Extend the document's FontCollectionContainer with every font family used
+// by the exported text, returning a family -> fontRef map.  The legacy
+// importer resolves CF typeface references as indices into this collection.
+static QHash<QString, quint16> prepareFontCollection(QList<Record> &doc, const QList<SlideInfo> &slides)
+{
+    QHash<QString, quint16> map;
+    Record *fc = findRecord(doc, 0x07D5);
+    if (!fc) return map;
+
+    quint16 next = 0;
+    for (const Record &entry : fc->children) {
+        if (entry.type != 0xFB7 || entry.payload.size() < 64) continue;
+        const QString name = QString::fromUtf16(
+            reinterpret_cast<const char16_t *>(entry.payload.constData()), 32)
+            .section(QLatin1Char('\0'), 0, 0);
+        map.insert(name, entry.inst);
+        next = qMax(next, quint16(entry.inst + 1));
+    }
+
+    for (const SlideInfo &slide : slides) {
+        for (const SlideText &st : slide.texts) {
+            for (const TextSpan &sp : st.spans) {
+                if (!sp.fmt.hasFont || sp.fmt.fontFamily.isEmpty()) continue;
+                if (map.contains(sp.fmt.fontFamily)) continue;
+                if (next > 128) continue;
+                Record entry;
+                entry.ver = 0;
+                entry.inst = next;
+                entry.type = 0xFB7;
+                entry.payload = fontEntityPayload(sp.fmt.fontFamily);
+                fc->children.append(entry);
+                map.insert(sp.fmt.fontFamily, next++);
+            }
+        }
+    }
+    return map;
 }
 
 // Patch the SmallRectStruct in a 0xF010 PptOfficeArtClientAnchor record.
@@ -574,10 +955,23 @@ static Record *findShapeForClientData(Record *root, Record *clientData)
     return nullptr;
 }
 
-static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<ExportedImage> &images)
+static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<ExportedImage> &images,
+                                const QSizeF &slideSize)
 {
     QList<Record> doc = parseRecords(QByteArray::fromRawData(
         reinterpret_cast<const char *>(kTemplateDocument), kTemplateDocumentLen), 0, kTemplateDocumentLen);
+
+    // Patch the DocumentAtom (0x03E9) slide size from the ODP page size.
+    // PointStruct x/y are signed 32-bit master units (1/576 inch); the ODP
+    // size is in points (1/72 inch), so multiply by 8.
+    if (Record *atom = findRecord(doc, 0x03E9); atom && atom->payload.size() >= 8) {
+        writeU32(atom->payload, 0, quint32(qRound(slideSize.width() * 8.0)));
+        writeU32(atom->payload, 4, quint32(qRound(slideSize.height() * 8.0)));
+    }
+
+    // Register every font family used by the text so CF typeface references
+    // resolve correctly on import.
+    const QHash<QString, quint16> fonts = prepareFontCollection(doc, slides);
 
     // Patch the Dgg's BStoreContainer (0xF001 inst=1) with one FBSE per image.
     if (!images.isEmpty()) {
@@ -672,9 +1066,8 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
             Record *styleAtom = findRecord(cd->children, 0x0FA1);
             if (!textAtom || !styleAtom) continue;
 
-            const int originalChars = textAtom->payload.size() / 2;
             textAtom->payload = toUtf16(st.text);
-            patchTextStyleAtom(styleAtom, originalChars, st.text.size());
+            styleAtom->payload = writeStyleAtomPayload(st, fonts);
             Record *anchor = findRecord(shape->children, 0xF010);
             patchShapeAnchor(anchor, st.rect);
         }
@@ -689,9 +1082,8 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
             Record *textAtom = findRecord(cd->children, 0x0FA0);
             Record *styleAtom = findRecord(cd->children, 0x0FA1);
             if (!textAtom || !styleAtom) continue;
-            const int originalChars = textAtom->payload.size() / 2;
             textAtom->payload.clear();
-            patchTextStyleAtom(styleAtom, originalChars, 0);
+            styleAtom->payload = emptyStyleAtomPayload();
         }
 
         // Add picture shapes for this slide's images into the shape group.
@@ -843,7 +1235,8 @@ KoFilter::ConversionStatus PptExport::convert(const QByteArray &from, const QByt
     for (KoPAPageBase *page : document->pages()) slides.append(pageContent(page));
 
     const QList<ExportedImage> images = registerImages(slides);
-    const QByteArray documentStream = buildDocument(slides, images);
+    const QSizeF slideSize = document->pages().first()->size();
+    const QByteArray documentStream = buildDocument(slides, images, slideSize);
     if (documentStream.isEmpty()) return StupidError;
 
     // Build the Pictures stream from the registered images.  The importer
