@@ -34,6 +34,8 @@ public:
     bool showSelections;
     bool showInlineObjectVisualization;
     bool showAnnotations;
+    /** True when painting for presentation or export rather than on screen. */
+    bool forPrint;
 };
 
 #endif /* KOSHAPEPAINTINGCONTEXT_H */
