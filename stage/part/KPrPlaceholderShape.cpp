@@ -20,7 +20,6 @@
 #include "KPrPlaceholderShape.h"
 
 #include <KoOdfWorkaround.h>
-#include <KoShapePaintingContext.h>
 #include <KoShapeSavingContext.h>
 #include <KoViewConverter.h>
 #include <KoXmlWriter.h>
@@ -47,12 +46,6 @@ KPrPlaceholderShape::~KPrPlaceholderShape()
 
 void KPrPlaceholderShape::paint(QPainter &painter, const KoViewConverter &converter, KoShapePaintingContext &paintcontext)
 {
-    // The prompt and its frame are editing affordances. Slide shows and
-    // exports render shapes with forPrint set; placeholders must stay invisible.
-    if (paintcontext.forPrint) {
-        return;
-    }
-
     QRectF rect(QPointF(0, 0), size());
     if (m_strategy) {
         m_strategy->paint(painter, converter, rect, paintcontext);
