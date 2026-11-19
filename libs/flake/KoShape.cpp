@@ -116,8 +116,12 @@ KoShapePrivate::~KoShapePrivate()
         manager->remove(q);
         manager->removeAdditional(q);
     }
-    delete userData;
+    // Tear down the application data before the user data. Application data may
+    // still need to read the shape's user data while being destroyed (for
+    // example a Words KWFrame cleans up the text root area, which clears the
+    // back-pointer stored in the shape's KoTextShapeData).
     delete appData;
+    delete userData;
     if (stroke && !stroke->deref())
         delete stroke;
     if (shadow && !shadow->deref())

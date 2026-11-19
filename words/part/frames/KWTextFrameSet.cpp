@@ -140,9 +140,12 @@ void KWTextFrameSet::cleanupShape(KoShape *shape)
             KoTextLayoutRootArea *rootArea = layoutRootAreas[i];
             if (rootArea->associatedShape() == shape) {
                 KoTextLayoutRootArea *prevRootArea = i >= 1 ? layoutRootAreas[i - 1] : 0;
+                // Detach before releasing: releaseAllAfter() deletes this root
+                // area (and every area after it), so touching it afterwards
+                // would write into freed memory.
+                rootArea->setAssociatedShape(nullptr);
                 rootAreaProvider()->releaseAllAfter(prevRootArea);
                 lay->removeRootArea(prevRootArea);
-                rootArea->setAssociatedShape(nullptr);
                 break;
             }
         }

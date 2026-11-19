@@ -286,12 +286,16 @@ KWPage KWDocument::insertPage(int afterPageNum, const QString &masterPageName)
 
     debugWords << "pageNumber=" << page.pageNumber();
 
+    // The page now exists in the page manager, so notify the views before doing
+    // anything else. Creating the frames below removes (and deletes) shapes,
+    // which repaints through the canvas and asks the view mode to map the new
+    // page's coordinates. If the view-mode page cache has not been updated yet
+    // it still only knows about the previous pages and asserts.
+    firePageSetupChanged();
+
     // Create the KWTextFrame's for the new KWPage
     KWFrameLayout *framelayout = frameLayout();
     framelayout->createNewFramesForPage(page.pageNumber());
-
-    // make sure we have updated the view before we do anything else
-    firePageSetupChanged();
 
     return page;
 }

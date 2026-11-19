@@ -441,4 +441,66 @@ void TestHeaderFooterLayout::testStableHeight()
     QCOMPARE(shape->minimumHeight(), qreal(20));
 }
 
+void TestHeaderFooterLayout::testRemoveHeaderFooterPolicy_data()
+{
+    testStableHeight_data();
+}
+
+// Removing the header/footer policy deletes the frame shape of the now unused
+// header/footer. That shape owns a root area whose back-pointer lives in the
+// shape's user data, so the deletion exercises KWTextFrameSet::cleanupShape()
+// and the shape/application-data teardown order. This used to free the shape's
+// user data first and then write into the already released root area, which
+// corrupted the heap (crash while opening DOCX files with many sections).
+void TestHeaderFooterLayout::testRemoveHeaderFooterPolicy()
+{
+    QFETCH(bool, header);
+    MockPart part;
+    KWDocument document(&part);
+    document.initEmpty();
+    KWPage page = document.pageManager()->page(1);
+    auto style = page.pageStyle();
+    if (header) style.setHeaderPolicy(Words::HFTypeUniform);
+    else style.setFooterPolicy(Words::HFTypeUniform);
+    document.relayout();
+
+    const auto type = header ? Words::OddPagesHeaderTextFrameSet : Words::OddPagesFooterTextFrameSet;
+    KWTextFrameSet *frames = nullptr;
+    for (auto *candidate : document.frameSets()) {
+        auto *text = qobject_cast<KWTextFrameSet *>(candidate);
+        if (text && text->textFrameSetType() == type) {
+            frames = text;
+            break;
+        }
+    }
+    QVERIFY(frames);
+    QVERIFY(!frames->shapes().isEmpty());
+    KoShape *shape = frames->shapes().first();
+    auto *data = qobject_cast<KoTextShapeData *>(shape->userData());
+    QVERIFY(data);
+
+    // Run the layout synchronously so the header/footer shape really gets an
+    // associated root area before we delete it.
+    auto *layout = qobject_cast<KoTextDocumentLayout *>(frames->document()->documentLayout());
+    QVERIFY(layout);
+    layout->layout();
+    QVERIFY(data->rootArea());
+
+    // Switching the policy off makes the next relayout delete the shape.
+    if (header) style.setHeaderPolicy(Words::HFTypeNone);
+    else style.setFooterPolicy(Words::HFTypeNone);
+    document.relayout();
+    QVERIFY(frames->shapes().isEmpty());
+
+    // A use-after-free in the cleanup path corrupts the allocator, which is
+    // detected by the next allocations.
+    for (int i = 0; i < 4096; ++i) {
+        auto *scratch = new QList<qreal>;
+        for (int j = 0; j < 32; ++j)
+            scratch->append(j);
+        delete scratch;
+    }
+    QVERIFY(document.pageCount() >= 1);
+}
+
 QTEST_MAIN(TestHeaderFooterLayout)

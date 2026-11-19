@@ -16,6 +16,8 @@ private Q_SLOTS:
     void testFloatingImageBounds();
     void testTypingBesideNewImage_data();
     void testTypingBesideNewImage();
+    void testRemoveHeaderFooterPolicy_data();
+    void testRemoveHeaderFooterPolicy();
 };
 
 #endif
