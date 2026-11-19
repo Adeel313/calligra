@@ -61,6 +61,7 @@ bool KoTosContainer::loadText(const KoXmlElement &element, KoShapeLoadingContext
     qreal autofitScale = 1.0;
     int autofitLineSpacingReduction = 0;
     bool shrinkToFit = false;
+    KoTextShapeDataBase::ResizeMethod resize = KoTextShapeDataBase::NoResize;
     {
         KoStyleStack &styleStack = context.odfLoadingContext().styleStack();
         styleStack.save();
@@ -76,6 +77,18 @@ bool KoTosContainer::loadText(const KoXmlElement &element, KoShapeLoadingContext
             if (fontScale > 0 && fontScale < 100000)
                 autofitScale = fontScale / 100000.0;
             autofitLineSpacingReduction = styleStack.property(KoXmlNS::calligra, "autofit-line-spacing-reduction").toInt();
+        }
+        // TextShape::loadStyle does this for draw:frame; a text-on-shape
+        // container takes a different loading path and lost the setting, so
+        // auto-grown custom shapes wrapped their text in Calligra even though
+        // the source (e.g. a binary PPT with wrapText=none) said not to.
+        const bool autoGrowWidth = styleStack.property(KoXmlNS::draw, "auto-grow-width") == "true";
+        const bool autoGrowHeight = styleStack.property(KoXmlNS::draw, "auto-grow-height") == "true";
+        if (autoGrowWidth) {
+            resize = autoGrowHeight ? KoTextShapeDataBase::AutoGrowWidthAndHeight
+                                    : KoTextShapeDataBase::AutoGrowWidth;
+        } else if (autoGrowHeight) {
+            resize = KoTextShapeDataBase::AutoGrowHeight;
         }
         styleStack.restore();
     }
@@ -108,6 +121,9 @@ bool KoTosContainer::loadText(const KoXmlElement &element, KoShapeLoadingContext
                 KoTextShapeDataBase::scaleFontSizes(document, autofitScale);
                 document->setUndoRedoEnabled(undoRedoEnabled);
                 document->setModified(modified);
+            }
+            if (loadOdf && !shrinkToFit) {
+                shapeData->setResizeMethod(resize);
             }
             if (loadOdf && shrinkToFit) {
                 // The text shape keeps the text inside the shape when it is

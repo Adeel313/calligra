@@ -95,7 +95,8 @@ public:
         ChangeTrackerId = 577297550, // Internal: Reserved for ChangeTracker
         FontYStretch = 577297551, // Internal: Ratio between Linux font pt size and Windows font height
         FontYStretchWithoutLeading, // Internal: Font height without external leading
-        FontYStretchIsFallback // Internal: The requested family was substituted, so keep the generic leading
+        FontYStretchIsFallback, // Internal: The requested family was substituted, so keep the generic leading
+        TextPosition ///< qreal percentage from ODF style:text-position
     };
 
     /// List of possible combine mode

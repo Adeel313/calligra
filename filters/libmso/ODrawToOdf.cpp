@@ -163,6 +163,14 @@ void ODrawToOdf::defineGraphicProperties(KoGenStyle &style, const DrawStyle &ds,
     style.addProperty("draw:auto-grow-height", ds.fFitShapeToText(), gt);
     // draw:auto-grow-width
     style.addProperty("draw:auto-grow-width", ds.fFitShapeToText() && ds.wrapText() == msowrapNone, gt);
+    // fo:wrap-option
+    // A shape whose text is set not to wrap must say so in ODF as well.  The
+    // auto-grow-width flag alone is not enough: without no-wrap, a narrow
+    // auto-grown shape wraps runs such as "β3" onto two lines, moving the
+    // subscript away from its base glyph.
+    if (ds.wrapText() == msowrapNone) {
+        style.addProperty("fo:wrap-option", "no-wrap", gt);
+    }
     // draw:blue
     // draw:caption-angle
     // draw:caption-angle-type
@@ -414,7 +422,6 @@ void ODrawToOdf::defineGraphicProperties(KoGenStyle &style, const DrawStyle &ds,
         style.addPropertyPt("fo:padding-right", EMU_TO_POINT(0x00016530), gt);
         style.addPropertyPt("fo:padding-bottom", EMU_TO_POINT(0x0000B298), gt);
     }
-    // fo:wrap-option
     // style:background-transparency
     // style:border-line-width
     // style:border-line-width-bottom

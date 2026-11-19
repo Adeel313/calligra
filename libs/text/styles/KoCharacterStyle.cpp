@@ -1741,16 +1741,19 @@ void KoCharacterStyle::loadOdfProperties(KoShapeLoadingContext &scontext)
         else if (textPosition.startsWith(QLatin1String("sub")))
             setVerticalAlignment(QTextCharFormat::AlignSubScript);
         else {
-            QRegularExpression re(QRegularExpression::anchoredPattern("(-?[\\d.]+)%.*"));
+            QRegularExpression re("^(-?[0-9]+(?:\\.[0-9]+)?)%");
             QRegularExpressionMatch match = re.match(textPosition);
             if (match.hasMatch()) {
-                int percent = match.captured(1).toInt();
-                if (percent > 0)
+                const qreal position = match.captured(1).toDouble();
+                if (position > 0)
                     setVerticalAlignment(QTextCharFormat::AlignSuperScript);
-                else if (percent < 0)
+                else if (position < 0)
                     setVerticalAlignment(QTextCharFormat::AlignSubScript);
                 else // set explicit to overwrite inherited text-position's
                     setVerticalAlignment(QTextCharFormat::AlignNormal);
+                // Keep the exact value: the vertical-alignment enum alone
+                // cannot distinguish 25% from 30% on export.
+                d->setProperty(TextPosition, position);
             }
         }
     }

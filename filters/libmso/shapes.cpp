@@ -34,7 +34,10 @@ using namespace writeodf;
 
 qint16 ODrawToOdf::normalizeRotation(qreal rotation)
 {
-    qint16 angle = ((qint16)rotation) % 360;
+    // Round rather than truncate: the matrix round-trip through radians can
+    // turn an exact 46-degree PPT rotation into 45.99997, and truncating that
+    // would visibly move rotated text boxes by a whole degree.
+    qint16 angle = qint16(qRound(rotation) % 360);
     if (angle < 0) {
         angle = angle + 360;
     }
@@ -67,6 +70,12 @@ QRectF ODrawToOdf::processRect(const quint16 shapeType, const qreal rotation, QR
 
     switch (shapeType) {
     case msosptNotPrimitive:
+    case msosptTextBox:
+        // A shape rotated close to a quarter turn stores its anchor in the
+        // rotated (portrait) orientation.  ODF writes the unrotated box plus
+        // a rotation transform, so width and height have to be exchanged.
+        // Text boxes need this too: without it, a horizontal word like "Time"
+        // gets a narrow box and wraps one character per line.
         if (((nrotation >= 45) && (nrotation < 135)) || ((nrotation >= 225) && (nrotation < 315))) {
             transform_anchor = true;
         }

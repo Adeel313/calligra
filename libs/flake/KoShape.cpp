@@ -1963,6 +1963,25 @@ void KoShape::loadOdfClipContour(const KoXmlElement &element, KoShapeLoadingCont
     }
 }
 
+namespace {
+// Real-world ODF producers (LibreOffice, Microsoft Office and Calligra) write
+// rotate()/skew() angles in radians without a unit, even though ODF 1.2 said
+// degrees; ODF 1.4 aligns the specification with that behaviour.  KoUnit
+// converts explicit units to degrees, so only unitless values need the
+// radians-to-degrees conversion before QTransform uses them.
+qreal parseOdfTransformAngle(const QString &value)
+{
+    const QString angle = value.simplified();
+    for (int i = 0; i < angle.length(); ++i) {
+        const QChar c = angle.at(i);
+        if (c.isLetter() && c.toLower() != QLatin1Char('e')) {
+            return KoUnit::parseAngle(angle);
+        }
+    }
+    return angle.toDouble() * 180.0 / M_PI;
+}
+} // namespace
+
 QTransform KoShape::parseOdfTransform(const QString &transform, KoShapeLoadingContext &context)
 {
     QTransform matrix;
@@ -1994,10 +2013,10 @@ QTransform KoShape::parseOdfTransform(const QString &transform, KoShapeLoadingCo
                 qreal y = KoUnit::parseValue(params[2]);
 
                 rotMatrix.translate(x, y);
-                rotMatrix.rotate(KoUnit::parseAngle(params[0], 0.0));
+                rotMatrix.rotate(parseOdfTransformAngle(params[0]));
                 rotMatrix.translate(x, y);
             } else {
-                rotMatrix.rotate(KoUnit::parseAngle(params[0], 0.0));
+                rotMatrix.rotate(parseOdfTransformAngle(params[0]));
             }
             matrix = matrix * rotMatrix;
         } else if (cmd == "translate") {
@@ -2023,7 +2042,7 @@ QTransform KoShape::parseOdfTransform(const QString &transform, KoShapeLoadingCo
             QPointF p = absolutePosition(KoFlake::TopLeftCorner);
             QTransform shearMatrix;
             shearMatrix.translate(p.x(), p.y());
-            shearMatrix.shear(tan(KoUnit::parseAngle(params[0], 0.0F) * M_PI / 180), 0.0F);
+            shearMatrix.shear(tan(parseOdfTransformAngle(params[0]) * M_PI / 180), 0.0F);
             shearMatrix.translate(-p.x(), -p.y());
             matrix = matrix * shearMatrix;
         } else if (cmd == "skewy") {
@@ -2033,7 +2052,7 @@ QTransform KoShape::parseOdfTransform(const QString &transform, KoShapeLoadingCo
             QPointF p = absolutePosition(KoFlake::TopLeftCorner);
             QTransform shearMatrix;
             shearMatrix.translate(p.x(), p.y());
-            shearMatrix.shear(0.0F, tan(KoUnit::parseAngle(params[0], 0.0F) * M_PI / 180));
+            shearMatrix.shear(0.0F, tan(parseOdfTransformAngle(params[0]) * M_PI / 180));
             shearMatrix.translate(-p.x(), -p.y());
             matrix = matrix * shearMatrix;
         } else if (cmd == "matrix") {

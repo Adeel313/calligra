@@ -50,6 +50,7 @@
 #include <QVector>
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 
 K_PLUGIN_FACTORY_WITH_JSON(PptExportFactory, "calligra_filter_odp2ppt.json", registerPlugin<PptExport>();)
@@ -367,13 +368,18 @@ struct CharFmt {
     quint8 red = 0, green = 0, blue = 0;
     bool hasFont = false;
     QString fontFamily;
+    // TextCFException::position, in percent.  The legacy field is a signed
+    // 16-bit value but Calligra's parser only accepts -100..100.
+    bool hasPosition = false;
+    qint16 position = 0;
 
     bool operator==(const CharFmt &o) const
     {
         return bold == o.bold && italic == o.italic && underline == o.underline
                && hasSize == o.hasSize && size == o.size
                && hasColor == o.hasColor && red == o.red && green == o.green && blue == o.blue
-               && hasFont == o.hasFont && fontFamily == o.fontFamily;
+               && hasFont == o.hasFont && fontFamily == o.fontFamily
+               && hasPosition == o.hasPosition && position == o.position;
     }
 };
 
@@ -425,6 +431,9 @@ struct SlideText {
     QVector<TextSpan> spans;      // character-format runs covering the text
     QVector<ParaFmt> paras;       // one entry per paragraph
     QRectF rect;
+    bool noWrap = false;          // PPT WrapText == wrNone (auto-grow width)
+    bool autoGrow = false;        // PPT fFitShapeToText
+    qreal rotation = 0;           // clockwise degrees, as stored by binary PPT
 };
 
 struct SlideImage {
@@ -528,8 +537,36 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
     if (auto *data = qobject_cast<KoTextShapeDataBase *>(shape->userData())) {
         handled = true;
         if (QTextDocument *doc = data->document()) {
-            const SlideText st = extractSlideText(doc,
-                QRectF(shape->absolutePosition(KoFlake::TopLeftCorner), shape->size()));
+            QRectF rect(shape->absolutePosition(KoFlake::TopLeftCorner), shape->size());
+            // ODF stores the unrotated box plus a transform.  PowerPoint stores
+            // the box in the shape's own (unrotated) coordinate system, so use
+            // the transformed centre and the original size to recover it.
+            const qreal shapeRotation = shape->rotation();
+            qreal pptRotation = 0;
+            if (std::isfinite(shapeRotation) && qAbs(shapeRotation) > 1e-6) {
+                pptRotation = -shapeRotation;
+                while (pptRotation < 0) pptRotation += 360;
+                while (pptRotation >= 360) pptRotation -= 360;
+                // The importer writes rotate() with only six significant
+                // digits, so an exact 46 degrees comes back as 45.99997.
+                // Snap only near-integer values; genuine fractional rotations
+                // are left untouched.
+                const qreal snapped = qRound(pptRotation);
+                if (qAbs(pptRotation - snapped) < 1e-3) pptRotation = snapped;
+                const QPointF center = shape->absolutePosition(KoFlake::CenteredPosition);
+                rect.moveTopLeft(center - QPointF(shape->size().width() / 2,
+                                                  shape->size().height() / 2));
+            }
+            SlideText st = extractSlideText(doc, rect);
+            st.rotation = pptRotation;
+            // draw:auto-grow-width in ODF comes from the PPT's no-wrap flag.
+            // Carry it back so narrow text shapes keep their runs on one line.
+            const KoTextShapeDataBase::ResizeMethod resize = data->resizeMethod();
+            st.noWrap = resize == KoTextShapeDataBase::AutoGrowWidth
+                        || resize == KoTextShapeDataBase::AutoGrowWidthAndHeight;
+            st.autoGrow = resize == KoTextShapeDataBase::AutoGrowWidth
+                          || resize == KoTextShapeDataBase::AutoGrowHeight
+                          || resize == KoTextShapeDataBase::AutoGrowWidthAndHeight;
             if (!st.text.isEmpty()) texts.append(st);
         }
     }
@@ -647,6 +684,28 @@ static CharFmt charFormatFrom(const QTextCharFormat &fmt, const QFont &defaultFo
     if (pt > 0 && pt <= 4000) {
         cf.hasSize = true;
         cf.size = quint16(qRound(pt));
+    }
+    // ODF's style:text-position is imported into QTextCharFormat as a
+    // vertical alignment plus an exact percentage property.  Prefer the
+    // exact value so a -25% subscript does not become -30% on export.
+    if (fmt.hasProperty(KoCharacterStyle::TextPosition)) {
+        cf.hasPosition = true;
+        cf.position = qint16(qBound(-100,
+                                    qRound(fmt.property(KoCharacterStyle::TextPosition).toDouble()),
+                                    100));
+    } else {
+        switch (fmt.verticalAlignment()) {
+        case QTextCharFormat::AlignSuperScript:
+            cf.hasPosition = true;
+            cf.position = 30;
+            break;
+        case QTextCharFormat::AlignSubScript:
+            cf.hasPosition = true;
+            cf.position = -30;
+            break;
+        default:
+            break;
+        }
     }
     const QStringList families = fmt.fontFamilies().toStringList();
     if (!families.isEmpty() && !families.first().isEmpty()) {
@@ -1075,6 +1134,7 @@ static QByteArray buildCFException(const CharFmt &cf, const QHash<QString, quint
     if (font)         masks |= (1u << 16); // typeface
     if (cf.hasSize)   masks |= (1u << 17);
     if (cf.hasColor)  masks |= (1u << 18);
+    if (cf.hasPosition) masks |= (1u << 19);
     QByteArray out;
     appendU32(out, masks);
     if (style) {
@@ -1092,6 +1152,7 @@ static QByteArray buildCFException(const CharFmt &cf, const QHash<QString, quint
         out.append(char(cf.blue));
         out.append(char(0xFE));
     }
+    if (cf.hasPosition) appendU16(out, quint16(cf.position));
     return out;
 }
 
@@ -1224,6 +1285,75 @@ static void patchShapeAnchor(Record *anchor, const QRectF &rect)
     writeU16(anchor->payload, 2, quint16(left));
     writeU16(anchor->payload, 4, quint16(right));
     writeU16(anchor->payload, 6, quint16(bottom));
+}
+
+// Encode a legacy OfficeArtFOPTE FixedPoint rotation.  The integral part is
+// the signed high word and the fractional part is the low word (1/65536 deg).
+static quint32 fixedPointFromDegrees(qreal degrees)
+{
+    qint16 whole = qint16(qFloor(degrees));
+    quint16 fraction = quint16(qRound((degrees - whole) * 65536.0));
+    if (fraction == 0x10000) {
+        ++whole;
+        fraction = 0;
+    }
+    return (quint32(quint16(whole)) << 16) | fraction;
+}
+
+static quint32 shapeFopt(Record *shape, quint16 opid)
+{
+    if (!shape) return 0;
+    const Record *fopt = findRecord(shape->children, 0xF00B);
+    if (!fopt) return 0;
+    const QByteArray &pl = fopt->payload;
+    for (int off = 0; off + 6 <= pl.size(); off += 6) {
+        if ((readU16(pl, off) & 0x3FFF) == opid) return readU32(pl, off + 2);
+    }
+    return 0;
+}
+
+// Set a simple OfficeArtFOPTE property, keeping the record's entries ordered
+// by opid as readers expect.
+static void setShapeFopt(Record *shape, quint16 opid, quint32 value)
+{
+    if (!shape) return;
+    Record *fopt = findRecord(shape->children, 0xF00B);
+    if (!fopt) return;
+
+    QVector<QPair<quint16, quint32>> entries;
+    const QByteArray &pl = fopt->payload;
+    for (int off = 0; off + 6 <= pl.size(); off += 6) {
+        const quint16 op = readU16(pl, off);
+        if ((op & 0x3FFF) == opid) continue;
+        entries.append(qMakePair(op, readU32(pl, off + 2)));
+    }
+    entries.append(qMakePair(opid, value));
+    std::sort(entries.begin(), entries.end(),
+              [](const QPair<quint16, quint32> &a, const QPair<quint16, quint32> &b) {
+                  return (a.first & 0x3FFF) < (b.first & 0x3FFF);
+              });
+
+    QByteArray out;
+    for (const auto &entry : entries) {
+        appendU16(out, entry.first);
+        appendU32(out, entry.second);
+    }
+    fopt->payload = out;
+    fopt->inst = quint16(entries.size());
+}
+
+// The tiny.ppt template's placeholder text shapes carry a green fill and a
+// dark-green outline.  Those are template decorations, not ODF properties, so
+// every exported text box inherited them.  Clear them by selecting the
+// "background" fill type (msofillBackground == 9) and explicitly disabling
+// the line (LineStyleBooleanProperties fLine + its validity flag).
+static void neutralizeTextShapeStyle(Record *shape)
+{
+    if (!shape) return;
+    setShapeFopt(shape, 0x0180, 9); // FillStyle::fillType
+    const quint32 lineBits = shapeFopt(shape, 0x01FF);
+    setShapeFopt(shape, 0x01FF,
+                 (lineBits | (1u << 19)) & ~(1u << 3)); // fUsefLine set, fLine clear
 }
 
 // Find the OffArtSpContainer that directly owns a given 0xF00D client-data
@@ -1507,6 +1637,16 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
             textAtom->payload = toUtf16(st.text);
             styleAtom->payload = writeStyleAtomPayload(st, fonts);
             patchShapeAnchor(findRecord(shape.children, 0xF010), st.rect);
+            neutralizeTextShapeStyle(&shape);
+            setShapeFopt(&shape, 0x0004, fixedPointFromDegrees(st.rotation));
+            setShapeFopt(&shape, 0x0085, st.noWrap ? 2u : 0u);
+            // TextBooleanProperties (0xBF): fFitShapeToText (bit 1) and its
+            // validity flag fUsefFitShapeToText (bit 17) preserve ODF's
+            // draw:auto-grow-width/height across the binary round-trip.
+            const quint32 textBits = shapeFopt(&shape, 0x00BF);
+            const quint32 fitMask = (1u << 1) | (1u << 17);
+            setShapeFopt(&shape, 0x00BF, st.autoGrow ? (textBits | fitMask)
+                                                     : (textBits & ~fitMask));
         }
 
         // The template slide carries its own sample text.  Clear any text

@@ -1570,10 +1570,18 @@ void PptToOdp::defineTextProperties(KoGenStyle &style,
         debugPpt << "DEBUG END: FontEntityAtom";
 #endif
         const QString name = fontEntityName(font);
-        // The run's text has already been decoded to Unicode.  Keeping the
-        // symbol font here would make the decoded glyphs render as Latin
-        // characters again (the proprietary Symbol font is usually absent).
-        if (!isSymbolEncoded) {
+        // Text from a legacy Symbol-encoded run has been decoded to real
+        // Unicode in processTextSpan().  Leaving the Symbol font on the style
+        // would make those code points render as unrelated Latin glyphs (or
+        // not at all), and the proprietary font is normally not installed.
+        // Specify a Unicode math font explicitly instead of relying on
+        // inheritance: paragraph styles can still carry the Symbol family.
+        if (isSymbolFontFamily(name) || isSymbolEncoded) {
+            style.addProperty("fo:font-family", QLatin1String("OpenSymbol"), text);
+            // The decoded text uses the normal Unicode cmap, not the Symbol
+            // font's private character set.
+            isSymbolFont = false;
+        } else {
             style.addProperty("fo:font-family", name, text);
         }
     }
