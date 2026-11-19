@@ -257,9 +257,14 @@ protected:
     void readWrapAttrs();
 
     bool m_createSectionStyle;
+    //! Number of paragraphs written in the document body so far.
+    int m_bodyParagraphCount;
     QString m_currentSectionStyleName;
     QByteArray m_currentSectionStyleFamily;
     bool m_createSectionToNext;
+    //! True while reading the document's final (body-level) sectPr. There is
+    //! no following section to break to, so no fo:break-before is emitted.
+    bool m_bodySectionProperties;
     //! True when the next section starts on a new page (nextPage/oddPage/
     //! evenPage).  Master pages are deduplicated, so consecutive sections
     //! with identical page layout would otherwise merge into one and lose

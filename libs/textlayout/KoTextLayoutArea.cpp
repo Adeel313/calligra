@@ -47,6 +47,7 @@
 #include <TextLayoutDebug.h>
 
 #include <QFontMetrics>
+#include <QFontMetricsF>
 #include <QRegularExpression>
 #include <QStyle>
 #include <QTextCursor>
@@ -966,6 +967,32 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
 
     option.setUseDesignMetrics(true);
 
+    if (pStyle.alignment() == Qt::AlignJustify) {
+        // Word permits roughly a quarter of a space to be absorbed when a
+        // justified line has to accept one more word. Qt only expands spaces,
+        // so pre-shrink them by that amount; the right margin still expands
+        // the line normally, but the break points now follow Word's rules.
+        QFont font = block.charFormat().font();
+        if (!font.pointSizeF()) {
+            font = pStyle.font();
+        }
+        const QFontMetricsF metrics(font, documentLayout()->paintDevice());
+        const qreal wordSpacing = -0.25 * metrics.horizontalAdvance(QLatin1Char(' '));
+
+        QVector<QTextLayout::FormatRange> ranges = layout->formats();
+        if (ranges.isEmpty()) {
+            QTextLayout::FormatRange range;
+            range.start = 0;
+            range.length = block.text().size();
+            range.format = block.charFormat();
+            ranges.append(range);
+        }
+        for (QTextLayout::FormatRange &range : ranges) {
+            range.format.setProperty(QTextCharFormat::FontWordSpacing, wordSpacing);
+        }
+        layout->setFormats(ranges);
+    }
+
     //==========
     // Drop caps
     //==========
@@ -1752,8 +1779,11 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
         if (useFontProperties) {
             // stretch line height to powerpoint size
             fontStretch = PresenterFontStretch;
-        } else if (style.hasProperty(KoCharacterStyle::FontYStretch)) {
-            // stretch line height to ms-word size
+        } else if (charFormat.hasProperty(KoCharacterStyle::FontYStretch)) {
+            // Empty paragraphs have no text fragment to read the font stretch
+            // from. Use the block's character format, otherwise a blank line
+            // is 1.24x shorter than the text lines around it and the whole
+            // page drifts upwards.
             fontStretch = fontHeightStretch(charFormat);
         }
         // An empty paragraph is still one text line: Word and LibreOffice give

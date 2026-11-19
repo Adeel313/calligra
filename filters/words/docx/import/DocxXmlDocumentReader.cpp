@@ -216,7 +216,9 @@ void DocxXmlDocumentReader::init()
     m_listFound = false;
     m_insideParagraph = false;
     m_createSectionStyle = false;
+    m_bodyParagraphCount = 0;
     m_createSectionToNext = false;
+    m_bodySectionProperties = false;
     m_sectionBreakPending = false;
     m_sectionPageNumberStart = 0;
     m_differentFirstPage = false;
@@ -359,6 +361,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_body()
                 counter = 0;
             }
             ++counter;
+            if (QUALIFIED_NAME_IS(sectPr)) m_bodySectionProperties = true;
             TRY_READ_IF(p)
             ELSE_TRY_READ_IF(del)
             ELSE_TRY_READ_IF(ins)
@@ -582,7 +585,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
         const QString sectionBreakBefore = (sectionContinuous || startsSectionWithTable) ? QStringLiteral("auto") : QStringLiteral("page");
         if (m_currentSectionHasContent) {
             sectionStyle->addAttribute("style:master-page-name", currentMasterPageName);
-            if (sectionBreakBefore == QLatin1String("page")) sectionStyle->addProperty("fo:break-before", sectionBreakBefore);
+            if (sectionBreakBefore == QLatin1String("page") && !m_bodySectionProperties) sectionStyle->addProperty("fo:break-before", sectionBreakBefore);
             if (m_sectionPageNumberStart > 0) {
                 sectionStyle->addProperty("style:page-number", QString::number(m_sectionPageNumberStart));
             }
@@ -590,12 +593,12 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
             // The section can end with several empty marker paragraphs. Defer
             // its page and master style until the first paragraph with content.
             m_pendingMasterPageName = currentMasterPageName;
-            if (sectionBreakBefore == QLatin1String("page")) m_pendingSectionBreakBefore = sectionBreakBefore;
+            if (sectionBreakBefore == QLatin1String("page") && !m_bodySectionProperties) m_pendingSectionBreakBefore = sectionBreakBefore;
             m_pendingSectionPageNumberStart = m_sectionPageNumberStart;
         }
     } else if (!m_currentSectionHasContent) {
         const bool startsSectionWithTable = m_currentSectionStyleFamily == QLatin1String("table");
-        if (!sectionContinuous && !startsSectionWithTable) m_pendingSectionBreakBefore = QStringLiteral("page");
+        if (!sectionContinuous && !startsSectionWithTable && !m_bodySectionProperties) m_pendingSectionBreakBefore = QStringLiteral("page");
         m_pendingSectionPageNumberStart = m_sectionPageNumberStart;
     }
     m_currentSectionHasContent = false;
@@ -2868,12 +2871,22 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
             QString paragraphXml;
             (void)textPBuf.releaseWriter(paragraphXml);
             const bool hasParagraphContent = paragraphXmlHasVisibleContent(paragraphXml);
+            // The document's first paragraph is the carrier for the section's
+            // page style. When it is empty it still occupies a line in Word, so
+            // keep its placeholder master page and let the final sectPr update
+            // this very style; moving the page style to the next paragraph
+            // would force an unwanted page break after the blank line.
+            const bool firstBodyParagraph = m_bodyParagraphCount == 0
+                && !m_insideTableCell && !m_headerActive && !m_footerActive;
             if (sectionStyleCandidate) {
-                if (hasParagraphContent) {
+                if (hasParagraphContent || firstBodyParagraph) {
+                    // The carrier style is now fixed: do not let a later
+                    // paragraph replace it as the section-style owner.
                     m_createSectionStyle = false;
                 } else {
                     m_currentParagraphStyle.removeAttribute("style:master-page-name");
                     sectionAdded = false;
+                    sectionStyleCandidate = false;
                 }
             }
             if (hasParagraphContent) {
@@ -2930,7 +2943,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
             // section, but it may also contain visible text (for example a
             // cover-page line followed by the section break). Keep that text
             // and only skip truly empty section markers.
-            if (standaloneBreak.isEmpty() && (!sectionStyleCandidate || hasParagraphContent) && (!m_createSectionToNext || hasParagraphContent)
+            if (standaloneBreak.isEmpty() && (!sectionStyleCandidate || hasParagraphContent || firstBodyParagraph) && (!m_createSectionToNext || hasParagraphContent)
                 && (!m_startToc || hasParagraphContent || m_endToc)) {
                 if (!m_pendingParagraphBreak.isEmpty()) {
                     m_currentParagraphStyle.addProperty("fo:break-before", m_pendingParagraphBreak);
@@ -3046,6 +3059,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
                     }
                 }
                 body->endElement(); // text:p or text:h
+                if (!m_insideTableCell && !m_headerActive && !m_footerActive)
+                    ++m_bodyParagraphCount;
                 if (m_endToc) {
                     finishToc();
                 }
