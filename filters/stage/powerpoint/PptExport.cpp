@@ -1538,6 +1538,7 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
     const int notesPersistBase = 5 + slides.size();
     QList<QByteArray> notesBlobs;
     QList<quint32> notesPersistIds;
+    int notesCount = 0;
     for (int si = 0; si < slides.size(); ++si) {
         if (!slides.at(si).hasNotes) {
             notesBlobs.append(QByteArray());
@@ -1545,7 +1546,14 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
             continue;
         }
         notesBlobs.append(buildNotesContainer(slides.at(si).notes, si, fonts).serialize());
-        notesPersistIds.append(quint32(notesPersistBase + notesBlobs.size() - 1));
+        // Persist IDs must be contiguous starting at notesPersistBase: the
+        // persist directory below registers notesPersistBase + i for i in
+        // [0, nNotes).  notesBlobs has one entry per slide, so using its size
+        // here would yield notesPersistBase + si and leave notes on later
+        // slides with an ID that is absent from the directory, making the
+        // importer drop them.
+        notesPersistIds.append(quint32(notesPersistBase + notesCount));
+        ++notesCount;
     }
 
     // Replace the template's single NotesPersistAtom with one per notes slide.

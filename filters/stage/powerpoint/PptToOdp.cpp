@@ -619,7 +619,12 @@ void PptToOdp::DrawClient::addTextStyles(const MSO::OfficeArtClientTextBox *clie
         QString className = getPresentationClass(cd->placeholderAtom.data());
         const TextContainer *tc = ppttoodp->getTextContainer(tb, cd);
 
-        if (className.isEmpty() || (!out.stylesxml && (!potentialPlaceholder || getText(tc).size()))) {
+        // A notes body holds real speaker text, so the general content.xml
+        // rule that drops the class from filled placeholders must not strip
+        // presentation:class="notes" -- without it ODF reload cannot find
+        // the notes text shape and the speaker notes disappear.
+        const bool notesBody = className == QLatin1String("notes");
+        if (className.isEmpty() || (!out.stylesxml && !notesBody && (!potentialPlaceholder || getText(tc).size()))) {
             className = getPresentationClass(tc);
             out.xml.addAttribute("presentation:placeholder", "false");
         } else {
@@ -756,6 +761,29 @@ bool PptToOdp::DrawClient::placeholderAllowed(const MSO::PlaceholderAtom *pa) co
             return false;
         }
     }
+    // Notes slide (or notes master): the body placeholder carries the
+    // speaker notes.  These placement ids are only valid on notes pages, so
+    // handle them before the presentation-slide geometry switch below.  If
+    // they are rejected here the frame is written without
+    // presentation:class="notes", and ODF reload puts its text into an
+    // ordinary shape instead of the notes text shape -- losing the notes on
+    // the next round-trip.
+    if (dc_data->notesSlide || dc_data->notesMasterSlide) {
+        switch (placementId) {
+        case PT_MasterNotesSlideImage:
+        case PT_NotesSlideImage:
+        case PT_MasterNotesBody:
+        case PT_NotesBody:
+        case PT_MasterDate:
+        case PT_MasterSlideNumber:
+        case PT_MasterFooter:
+        case PT_MasterHeader:
+            return true;
+        default:
+            return false;
+        }
+    }
+
     // Presentation Slide
     switch (geom) {
     case SL_TitleSlide:
