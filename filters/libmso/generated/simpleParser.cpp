@@ -3959,8 +3959,8 @@ void MSO::parseOfficeArtFSP(LEInputStream &in, OfficeArtFSP &_s)
     if (!(_s.rh.recVer == 0x2)) {
         throw IncorrectValueException(in.getPosition(), "_s.rh.recVer == 0x2");
     }
-    if (!(_s.rh.recInstance <= 202)) {
-        throw IncorrectValueException(in.getPosition(), "_s.rh.recInstance<= 202");
+    if (!(_s.rh.recInstance <= 4095)) {
+        throw IncorrectValueException(in.getPosition(), "_s.rh.recInstance<= 4095");
     }
     if (!(_s.rh.recType == 0x0F00A)) {
         throw IncorrectValueException(in.getPosition(), "_s.rh.recType == 0x0F00A");

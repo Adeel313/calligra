@@ -912,6 +912,9 @@ void ODrawToOdf::processDrawingObject(const OfficeArtSpContainer &o, Writer &out
         processPictureFrame(o, out);
         break;
     case msosptTextBox:
+    case msosptNil:
+        // PowerPoint 97 writers (including LibreOffice) use shapeType 0x0FFF
+        // for placeholder and text-box shapes.
         processTextBox(o, out);
         break;
     default:
