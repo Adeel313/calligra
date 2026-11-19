@@ -9,6 +9,7 @@
 */
 
 #include "PptToOdp.h"
+#include "PptTransitionMap.h"
 
 #include <algorithm>
 
@@ -1469,7 +1470,8 @@ void PptToOdp::defineDrawingPageStyle(KoGenStyle &style,
                                       KoGenStyles &styles,
                                       ODrawToOdf &odrawtoodf,
                                       const MSO::HeadersFootersAtom *hf,
-                                      const MSO::SlideFlags *sf)
+                                      const MSO::SlideFlags *sf,
+                                      const MSO::SlideShowSlideInfoAtom *slideShowInfo)
 {
     const KoGenStyle::PropertyType dp = KoGenStyle::DrawingPageType;
 
@@ -1563,16 +1565,34 @@ void PptToOdp::defineDrawingPageStyle(KoGenStyle &style,
     if (hf) {
         style.addProperty("presentation:display-page-number", hf->fHasSlideNumber, dp);
     }
-    // presentation:duration
+    // Slide transition (SlideShowSlideInfoAtom, 0x03F9).  Advance mode is
+    // mapped to presentation:transition-type and presentation:duration; the
+    // effect to the smil:* draw-page properties understood by Stage.
+    if (slideShowInfo) {
+        const bool autoAdvance = slideShowInfo->fAutoAdvance;
+        const bool manualAdvance = slideShowInfo->fManualAdvance;
+        if (autoAdvance) {
+            style.addProperty("presentation:transition-type",
+                              manualAdvance ? "semi-automatic" : "automatic", dp);
+            style.addProperty("presentation:duration",
+                              QStringLiteral("PT%1S").arg(slideShowInfo->slidetime / 1000.0), dp);
+        }
+        if (slideShowInfo->effectType != 0 && slideShowInfo->effectType != 255) {
+            const auto mapped = PptTransition::toOdf(slideShowInfo->effectType,
+                                                     slideShowInfo->effectDirection);
+            if (!mapped.type.isEmpty()) {
+                style.addProperty("smil:type", mapped.type, dp);
+                style.addProperty("smil:subtype", mapped.subtype, dp);
+                style.addProperty("smil:dur", PptTransition::secondsFromSpeed(slideShowInfo->speed), dp);
+                if (mapped.reverse) style.addProperty("smil:direction", "reverse", dp);
+            }
+        }
+    }
     // presentation:transition-speed
     // presentation:transition-style
-    // presentation:transition-type
     // presentation:visibility
     // svg:fill-rule
-    // smil:direction
     // smil:fadeColor
-    // smil:subtype
-    // smil:type
 } // end defineDrawingPageStyle()
 
 void PptToOdp::defineListStyle(KoGenStyle &style,
@@ -2042,7 +2062,8 @@ void PptToOdp::defineAutomaticDrawingPageStyles(KoGenStyles &styles)
         // OfficeArtDggContainer has to be ignored
         DrawStyle ds(nullptr, masterSlideShape, slideShape);
         drawclient.setDrawClientData(m, sc, nullptr, nullptr);
-        defineDrawingPageStyle(dp, ds, styles, odrawtoodf, &hf, &sc->slideAtom.slideFlags);
+        defineDrawingPageStyle(dp, ds, styles, odrawtoodf, &hf, &sc->slideAtom.slideFlags,
+                               sc->slideShowSlideInfoAtom.data());
         drawingPageStyles[sc] = styles.insert(dp, "dp");
     }
 

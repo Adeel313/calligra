@@ -1,7 +1,15 @@
 /* SPDX-License-Identifier: LGPL-2.0-or-later */
 #include "PptExport.h"
+#include "PptExportNotesTemplate.h"
 #include "PptExportTemplate.h"
+#include "PptTransitionMap.h"
 
+#include <KPrNotes.h>
+#include <KPrPage.h>
+#include <KPrPageApplicationData.h>
+#include <pageeffects/KPrPageEffect.h>
+
+#include <KoColorBackground.h>
 #include <KoDocument.h>
 #include <KoFilterChain.h>
 #include <KoFlake.h>
@@ -430,6 +438,19 @@ struct SlideImage {
 struct SlideInfo {
     QList<SlideText> texts;
     QList<SlideImage> images;
+    bool hasNotes = false;
+    SlideText notes;
+    // Transition fields, populated from KPrPageApplicationData.
+    quint8 effectType = 0;      // binary MS-PPT effectType
+    quint8 effectDirection = 0; // binary MS-PPT effectDirection
+    quint8 speed = 0;           // 0=0.75s, 1=0.5s, 2=0.25s
+    quint32 advanceMs = 0;      // auto-advance delay
+    bool manualAdvance = true;
+    bool autoAdvance = false;
+    bool hasTransition = false;
+    // Solid slide background colour (only present when explicitly set).
+    bool hasBackground = false;
+    quint8 bgRed = 0, bgGreen = 0, bgBlue = 0;
 };
 
 // Images shared by all slides, indexed starting at pib=1.
@@ -539,11 +560,60 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
 static SlideInfo pageContent(KoPAPageBase *page)
 {
     SlideInfo info;
+
+    // A solid drawing-page fill in the ODP becomes a KoColorBackground on the
+    // page.  Carry it into the legacy PPT background shape's FOPT properties.
+    if (auto *solid = dynamic_cast<KoColorBackground *>(page->background().data())) {
+        const QColor color = solid->color();
+        if (color.isValid() && color.alpha() > 0) {
+            info.hasBackground = true;
+            info.bgRed = quint8(color.red());
+            info.bgGreen = quint8(color.green());
+            info.bgBlue = quint8(color.blue());
+        }
+    }
+
     for (KoShape *shape : page->shapes()) collectShapeContent(shape, info.texts, info.images);
     if (info.texts.isEmpty()) {
         SlideText empty;
         empty.rect = QRectF(0, 0, 100, 20);
         info.texts.append(empty);
+    }
+
+    // Speaker notes live on Stage's KPrPage, not on the generic page.  Reuse
+    // the same text extraction as slide shapes so notes formatting survives.
+    if (auto *stagePage = dynamic_cast<KPrPage *>(page)) {
+        KPrNotes *notes = stagePage->pageNotes();
+        KoShape *notesShape = notes ? notes->textShape() : nullptr;
+        auto *notesData = notesShape ? qobject_cast<KoTextShapeDataBase *>(notesShape->userData()) : nullptr;
+        QTextDocument *notesDoc = notesData ? notesData->document() : nullptr;
+        if (notesDoc && !notesDoc->toPlainText().trimmed().isEmpty()) {
+            info.hasNotes = true;
+            info.notes = extractSlideText(notesDoc, QRectF());
+        }
+
+        // Slide transition / advance mode.  Only effects with an exact binary
+        // PPT mapping are exported; unmapped effects stay at effectType=Cut.
+        auto *data = dynamic_cast<KPrPageApplicationData *>(stagePage->applicationData());
+        if (data) {
+            const KPrPageTransition &tr = data->pageTransition();
+            const KPrPageEffect *effect = data->pageEffect();
+            const bool automatic = tr.type() != KPrPageTransition::Manual;
+            if (automatic || effect) {
+                info.hasTransition = true;
+                info.manualAdvance = (tr.type() != KPrPageTransition::Automatic);
+                info.autoAdvance = automatic;
+                info.advanceMs = automatic ? quint32(qMax(0, tr.milliseconds())) : 0;
+                if (effect) {
+                    const auto mapped = PptTransition::fromOdf(effect->smilType(),
+                                                                effect->smilSubType(),
+                                                                effect->reverse());
+                    info.effectType = mapped.effectType;
+                    info.effectDirection = mapped.direction;
+                    info.speed = PptTransition::speedFromSeconds(effect->duration() / 1000.0);
+                }
+            }
+        }
     }
     return info;
 }
@@ -1204,6 +1274,96 @@ static void neutralizeTextRulerMargins(Record &r)
     }
 }
 
+// A per-slide NotesContainer is built from a real PowerPoint-generated
+// template.  The only per-slide fields are the NotesAtom's slideIdRef and the
+// notes body shape's TextContainer (TextCharsAtom + StyleTextPropAtom).  Shape
+// IDs are made unique across slides so the drawing object table stays valid.
+static Record buildNotesContainer(const SlideText &notes, int slideIndex,
+                                  const QHash<QString, quint16> &fonts)
+{
+    QList<Record> list = parseRecords(QByteArray::fromRawData(
+        reinterpret_cast<const char *>(kNotesContainerTemplate), kNotesContainerTemplateLen), 0,
+        kNotesContainerTemplateLen);
+    Record container = list.isEmpty() ? Record() : list.first();
+
+    // NotesAtom: the id that SlideAtom::notesIdRef must point at.
+    if (Record *atom = findRecord(container.children, 0x03F1); atom && atom->payload.size() >= 4) {
+        writeU32(atom->payload, 0, 256 + quint32(slideIndex));
+    }
+
+    // Give every shape in the notes drawing a unique spid.  The F00A header's
+    // inst field encodes the shape type (msospt) and must be left untouched.
+    int spid = 40000 + slideIndex * 8;
+    for (Record *fsp : findAllRecords(container, 0xF00A)) {
+        if (fsp->payload.size() >= 4) writeU32(fsp->payload, 0, quint32(spid));
+        ++spid;
+    }
+
+    // Find the notes body shape's client textbox (0xF00D containing 0x0F9F)
+    // and inject the actual notes text and format runs.
+    for (Record *cd : findAllRecords(container, 0xF00D)) {
+        if (!findRecord(cd->children, 0x0F9F)) continue;
+        Record textAtom;
+        textAtom.ver = 0;
+        textAtom.type = 0x0FA0;
+        textAtom.payload = toUtf16(notes.text);
+        Record styleAtom;
+        styleAtom.ver = 0;
+        styleAtom.type = 0x0FA1;
+        styleAtom.payload = writeStyleAtomPayload(notes, fonts);
+        cd->children.append(textAtom);
+        cd->children.append(styleAtom);
+        break;
+    }
+    return container;
+}
+
+// Patch a cloned slide's background shape to a solid colour.  In binary PPT
+// the slide background is a dedicated OfficeArtSpContainer (0xF004) held
+// directly under the Drawing's OfficeArtDgContainer (0xF002), alongside the
+// 0xF003 group shape.  Its OfficeArtFOPT (0xF00B) stores fill properties as a
+// flat list of 6-byte FOPTE entries in ascending opid order; the number of
+// entries lives in the record header's inst field.  Adding FillType (0x0180,
+// msofillSolid) and FillColor (0x0181) makes the importer emit draw:fill /
+// draw:fill-color on the drawing-page style.
+static void setSlideBackground(Record &slide, quint8 r, quint8 g, quint8 b)
+{
+    QList<Record *> drawings = findAllRecords(slide, 0xF002);
+    if (drawings.isEmpty()) return;
+
+    Record *bgShape = nullptr;
+    for (Record &child : drawings.first()->children) {
+        if (child.type == 0xF004) { bgShape = &child; break; }
+    }
+    if (!bgShape) return;
+    Record *fopt = findRecord(bgShape->children, 0xF00B);
+    if (!fopt) return;
+
+    QList<QPair<quint16, quint32>> entries;
+    QByteArray &pl = fopt->payload;
+    for (int off = 0; off + 6 <= pl.size(); off += 6) {
+        const quint16 op = readU16(pl, off);
+        const quint16 opid = op & 0x3FFF;
+        if (opid != 0x0180 && opid != 0x0181)
+            entries.append(qMakePair(op, readU32(pl, off + 2)));
+    }
+    entries.append(qMakePair(quint16(0x0180), quint32(0))); // msofillSolid
+    const quint32 color = quint32(r) | (quint32(g) << 8) | (quint32(b) << 16);
+    entries.append(qMakePair(quint16(0x0181), color));
+
+    std::sort(entries.begin(), entries.end(),
+              [](const QPair<quint16, quint32> &a, const QPair<quint16, quint32> &b) {
+                  return (a.first & 0x3FFF) < (b.first & 0x3FFF);
+              });
+
+    pl.clear();
+    for (const auto &entry : entries) {
+        appendU16(pl, entry.first);
+        appendU32(pl, entry.second);
+    }
+    fopt->inst = quint16(entries.size());
+}
+
 static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<ExportedImage> &images,
                                 const QSizeF &slideSize)
 {
@@ -1270,8 +1430,35 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
 
     // Build output slide containers by cloning the template.
     QList<QByteArray> slideBlobs;
-    for (const SlideInfo &info : slides) {
+    for (int si = 0; si < slides.size(); ++si) {
+        const SlideInfo &info = slides.at(si);
         Record slide = *tplSlide;
+
+        // Link the slide to its notes container (0 when there are no notes).
+        // Also clear fMasterBackground when the ODP defines its own solid
+        // background; the importer otherwise inherits the master's fill and
+        // ignores the slide's background shape entirely.
+        if (Record *sa = findRecord(slide.children, 0x03EF); sa && sa->payload.size() >= 20) {
+            writeU32(sa->payload, 16, info.hasNotes ? (256 + quint32(si)) : 0);
+            if (info.hasBackground)
+                sa->payload[20] = char(quint8(sa->payload[20]) & ~0x04);
+        }
+
+        // Patch the slide's background shape with the ODP solid fill.
+        if (info.hasBackground)
+            setSlideBackground(slide, info.bgRed, info.bgGreen, info.bgBlue);
+
+        // Patch the template's SlideShowSlideInfoAtom (0x03F9) with the
+        // transition, advance mode and speed from the ODP page.
+        if (Record *si = findRecord(slide.children, 0x03F9); si && si->payload.size() >= 13) {
+            QByteArray &p = si->payload;
+            writeU32(p, 0, info.advanceMs);
+            p[8] = char(info.effectDirection);
+            p[9] = char(info.effectType);
+            p[10] = char(info.manualAdvance ? 1 : 0); // fManualAdvance
+            p[11] = char(info.autoAdvance ? 4 : 0);   // fAutoAdvance
+            p[12] = char(info.speed);
+        }
 
         // Re-find text shapes in the cloned slide (pointers into the clone).
         QList<Record *> textShapes;
@@ -1360,17 +1547,66 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
         slideBlobs.append(slide.serialize());
     }
 
-    // Assemble top-level stream: document container, master, notes, slides,
-    // handout, persist directory, user edit.  We keep the template's static
-    // records in order and substitute slides where the template slide was.
+    // Build one NotesContainer for every slide that has speaker notes.  The
+    // persist IDs are allocated after the slides and handout so they do not
+    // collide with the template's fixed IDs (1..5 and 6.. for extra slides).
+    const int notesPersistBase = 5 + slides.size();
+    QList<QByteArray> notesBlobs;
+    QList<quint32> notesPersistIds;
+    for (int si = 0; si < slides.size(); ++si) {
+        if (!slides.at(si).hasNotes) {
+            notesBlobs.append(QByteArray());
+            notesPersistIds.append(0);
+            continue;
+        }
+        notesBlobs.append(buildNotesContainer(slides.at(si).notes, si, fonts).serialize());
+        notesPersistIds.append(quint32(notesPersistBase + notesBlobs.size() - 1));
+    }
+
+    // Replace the template's single NotesPersistAtom with one per notes slide.
+    if (Record *notesList = findRecord(doc, 0x0FF0, 2); notesList && !notesList->children.isEmpty()) {
+        const Record tplNotesPersist = notesList->children.first();
+        notesList->children.clear();
+        for (int si = 0; si < slides.size(); ++si) {
+            if (!slides.at(si).hasNotes) continue;
+            Record np = tplNotesPersist;
+            if (np.payload.size() >= 16) {
+                writeU32(np.payload, 0, quint32(notesPersistIds.at(si)));
+                writeU32(np.payload, 12, 256 + quint32(si));
+            }
+            notesList->children.append(np);
+        }
+    }
+
+    // Assemble top-level stream: document container, master, notes master,
+    // slides..., handout, per-slide notes containers, persist directory,
+    // user edit.  We keep the template's static records in order and
+    // substitute slides where the template slide was.
     QList<QByteArray> topBlobs;
+    QList<quint16> topTypes;
+    QList<int> notesBlobIndices;
+    int handoutSeen = 0;
     for (Record &r : doc) {
         if (r.type == 0x03EE) {
-            for (const QByteArray &b : slideBlobs) topBlobs.append(b);
+            for (const QByteArray &b : slideBlobs) {
+                topBlobs.append(b);
+                topTypes.append(0x03EE);
+            }
         } else if (r.type == 0x1772 || r.type == 0x0FF5) {
             // rebuilt below
         } else {
             topBlobs.append(r.serialize());
+            topTypes.append(r.type);
+            if (r.type == 0x03F0 && ++handoutSeen == 2) {
+                // The second 0x03F0 is the handout master; append the
+                // per-slide notes containers right after it.
+                for (const QByteArray &b : notesBlobs) {
+                    if (b.isEmpty()) continue;
+                    notesBlobIndices.append(topBlobs.size());
+                    topBlobs.append(b);
+                    topTypes.append(0x03F0);
+                }
+            }
         }
     }
 
@@ -1382,34 +1618,32 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
         pos += quint32(b.size());
     }
 
-    // The top-level order is: document, master, notes, slides..., handout.
-    // Locate the first slide by its record type (0x3EE).
-    QList<quint16> topTypes;
-    for (Record &r : doc) {
-        if (r.type == 0x03EE) {
-            for (int k = 0; k < slideBlobs.size(); ++k) topTypes.append(0x03EE);
-        } else if (r.type != 0x1772 && r.type != 0x0FF5) {
-            topTypes.append(r.type);
-        }
-    }
     int firstSlideBlobIndex = topTypes.indexOf(0x03EE);
     if (firstSlideBlobIndex < 0) firstSlideBlobIndex = 3;
+    int handoutIndex = -1;
+    int notesSeen = 0;
+    for (int k = 0; k < topTypes.size(); ++k) {
+        if (topTypes.at(k) != 0x03F0) continue;
+        if (++notesSeen == 2) { handoutIndex = k; break; }
+    }
 
     // Persist directory.  The template's persist IDs are:
-    //   1=document, 2=master, 3=notes, 4=first slide, 5=handout,
-    //   6..=additional slides.  The SlidePersistAtoms above use the same
-    //   numbering, so the persist directory must be indexed by ID, not by
-    //   the order of records in the stream.
+    //   1=document, 2=master, 3=notes master, 4=first slide, 5=handout,
+    //   6..=additional slides.  Notes containers use IDs after all slides.
     const int nSlides = slideBlobs.size();
-    const int maxPersistId = 5 + nSlides - 1; // 4 + nSlides, with handout at 5
+    const int nNotes = notesBlobIndices.size();
+    const int maxPersistId = notesPersistBase + nNotes - 1;
     QList<quint32> persistOffsets(maxPersistId + 1, 0);
     persistOffsets[1] = 0;                                        // document
     persistOffsets[2] = offsets.value(1);                         // master
-    persistOffsets[3] = offsets.value(2);                         // notes
+    persistOffsets[3] = offsets.value(2);                         // notes master
     persistOffsets[4] = offsets.value(firstSlideBlobIndex);       // first slide
-    persistOffsets[5] = offsets.last();                           // handout
+    persistOffsets[5] = offsets.value(handoutIndex);              // handout
     for (int i = 1; i < nSlides; ++i) {
         persistOffsets[5 + i] = offsets.value(firstSlideBlobIndex + i); // extra slides: 6,7,...
+    }
+    for (int i = 0; i < nNotes; ++i) {
+        persistOffsets[notesPersistBase + i] = offsets.value(notesBlobIndices.at(i));
     }
 
     QByteArray pdPayload;
@@ -1434,7 +1668,7 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
     writeU32(uePayload, 8, 0);                            // offsetLastEdit
     writeU32(uePayload, 12, pdOffset);                    // offsetPersistDirectory
     writeU32(uePayload, 16, 1);                           // docPersistIdRef
-    writeU32(uePayload, 20, 100 + quint32(slides.size()));// persistIdSeed
+    writeU32(uePayload, 20, quint32(maxPersistId + 1));  // persistIdSeed
     writeU16(uePayload, 24, 1);                           // lastView
     writeU16(uePayload, 26, 0);                           // unused
     QByteArray ue;

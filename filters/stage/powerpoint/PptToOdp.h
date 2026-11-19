@@ -294,7 +294,8 @@ private:
                                 KoGenStyles &styles,
                                 ODrawToOdf &odrawtoodf,
                                 const MSO::HeadersFootersAtom *hf,
-                                const MSO::SlideFlags *sf = nullptr);
+                                const MSO::SlideFlags *sf = nullptr,
+                                const MSO::SlideShowSlideInfoAtom *slideShowInfo = nullptr);
 
     /* Extract data into the style of type ListAutoStyle/ListStyle */
     void defineListStyle(KoGenStyle &style,
