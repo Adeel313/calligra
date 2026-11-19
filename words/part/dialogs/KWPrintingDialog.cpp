@@ -32,12 +32,10 @@ KWPrintingDialog::KWPrintingDialog(KWDocument *document, KoShapeManager *shapeMa
 {
     setShapeManager(shapeManager);
 
-    // while (! m_document->layoutFinishedAtleastOnce()) {
-    //     QCoreApplication::processEvents();
-    //     if (! QCoreApplication::hasPendingEvents())
-    //         break;
-    // }
-    printer().setFromTo(documentFirstPage(), documentLastPage());
+    // The document layout is not necessarily finished when the print job is
+    // created. Freezing the printer's from/to range here makes KoPrintingDialog
+    // keep requesting page numbers that layout subsequently removes, so leave
+    // the range unset and let startPrinting() query the settled page numbers.
 }
 
 KWPrintingDialog::~KWPrintingDialog() = default;
@@ -123,7 +121,12 @@ QList<KoShape *> KWPrintingDialog::shapesOnPage(int pageNumber)
 {
     Q_ASSERT(pageNumber > 0);
     KWPage page = m_document->pageManager()->page(pageNumber);
-    Q_ASSERT(page.isValid());
+    if (!page.isValid()) {
+        // Layout may have dropped a page after the print range was captured.
+        // preparePage() and printPagePost() already tolerate that; do the same
+        // here instead of aborting the whole export.
+        return {};
+    }
     return shapeManager()->shapesAt(page.rect());
 }
 
