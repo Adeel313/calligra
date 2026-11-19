@@ -10,8 +10,8 @@ include_directories(
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${KDE4_ENABLE_EXCEPTIONS} -fPIC")
 
-add_library(ppttoodplib STATIC PptDebug.cpp PptToOdp.cpp ParsedPresentation.cpp DateTimeFormat.cpp pptstyle.cpp)
-target_link_libraries(ppttoodplib PUBLIC koodf mso)
+add_library(ppttoodplib STATIC PptDebug.cpp PptToOdp.cpp PptEquation.cpp ParsedPresentation.cpp DateTimeFormat.cpp pptstyle.cpp)
+target_link_libraries(ppttoodplib PUBLIC koodf mso PRIVATE ZLIB::ZLIB)
 
 add_executable(ppttoodp ppttoodpmain.cpp)
 target_link_libraries(ppttoodp ppttoodplib)

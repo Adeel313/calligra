@@ -4,6 +4,8 @@
    SPDX-License-Identifier: LGPL-2.0-or-later
 */
 #include "ParsedPresentation.h"
+
+#include <QtEndian>
 #include "PptDebug.h"
 #include "generated/leinputstream.h"
 
@@ -62,12 +64,13 @@ bool parseCurrentUserStream(POLE::Storage &storage, CurrentUserStream &cus)
     }
     return true;
 }
-bool parsePowerPointStructs(POLE::Storage &storage, PowerPointStructs &pps)
+bool parsePowerPointStructs(POLE::Storage &storage, PowerPointStructs &pps, QByteArray &rawRecords)
 {
     QBuffer buffer;
     if (!readStream(storage, "/PowerPoint Document", buffer)) {
         return false;
     }
+    rawRecords = buffer.data();
     LEInputStream stream(&buffer);
     try {
         parsePowerPointStructs(stream, pps);
@@ -184,7 +187,8 @@ bool ParsedPresentation::parse(POLE::Storage &storage)
     notesMaster = nullptr;
 
     // read the CurrentUserStream and PowerPointStructs
-    if (!parsePowerPointStructs(storage, presentation)) {
+    QByteArray rawRecords;
+    if (!parsePowerPointStructs(storage, presentation, rawRecords)) {
         debugPpt << "error parsing PowerPointStructs";
         return false;
     }
@@ -318,7 +322,32 @@ bool ParsedPresentation::parse(POLE::Storage &storage)
         }
     }
     // Part 8: Identify the ActiveX control persist objects
-    // Part 9: Identify the embedded OLE object persist objects
+    // Keep embedded payloads opaque. Stage renders the picture preview and
+    // uses these original records to restore the editable object on export.
+    if (documentContainer->exObjList) {
+        for (const auto &entry : documentContainer->exObjList->rgChildRec) {
+            const auto *embed = entry.anon.get<ExOleEmbedContainer>();
+            if (!embed) {
+                continue;
+            }
+            const quint32 storageOffset = persistDirectory.value(embed->exOleObjAtom.persistIdRef);
+            if (!storageOffset || storageOffset > rawRecords.size() - 8) {
+                continue;
+            }
+            const auto *storage = reinterpret_cast<const uchar *>(rawRecords.constData() + storageOffset);
+            const quint16 storageType = qFromLittleEndian<quint16>(storage + 2);
+            const quint32 storageLength = qFromLittleEndian<quint32>(storage + 4);
+            if (storageType != 0x1011 || storageLength > rawRecords.size() - storageOffset - 8) {
+                continue;
+            }
+            const qsizetype metaLength = qsizetype(embed->rh.recLen) + 8;
+            if (embed->streamOffset < 0 || metaLength > rawRecords.size() - embed->streamOffset) {
+                continue;
+            }
+            embeddedObjects.insert(embed->exOleObjAtom.exObjId,
+                                   rawRecords.mid(embed->streamOffset, metaLength) + rawRecords.mid(storageOffset, qsizetype(storageLength) + 8));
+        }
+    }
     // Part 10: Identify the linked OLE object persist objects
     // Part 11: Identify the VBA project persist object
     return true;

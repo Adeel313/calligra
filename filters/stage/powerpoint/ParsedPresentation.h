@@ -17,6 +17,7 @@ public:
     MSO::CurrentUserStream currentUserStream;
     MSO::PowerPointStructs presentation;
     MSO::PicturesStream pictures;
+    QMap<quint32, QByteArray> embeddedObjects;
     MSO::SummaryInformationPropertySetStream summaryInfo;
     // map persistObjectIds to stream offsets
     QMap<quint32, quint32> persistDirectory;

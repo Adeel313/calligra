@@ -22,7 +22,8 @@ FencedElement::FencedElement(BasicElement *parent)
 void FencedElement::paint(QPainter &painter, AttributeManager *am)
 {
     painter.setPen(Qt::NoPen);
-    painter.setBrush(am->colorOf("mathcolor", this));
+    const QColor color = am->colorOf("mathcolor", this);
+    painter.setBrush(color.isValid() ? color : QColor(Qt::black));
     painter.drawPath(m_fence);
 }
 

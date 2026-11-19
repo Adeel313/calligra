@@ -3,25 +3,39 @@
 #include "PptExportNotesTemplate.h"
 #include "PptExportTemplate.h"
 #include "PptTransitionMap.h"
+#include "msodraw.h"
 
 #include <KPrNotes.h>
 #include <KPrPage.h>
 #include <KPrPageApplicationData.h>
+#include <KPrPlaceholderShape.h>
 #include <pageeffects/KPrPageEffect.h>
 
 #include <KoColorBackground.h>
 #include <KoDocument.h>
+#include <KoEmbeddedDocumentSaver.h>
+#include <KoGenStyles.h>
 #include <KoFilterChain.h>
 #include <KoFlake.h>
 #include <KoImageData.h>
+#include <KoInlineTextObjectManager.h>
+#include <KoInsets.h>
 #include <KoPADocument.h>
+#include <KoPAMasterPage.h>
+#include <KoPAPage.h>
 #include <KoPAPageBase.h>
 #include <KoShape.h>
 #include <KoShapeContainer.h>
 #include <KoShapeGroup.h>
 #include <KoShapeLayer.h>
 #include <KoShapePainter.h>
+#include <KoShapeSavingContext.h>
+#include <KoXmlWriter.h>
+#include <KoXmlNS.h>
 #include <KoTextShapeDataBase.h>
+#include <KoTextDocument.h>
+#include <KoTextMeta.h>
+#include <KoVariable.h>
 #include <styles/KoCharacterStyle.h>
 #include <styles/KoListLevelProperties.h>
 #include <styles/KoListStyle.h>
@@ -33,6 +47,8 @@
 #include <QColor>
 #include <QCryptographicHash>
 #include <QFile>
+#include <QDomDocument>
+#include <QTextStream>
 #include <QFont>
 #include <QHash>
 #include <QImage>
@@ -52,6 +68,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <limits>
 
 K_PLUGIN_FACTORY_WITH_JSON(PptExportFactory, "calligra_filter_odp2ppt.json", registerPlugin<PptExport>();)
 
@@ -430,7 +447,10 @@ struct SlideText {
     QString text;                 // plain text, paragraphs separated by CR
     QVector<TextSpan> spans;      // character-format runs covering the text
     QVector<ParaFmt> paras;       // one entry per paragraph
+    QList<int> slideNumberPositions;
     QRectF rect;
+    KoInsets margins;
+    Qt::Alignment verticalAlignment = Qt::AlignTop;
     bool noWrap = false;          // PPT WrapText == wrNone (auto-grow width)
     bool autoGrow = false;        // PPT fFitShapeToText
     qreal rotation = 0;           // clockwise degrees, as stored by binary PPT
@@ -442,6 +462,8 @@ struct SlideImage {
     QByteArray rgbUid;    // 16-byte identifier shared with the FBSE in the Dgg
     QRectF rect;          // position in points
     int pib = 0;          // 1-based picture index, assigned by registerImages()
+    QByteArray embeddedObject;
+    quint32 embeddedObjectId = 0;
 };
 
 struct SlideInfo {
@@ -467,6 +489,8 @@ struct ExportedImage {
     QByteArray data;
     QString suffix;
     QByteArray rgbUid;
+    quint32 offset = 0;
+    quint32 recordSize = 0;
 };
 
 // Render an arbitrary shape into a PNG so visual content that has no native
@@ -474,10 +498,10 @@ struct ExportedImage {
 // SVG/WMF images, ...) survives the round-trip as a picture instead of being
 // dropped entirely.  Rasterising is lossy for editability, but faithful to the
 // rendered appearance, which is the priority for a legacy binary format.
-static QByteArray rasterizeShape(KoShape *shape)
+static QByteArray rasterizeShape(KoShape *shape, const QRectF &bounds)
 {
     if (!shape) return QByteArray();
-    const QSizeF shapeSize = shape->size();
+    const QSizeF shapeSize = bounds.size();
     if (shapeSize.isEmpty()) return QByteArray();
     const QSize pixelSize(qBound(1, qRound(shapeSize.width() * 2.0), 8192),
                           qBound(1, qRound(shapeSize.height() * 2.0), 8192));
@@ -494,24 +518,90 @@ static QByteArray rasterizeShape(KoShape *shape)
 
 static SlideText extractSlideText(QTextDocument *doc, const QRectF &rect);
 
+static QByteArray formulaMathML(KoShape *shape)
+{
+    if (shape->shapeId() != QLatin1StringView("FormulaShapeID")) {
+        return {};
+    }
+
+    QBuffer frame;
+    frame.open(QIODevice::WriteOnly);
+    KoXmlWriter writer(&frame);
+    KoGenStyles styles;
+    KoEmbeddedDocumentSaver embedded;
+    KoShapeSavingContext context(writer, styles, embedded);
+    writer.startElement("frame-wrapper");
+    writer.addAttribute("xmlns:draw", KoXmlNS::draw);
+    writer.addAttribute("xmlns:math", KoXmlNS::math);
+    writer.addAttribute("xmlns:svg", KoXmlNS::svg);
+    writer.addAttribute("xmlns:calligra", KoXmlNS::calligra);
+    writer.addAttribute("xmlns:presentation", KoXmlNS::presentation);
+    shape->saveOdf(context);
+    writer.endElement();
+
+    QDomDocument document;
+    if (!document.setContent(frame.data())) {
+        return {};
+    }
+    QDomElement math = document.elementsByTagName(QStringLiteral("math:math")).item(0).toElement();
+    if (math.isNull()) {
+        return {};
+    }
+    math.setAttribute(QStringLiteral("xmlns:math"), KoXmlNS::math);
+    QString xml;
+    QTextStream output(&xml);
+    math.save(output, -1);
+    return xml.toUtf8();
+}
+
+static QByteArray buildFormulaObject(const QByteArray &math)
+{
+    if (math.isEmpty() || math.size() > 64 * 1024) {
+        return {};
+    }
+
+    // Use an embedded storage object so outside readers still have the
+    // standard PowerPoint preview. Stage reads the MathML stream on import.
+    Record metadata;
+    metadata.type = 0x0FCC;
+    metadata.ver = 15;
+    Record embed;
+    embed.type = 0x0FCD;
+    embed.payload.resize(8, '\0');
+    metadata.children.append(embed);
+    Record ole;
+    ole.type = 0x0FC3;
+    ole.ver = 1;
+    ole.payload.resize(24, '\0');
+    writeU32(ole.payload, 0, 1); // DVASPECT_CONTENT
+    metadata.children.append(ole);
+
+    Record storage;
+    storage.type = 0x1011;
+    storage.payload = buildCfb({{QStringLiteral("Calligra MathML"), math}});
+    return metadata.serialize() + storage.serialize();
+}
+
 static void addImageShape(KoShape *shape, const QByteArray &data, const QString &suffix,
-                          QList<SlideImage> &images)
+                          QList<SlideImage> &images, const QRectF &rect)
 {
     if (data.isEmpty()) return;
     SlideImage img;
     img.data = data;
     img.suffix = suffix;
     img.rgbUid = QCryptographicHash::hash(data, QCryptographicHash::Md5).left(16);
-    const QPointF pos = shape->absolutePosition(KoFlake::TopLeftCorner);
-    // Rasterised shapes are rendered from their local origin; use their own
-    // size/position rather than the (possibly larger) boundingRect.
-    img.rect = QRectF(pos, shape->size());
+    img.rect = rect;
+    img.embeddedObject = QByteArray::fromBase64(shape->additionalAttribute(QStringLiteral("calligra:ppt-embedded-object")).toLatin1(),
+                                                QByteArray::AbortOnBase64DecodingErrors);
+    if (img.embeddedObject.isEmpty()) {
+        img.embeddedObject = buildFormulaObject(formulaMathML(shape));
+    }
     images.append(img);
 }
 
 static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<SlideImage> &images)
 {
-    if (!shape) return;
+    if (!shape || !shape->isVisible(true) || shape->shapeId() == QLatin1String(KPrPlaceholderShapeId)) return;
 
     // Native picture payload.
     bool handled = false;
@@ -523,9 +613,8 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
             suffix = imageData->suffix().toLower();
         if (!data.isEmpty() && (suffix == QLatin1String("png") || suffix == QLatin1String("jpg")
                                 || suffix == QLatin1String("jpeg"))) {
-            addImageShape(shape, data,
-                          suffix == QLatin1String("png") ? QStringLiteral("png") : QStringLiteral("jpeg"),
-                          images);
+            addImageShape(shape, data, suffix == QLatin1String("png") ? QStringLiteral("png") : QStringLiteral("jpeg"),
+                          images, QRectF(shape->absolutePosition(KoFlake::TopLeftCorner), shape->size()));
             handled = true;
         }
         // Unsupported image formats (SVG, WMF, ...) fall through to rasterise.
@@ -559,6 +648,8 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
             }
             SlideText st = extractSlideText(doc, rect);
             st.rotation = pptRotation;
+            st.margins = data->shapeMargins();
+            st.verticalAlignment = data->verticalAlignment();
             // draw:auto-grow-width in ODF comes from the PPT's no-wrap flag.
             // Carry it back so narrow text shapes keep their runs on one line.
             const KoTextShapeDataBase::ResizeMethod resize = data->resizeMethod();
@@ -567,7 +658,7 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
             st.autoGrow = resize == KoTextShapeDataBase::AutoGrowWidth
                           || resize == KoTextShapeDataBase::AutoGrowHeight
                           || resize == KoTextShapeDataBase::AutoGrowWidthAndHeight;
-            if (!st.text.isEmpty()) texts.append(st);
+            if (!st.text.trimmed().isEmpty()) texts.append(st);
         }
     }
 
@@ -591,7 +682,8 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
     // A leaf shape with no native representation (chart, table, autoshape,
     // connector, ...) has no editable equivalent in binary PPT.  Rasterise it
     // as a picture so its visual content survives the round-trip.
-    addImageShape(shape, rasterizeShape(shape), QStringLiteral("png"), images);
+    const QRectF bounds = shape->boundingRect();
+    addImageShape(shape, rasterizeShape(shape, bounds), QStringLiteral("png"), images, bounds);
 }
 
 static SlideInfo pageContent(KoPAPageBase *page)
@@ -600,7 +692,10 @@ static SlideInfo pageContent(KoPAPageBase *page)
 
     // A solid drawing-page fill in the ODP becomes a KoColorBackground on the
     // page.  Carry it into the legacy PPT background shape's FOPT properties.
-    if (auto *solid = dynamic_cast<KoColorBackground *>(page->background().data())) {
+    auto *normalPage = dynamic_cast<KoPAPage *>(page);
+    auto *master = normalPage ? normalPage->masterPage() : nullptr;
+    const auto background = master && normalPage->displayMasterBackground() ? master->background() : page->background();
+    if (auto *solid = dynamic_cast<KoColorBackground *>(background.data())) {
         const QColor color = solid->color();
         if (color.isValid() && color.alpha() > 0) {
             info.hasBackground = true;
@@ -610,6 +705,11 @@ static SlideInfo pageContent(KoPAPageBase *page)
         }
     }
 
+    if (master && normalPage->displayMasterShapes()) {
+        for (KoShape *shape : master->shapes()) {
+            collectShapeContent(shape, info.texts, info.images);
+        }
+    }
     for (KoShape *shape : page->shapes()) collectShapeContent(shape, info.texts, info.images);
     if (info.texts.isEmpty()) {
         SlideText empty;
@@ -760,22 +860,11 @@ static void fillParaGeometry(const QTextBlock &block, ParaFmt &pf)
         }
         return value.toDouble();
     };
-    const qreal top = lengthInPoints(bf.property(QTextFormat::BlockTopMargin));
-    const qreal bottom = lengthInPoints(bf.property(QTextFormat::BlockBottomMargin));
-    if (top > 0) {
-        pf.hasSpaceBefore = true;
-        pf.spaceBefore = top;
-    } else if (bf.topMargin() > 0) {
-        pf.hasSpaceBefore = true;
-        pf.spaceBefore = bf.topMargin();
-    }
-    if (bottom > 0) {
-        pf.hasSpaceAfter = true;
-        pf.spaceAfter = bottom;
-    } else if (bf.bottomMargin() > 0) {
-        pf.hasSpaceAfter = true;
-        pf.spaceAfter = bf.bottomMargin();
-    }
+    // A zero margin must override the template's inherited spacing.
+    pf.hasSpaceBefore = true;
+    pf.hasSpaceAfter = true;
+    pf.spaceBefore = qMax(0.0, lengthInPoints(bf.property(QTextFormat::BlockTopMargin)));
+    pf.spaceAfter = qMax(0.0, lengthInPoints(bf.property(QTextFormat::BlockBottomMargin)));
 
     if (bf.hasProperty(KoParagraphStyle::PercentLineHeight)) {
         const int percent = qRound(bf.doubleProperty(KoParagraphStyle::PercentLineHeight));
@@ -812,9 +901,8 @@ static void fillParaGeometry(const QTextBlock &block, ParaFmt &pf)
     const int level = qMax(1, llp.level());
     const KoListStyle::LabelType label = llp.labelType();
 
-    // Only genuine character bullets can be represented natively.  Numbered
-    // lists need an auto-numbering scheme (not exported yet), so leave them
-    // as plain paragraphs rather than emitting a wrong glyph.
+    // Character bullets use native PPT paragraph properties. Numbered
+    // paragraphs receive a text label during extraction.
     if (label == KoListStyle::BulletCharLabelType && llp.bulletCharacter().unicode() != 0) {
         pf.bulletLevel = level;
         pf.bulletChar = llp.bulletCharacter().unicode();
@@ -865,28 +953,71 @@ static SlideText extractSlideText(QTextDocument *doc, const QRectF &rect)
     st.rect = rect;
     if (!doc) return st;
 
-    // Build the untrimmed plain text (blocks separated by '\n', as
-    // QTextDocument::toPlainText() does) while recording fragment spans and
-    // paragraph starts in that same coordinate space.
+    // Empty paragraphs occupy space and can align text with pictures.
+    // Keep them and carry their character formatting on the paragraph mark.
     QString raw;
     QVector<TextSpan> rawSpans;
     QVector<ParaFmt> rawParas;
     QVector<int> rawParaStarts;
     const QFont defaultFont = doc->defaultFont();
+    const auto *inlineObjects = KoTextDocument(doc).inlineTextObjectManager();
 
     for (QTextBlock block = doc->begin(); block.isValid(); block = block.next()) {
-        if (!raw.isEmpty()) raw += QLatin1Char('\n');
         rawParaStarts.append(raw.size());
         ParaFmt pf;
         pf.alignment = alignmentFrom(block.blockFormat());
         fillParaGeometry(block, pf);
+        if (QTextList *list = block.textList(); list
+            && !block.blockFormat().boolProperty(KoParagraphStyle::UnnumberedListItem)
+            && !block.blockFormat().boolProperty(KoParagraphStyle::IsListHeader)) {
+            const auto level = KoListLevelProperties::fromTextList(list);
+            if (level.labelType() == KoListStyle::NumberLabelType) {
+                KoOdfNumberDefinition number;
+                number.setFormatSpecification(level.numberFormat());
+                number.setLetterSynchronization(level.letterSynchronization());
+                const int explicitStart = block.blockFormat().intProperty(KoParagraphStyle::ListStartValue);
+                const int index = explicitStart > 0 ? explicitStart : qMax(1, level.startValue()) + list->itemNumber(block);
+                const QString label = number.formattedNumber(index);
+                if (!label.isEmpty()) {
+                    const QString prefix = level.listItemPrefix() + label + level.listItemSuffix() + QLatin1Char(' ');
+                    TextSpan span;
+                    span.start = raw.size();
+                    span.length = prefix.size();
+                    QTextCharFormat labelFormat = block.charFormat();
+                    if (block.begin().fragment().isValid()) {
+                        labelFormat.merge(block.begin().fragment().charFormat());
+                    }
+                    if (const auto style = level.characterProperties()) {
+                        style->applyStyle(labelFormat, false);
+                    }
+                    span.fmt = charFormatFrom(labelFormat, defaultFont);
+                    rawSpans.append(span);
+                    raw += prefix;
+                    pf.hasIndent = true;
+                    pf.indent = level.indent();
+                    pf.leftMargin = level.indent() + level.minimumWidth() + level.minimumDistance();
+                }
+            }
+        }
         rawParas.append(pf);
         for (QTextBlock::Iterator it = block.begin(); !it.atEnd(); ++it) {
             const QTextFragment frag = it.fragment();
-            const QString ft = frag.text();
+            QString ft = frag.text();
             if (ft.isEmpty()) continue;
             QTextCharFormat fmt = block.charFormat();
             fmt.merge(frag.charFormat());
+            if (inlineObjects && ft == QChar::ObjectReplacementCharacter) {
+                const auto *object = inlineObjects->inlineTextObject(frag.charFormat());
+                if (object && object->property("isCurrentPageNumber").toBool()) {
+                    st.slideNumberPositions.append(raw.size());
+                    ft = QStringLiteral("*");
+                } else if (dynamic_cast<const KoTextMeta *>(object)) {
+                    continue;
+                } else if (const auto *variable = qobject_cast<const KoVariable *>(object)) {
+                    ft = variable->value();
+                }
+            }
+            ft.replace(QChar::LineSeparator, QLatin1Char('\v'));
             TextSpan span;
             span.start = raw.size();
             span.length = ft.size();
@@ -894,30 +1025,20 @@ static SlideText extractSlideText(QTextDocument *doc, const QRectF &rect)
             rawSpans.append(span);
             raw += ft;
         }
+        if (block.next().isValid()) {
+            if (block.length() == 1) {
+                TextSpan span;
+                span.start = raw.size();
+                span.length = 1;
+                span.fmt = charFormatFrom(block.charFormat(), defaultFont);
+                rawSpans.append(span);
+            }
+            raw += QLatin1Char('\r');
+        }
     }
 
-    // Trim leading/trailing whitespace, matching the previous
-    // toPlainText().trimmed() behaviour, then switch paragraph separators
-    // from LF to CR (the importer splits on [\v\r]).
-    int first = 0;
-    while (first < raw.size() && raw.at(first).isSpace()) ++first;
-    int last = raw.size();
-    while (last > first && raw.at(last - 1).isSpace()) --last;
-    st.text = raw.mid(first, last - first);
-    for (int i = 0; i < st.text.size(); ++i) {
-        if (st.text.at(i) == QLatin1Char('\n')) st.text[i] = QLatin1Char('\r');
-    }
-
-    // Clip spans to the trimmed text.
-    for (const TextSpan &rs : rawSpans) {
-        const int s = qMax(rs.start, first);
-        const int e = qMin(rs.start + rs.length, last);
-        if (e <= s) continue;
-        TextSpan ts = rs;
-        ts.start = s - first;
-        ts.length = e - s;
-        st.spans.append(ts);
-    }
+    st.text = raw;
+    st.spans = rawSpans;
     // Merge adjacent spans with identical formatting.
     QVector<TextSpan> merged;
     for (const TextSpan &ts : st.spans) {
@@ -930,20 +1051,12 @@ static SlideText extractSlideText(QTextDocument *doc, const QRectF &rect)
     }
     st.spans = merged;
 
-    // Recompute paragraph boundaries in the trimmed text and attach the
-    // matching alignment from the original block.
-    int p = 0;
-    for (int i = 0; i < st.text.size();) {
-        int j = i;
-        while (j < st.text.size() && st.text.at(j) != QLatin1Char('\r')) ++j;
-        if (j < st.text.size()) ++j; // include the separator in this run
-        const int rawIdx = i + first;
-        while (p + 1 < rawParaStarts.size() && rawParaStarts[p + 1] <= rawIdx) ++p;
-        ParaFmt pf = rawParas.value(p);
-        pf.start = i;
-        pf.length = j - i;
+    for (qsizetype i = 0; i < rawParas.size(); ++i) {
+        ParaFmt pf = rawParas.at(i);
+        pf.start = rawParaStarts.at(i);
+        const auto end = i + 1 < rawParaStarts.size() ? rawParaStarts.at(i + 1) : st.text.size();
+        pf.length = end - pf.start;
         st.paras.append(pf);
-        i = j;
     }
     if (st.paras.isEmpty()) {
         ParaFmt pf;
@@ -984,7 +1097,7 @@ static QList<ExportedImage> registerImages(QList<SlideInfo> &slides)
 }
 
 // Build an OfficeArtFBSE record for the Dgg's BStoreContainer.
-static Record buildFbse(const ExportedImage &img, quint32 offset)
+static Record buildFbse(const ExportedImage &img)
 {
     Record fbse;
     fbse.ver = 2;
@@ -996,15 +1109,36 @@ static Record buildFbse(const ExportedImage &img, quint32 offset)
     p.append(char(blipType)); // btMacOS
     p += img.rgbUid;           // rgbUid (16 bytes)
     Record::appendU16(p, 0);   // tag
-    Record::appendU32(p, quint32(img.data.size())); // size
+    Record::appendU32(p, img.recordSize); // size of the complete BLIP record
     Record::appendU32(p, 1);   // cRef
-    Record::appendU32(p, offset); // foDelay = offset in Pictures stream
+    Record::appendU32(p, img.offset); // foDelay = offset in Pictures stream
     p.append(char(0)); // unused1
     p.append(char(0)); // cbName
     p.append(char(0)); // unused2
     p.append(char(0)); // unused3
     fbse.payload = p;
     return fbse;
+}
+
+static QByteArray buildPicturesStream(QList<ExportedImage> &images)
+{
+    QByteArray picturesStream;
+    for (ExportedImage &img : images) {
+        const bool isPng = (img.suffix == QLatin1String("png"));
+        Record blip;
+        blip.ver = 0;
+        blip.inst = isPng ? 0x06E0 : 0x046A;
+        blip.type = isPng ? 0xF01E : 0xF01D;
+        QByteArray payload = img.rgbUid;
+        payload.append(char(0));
+        payload += img.data;
+        blip.payload = payload;
+        img.offset = quint32(picturesStream.size());
+        const QByteArray record = blip.serialize();
+        img.recordSize = quint32(record.size());
+        picturesStream += record;
+    }
+    return picturesStream;
 }
 
 // Create a picture shape (msosptPictureFrame = 0x4B) for an image.
@@ -1020,6 +1154,9 @@ static Record buildPictureShape(const SlideImage &img)
     fsp.inst = 0x4B;
     fsp.type = 0xF00A;
     fsp.payload = QByteArray(8, '\0'); // spid + flags
+    if (img.embeddedObjectId) {
+        writeU32(fsp.payload, 4, 0x0A10); // fOleShape, fHaveAnchor, fHaveSpt
+    }
     sp.children.append(fsp);
 
     // FOPT with the pib property (opid 0x0104, encoded in 14+2 bits).
@@ -1029,8 +1166,13 @@ static Record buildPictureShape(const SlideImage &img)
     fopt.type = 0xF00B;
     QByteArray foptData;
     foptData.append(char(0x04));                     // opid low byte
-    foptData.append(char(0x01));                     // opid high 6 bits, fBid=0, fComplex=0
+    foptData.append(char(0x41));                     // pib has the fBid flag
     Record::appendU32(foptData, quint32(img.pib));   // pib value
+    if (img.embeddedObjectId) {
+        appendU16(foptData, 0x010B); // pictureId points to the external object
+        appendU32(foptData, img.embeddedObjectId);
+        ++fopt.inst;
+    }
     fopt.payload = foptData;
     sp.children.append(fopt);
 
@@ -1047,6 +1189,16 @@ static Record buildPictureShape(const SlideImage &img)
     Record::appendU16(anchorData, quint16(img.rect.bottom() * s));
     anchor.payload = anchorData;
     sp.children.append(anchor);
+    if (img.embeddedObjectId) {
+        Record objectRef;
+        objectRef.type = 0x0BC1;
+        appendU32(objectRef.payload, img.embeddedObjectId);
+        Record clientData;
+        clientData.ver = 0x0F;
+        clientData.type = 0xF011;
+        clientData.children.append(objectRef);
+        sp.children.append(clientData);
+    }
 
     return sp;
 }
@@ -1494,13 +1646,82 @@ static void setSlideBackground(Record &slide, quint8 r, quint8 g, quint8 b)
     fopt->inst = quint16(entries.size());
 }
 
-static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<ExportedImage> &images,
+// Reassign document-local object and persist IDs while retaining the OLE
+// payload bytes and the application's original embedding metadata.
+static QList<QByteArray> addEmbeddedObjects(QList<Record> &document, QList<SlideInfo> &slides, int persistBase)
+{
+    QList<QByteArray> storages;
+    if (document.isEmpty() || document.first().children.isEmpty()) {
+        return storages;
+    }
+
+    Record objects;
+    objects.ver = 0x0F;
+    objects.type = 0x0409;
+    Record seed;
+    seed.type = 0x040A;
+    objects.children.append(seed);
+    for (SlideInfo &slide : slides) {
+        for (SlideImage &image : slide.images) {
+            const QByteArray &original = image.embeddedObject;
+            if (original.size() < 16 || readU16(original, 0) != 0x000F || readU16(original, 2) != 0x0FCC) {
+                continue;
+            }
+            const quint32 metadataSize = readU32(original, 4);
+            if (metadataSize > original.size() - 16 || metadataSize > std::numeric_limits<int>::max() - 8) {
+                continue;
+            }
+            const int storageOffset = int(metadataSize) + 8;
+            if (readU16(original, storageOffset + 2) != 0x1011
+                || readU32(original, storageOffset + 4) != original.size() - storageOffset - 8) {
+                continue;
+            }
+
+            // The embed container contains only atoms. Reject nested records
+            // before parsing data supplied by an ODP package.
+            int end = 8;
+            int objectAtom = -1;
+            while (end <= storageOffset - 8) {
+                const quint32 size = readU32(original, end + 4);
+                if ((readU16(original, end) & 0x000F) == 0x000F || size > quint32(storageOffset - end - 8)) {
+                    break;
+                }
+                if (readU16(original, end + 2) == 0x0FC3 && size == 24) {
+                    objectAtom = end;
+                }
+                end += 8 + int(size);
+            }
+            if (end != storageOffset || objectAtom < 0) {
+                continue;
+            }
+
+            QByteArray metadata = original.left(storageOffset);
+            image.embeddedObjectId = quint32(storages.size()) + 1;
+            writeU32(metadata, objectAtom + 16, image.embeddedObjectId);
+            writeU32(metadata, objectAtom + 24, persistBase + quint32(storages.size()));
+            objects.children.append(parseRecords(metadata, 0, metadata.size()).constFirst());
+            storages.append(original.mid(storageOffset));
+        }
+    }
+    if (!storages.isEmpty()) {
+        appendU32(objects.children.first().payload, quint32(storages.size()));
+        document.first().children.insert(1, objects);
+    }
+    return storages;
+}
+
+static QByteArray buildDocument(QList<SlideInfo> &slides, const QList<ExportedImage> &images,
                                 const QSizeF &slideSize)
 {
     QList<Record> doc = parseRecords(QByteArray::fromRawData(
         reinterpret_cast<const char *>(kTemplateDocument), kTemplateDocumentLen), 0, kTemplateDocumentLen);
 
     for (Record &r : doc) neutralizeTextRulerMargins(r);
+
+    const int embeddedPersistBase = 5 + slides.size() + std::count_if(slides.cbegin(), slides.cend(), [](const SlideInfo &slide) {
+        return slide.hasNotes;
+    });
+    const QList<QByteArray> embeddedStorages = addEmbeddedObjects(doc, slides, embeddedPersistBase);
 
     // Patch the DocumentAtom (0x03E9) slide size from the ODP page size.
     // PointStruct x/y are signed 32-bit master units (1/576 inch); the ODP
@@ -1521,7 +1742,7 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
             bstore->inst = quint16(images.size());
             bstore->children.clear();
             for (int i = 0; i < images.size(); ++i) {
-                bstore->children.append(buildFbse(images[i], 0));
+                bstore->children.append(buildFbse(images[i]));
             }
         }
     }
@@ -1636,10 +1857,29 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
 
             textAtom->payload = toUtf16(st.text);
             styleAtom->payload = writeStyleAtomPayload(st, fonts);
+            auto fieldIndex = styleAtom - cd->children.data() + 1;
+            cd->children.removeIf([](const Record &record) { return record.type == 0x0FD8; });
+            for (const int position : st.slideNumberPositions) {
+                Record slideNumber;
+                slideNumber.type = 0x0FD8;
+                appendU32(slideNumber.payload, quint32(position));
+                cd->children.insert(fieldIndex++, slideNumber);
+            }
             patchShapeAnchor(findRecord(shape.children, 0xF010), st.rect);
             neutralizeTextShapeStyle(&shape);
             setShapeFopt(&shape, 0x0004, fixedPointFromDegrees(st.rotation));
             setShapeFopt(&shape, 0x0085, st.noWrap ? 2u : 0u);
+            setShapeFopt(&shape, 0x0081, quint32(qRound(st.margins.left * 12700)));
+            setShapeFopt(&shape, 0x0082, quint32(qRound(st.margins.top * 12700)));
+            setShapeFopt(&shape, 0x0083, quint32(qRound(st.margins.right * 12700)));
+            setShapeFopt(&shape, 0x0084, quint32(qRound(st.margins.bottom * 12700)));
+            quint32 anchor = msoanchorTop;
+            if (st.verticalAlignment.testFlag(Qt::AlignVCenter)) {
+                anchor = msoanchorMiddle;
+            } else if (st.verticalAlignment.testFlag(Qt::AlignBottom)) {
+                anchor = msoanchorBottom;
+            }
+            setShapeFopt(&shape, 0x0087, anchor);
             // TextBooleanProperties (0xBF): fFitShapeToText (bit 1) and its
             // validity flag fUsefFitShapeToText (bit 17) preserve ODF's
             // draw:auto-grow-width/height across the binary round-trip.
@@ -1743,6 +1983,9 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
         }
     }
 
+    const auto firstStorageIndex = topBlobs.size();
+    topBlobs.append(embeddedStorages);
+
     // Compute offsets of each top-level record.
     QList<quint32> offsets;
     quint32 pos = 0;
@@ -1765,7 +2008,7 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
     //   6..=additional slides.  Notes containers use IDs after all slides.
     const int nSlides = slideBlobs.size();
     const int nNotes = notesBlobIndices.size();
-    const int maxPersistId = notesPersistBase + nNotes - 1;
+    const int maxPersistId = embeddedPersistBase + embeddedStorages.size() - 1;
     QList<quint32> persistOffsets(maxPersistId + 1, 0);
     persistOffsets[1] = 0;                                        // document
     persistOffsets[2] = offsets.value(1);                         // master
@@ -1777,6 +2020,10 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
     }
     for (int i = 0; i < nNotes; ++i) {
         persistOffsets[notesPersistBase + i] = offsets.value(notesBlobIndices.at(i));
+    }
+
+    for (qsizetype i = 0; i < embeddedStorages.size(); ++i) {
+        persistOffsets[embeddedPersistBase + i] = offsets.at(firstStorageIndex + i);
     }
 
     QByteArray pdPayload;
@@ -1852,27 +2099,11 @@ KoFilter::ConversionStatus PptExport::convert(const QByteArray &from, const QByt
     QList<SlideInfo> slides;
     for (KoPAPageBase *page : document->pages()) slides.append(pageContent(page));
 
-    const QList<ExportedImage> images = registerImages(slides);
+    QList<ExportedImage> images = registerImages(slides);
+    const QByteArray picturesStream = buildPicturesStream(images);
     const QSizeF slideSize = document->pages().first()->size();
     const QByteArray documentStream = buildDocument(slides, images, slideSize);
     if (documentStream.isEmpty()) return StupidError;
-
-    // Build the Pictures stream from the registered images.  The importer
-    // matches blips to FBSE entries by their 16-byte rgbUid, so no stream
-    // offsets need to be patched in the document.
-    QByteArray picturesStream;
-    for (const ExportedImage &img : images) {
-        const bool isPng = (img.suffix == QLatin1String("png"));
-        Record blip;
-        blip.ver = 0;
-        blip.inst = isPng ? 0x06E0 : 0x046A;
-        blip.type = isPng ? 0xF01E : 0xF01D;
-        QByteArray payload = img.rgbUid;
-        payload.append(char(0));
-        payload += img.data;
-        blip.payload = payload;
-        picturesStream += blip.serialize();
-    }
 
     // Find UserEditAtom offset in the produced stream.
     const QList<Record> top = parseRecords(documentStream, 0, documentStream.size());

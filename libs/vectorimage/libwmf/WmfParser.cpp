@@ -10,6 +10,7 @@
  */
 
 #include "WmfParser.h"
+
 #include "WmfAbstractBackend.h"
 
 #include <VectorImageDebug.h>
@@ -802,7 +803,7 @@ bool WmfParser::play(WmfAbstractBackend *backend)
                 break;
             case (META_EXTTEXTOUT & 0xff): {
                 qint16 y, x;
-                qint16 stringLength;
+                quint16 stringLength;
                 quint16 fwOpts;
                 qint16 top, left, right, bottom; // optional cliprect
 
@@ -815,6 +816,12 @@ bool WmfParser::play(WmfAbstractBackend *backend)
                 if (fwOpts & (ETO_CLIPPED | ETO_OPAQUE)) {
                     // read the optional clip rect
                     stream >> bottom >> right >> top >> left;
+                }
+
+                const qint64 recordEnd = bufferOffset + qint64(size) * 2;
+                const int paddedLength = (int(stringLength) + 1) & ~1;
+                if (paddedLength > recordEnd - mBuffer->pos()) {
+                    break;
                 }
 
                 // Read the string. Note that it's padded to 16 bits.
@@ -833,7 +840,16 @@ bool WmfParser::play(WmfAbstractBackend *backend)
                 debugVectorImage << "flags:" << fwOpts;
                 debugVectorImage << "record length:" << size;
 #endif
-                m_backend->drawText(mDeviceContext, x, y, text);
+                QList<qint16> advances;
+                if (stringLength && recordEnd - mBuffer->pos() >= qint64(stringLength) * 2) {
+                    advances.reserve(stringLength);
+                    for (int i = 0; i < stringLength; ++i) {
+                        qint16 advance;
+                        stream >> advance;
+                        advances.append(advance);
+                    }
+                }
+                m_backend->drawText(mDeviceContext, x, y, QString::fromLatin1(text), advances);
             } break;
             case (META_SETDIBTODEV & 0xff):
             case (META_SELECTPALETTE & 0xff):
@@ -1049,11 +1065,14 @@ bool WmfParser::play(WmfAbstractBackend *backend)
                 }
             } break;
             case (META_CREATEFONTINDIRECT & 0xff): {
+                if (size < 12) {
+                    break;
+                }
                 qint16 height; // Height of the character cell
                 qint16 width; // Average width (not used)
                 qint16 escapement; // The rotation of the text in 1/10th degrees
                 qint16 orientation; // The rotation of each character
-                QFont::Weight weight;
+                quint16 weight;
                 quint16 property, fixedPitch, arg;
 
                 KoWmfFontHandle *handle = new KoWmfFontHandle;
@@ -1080,28 +1099,19 @@ bool WmfParser::play(WmfAbstractBackend *backend)
                     //            But normally the font height is only the height above the
                     //            baseline, isn't it?
                     handle->font.setPointSize(qAbs(height) * 6 / 10);
-                    if (weight == 0)
-                        weight = QFont::Normal;
-                    else {
-                        // Linear transform between MS weights to Qt weights
-                        // MS: 400=normal, 700=bold
-                        // Qt: 50=normal, 75=bold
-                        // This makes the line cross x=0 at y=50/3.  (x=MS weight, y=Qt weight)
-                        //
-                        // FIXME: Is this a linear relationship?
-                        weight = static_cast<QFont::Weight>((50 + 3 * ((weight * (75 - 50)) / (700 - 400))) / 3);
-                    }
-                    handle->font.setWeight(weight);
+                    // Qt 6 uses the same weight scale as LOGFONT.
+                    handle->font.setWeight(weight == 0 ? QFont::Normal : static_cast<QFont::Weight>(qMin<int>(weight, 1000)));
                     handle->font.setItalic((property & 0x01));
                     handle->font.setUnderline((property & 0x100));
                     // TODO: Strikethrough
 
                     // font name
-                    int maxChar = (size - 12) * 2;
-                    char *nameFont = new char[maxChar];
-                    stream.readRawData(nameFont, maxChar);
-                    handle->font.setFamily(nameFont);
-                    delete[] nameFont;
+                    const int maxChar = qMin<quint32>(32, (size - 12) * 2);
+                    if (maxChar > 0) {
+                        QByteArray name(maxChar, '\0');
+                        stream.readRawData(name.data(), maxChar);
+                        handle->font.setFamily(QString::fromLatin1(name.constData()));
+                    }
                 }
             } break;
             case (META_CREATEBRUSHINDIRECT & 0xff): {

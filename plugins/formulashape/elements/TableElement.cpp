@@ -57,6 +57,7 @@ void TableElement::paint(QPainter &painter, AttributeManager *am)
     // QList<qreal> rowSpacing = am->doubleListOf( "rowspacing", this );
     debugFormula << frameSpacing;
     painter.setPen(QPen(Qt::NoPen)); // debugging
+    painter.setBrush(Qt::NoBrush);
     painter.drawRect(QRectF(0.0, 0.0, width(), height()));
     // draw rowlines
     qreal offset = frameSpacing[1];

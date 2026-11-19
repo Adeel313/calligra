@@ -69,6 +69,9 @@ KPrDocument::KPrDocument(KoPart *part)
 
     KoShapeLoadingContext::addAdditionalAttributeData(KoShapeLoadingContext::AdditionalAttributeData(KoXmlNS::presentation, "class", "presentation:class"));
 
+    KoShapeLoadingContext::addAdditionalAttributeData(
+        KoShapeLoadingContext::AdditionalAttributeData(KoXmlNS::calligra, "ppt-embedded-object", "calligra:ppt-embedded-object"));
+
     QVariant variant;
     variant.setValue(new KPrSoundCollection(this));
     resourceManager()->setResource(KPresenter::SoundCollection, variant);

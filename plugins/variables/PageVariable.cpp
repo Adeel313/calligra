@@ -35,6 +35,11 @@ PageVariable::PageVariable()
 {
 }
 
+bool PageVariable::isCurrentPageNumber() const
+{
+    return m_type == PageNumber && m_pageselect == KoTextPage::CurrentPage && m_pageadjust == 0 && !m_fixed;
+}
+
 void PageVariable::readProperties(const KoProperties *props)
 {
     switch (props->intProperty("vartype")) {

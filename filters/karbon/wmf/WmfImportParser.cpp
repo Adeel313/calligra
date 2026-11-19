@@ -12,6 +12,8 @@
 #include <WmfDeviceContext.h>
 #include <WmfEnums.h>
 
+#include "SymbolEncoding.h"
+
 #include <KoUnit.h>
 #include <KoXmlWriter.h>
 
@@ -455,8 +457,22 @@ void WMFImportParser::patBlt(Libwmf::WmfDeviceContext & /*context*/, int x, int 
     Q_UNUSED(rasterOperation);
 }
 
-void WMFImportParser::drawText(Libwmf::WmfDeviceContext &context, int x, int y, const QString &text)
+void WMFImportParser::drawText(Libwmf::WmfDeviceContext &context, int x, int y, const QString &source, const QList<qint16> &advances)
 {
+    // The SVG output emits a single <text> node, so the per-glyph advances
+    // recorded by META_EXTTEXTOUT are not needed here.
+    Q_UNUSED(advances);
+
+    QString text = source;
+    const bool isSymbol = context.font.family().compare(QLatin1String("Symbol"), Qt::CaseInsensitive) == 0;
+    if (isSymbol) {
+        for (QChar &character : text) {
+            if (const ushort mapped = Calligra::symbolByteToUnicode(character.unicode())) {
+                character = QChar(mapped);
+            }
+        }
+    }
+
     if (context.textAlign & TA_UPDATECP) {
         // (left, top) position = current logical position
         x = context.currentPosition.x();
@@ -486,7 +502,7 @@ void WMFImportParser::drawText(Libwmf::WmfDeviceContext &context, int x, int y, 
         m_svgWriter.addAttribute("text-anchor", "middle");
     else if (context.textAlign & TA_RIGHT)
         m_svgWriter.addAttribute("text-anchor", "end");
-    m_svgWriter.addAttribute("font-family", context.font.family());
+    m_svgWriter.addAttribute("font-family", isSymbol ? QStringLiteral("OpenSymbol") : context.font.family());
     // adjust font size
     m_svgWriter.addAttributePt("font-size", size(QSize(0, context.font.pointSize())).height());
     if (context.font.bold())

@@ -403,6 +403,9 @@ void ODrawToOdf::processPictureFrame(const OfficeArtSpContainer &o, Writer &out)
     QString url;
     if (client) {
         url = client->getPicturePath(ds.pib());
+        if (client->writePictureFrameObject(o, out)) {
+            return;
+        }
     }
     // if the image cannot be found, just place an empty frame
     if (url.isEmpty()) {

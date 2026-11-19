@@ -19,6 +19,9 @@ class KoShapeSavingContext;
  */
 class PageVariable : public KoVariable
 {
+    Q_OBJECT
+    Q_PROPERTY(bool isCurrentPageNumber READ isCurrentPageNumber)
+
 public:
     enum PageType {
         PageCount,
@@ -32,6 +35,7 @@ public:
     PageVariable();
 
     void readProperties(const KoProperties *props);
+    bool isCurrentPageNumber() const;
 
     void propertyChanged(Property property, const QVariant &value) override;
 

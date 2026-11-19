@@ -121,7 +121,7 @@ public:
     virtual void patBlt(WmfDeviceContext &context, int x, int y, int width, int height, quint32 rasterOperation) = 0;
 
     // Text drawing functions
-    virtual void drawText(WmfDeviceContext &context, int x, int y, const QString &s) = 0;
+    virtual void drawText(WmfDeviceContext &context, int x, int y, const QString &s, const QList<qint16> &advances = {}) = 0;
 
     // matrix transformation : only used for bitmap manipulation
     virtual void setTransform(WmfDeviceContext &context, const QTransform &, bool combine = false) = 0;

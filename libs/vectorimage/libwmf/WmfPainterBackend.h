@@ -105,7 +105,7 @@ private:
     // Text drawing functions
     // rotation = the degrees of rotation in counterclockwise
     // not yet implemented in KWinMetaFile
-    void drawText(WmfDeviceContext &context, int x, int y, const QString &s) override;
+    void drawText(WmfDeviceContext &context, int x, int y, const QString &s, const QList<qint16> &advances = {}) override;
 
     // matrix transformation : only used in some bitmap manipulation
     void setTransform(WmfDeviceContext &context, const QTransform &, bool combine = false) override;

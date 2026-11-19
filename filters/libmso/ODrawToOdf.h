@@ -39,6 +39,7 @@ public:
          * image generated from the image with the given pib.
          **/
         virtual QString getPicturePath(const quint32 pib) = 0;
+        virtual bool writePictureFrameObject(const MSO::OfficeArtSpContainer &, Writer &) { return false; }
         /**
          * Check if the clientdata is the main content of a drawing object.
          **/

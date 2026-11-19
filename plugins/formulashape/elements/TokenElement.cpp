@@ -41,10 +41,10 @@ const QList<BasicElement *> TokenElement::childElements() const
 }
 void TokenElement::paint(QPainter &painter, AttributeManager *am)
 {
-    // set the painter to background color and paint it
-    painter.setPen(am->colorOf("mathbackground", this));
-    painter.setBrush(QBrush(painter.pen().color()));
-    painter.drawRect(QRectF(0.0, 0.0, width(), height()));
+    const QColor background = am->colorOf("mathbackground", this);
+    if (background.isValid()) {
+        painter.fillRect(QRectF(0.0, 0.0, width(), height()), background);
+    }
 
     // set the painter to foreground color and paint the text in the content path
     QColor color = am->colorOf("mathcolor", this);
@@ -56,7 +56,7 @@ void TokenElement::paint(QPainter &painter, AttributeManager *am)
         painter.scale(width() / m_originalSize.width(), height() / m_originalSize.height());
 
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QBrush(color));
+    painter.setBrush(color.isValid() ? color : QColor(Qt::black));
     painter.drawPath(m_contentPath);
 }
 

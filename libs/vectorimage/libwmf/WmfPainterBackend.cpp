@@ -17,6 +17,10 @@
 #include "WmfEnums.h"
 #include "WmfParser.h"
 
+#include "../SymbolEncoding.h"
+
+#include <numeric>
+
 #define DEBUG_WMFPAINT 0
 
 /**
@@ -594,8 +598,17 @@ void WmfPainterBackend::patBlt(WmfDeviceContext &context, int x, int y, int widt
     }
 }
 
-void WmfPainterBackend::drawText(WmfDeviceContext &context, int x, int y, const QString &text)
+void WmfPainterBackend::drawText(WmfDeviceContext &context, int x, int y, const QString &source, const QList<qint16> &advances)
 {
+    QString text = source;
+    const bool isSymbol = context.font.family().compare(QLatin1String("Symbol"), Qt::CaseInsensitive) == 0;
+    if (isSymbol) {
+        for (QChar &character : text) {
+            if (const ushort mapped = Calligra::symbolByteToUnicode(character.unicode())) {
+                character = QChar(mapped);
+            }
+        }
+    }
 #if DEBUG_WMFPAINT
     debugVectorImage << x << y << hex << dec << text;
 #endif
@@ -612,8 +625,20 @@ void WmfPainterBackend::drawText(WmfDeviceContext &context, int x, int y, const 
 #endif
     }
 
+    mPainter->save();
+    if (isSymbol) {
+        QFont font = mPainter->font();
+        font.setFamily(QStringLiteral("OpenSymbol"));
+        mPainter->setFont(font);
+    }
+
     QFontMetrics fm(mPainter->font(), mTarget);
-    int width = fm.boundingRect(text).width() + fm.descent(); // fm.width(text) isn't right with Italic text
+    const bool positioned = !advances.isEmpty() && advances.size() == text.size();
+    const int advance = positioned ? std::accumulate(advances.cbegin(), advances.cend(), 0) : fm.horizontalAdvance(text);
+    if (context.textAlign & TA_UPDATECP) {
+        context.currentPosition.rx() += advance;
+    }
+    const int width = positioned ? advance : fm.boundingRect(text).width() + fm.descent();
     int height = fm.height();
 
     // Horizontal align.  These flags are supposed to be mutually exclusive.
@@ -635,7 +660,6 @@ void WmfPainterBackend::drawText(WmfDeviceContext &context, int x, int y, const 
 #endif
 
     // Use the special pen defined by the foregroundTextColor in the device context for text.
-    mPainter->save();
     mPainter->setPen(context.foregroundTextColor);
 
     // If the actual height is < 0, we should use device units.  This
@@ -655,7 +679,15 @@ void WmfPainterBackend::drawText(WmfDeviceContext &context, int x, int y, const 
     if (context.escapement != 0) {
         mPainter->rotate(qreal(context.escapement) / qreal(-10.0));
     }
-    mPainter->drawText(0, 0, width, height, Qt::AlignLeft | Qt::AlignTop, text);
+    if (positioned) {
+        int offset = 0;
+        for (qsizetype i = 0; i < text.size(); ++i) {
+            mPainter->drawText(QPoint(offset, fm.ascent()), text.mid(i, 1));
+            offset += advances.at(i);
+        }
+    } else {
+        mPainter->drawText(0, 0, width, height, Qt::AlignLeft | Qt::AlignTop, text);
+    }
 
     mPainter->restore();
 }

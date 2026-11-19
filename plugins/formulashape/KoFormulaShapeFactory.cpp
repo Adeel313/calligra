@@ -12,6 +12,7 @@
 #include <KoShapeFactoryBase.h>
 #include <KoShapeLoadingContext.h>
 #include <KoXmlNS.h>
+#include <KoXmlReader.h>
 
 #include "FormulaDebug.h"
 #include "KoFormulaShape.h"
@@ -63,7 +64,10 @@ bool KoFormulaShapeFactory::supports(const KoXmlElement &e, KoShapeLoadingContex
     }
 
     if (e.localName() == "object" && e.namespaceURI() == KoXmlNS::draw) {
-        QString href = e.attribute("href");
+        if (!KoXml::namedItemNS(e, KoXmlNS::math, "math").isNull()) {
+            return true;
+        }
+        QString href = e.attributeNS(KoXmlNS::xlink, "href");
         if (!href.isEmpty()) {
             // check the mimetype
             if (href.startsWith(QLatin1String("./"))) {

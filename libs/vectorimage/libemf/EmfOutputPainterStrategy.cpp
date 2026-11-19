@@ -935,6 +935,17 @@ void OutputPainterStrategy::extTextOut(const QRect &bounds, const EmrTextObject 
         y = m_currentCoords.y();
     }
 
+    m_painter->save();
+    // Equation Editor previews can use MT Extra for an ordinary Unicode
+    // ellipsis. Use a text font for this character if the selected font
+    // cannot render it.
+    QFont font = m_painter->font();
+    if (text == QStringLiteral("\u2026") && font.family().compare(QLatin1String("MT Extra"), Qt::CaseInsensitive) == 0
+        && !m_painter->fontMetrics().inFont(QChar(0x2026))) {
+        font.setFamily(QStringLiteral("serif"));
+        m_painter->setFont(font);
+    }
+
     QFontMetrics fm = m_painter->fontMetrics();
     int textWidth = fm.boundingRect(text).width() + fm.descent(); // fm.width(text) isn't right with Italic text
     int textHeight = fm.height();
@@ -973,9 +984,6 @@ void OutputPainterStrategy::extTextOut(const QRect &bounds, const EmrTextObject 
     m_painter->drawRect(bounds);
     m_painter->restore();
 #endif
-
-    // Actual painting starts here.
-    m_painter->save();
 
     // Find out how much we have to scale the text to make it fit into
     // the output rectangle.  Normally this wouldn't be necessary, but

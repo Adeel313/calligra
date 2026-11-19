@@ -45,6 +45,12 @@ KoFormulaShape::KoFormulaShape(KoDocumentResourceManager *documentResourceManage
 {
     m_document = std::make_unique<FormulaDocument>(this);
     m_resourceManager = documentResourceManager;
+    QObject::connect(m_formulaData.get(), &FormulaData::dataChanged, m_formulaData.get(), [this](FormulaCommand *command, bool) {
+        if (command) {
+            // A legacy OLE payload only describes the formula before editing.
+            removeAdditionalAttribute(QStringLiteral("calligra:ppt-embedded-object"));
+        }
+    });
 }
 
 KoFormulaShape::~KoFormulaShape()
@@ -164,10 +170,20 @@ bool KoFormulaShape::loadOdf(const KoXmlElement &element, KoShapeLoadingContext 
     if (!loadOdfFrame(element, context)) {
         return false;
     }
-    // The stored frame size was computed with the metrics in effect when the
-    // formula was saved; recompute it so the frame encloses the formula as it
-    // is laid out now.
+    const QSizeF importedFrame = size();
     updateLayout();
+    if (hasAdditionalAttribute(QStringLiteral("calligra:ppt-embedded-object")) && !importedFrame.isEmpty() && !size().isEmpty()) {
+        // Legacy PowerPoint stored the equation's display size separately
+        // from the equation payload. Keep its scale when converting to MathML.
+        const qreal factor = qMin(importedFrame.width() / size().width(), importedFrame.height() / size().height());
+        if (qIsFinite(factor) && factor > 0 && !qFuzzyCompare(factor, qreal(1.0))) {
+            const QSizeF offset = (importedFrame - size() * factor) / 2;
+            QTransform fit;
+            fit.translate(offset.width(), offset.height());
+            fit.scale(factor, factor);
+            applyTransformation(fit);
+        }
+    }
     return true;
 }
 

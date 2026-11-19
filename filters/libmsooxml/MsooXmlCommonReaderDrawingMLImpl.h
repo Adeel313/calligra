@@ -305,6 +305,14 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_pic()
                 body->addAttribute("table:end-x", end_x); // cm
                 body->addAttribute("table:end-y", end_y); // cm
             }
+        } else if (const auto &position = m_currentDrawingObject->m_absolutePosition) {
+            m_svgX = position->first;
+            m_svgY = position->second;
+            const QSize extent = m_currentDrawingObject->m_extent;
+            if (!extent.isEmpty()) {
+                m_svgWidth = extent.width();
+                m_svgHeight = extent.height();
+            }
         }
     }
 #endif
