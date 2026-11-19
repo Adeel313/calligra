@@ -15,6 +15,9 @@
 #include <KoShapePainter.h>
 #include <KoTextShapeDataBase.h>
 #include <styles/KoCharacterStyle.h>
+#include <styles/KoListLevelProperties.h>
+#include <styles/KoListStyle.h>
+#include <styles/KoParagraphStyle.h>
 
 #include <KPluginFactory>
 
@@ -34,6 +37,7 @@
 #include <QTextCharFormat>
 #include <QTextDocument>
 #include <QTextFormat>
+#include <QTextList>
 #include <QVariant>
 #include <QVector>
 
@@ -110,6 +114,10 @@ static void writeU32(QByteArray &b, int p, quint32 v)
 static void appendU16(QByteArray &b, quint16 v)
 {
     Record::appendU16(b, v);
+}
+static void appendI16(QByteArray &b, qint16 v)
+{
+    appendU16(b, quint16(v));
 }
 static void appendU32(QByteArray &b, quint32 v)
 {
@@ -367,6 +375,32 @@ struct ParaFmt {
     int alignment = -1;           // -1 = not set
     int start = 0;                // index into SlideText::text
     int length = 0;               // including trailing CR, if any
+
+    // Bullet formatting.  bulletLevel 0 means a plain (non-list) paragraph.
+    int bulletLevel = 0;          // 1-based nesting level from the ODF list
+    int bulletChar = 0;           // Unicode code point of the bullet glyph
+    bool bulletHasFont = false;
+    QString bulletFont;
+    bool bulletHasColor = false;
+    quint8 bulletRed = 0, bulletGreen = 0, bulletBlue = 0;
+    bool bulletHasSize = false;
+    int bulletSizeValue = 0;      // 25..400 = percent, -1..-4000 = absolute pt
+
+    // Paragraph geometry, in points.  leftMargin is the distance from the
+    // shape edge to the text; indent is the legacy "first line" indent that
+    // the importer turns into text:space-before for lists.
+    bool hasIndent = false;
+    qreal leftMargin = 0;
+    qreal indent = 0;
+
+    // Spacing.  lineSpacing is a percentage (> 0) or absolute master units
+    // (< 0); spaceBefore/After are pt.
+    bool hasLineSpacing = false;
+    int lineSpacingValue = 0;
+    bool hasSpaceBefore = false;
+    qreal spaceBefore = 0;
+    bool hasSpaceAfter = false;
+    qreal spaceAfter = 0;
 };
 
 struct TextSpan {
@@ -579,6 +613,121 @@ static int alignmentFrom(const QTextBlockFormat &fmt)
     }
 }
 
+// Fill in the bullet/indent/spacing part of a ParaFmt from one text block.
+// ODF list properties live on the block's QTextList; Calligra stores them via
+// KoListLevelProperties, which we read back through its public API.
+static void fillParaGeometry(const QTextBlock &block, ParaFmt &pf)
+{
+    const QTextBlockFormat bf = block.blockFormat();
+
+    // Calligra stores paragraph spacing as custom format properties rather
+    // than through QTextBlockFormat's margin accessors.  Read both forms so
+    // ordinary QTextDocument blocks continue to work as well.
+    auto lengthInPoints = [](const QVariant &value) -> qreal {
+        if (!value.isValid()) return 0;
+        if (value.userType() == QMetaType::QTextLength) {
+            const QTextLength len = value.value<QTextLength>();
+            return len.type() == QTextLength::FixedLength ? len.rawValue() : 0;
+        }
+        return value.toDouble();
+    };
+    const qreal top = lengthInPoints(bf.property(QTextFormat::BlockTopMargin));
+    const qreal bottom = lengthInPoints(bf.property(QTextFormat::BlockBottomMargin));
+    if (top > 0) {
+        pf.hasSpaceBefore = true;
+        pf.spaceBefore = top;
+    } else if (bf.topMargin() > 0) {
+        pf.hasSpaceBefore = true;
+        pf.spaceBefore = bf.topMargin();
+    }
+    if (bottom > 0) {
+        pf.hasSpaceAfter = true;
+        pf.spaceAfter = bottom;
+    } else if (bf.bottomMargin() > 0) {
+        pf.hasSpaceAfter = true;
+        pf.spaceAfter = bf.bottomMargin();
+    }
+
+    if (bf.hasProperty(KoParagraphStyle::PercentLineHeight)) {
+        const int percent = qRound(bf.doubleProperty(KoParagraphStyle::PercentLineHeight));
+        if (percent > 0) {
+            pf.hasLineSpacing = true;
+            pf.lineSpacingValue = percent;
+        }
+    } else if (bf.hasProperty(KoParagraphStyle::FixedLineHeight)) {
+        const qreal points = bf.doubleProperty(KoParagraphStyle::FixedLineHeight);
+        if (points > 0) {
+            pf.hasLineSpacing = true;
+            // Negative values encode absolute master units (points * 8).
+            pf.lineSpacingValue = -qRound(points * 8);
+        }
+    } else if (bf.lineHeightType() == QTextBlockFormat::ProportionalHeight && bf.lineHeight() > 0) {
+        pf.hasLineSpacing = true;
+        pf.lineSpacingValue = bf.lineHeight();
+    }
+
+    QTextList *list = block.textList();
+    if (!list) {
+        // Plain paragraph: the legacy "indent" is the left margin plus the
+        // block indent (one indent step ~ one em, approximated by 20 pt).
+        if (bf.leftMargin() > 0 || bf.rightMargin() > 0 || bf.indent() != 0) {
+            pf.hasIndent = true;
+            pf.leftMargin = bf.leftMargin();
+            pf.indent = bf.leftMargin() + bf.indent() * 20.0;
+        }
+        return;
+    }
+
+    const KoListLevelProperties llp = KoListLevelProperties::fromTextList(list);
+    const int level = qMax(1, llp.level());
+    const KoListStyle::LabelType label = llp.labelType();
+
+    // Only genuine character bullets can be represented natively.  Numbered
+    // lists need an auto-numbering scheme (not exported yet), so leave them
+    // as plain paragraphs rather than emitting a wrong glyph.
+    if (label == KoListStyle::BulletCharLabelType && llp.bulletCharacter().unicode() != 0) {
+        pf.bulletLevel = level;
+        pf.bulletChar = llp.bulletCharacter().unicode();
+
+        const QSharedPointer<KoCharacterStyle> chars = llp.characterProperties();
+        // ODF lists put the bullet size in the list-level text properties;
+        // relativeBulletSize() always carries a default of 100 even when the
+        // ODF used an absolute fo:font-size, so prefer the absolute value.
+        if (chars && chars->fontPointSize() > 0 && chars->fontPointSize() <= 4000) {
+            // Negative bulletSize encodes an absolute point size on import.
+            pf.bulletHasSize = true;
+            pf.bulletSizeValue = -qRound(chars->fontPointSize());
+        } else {
+            const int rel = llp.relativeBulletSize();
+            if (rel >= 25 && rel <= 400) {
+                pf.bulletHasSize = true;
+                pf.bulletSizeValue = rel;
+            }
+        }
+        if (chars) {
+            const QString family = chars->fontFamily();
+            if (!family.isEmpty()) {
+                pf.bulletHasFont = true;
+                pf.bulletFont = family;
+            }
+            const QColor col = chars->foreground().color();
+            if (col.isValid()) {
+                pf.bulletHasColor = true;
+                pf.bulletRed = quint8(col.red());
+                pf.bulletGreen = quint8(col.green());
+                pf.bulletBlue = quint8(col.blue());
+            }
+        }
+
+        // The importer computes:  text:space-before = pf.indent
+        //                        text:min-label-width = pf.leftMargin - pf.indent
+        // KoListLevelProperties stores these as indent() and minimumWidth().
+        pf.hasIndent = true;
+        pf.indent = llp.indent();
+        pf.leftMargin = llp.indent() + llp.minimumWidth() + llp.minimumDistance();
+    }
+}
+
 // Extract plain text plus per-run/per-paragraph formatting from a text shape.
 static SlideText extractSlideText(QTextDocument *doc, const QRectF &rect)
 {
@@ -600,6 +749,7 @@ static SlideText extractSlideText(QTextDocument *doc, const QRectF &rect)
         rawParaStarts.append(raw.size());
         ParaFmt pf;
         pf.alignment = alignmentFrom(block.blockFormat());
+        fillParaGeometry(block, pf);
         rawParas.append(pf);
         for (QTextBlock::Iterator it = block.begin(); !it.atEnd(); ++it) {
             const QTextFragment frag = it.fragment();
@@ -776,14 +926,63 @@ static Record buildPictureShape(const SlideImage &img)
 // ---------------------------------------------------------------------------
 
 // Build a TextPFException: a 32-bit PFMasks word followed by only the fields
-// whose mask bit is set, in the order the legacy parser expects.
-static QByteArray buildPFException(const ParaFmt &pf)
+// whose mask bit is set, in the exact order parseTextPFException() reads them.
+// PFMasks bit positions (from MSO::parsePFMasks):
+//   0 hasBullet, 1 bulletHasFont, 2 bulletHasColor, 3 bulletHasSize,
+//   4 bulletFont, 5 bulletColor, 6 bulletSize, 7 bulletChar,
+//   8 leftMargin, 10 indent, 11 align, 12 lineSpacing,
+//   13 spaceBefore, 14 spaceAfter.
+static QByteArray buildPFException(const ParaFmt &pf, const QHash<QString, quint16> &fonts)
 {
+    const bool hasBullet = pf.bulletLevel > 0 && pf.bulletChar != 0;
+    const bool bulletFont = hasBullet && pf.bulletHasFont && fonts.contains(pf.bulletFont);
+    const bool bulletColor = hasBullet && pf.bulletHasColor;
+    const bool bulletSize = hasBullet && pf.bulletHasSize;
+    const bool bulletFlags = hasBullet || bulletFont || bulletColor || bulletSize;
+
     quint32 masks = 0;
-    if (pf.alignment >= 0 && pf.alignment <= 3) masks |= (1u << 11); // align
+    if (hasBullet)    masks |= (1u << 0);  // hasBullet
+    if (bulletFont)   masks |= (1u << 1) | (1u << 4);  // bulletHasFont + bulletFont
+    if (bulletColor)  masks |= (1u << 2) | (1u << 5);  // bulletHasColor + bulletColor
+    if (bulletSize)   masks |= (1u << 3) | (1u << 6);  // bulletHasSize + bulletSize
+    if (hasBullet)    masks |= (1u << 7);  // bulletChar
+    if (pf.hasIndent) masks |= (1u << 8) | (1u << 10); // leftMargin + indent
+    if (pf.alignment >= 0 && pf.alignment <= 3) masks |= (1u << 11);
+    if (pf.hasLineSpacing) masks |= (1u << 12);
+    if (pf.hasSpaceBefore) masks |= (1u << 13);
+    if (pf.hasSpaceAfter) masks |= (1u << 14);
+
     QByteArray out;
     appendU32(out, masks);
+
+    if (bulletFlags) {
+        quint16 flags = 0;
+        if (hasBullet)   flags |= 1;
+        if (bulletFont)  flags |= 2;
+        if (bulletColor) flags |= 4;
+        if (bulletSize)  flags |= 8;
+        appendU16(out, flags);
+    }
+    if (masks & (1u << 7))  appendI16(out, qint16(pf.bulletChar));
+    if (masks & (1u << 4))  appendU16(out, fonts.value(pf.bulletFont));
+    if (masks & (1u << 6))  appendI16(out, qint16(qBound(-4000, pf.bulletSizeValue, 400)));
+    if (masks & (1u << 5)) {
+        out.append(char(pf.bulletRed));
+        out.append(char(pf.bulletGreen));
+        out.append(char(pf.bulletBlue));
+        out.append(char(0xFE)); // direct RGB
+    }
     if (masks & (1u << 11)) appendU16(out, quint16(pf.alignment));
+
+    // Positive spacing values are percentages of the line height; negative
+    // values are absolute master units.  Use the absolute form for ODF pt.
+    if (masks & (1u << 12)) appendI16(out, qint16(qBound(-32768, pf.lineSpacingValue, 32767)));
+    if (masks & (1u << 13)) appendI16(out, qint16(-qBound(0, qRound(pf.spaceBefore * 8), 32767)));
+    if (masks & (1u << 14)) appendI16(out, qint16(-qBound(0, qRound(pf.spaceAfter * 8), 32767)));
+    if (masks & (1u << 8))
+        appendU16(out, quint16(qBound(0, qRound(pf.leftMargin * 8), 65535)));
+    if (masks & (1u << 10))
+        appendU16(out, quint16(qBound(0, qRound(pf.indent * 8), 65535)));
     return out;
 }
 
@@ -835,14 +1034,15 @@ static QByteArray writeStyleAtomPayload(const SlideText &st, const QHash<QString
         quint32 count = quint32(qMax(p.length, 1));
         if (i == st.paras.size() - 1) count = quint32(qMax(textLen - pfSum + 1, 1));
         appendU32(pf, count);
-        appendU16(pf, 0); // indentLevel
-        pf += buildPFException(p);
+        // The legacy level is 0-based; ODF list levels are 1-based.
+        appendU16(pf, quint16(qMax(0, p.bulletLevel - 1)));
+        pf += buildPFException(p, fonts);
         pfSum += int(count);
     }
     if (st.paras.isEmpty()) {
         appendU32(pf, quint32(qMax(textLen + 1, 1)));
         appendU16(pf, 0);
-        pf += buildPFException(ParaFmt());
+        pf += buildPFException(ParaFmt(), fonts);
     }
 
     // Character runs must cover every character including paragraph
@@ -905,21 +1105,30 @@ static QHash<QString, quint16> prepareFontCollection(QList<Record> &doc, const Q
         next = qMax(next, quint16(entry.inst + 1));
     }
 
+    // Collect every family used by text runs and by bullet glyphs.  Registering
+    // bullet fonts here lets the importer resolve PF bulletFontRef indices.
+    QStringList families;
     for (const SlideInfo &slide : slides) {
         for (const SlideText &st : slide.texts) {
             for (const TextSpan &sp : st.spans) {
-                if (!sp.fmt.hasFont || sp.fmt.fontFamily.isEmpty()) continue;
-                if (map.contains(sp.fmt.fontFamily)) continue;
-                if (next > 128) continue;
-                Record entry;
-                entry.ver = 0;
-                entry.inst = next;
-                entry.type = 0xFB7;
-                entry.payload = fontEntityPayload(sp.fmt.fontFamily);
-                fc->children.append(entry);
-                map.insert(sp.fmt.fontFamily, next++);
+                if (sp.fmt.hasFont && !sp.fmt.fontFamily.isEmpty())
+                    families.append(sp.fmt.fontFamily);
+            }
+            for (const ParaFmt &p : st.paras) {
+                if (p.bulletHasFont && !p.bulletFont.isEmpty())
+                    families.append(p.bulletFont);
             }
         }
+    }
+    for (const QString &family : families) {
+        if (map.contains(family) || next > 128) continue;
+        Record entry;
+        entry.ver = 0;
+        entry.inst = next;
+        entry.type = 0xFB7;
+        entry.payload = fontEntityPayload(family);
+        fc->children.append(entry);
+        map.insert(family, next++);
     }
     return map;
 }
