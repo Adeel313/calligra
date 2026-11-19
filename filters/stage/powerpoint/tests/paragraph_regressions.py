@@ -38,6 +38,9 @@ AUTO_STYLES = (
     '<style:paragraph-properties fo:line-height="150%" fo:margin-top="12pt" '
     'fo:margin-bottom="6pt"/>'
     '</style:style>'
+    '<style:style style:name="Pindent" style:family="paragraph">'
+    '<style:paragraph-properties fo:margin-left="1cm" fo:text-indent="0.5cm"/>'
+    '</style:style>'
 )
 
 
@@ -73,6 +76,8 @@ def build_paragraph_odp(source, target):
                     '</text:list>', 1)
                 text = text.replace('<text:p>SecondBodyLine</text:p>',
                                     '<text:p text:style-name="Pspace">SecondBodyLine</text:p>', 1)
+                text = text.replace('<text:p>SecondSlideText</text:p>',
+                                    '<text:p text:style-name="Pindent">SecondSlideText</text:p>', 1)
                 data = text.encode()
             zout.writestr(entry, data)
 
@@ -142,8 +147,20 @@ def main():
     check('fo:margin-top="0.423' in spaced, 'space-before lost in round-trip')
     check('fo:margin-bottom="0.211' in spaced, 'space-after lost in round-trip')
 
+    # Plain paragraphs must keep their left margin and first-line indent
+    # without being turned into lists.
+    indented = ''
+    for match in re.finditer(r'<style:style\b[^>]*style:family="paragraph"[^>]*>.*?</style:style>',
+                             content, re.S):
+        if 'fo:margin-left="1.001' in match.group(0):
+            indented = match.group(0)
+            break
+    check(indented, 'left margin lost in round-trip')
+    check('fo:text-indent="0.498' in indented, 'first-line indent lost in round-trip')
+
     check('ExportRoundTripTitle' in content and 'FirstBodyLine' in content
-          and 'SecondBodyLine' in content, 'paragraph text lost')
+          and 'SecondBodyLine' in content and 'SecondSlideText' in content,
+          'paragraph text lost')
 
     print('PASS: binary .ppt round-trip preserves bullets, indentation and paragraph spacing')
 

@@ -669,11 +669,12 @@ static void fillParaGeometry(const QTextBlock &block, ParaFmt &pf)
     QTextList *list = block.textList();
     if (!list) {
         // Plain paragraph: the legacy "indent" is the left margin plus the
-        // block indent (one indent step ~ one em, approximated by 20 pt).
-        if (bf.leftMargin() > 0 || bf.rightMargin() > 0 || bf.indent() != 0) {
+        // first-line text indent (ODF fo:text-indent).
+        const qreal textIndent = bf.textIndent();
+        if (bf.leftMargin() > 0 || bf.rightMargin() > 0 || textIndent != 0) {
             pf.hasIndent = true;
             pf.leftMargin = bf.leftMargin();
-            pf.indent = bf.leftMargin() + bf.indent() * 20.0;
+            pf.indent = bf.leftMargin() + textIndent;
         }
         return;
     }
@@ -934,14 +935,19 @@ static Record buildPictureShape(const SlideImage &img)
 //   13 spaceBefore, 14 spaceAfter.
 static QByteArray buildPFException(const ParaFmt &pf, const QHash<QString, quint16> &fonts)
 {
+    
     const bool hasBullet = pf.bulletLevel > 0 && pf.bulletChar != 0;
     const bool bulletFont = hasBullet && pf.bulletHasFont && fonts.contains(pf.bulletFont);
     const bool bulletColor = hasBullet && pf.bulletHasColor;
     const bool bulletSize = hasBullet && pf.bulletHasSize;
-    const bool bulletFlags = hasBullet || bulletFont || bulletColor || bulletSize;
+    // A plain paragraph with an explicit indent must use a non-zero level: the
+    // importer ignores the indent at level 0.  Explicitly switch bullets off
+    // in that case so the master's default body bullet is not inherited.
+    const bool suppressBullet = !hasBullet && pf.hasIndent;
+    const bool bulletFlags = hasBullet || suppressBullet || bulletFont || bulletColor || bulletSize;
 
     quint32 masks = 0;
-    if (hasBullet)    masks |= (1u << 0);  // hasBullet
+    if (hasBullet || suppressBullet) masks |= (1u << 0);  // hasBullet
     if (bulletFont)   masks |= (1u << 1) | (1u << 4);  // bulletHasFont + bulletFont
     if (bulletColor)  masks |= (1u << 2) | (1u << 5);  // bulletHasColor + bulletColor
     if (bulletSize)   masks |= (1u << 3) | (1u << 6);  // bulletHasSize + bulletSize
@@ -1034,8 +1040,9 @@ static QByteArray writeStyleAtomPayload(const SlideText &st, const QHash<QString
         quint32 count = quint32(qMax(p.length, 1));
         if (i == st.paras.size() - 1) count = quint32(qMax(textLen - pfSum + 1, 1));
         appendU32(pf, count);
-        // The legacy level is 0-based; ODF list levels are 1-based.
-        appendU16(pf, quint16(qMax(0, p.bulletLevel - 1)));
+        // The legacy level is 0-based; ODF list levels are 1-based.  Plain
+        // indented paragraphs also need a non-zero level (see buildPFException).
+        appendU16(pf, quint16(p.hasIndent ? qMax(1, p.bulletLevel - 1) : qMax(0, p.bulletLevel - 1)));
         pf += buildPFException(p, fonts);
         pfSum += int(count);
     }
@@ -1164,11 +1171,46 @@ static Record *findShapeForClientData(Record *root, Record *clientData)
     return nullptr;
 }
 
+// The template's TextRulerAtom (0x0FA6) and DefaultRulerAtom (0x0FAB) can
+// override the left margin and indent stored in a TextPFException (the
+// importer prefers ruler values when present).  Set those ruler values to -1
+// (0xFFFF) so the importer ignores them and uses the per-paragraph values we
+// write.  The payload layout is left untouched so all offsets stay valid.
+static void neutralizeTextRulerMargins(Record &r)
+{
+    for (Record &child : r.children) neutralizeTextRulerMargins(child);
+    if ((r.type != 0x0FA6 && r.type != 0x0FAB) || r.payload.size() < 4) return;
+
+    const quint16 flags = readU16(r.payload, 0);
+    int p = 4; // flags + reserved2
+    if (flags & (1u << 1)) p += 2; // cLevels
+    if (flags & (1u << 0)) p += 2; // defaultTabSize
+    if (flags & (1u << 2)) {       // tabStops: count followed by count entries
+        if (p + 2 > r.payload.size()) return;
+        const quint16 count = readU16(r.payload, p);
+        p += 2 + int(count) * 4;
+    }
+    for (int level = 0; level < 5; ++level) {
+        if (flags & (1u << (3 + level))) { // leftMarginN
+            if (p + 2 > r.payload.size()) return;
+            writeU16(r.payload, p, 0xFFFF);
+            p += 2;
+        }
+        if (flags & (1u << (8 + level))) { // indentN
+            if (p + 2 > r.payload.size()) return;
+            writeU16(r.payload, p, 0xFFFF);
+            p += 2;
+        }
+    }
+}
+
 static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<ExportedImage> &images,
                                 const QSizeF &slideSize)
 {
     QList<Record> doc = parseRecords(QByteArray::fromRawData(
         reinterpret_cast<const char *>(kTemplateDocument), kTemplateDocumentLen), 0, kTemplateDocumentLen);
+
+    for (Record &r : doc) neutralizeTextRulerMargins(r);
 
     // Patch the DocumentAtom (0x03E9) slide size from the ODP page size.
     // PointStruct x/y are signed 32-bit master units (1/576 inch); the ODP
