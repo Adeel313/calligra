@@ -1418,15 +1418,18 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
         slideList->children.append(sp);
     }
 
-    // Locate the template's text shapes (0xF004 containers holding text).
-    QList<Record *> templateTextShapes;
-    for (Record *cd : findAllRecords(*tplSlide, 0xF00D)) {
-        if (findRecord(cd->children, 0x0FA0)) {
-            if (Record *shape = findShapeForClientData(tplSlide, cd)) {
-                if (!templateTextShapes.contains(shape)) templateTextShapes.append(shape);
-            }
-        }
-    }
+    // Locate the shape tree (0xF003) inside a slide container.  Text shapes
+    // are addressed by index into its children list rather than by Record*:
+    // appending cloned shapes reallocates that QList and invalidates any
+    // pointers held across the append, which previously produced empty
+    // 0xF004 records that make the file unreadable.
+    auto findShapeGroup = [](Record &slide) -> Record * {
+        Record *dg = findRecord(slide.children, 0x040C);
+        if (!dg) return nullptr;
+        Record *sp = findRecord(dg->children, 0xF002);
+        if (!sp) return nullptr;
+        return findRecord(sp->children, 0xF003);
+    };
 
     // Build output slide containers by cloning the template.
     QList<QByteArray> slideBlobs;
@@ -1460,45 +1463,42 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
             p[12] = char(info.speed);
         }
 
-        // Re-find text shapes in the cloned slide (pointers into the clone).
-        QList<Record *> textShapes;
-        for (Record *cd : findAllRecords(slide, 0xF00D)) {
-            if (findRecord(cd->children, 0x0FA0)) {
-                if (Record *shape = findShapeForClientData(&slide, cd)) {
-                    if (!textShapes.contains(shape)) textShapes.append(shape);
+        Record *group = findShapeGroup(slide);
+
+        // Locate the template's text shapes as indices into group->children.
+        // Indices stay valid when clones are appended to that same list.
+        QList<int> textShapeIndices;
+        if (group) {
+            for (Record *cd : findAllRecords(slide, 0xF00D)) {
+                if (!findRecord(cd->children, 0x0FA0)) continue;
+                Record *shape = findShapeForClientData(&slide, cd);
+                if (!shape) continue;
+                for (int i = 0; i < group->children.size(); ++i) {
+                    if (&group->children[i] == shape) {
+                        if (!textShapeIndices.contains(i)) textShapeIndices.append(i);
+                        break;
+                    }
                 }
             }
         }
+        const int templateShapeCount = textShapeIndices.size();
+        const int cloneSource = textShapeIndices.isEmpty() ? -1 : textShapeIndices.last();
 
         for (int t = 0; t < info.texts.size(); ++t) {
             const SlideText &st = info.texts.at(t);
-            Record *shape = nullptr;
-            if (t < textShapes.size()) {
-                shape = textShapes[t];
-            } else {
-                // Clone the last text shape to accommodate additional text boxes.
-                if (textShapes.isEmpty()) break;
-                Record clone = *textShapes.last();
-                // The shape lives inside a 0xF003 group; append the clone there.
-                Record *group = nullptr;
-                for (Record &r : slide.children) {
-                    if (r.type == 0x040C) {
-                        for (Record &g : r.children) {
-                            if (g.type == 0xF002) {
-                                for (Record &sub : g.children) {
-                                    if (sub.type == 0xF003) { group = &sub; break; }
-                                }
-                            }
-                        }
-                    }
-                }
-                if (!group) break;
+            int index = -1;
+            if (t < templateShapeCount) {
+                index = textShapeIndices.at(t);
+            } else if (group && cloneSource >= 0) {
+                // Clone the last template text shape for extra text boxes.
+                Record clone = group->children.at(cloneSource);
                 group->children.append(clone);
-                shape = &group->children.last();
+                index = group->children.size() - 1;
             }
+            if (index < 0) break;
 
-            // Patch text, style and anchor inside this shape.
-            Record *cd = findRecord(shape->children, 0xF00D);
+            Record &shape = group->children[index];
+            Record *cd = findRecord(shape.children, 0xF00D);
             if (!cd) continue;
             Record *textAtom = findRecord(cd->children, 0x0FA0);
             Record *styleAtom = findRecord(cd->children, 0x0FA1);
@@ -1506,16 +1506,15 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
 
             textAtom->payload = toUtf16(st.text);
             styleAtom->payload = writeStyleAtomPayload(st, fonts);
-            Record *anchor = findRecord(shape->children, 0xF010);
-            patchShapeAnchor(anchor, st.rect);
+            patchShapeAnchor(findRecord(shape.children, 0xF010), st.rect);
         }
 
         // The template slide carries its own sample text.  Clear any text
         // shapes we did not fill above, otherwise that sample text leaks
         // into the exported slide.
-        for (int t = info.texts.size(); t < textShapes.size(); ++t) {
-            Record *shape = textShapes[t];
-            Record *cd = findRecord(shape->children, 0xF00D);
+        for (int t = info.texts.size(); t < templateShapeCount; ++t) {
+            Record &shape = group->children[textShapeIndices.at(t)];
+            Record *cd = findRecord(shape.children, 0xF00D);
             if (!cd) continue;
             Record *textAtom = findRecord(cd->children, 0x0FA0);
             Record *styleAtom = findRecord(cd->children, 0x0FA1);
@@ -1525,23 +1524,9 @@ static QByteArray buildDocument(const QList<SlideInfo> &slides, const QList<Expo
         }
 
         // Add picture shapes for this slide's images into the shape group.
-        if (!info.images.isEmpty()) {
-            Record *group = nullptr;
-            for (Record &r : slide.children) {
-                if (r.type == 0x040C) {
-                    for (Record &g : r.children) {
-                        if (g.type == 0xF002) {
-                            for (Record &sub : g.children) {
-                                if (sub.type == 0xF003) { group = &sub; break; }
-                            }
-                        }
-                    }
-                }
-            }
-            if (group) {
-                for (const SlideImage &img : info.images) {
-                    group->children.append(buildPictureShape(img));
-                }
+        if (!info.images.isEmpty() && group) {
+            for (const SlideImage &img : info.images) {
+                group->children.append(buildPictureShape(img));
             }
         }
         slideBlobs.append(slide.serialize());

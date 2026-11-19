@@ -3836,8 +3836,29 @@ void MSO::parseOfficeArtSpgrContainer(LEInputStream &in, OfficeArtSpgrContainer 
     int _totalSize = qMin(_s.rh.recLen, quint32(in.getSize() - _startPos));
     _atend = in.getPosition() - _startPos >= _totalSize;
     while (!_atend) {
-        _s.rgfb.append(OfficeArtSpgrContainerFileBlock(&_s));
-        parseOfficeArtSpgrContainerFileBlock(in, _s.rgfb.last());
+        // Some producers emit zero-length OfficeArtSpContainer records (an
+        // 0xF004 header with recLen == 0) in the shape tree.  They carry no
+        // OfficeArtFSP, so the regular choice parser cannot handle them and
+        // aborts parsing of the whole slide.  Detect that case here and just
+        // consume the 8-byte header so the rest of the slide still loads.
+        LEInputStream::Mark _headerMark = in.setMark();
+        bool _emptyShape = false;
+        try {
+            OfficeArtRecordHeader _header(&_s);
+            parseOfficeArtRecordHeader(in, _header);
+            _emptyShape = (_header.recVer == 0xF && _header.recType == 0x0F004 && _header.recLen == 0);
+        } catch (IOException &) {
+            // Let the regular parser report the error below.
+        }
+        in.rewind(_headerMark);
+
+        if (_emptyShape) {
+            OfficeArtRecordHeader _ignored(&_s);
+            parseOfficeArtRecordHeader(in, _ignored);
+        } else {
+            _s.rgfb.append(OfficeArtSpgrContainerFileBlock(&_s));
+            parseOfficeArtSpgrContainerFileBlock(in, _s.rgfb.last());
+        }
         _atend = in.getPosition() - _startPos >= _totalSize;
     }
 }
