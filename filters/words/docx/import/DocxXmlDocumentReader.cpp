@@ -434,8 +434,19 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     closeOpenList();
     READ_PROLOGUE
 
+    // Word links each new section's headers and footers to the preceding
+    // section unless that section provides its own references.  Capture the
+    // previous section's resolved parts before they are cleared below so a
+    // later section without references can reuse them.
+    const QMap<QString, QString> inheritedHeaders = m_headers;
+    const QMap<QString, QString> inheritedFooters = m_footers;
+
     m_footerActive = false;
-    m_headerActive = false;
+    // A section inheriting the previous section's header still needs the
+    // header-distance top margin that read_pgMar() only emits when a header
+    // reference has already been seen.  Any section following one with a
+    // header has a header (explicit or inherited), so mark it active now.
+    m_headerActive = !inheritedHeaders.isEmpty();
 
     m_currentPageStyle = KoGenStyle(KoGenStyle::PageLayoutStyle);
     m_sectionColumnsXml.clear();
@@ -505,6 +516,18 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     }
 
     applyPageBorders(m_currentPageStyle, m_pageMargins, m_pageBorderStyles, m_pageBorderPaddings, m_pageBorderOffsetFrom);
+
+    // A section that declares no header/footer references is linked to the
+    // previous section: reuse its parts.  An explicit reference (even to an
+    // empty part) still takes precedence because in that case the map is not
+    // empty.  Doing this before the page-number format substitution below
+    // means a section can still restyle the inherited page-number field.
+    if (m_headers.isEmpty()) {
+        m_headers = inheritedHeaders;
+    }
+    if (m_footers.isEmpty()) {
+        m_footers = inheritedFooters;
+    }
 
     // A continuous section's properties describe the section ending at its
     // paragraph mark.  Attaching its column definition to the next section
