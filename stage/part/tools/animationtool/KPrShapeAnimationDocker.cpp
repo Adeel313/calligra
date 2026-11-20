@@ -553,13 +553,11 @@ KoShape *KPrShapeAnimationDocker::getSelectedShape()
         }
         m_lastSelectedShape = nullptr;
     } else if (!(canvasController->canvas()->shapeManager()->shapes().isEmpty())) {
-        foreach (KoShape *shape, selection->selectedShapes()) {
-            shape->update();
-        }
-        selection->deselectAll();
-        selection->select(canvasController->canvas()->shapeManager()->shapes().last());
-        selection->update();
-        m_view->kopaCanvas()->shapeManager()->shapes().first()->update();
+        // The animation docker only needs a shape to attach a new animation to.
+        // It must not select one on the canvas: this method is also called when
+        // the ribbon is built at startup and whenever the active slide changes.
+        m_lastSelectedShape = canvasController->canvas()->shapeManager()->shapes().last();
+        return m_lastSelectedShape;
     }
     // Return current shape selected on canvas
     if (!selection->selectedShapes().isEmpty()) {
