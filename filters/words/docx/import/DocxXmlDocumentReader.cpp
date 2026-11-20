@@ -6254,8 +6254,16 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     m_table->saveOdf(*body, *mainStyles);
 
     if (sectionAdded) {
-        m_currentSectionStyleName = m_table->tableStyle()->name();
-        m_currentSectionStyleFamily = "table";
+        const QString tableName = m_table->tableStyle()->name();
+        if (!tableName.isEmpty()) {
+            m_currentSectionStyleName = tableName;
+            m_currentSectionStyleFamily = "table";
+        } else {
+            // A suppressed table (e.g. an empty hideMark spacer) never saves
+            // its style, so it cannot carry the section's page layout.  Let
+            // the next paragraph or table claim the section style instead.
+            m_createSectionStyle = true;
+        }
     }
 
     delete m_currentLocalTableStyles;
