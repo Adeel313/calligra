@@ -12,16 +12,23 @@
 #include "KPrPresentationTool.h"
 
 #include <QAbstractTextDocumentLayout>
+#include <QAction>
+#include <QActionGroup>
 #ifdef WITH_QTDBUS
 #include <QDBusConnection>
 #endif
+#include <QCursor>
 #include <QDesktopServices>
 #include <QFrame>
 #include <QKeyEvent>
+#include <QMenu>
+#include <QMessageBox>
 #include <QPainter>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QWidget>
+
+#include <KLocalizedString>
 
 #include <KoEventAction.h>
 #include <KoPACanvasBase.h>
@@ -35,9 +42,12 @@
 #include "KPrPresentationBlackStrategy.h"
 #include "KPrPresentationDrawStrategy.h"
 #include "KPrPresentationHighlightStrategy.h"
+#include "KPrDocument.h"
 #include "KPrPresentationStrategy.h"
 #include "KPrViewModePresentation.h"
 #include "ui/KPrPresentationToolWidget.h"
+
+#include <KoPAPageBase.h>
 
 #ifdef WITH_QTDBUS
 #include "KPrPresentationToolAdaptor.h"
@@ -117,7 +127,7 @@ void KPrPresentationTool::mousePressEvent(KoPointerEvent *event)
     } else if (event->button() & Qt::RightButton) {
         event->accept();
         finishEventActions();
-        m_viewMode.navigate(KPrAnimationDirector::PreviousStep);
+        showContextMenu(event->globalPosition().toPoint());
     }
 }
 
@@ -144,9 +154,118 @@ void KPrPresentationTool::mouseReleaseEvent(KoPointerEvent *event)
     Q_UNUSED(event);
 }
 
+void KPrPresentationTool::showContextMenu(const QPoint &globalPos)
+{
+    QWidget *canvasWidget = m_viewMode.canvas()->canvasWidget();
+    QMenu *menu = new QMenu(canvasWidget);
+    menu->setAttribute(Qt::WA_DeleteOnClose);
+
+    QAction *previous = menu->addAction(i18n("&Previous"));
+    connect(previous, &QAction::triggered, this, [this]() {
+        m_viewMode.navigate(KPrAnimationDirector::PreviousStep);
+    });
+
+    QAction *next = menu->addAction(i18n("&Next"));
+    connect(next, &QAction::triggered, this, [this]() {
+        m_viewMode.navigate(KPrAnimationDirector::NextStep);
+    });
+
+    menu->addSeparator();
+
+    QAction *first = menu->addAction(i18n("&First Slide"));
+    connect(first, &QAction::triggered, this, [this]() {
+        m_viewMode.navigate(KPrAnimationDirector::FirstPage);
+    });
+
+    QAction *last = menu->addAction(i18n("&Last Slide"));
+    connect(last, &QAction::triggered, this, [this]() {
+        m_viewMode.navigate(KPrAnimationDirector::LastPage);
+    });
+
+    menu->addSeparator();
+
+    QMenu *goToSlide = menu->addMenu(i18n("Go to &Slide"));
+    KPrDocument *document = qobject_cast<KPrDocument *>(m_viewMode.canvas()->document());
+    if (document) {
+        const QList<KoPAPageBase *> slides = document->slideShow();
+        for (int i = 0; i < slides.size(); ++i) {
+            QString title = slides.at(i)->name();
+            if (title.isEmpty()) {
+                title = i18n("Slide %1", i + 1);
+            }
+            QAction *slideAction = goToSlide->addAction(QStringLiteral("%1. %2").arg(i + 1).arg(title));
+            slideAction->setCheckable(true);
+            slideAction->setChecked(i == m_viewMode.currentPage());
+            connect(slideAction, &QAction::triggered, this, [this, i]() {
+                m_viewMode.navigateToPage(i);
+            });
+        }
+    }
+    goToSlide->setEnabled(!goToSlide->isEmpty());
+
+    menu->addSeparator();
+
+    QMenu *screen = menu->addMenu(i18n("&Screen"));
+    QAction *blackScreen = screen->addAction(i18n("&Black Screen"));
+    blackScreen->setCheckable(true);
+    blackScreen->setChecked(dynamic_cast<KPrPresentationBlackStrategy *>(m_strategy) != nullptr);
+    connect(blackScreen, &QAction::triggered, this, &KPrPresentationTool::blackPresentation);
+
+    QMenu *pointer = menu->addMenu(i18n("&Pointer Options"));
+    QActionGroup *pointerGroup = new QActionGroup(menu);
+    pointerGroup->setExclusive(true);
+
+    QAction *arrow = pointer->addAction(i18n("&Arrow"));
+    arrow->setCheckable(true);
+    arrow->setChecked(dynamic_cast<KPrPresentationStrategy *>(m_strategy) != nullptr);
+    pointerGroup->addAction(arrow);
+    connect(arrow, &QAction::triggered, this, &KPrPresentationTool::normalPresentation);
+
+    QAction *pen = pointer->addAction(i18n("&Pen"));
+    pen->setCheckable(true);
+    pen->setChecked(dynamic_cast<KPrPresentationDrawStrategy *>(m_strategy) != nullptr);
+    pointerGroup->addAction(pen);
+    connect(pen, &QAction::triggered, this, &KPrPresentationTool::drawOnPresentation);
+
+    QAction *highlighter = pointer->addAction(i18n("&Highlighter"));
+    highlighter->setCheckable(true);
+    highlighter->setChecked(dynamic_cast<KPrPresentationHighlightStrategy *>(m_strategy) != nullptr);
+    pointerGroup->addAction(highlighter);
+    connect(highlighter, &QAction::triggered, this, &KPrPresentationTool::highlightPresentation);
+
+    menu->addSeparator();
+
+    QAction *help = menu->addAction(i18n("&Help"));
+    connect(help, &QAction::triggered, this, [canvasWidget]() {
+        QMessageBox::information(canvasWidget, i18n("Slide Show Help"),
+                                 i18n("<p><b>Next:</b> Right arrow, Space, Page Down or Down arrow<br>"
+                                      "<b>Previous:</b> Left arrow, Backspace, Page Up or Up arrow<br>"
+                                      "<b>First/Last slide:</b> Home / End<br>"
+                                      "<b>End show:</b> Esc<br>"
+                                      "<b>Context menu:</b> Right-click or Shift+F10</p>"));
+    });
+
+    menu->addSeparator();
+
+    QAction *endShow = menu->addAction(i18n("&End Show"));
+    connect(endShow, &QAction::triggered, this, [this]() {
+        m_viewMode.activateSavedViewMode();
+    });
+
+    menu->popup(globalPos);
+}
+
 void KPrPresentationTool::keyPressEvent(QKeyEvent *event)
 {
     finishEventActions();
+
+    // Match PowerPoint's Shift+F10 / Menu-key behaviour.
+    if (event->key() == Qt::Key_Menu || (event->key() == Qt::Key_F10 && event->modifiers() & Qt::ShiftModifier)) {
+        event->accept();
+        showContextMenu(QCursor::pos());
+        return;
+    }
+
     // first try to handle the event in the strategy if it is done there no need to use the default action
     if (!m_strategy->keyPressEvent(event)) {
         switch (event->key()) {

@@ -16,6 +16,7 @@
 #include <QSet>
 
 class QFrame;
+class QPoint;
 class KoEventAction;
 class KPrViewModePresentation;
 class KPrPresentationToolWidget;
@@ -47,6 +48,9 @@ public:
 
     KPrPresentationStrategyBase *strategy();
     KPrViewModePresentation &viewModePresentation();
+
+    /// Show the PowerPoint-style slideshow context menu at the given screen position.
+    void showContextMenu(const QPoint &globalPos);
 
 public Q_SLOTS:
     void activate(KoToolBase::ToolActivation toolActivation, const QSet<KoShape *> &shapes) override;
