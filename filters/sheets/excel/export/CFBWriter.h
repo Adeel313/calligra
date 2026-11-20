@@ -88,7 +88,7 @@ private:
     private:
         void buildSiblingTree(const QList<DirectoryEntry *> &nodes, int first, int middle, int last);
     };
-    QList<DirectoryEntry> m_entries;
+    QList<DirectoryEntry *> m_entries;
 
     class StreamIODevice;
     QList<StreamIODevice *> m_openStreams;

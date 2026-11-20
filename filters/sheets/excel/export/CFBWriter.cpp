@@ -12,6 +12,7 @@
 #include <QStringList>
 
 #include <QDebug>
+#include <QtAlgorithms>
 
 #include <algorithm>
 
@@ -31,6 +32,11 @@ CFBWriter::~CFBWriter()
 {
     if (m_device)
         close();
+    // Stream devices and directory entries are owned by the writer.  Keeping
+    // them behind pointers makes their addresses stable, which is required
+    // because the directory tree stores raw pointers to them.
+    qDeleteAll(m_openStreams);
+    qDeleteAll(m_entries);
 }
 
 bool CFBWriter::open(QIODevice *device)
@@ -219,27 +225,29 @@ qint64 CFBWriter::StreamIODevice::readData(char *data, qint64 maxlen)
 
 QIODevice *CFBWriter::openSubStream(const QString &streamName)
 {
-    DirectoryEntry *parent = &m_entries[0];
+    DirectoryEntry *parent = m_entries.first();
     QStringList parts = streamName.split('/');
     for (int i = 0; i < parts.size() - 1; i++) {
         if (parent->children.contains(parts[i])) {
             parent = parent->children[parts[i]];
             Q_ASSERT(parent->type == DirectoryEntry::Storage);
         } else {
-            m_entries.append(DirectoryEntry(m_entries.size(), parts[i], DirectoryEntry::Storage));
-            parent->children[parts[i]] = &m_entries.last();
-            parent = &m_entries.last();
+            DirectoryEntry *storage = new DirectoryEntry(m_entries.size(), parts[i], DirectoryEntry::Storage);
+            m_entries.append(storage);
+            parent->children[parts[i]] = storage;
+            parent = storage;
         }
     }
     Q_ASSERT(!parent->children.contains(parts.last()));
-    m_entries.append(DirectoryEntry(m_entries.size(), parts.last(), DirectoryEntry::Stream));
-    parent->children[parts.last()] = &m_entries.last();
-    return new StreamIODevice(*this, m_entries.last());
+    DirectoryEntry *stream = new DirectoryEntry(m_entries.size(), parts.last(), DirectoryEntry::Stream);
+    m_entries.append(stream);
+    parent->children[parts.last()] = stream;
+    return new StreamIODevice(*this, *stream);
 }
 
 void CFBWriter::setRootClassId(const QUuid &classId)
 {
-    m_entries[0].uuid = classId;
+    m_entries.first()->uuid = classId;
 }
 
 static bool compareNames(const QString &a, const QString &b)
@@ -299,8 +307,8 @@ void CFBWriter::close()
 
     // write directory entries
     // - update left/right sibling/first child fields
-    for (int i = 0; i < m_entries.size(); i++) {
-        m_entries[i].buildChildrenTree();
+    for (DirectoryEntry *entry : m_entries) {
+        entry->buildChildrenTree();
     }
     // - write actual entries
     unsigned dirSector = -1;
@@ -313,7 +321,7 @@ void CFBWriter::close()
         QDataStream ds(&b);
         ds.setByteOrder(QDataStream::LittleEndian);
         for (int j = 0; j < int(m_sectorSize / 128) && i + j < m_entries.size(); j++) {
-            const DirectoryEntry &e = m_entries[i + j];
+            const DirectoryEntry &e = *m_entries[i + j];
             const ushort *name = e.name.utf16();
             int n = 0;
             while (*name) {
@@ -403,8 +411,8 @@ void CFBWriter::init()
     m_firstMiniFatSector = ENDOFCHAIN;
     m_miniFatSectorCount = 0;
     m_entries.clear();
-    m_entries.append(DirectoryEntry(0, "Root Entry", DirectoryEntry::RootStorage));
-    m_miniFatDataStream = new StreamIODevice(*this, m_entries[0]);
+    m_entries.append(new DirectoryEntry(0, "Root Entry", DirectoryEntry::RootStorage));
+    m_miniFatDataStream = new StreamIODevice(*this, *m_entries.first());
 }
 
 void CFBWriter::writeData(unsigned sector, unsigned sectorOffset, const QByteArray &data)

@@ -80,3 +80,7 @@ endif()
 if(SHOULD_BUILD_FILTER_DOCX_TO_ODT)
     add_subdirectory( docx )
 endif()
+
+if(SHOULD_BUILD_FILTER_ODT_TO_DOC)
+    add_subdirectory( msword-export )
+endif()

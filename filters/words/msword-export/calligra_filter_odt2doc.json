@@ -1,0 +1,12 @@
+{
+    "KPlugin": {
+        "Name": "MS Word DOC Export Filter",
+        "Name[en_GB]": "MS Word DOC Export Filter",
+        "ServiceTypes": [
+            "Calligra/Filter"
+        ]
+    },
+    "X-KDE-Export": "application/msword",
+    "X-KDE-Import": "application/vnd.oasis.opendocument.text",
+    "X-KDE-Weight": 1
+}

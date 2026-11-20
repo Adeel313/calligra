@@ -167,6 +167,7 @@ calligra_define_product(FILTER_ODP_TO_PPT "ODP to PPT (binary) filter" REQUIRES 
 calligra_define_product(FILTER_DOC_TO_ODT "DOC to ODT filter"  REQUIRES LIB_MSO LIB_KOMSOOXML LIB_KOMAIN)
 calligra_define_product(FILTER_DOCX_TO_ODT "DOCX to ODT filter"  REQUIRES LIB_KOMSOOXML LIB_KOODF2 LIB_KOMAIN)
 calligra_define_product(FILTER_ODT_TO_DOCX "ODT to DOCX filter" REQUIRES LIB_KOODFREADER LIB_KOODF2 LIB_KOMAIN)
+calligra_define_product(FILTER_ODT_TO_DOC "ODT to DOC (binary Word 97) filter" REQUIRES LIB_KOODF2 LIB_KOMAIN)
 calligra_define_product(FILTER_WORDPERFECT_TO_ODT "Word Perfect to ODT filter"  REQUIRES LIB_KOMAIN)
 calligra_define_product(FILTER_WORKS_TO_ODT "MS Works to ODT filter"  REQUIRES LIB_KOMAIN)
 calligra_define_product(FILTER_APPLIXWORD_TO_ODT "Applixword to ODT filter"  REQUIRES LIB_KOMAIN)
@@ -285,6 +286,7 @@ calligra_define_productset(FILTERS_WORDS_EXPORT "All Words export filters"
         FILTER_ODT_TO_EPUB2
         FILTER_ODT_TO_HTML
         FILTER_ODT_TO_DOCX
+        FILTER_ODT_TO_DOC
         FILTER_ODT_TO_WIKI
 )
 calligra_define_productset(FILTERS_WORDS "All Words filters"
