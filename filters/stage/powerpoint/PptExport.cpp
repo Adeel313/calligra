@@ -9,6 +9,7 @@
 #include <KPrPage.h>
 #include <KPrPageApplicationData.h>
 #include <KPrPlaceholderShape.h>
+#include <KoTosContainer.h>
 #include <pageeffects/KPrPageEffect.h>
 
 #include <KoColorBackground.h>
@@ -50,6 +51,7 @@
 #include <QBuffer>
 #include <QColor>
 #include <QCryptographicHash>
+#include <functional>
 #include <QFile>
 #include <QDomDocument>
 #include <QTextStream>
@@ -250,14 +252,25 @@ static QByteArray buildCfb(const QList<CfbStream> &streams)
         }
     }
 
-    // Reserve enough leading sectors for the FAT.  Each FAT sector holds
+    // Reserve enough leading sectors for the FAT (and the DIFAT chain when
+    // the FAT does not fit in the 109 header slots).  Each FAT sector holds
     // SECTOR/4 entries; we must reserve them before allocating any data
     // sectors, otherwise writing the FAT would overwrite stream data.
-    int reserve = 1; // at least one FAT sector
-    for (const CfbStream &s : streams) reserve += qMax(1, (s.data.size() + SECTOR - 1) / SECTOR);
+    int dataSectors = 0;
+    for (const CfbStream &s : streams) dataSectors += qMax(1, (s.data.size() + SECTOR - 1) / SECTOR);
     // mini stream, mini FAT and directory are small; allow generous headroom
-    reserve += 16;
-    const int nFat = (reserve + SECTOR / 4 - 1) / (SECTOR / 4);
+    const int overhead = 32;
+    int nFat = 1;
+    int nDifat = 0;
+    for (;;) {
+        const int total = 1 /* header */ + dataSectors + overhead + nFat + nDifat;
+        const int needFat = (total + SECTOR / 4 - 1) / (SECTOR / 4);
+        // A DIFAT sector holds 127 FAT sector numbers and one chain pointer.
+        const int needDifat = needFat > 109 ? (needFat - 109 + 126) / 127 : 0;
+        if (needFat == nFat && needDifat == nDifat) break;
+        nFat = needFat;
+        nDifat = needDifat;
+    }
 
     QList<quint32> fat;
     QList<QByteArray> sectors;
@@ -340,6 +353,22 @@ static QByteArray buildCfb(const QList<CfbStream> &streams)
         fat.append(i < nDir - 1 ? dirStart + i + 1 : ENDOFCHAIN);
     }
 
+    // DIFAT sectors hold the FAT sector numbers that do not fit in the 109
+    // header slots.  The last entry in each DIFAT sector chains to the next.
+    // Without these, any file with more than 109 FAT sectors has an invalid
+    // directory and cannot be reopened.
+    const quint32 difatStart = nDifat > 0 ? quint32(sectors.size()) : ENDOFCHAIN;
+    for (int i = 0; i < nDifat; ++i) {
+        QByteArray ds(SECTOR, '\xff'); // unused entries are FREESECT
+        for (int j = 0; j < 127; ++j) {
+            const int fatIndex = 109 + i * 127 + j;
+            writeU32(ds, j * 4, fatIndex < nFat ? quint32(fatIndex) : FREESECT);
+        }
+        writeU32(ds, 127 * 4, (i + 1 < nDifat) ? (difatStart + i + 1) : ENDOFCHAIN);
+        sectors.append(ds);
+        fat.append(ENDOFCHAIN);
+    }
+
     // Write FAT data into the reserved leading sectors.  The FAT entries for
     // those sectors were already marked FATSECT above.  Note that the FAT may
     // have grown while allocating data sectors, so guard against overflow.
@@ -365,8 +394,8 @@ static QByteArray buildCfb(const QList<CfbStream> &streams)
     writeU32(h, 56, CUTOFF);
     writeU32(h, 60, miniFatStart);
     writeU32(h, 64, quint32(nMiniFat));
-    writeU32(h, 68, ENDOFCHAIN);
-    writeU32(h, 72, 0);
+    writeU32(h, 68, difatStart);
+    writeU32(h, 72, quint32(nDifat));
     for (int i = 0; i < 109; ++i) writeU32(h, 76 + i * 4, i < nFat ? quint32(i) : FREESECT);
 
     QByteArray out = h;
@@ -507,7 +536,7 @@ struct ExportedImage {
 // SVG/WMF images, ...) survives the round-trip as a picture instead of being
 // dropped entirely.  Rasterising is lossy for editability, but faithful to the
 // rendered appearance, which is the priority for a legacy binary format.
-static QByteArray rasterizeShape(KoShape *shape, const QRectF &bounds)
+static QByteArray rasterizeShape(KoShape *shape, const QRectF &bounds, bool excludeText = false)
 {
     if (!shape) return QByteArray();
     const QSizeF shapeSize = bounds.size();
@@ -516,9 +545,31 @@ static QByteArray rasterizeShape(KoShape *shape, const QRectF &bounds)
                           qBound(1, qRound(shapeSize.height() * 2.0), 8192));
     QImage image(pixelSize, QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
+
+    // A text-bearing autoshape keeps its text as an editable text box.  Hide
+    // the text children while painting so the rasterised picture contains
+    // only the shape's fill and outline; otherwise the text would be painted
+    // twice (once in the picture, once as a text box).
+    QList<KoShape *> hidden;
+    if (excludeText) {
+        std::function<void(KoShape *)> hideText = [&](KoShape *s) {
+            if (qobject_cast<KoTextShapeDataBase *>(s->userData()) && s->isVisible()) {
+                s->setVisible(false);
+                hidden.append(s);
+            }
+            if (auto *container = dynamic_cast<KoShapeContainer *>(s)) {
+                for (KoShape *child : container->shapes()) hideText(child);
+            }
+        };
+        hideText(shape);
+    }
+
     KoShapePainter painter;
     painter.setShapes({shape});
     painter.paint(image);
+
+    for (KoShape *s : hidden) s->setVisible(true);
+
     QByteArray data;
     QBuffer buffer(&data);
     if (!buffer.open(QIODevice::WriteOnly) || !image.save(&buffer, "PNG")) return QByteArray();
@@ -736,12 +787,23 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
     // own and must never be rasterised, even when empty.
     if (dynamic_cast<KoShapeLayer *>(shape) || dynamic_cast<KoShapeGroup *>(shape)) return;
 
-    if (handled || childContent) return;
+    if (handled) return;
+
+    const QRectF bounds = shape->boundingRect();
+    if (childContent) {
+        // An autoshape (draw:custom-shape) owns its text through a child text
+        // shape.  The text is exported separately above, but the shape's own
+        // fill and outline have no native PPT representation: rasterise the
+        // decoration with the text hidden so it is not painted twice.
+        if (dynamic_cast<KoTosContainer *>(shape)) {
+            addImageShape(shape, rasterizeShape(shape, bounds, true), QStringLiteral("png"), images, bounds);
+        }
+        return;
+    }
 
     // A leaf shape with no native representation (chart, table, autoshape,
     // connector, ...) has no editable equivalent in binary PPT.  Rasterise it
     // as a picture so its visual content survives the round-trip.
-    const QRectF bounds = shape->boundingRect();
     addImageShape(shape, rasterizeShape(shape, bounds), QStringLiteral("png"), images, bounds);
 }
 
