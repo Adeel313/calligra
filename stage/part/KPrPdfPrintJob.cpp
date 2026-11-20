@@ -7,6 +7,7 @@
 
 #include "KPrPdfPrintJob.h"
 
+#include "KPrPage.h"
 #include "KPrView.h"
 #include "KoPAPageBase.h"
 #include "KoPAPageProvider.h"
@@ -14,9 +15,21 @@
 #include <KoPageLayout.h>
 #include <KoZoomHandler.h>
 #include <QPainter>
+
 KPrPdfPrintJob::KPrPdfPrintJob(KPrView *view)
     : KoPAPrintJob(view)
 {
+    // Hidden slides are excluded from slide shows; leave them out of PDF
+    // exports as well, like other presentation applications do.
+    QList<KoPAPageBase *> visiblePages;
+    for (KoPAPageBase *page : m_pages) {
+        const auto *slide = dynamic_cast<KPrPage *>(page);
+        if (!slide || !slide->isHidden()) {
+            visiblePages.append(page);
+        }
+    }
+    m_pages = visiblePages;
+    printer().setFromTo(1, m_pages.size());
 }
 
 KPrPdfPrintJob::~KPrPdfPrintJob() = default;

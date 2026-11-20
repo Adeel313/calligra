@@ -1725,10 +1725,15 @@ void PptToOdp::defineDrawingPageStyle(KoGenStyle &style,
                 if (mapped.reverse) style.addProperty("smil:direction", "reverse", dp);
             }
         }
+        // SlideShowSlideInfoAtom.fHidden marks slides that are excluded from
+        // the slide show.  Preserve that on the drawing-page style so that
+        // presentation and PDF export skip them.
+        if (slideShowInfo->fHidden) {
+            style.addProperty("presentation:visibility", "hidden", dp);
+        }
     }
     // presentation:transition-speed
     // presentation:transition-style
-    // presentation:visibility
     // svg:fill-rule
     // smil:fadeColor
 } // end defineDrawingPageStyle()
