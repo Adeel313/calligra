@@ -20,16 +20,20 @@
 #include <KoImageData.h>
 #include <KoInlineTextObjectManager.h>
 #include <KoInsets.h>
+#include <KoPatternBackground.h>
 #include <KoPADocument.h>
 #include <KoPAMasterPage.h>
 #include <KoPAPage.h>
 #include <KoPAPageBase.h>
 #include <KoShape.h>
+#include <KoShapeBackground.h>
 #include <KoShapeContainer.h>
 #include <KoShapeGroup.h>
 #include <KoShapeLayer.h>
 #include <KoShapePainter.h>
+#include <KoShapePaintingContext.h>
 #include <KoShapeSavingContext.h>
+#include <KoViewConverter.h>
 #include <KoXmlWriter.h>
 #include <KoXmlNS.h>
 #include <KoTextShapeDataBase.h>
@@ -53,6 +57,8 @@
 #include <QHash>
 #include <QImage>
 #include <QList>
+#include <QPainter>
+#include <QPainterPath>
 #include <QPair>
 #include <QRectF>
 #include <QSaveFile>
@@ -464,6 +470,9 @@ struct SlideImage {
     int pib = 0;          // 1-based picture index, assigned by registerImages()
     QByteArray embeddedObject;
     quint32 embeddedObjectId = 0;
+    // Background fills must be written before the text boxes so they do not
+    // paint over the slide content.
+    bool behindText = false;
 };
 
 struct SlideInfo {
@@ -583,7 +592,8 @@ static QByteArray buildFormulaObject(const QByteArray &math)
 }
 
 static void addImageShape(KoShape *shape, const QByteArray &data, const QString &suffix,
-                          QList<SlideImage> &images, const QRectF &rect)
+                          QList<SlideImage> &images, const QRectF &rect,
+                          bool behindText = false)
 {
     if (data.isEmpty()) return;
     SlideImage img;
@@ -591,12 +601,61 @@ static void addImageShape(KoShape *shape, const QByteArray &data, const QString 
     img.suffix = suffix;
     img.rgbUid = QCryptographicHash::hash(data, QCryptographicHash::Md5).left(16);
     img.rect = rect;
-    img.embeddedObject = QByteArray::fromBase64(shape->additionalAttribute(QStringLiteral("calligra:ppt-embedded-object")).toLatin1(),
-                                                QByteArray::AbortOnBase64DecodingErrors);
-    if (img.embeddedObject.isEmpty()) {
-        img.embeddedObject = buildFormulaObject(formulaMathML(shape));
+    img.behindText = behindText;
+    if (shape) {
+        img.embeddedObject = QByteArray::fromBase64(shape->additionalAttribute(QStringLiteral("calligra:ppt-embedded-object")).toLatin1(),
+                                                    QByteArray::AbortOnBase64DecodingErrors);
+        if (img.embeddedObject.isEmpty()) {
+            img.embeddedObject = buildFormulaObject(formulaMathML(shape));
+        }
     }
     images.append(img);
+}
+
+// Preserve a drawing-page fill that cannot be represented by a solid
+// background colour.  A bitmap fill is emitted as a full-slide picture placed
+// behind the text; other fills are rasterised once into the same picture.
+static void addBackgroundFill(KoShapeBackground *background, const QRectF &rect,
+                              QList<SlideImage> &images)
+{
+    if (!background || rect.isEmpty()) return;
+
+    if (auto *pattern = dynamic_cast<KoPatternBackground *>(background)) {
+        if (KoImageData *imageData = pattern->patternData()) {
+            QByteArray data;
+            QBuffer buffer(&data);
+            QString suffix;
+            if (buffer.open(QIODevice::WriteOnly) && imageData->saveData(buffer)) {
+                suffix = imageData->suffix().toLower();
+            }
+            if (!data.isEmpty() && (suffix == QLatin1String("png")
+                                    || suffix == QLatin1String("jpg")
+                                    || suffix == QLatin1String("jpeg"))) {
+                addImageShape(nullptr, data,
+                              suffix == QLatin1String("png") ? QStringLiteral("png")
+                                                             : QStringLiteral("jpeg"),
+                              images, rect, true);
+                return;
+            }
+        }
+    }
+
+    const QSize pixelSize(qBound(1, qRound(rect.width() * 2.0), 8192),
+                          qBound(1, qRound(rect.height() * 2.0), 8192));
+    QImage image(pixelSize, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    painter.setWindow(QRect(0, 0, pixelSize.width(), pixelSize.height()));
+    QPainterPath fillPath;
+    fillPath.addRect(QRectF(0, 0, pixelSize.width(), pixelSize.height()));
+    KoShapePaintingContext context;
+    KoViewConverter converter; // zoom 1: one document point per pixel in setWindow
+    background->paint(painter, converter, context, fillPath);
+    QByteArray data;
+    QBuffer buffer(&data);
+    if (buffer.open(QIODevice::WriteOnly) && image.save(&buffer, "PNG")) {
+        addImageShape(nullptr, data, QStringLiteral("png"), images, rect, true);
+    }
 }
 
 static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<SlideImage> &images)
@@ -703,6 +762,11 @@ static SlideInfo pageContent(KoPAPageBase *page)
             info.bgGreen = quint8(color.green());
             info.bgBlue = quint8(color.blue());
         }
+    } else if (background) {
+        // Binary PPT has no portable ODF-style bitmap/gradient/hatch page
+        // fill.  Preserve it as a full-slide picture; it is written before
+        // the text boxes so the slide content stays visible.
+        addBackgroundFill(background.data(), QRectF(QPointF(0, 0), page->size()), info.images);
     }
 
     if (master && normalPage->displayMasterShapes()) {
@@ -1904,9 +1968,19 @@ static QByteArray buildDocument(QList<SlideInfo> &slides, const QList<ExportedIm
         }
 
         // Add picture shapes for this slide's images into the shape group.
+        // Background fills are inserted before the first text box so they
+        // cannot cover the slide content; ordinary images keep the previous
+        // stacking behaviour and are appended above the text.
         if (!info.images.isEmpty() && group) {
+            int behindInsert = textShapeIndices.isEmpty()
+                ? qMin(1, group->children.size())
+                : *std::min_element(textShapeIndices.cbegin(), textShapeIndices.cend());
             for (const SlideImage &img : info.images) {
-                group->children.append(buildPictureShape(img));
+                if (img.behindText) {
+                    group->children.insert(behindInsert++, buildPictureShape(img));
+                } else {
+                    group->children.append(buildPictureShape(img));
+                }
             }
         }
         slideBlobs.append(slide.serialize());
