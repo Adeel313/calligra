@@ -118,13 +118,18 @@ QList<QPointer<QWidget>> PictureTool::createOptionWidgets()
     connect(m_pictureToolUI->cbContour, &QAbstractButton::toggled, this, &PictureTool::contourCheckBoxChanged);
     connect(m_pictureToolUI->cropWidget, &CropWidget::sigCropRegionChanged, this, &PictureTool::cropRegionChanged);
 
-    if (!qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+    const bool wordsRibbon = qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive);
+    const bool stageRibbon = qApp->applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive);
+    if (!wordsRibbon && !stageRibbon) {
         return {m_pictureToolUI};
     }
 
     auto *adjust = new QWidget;
     adjust->setWindowTitle(i18n("Adjust"));
     adjust->setProperty("ribbonGroupOrder", 10);
+    if (stageRibbon) {
+        adjust->setProperty("ribbonTargetPage", QStringLiteral("stagePictureToolsPage"));
+    }
     auto *adjustLayout = new QHBoxLayout(adjust);
     adjustLayout->setContentsMargins(2, 1, 2, 1);
     auto *change = new QToolButton(adjust);
@@ -145,6 +150,9 @@ QList<QPointer<QWidget>> PictureTool::createOptionWidgets()
     auto *size = new QWidget;
     size->setWindowTitle(i18n("Size"));
     size->setProperty("ribbonGroupOrder", 20);
+    if (stageRibbon) {
+        size->setProperty("ribbonTargetPage", QStringLiteral("stagePictureToolsPage"));
+    }
     auto *crop = new QToolButton(size);
     crop->setText(i18n("Crop"));
     crop->setIcon(koIcon("transform-crop"));

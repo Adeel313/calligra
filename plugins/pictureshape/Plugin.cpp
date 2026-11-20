@@ -27,12 +27,11 @@ Plugin::Plugin(QObject *parent, const QVariantList &)
     }
 
     KoShapeRegistry::instance()->add(new PictureShapeFactory());
-    // The ribbon applications use the standard selection tool for images, without a separate
-    // Picture editing tab or automatic switches into the picture editor.
+    // Words and Sheets use the standard selection tool for images. Stage gets a
+    // dedicated Picture tools ribbon tab, which needs the picture tool's controls.
     const QString appName = QCoreApplication::applicationName();
     if (!appName.contains(QLatin1String("words"), Qt::CaseInsensitive)
-        && !appName.contains(QLatin1String("sheets"), Qt::CaseInsensitive)
-        && !appName.contains(QLatin1String("stage"), Qt::CaseInsensitive)) {
+        && !appName.contains(QLatin1String("sheets"), Qt::CaseInsensitive)) {
         KoToolRegistry::instance()->add(new PictureToolFactory());
     }
 }

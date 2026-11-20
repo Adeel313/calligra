@@ -67,6 +67,16 @@ QString label(QString text)
     return text.remove(QLatin1Char('&'));
 }
 
+bool isPictureShape(KoShape *shape)
+{
+    for (KoShape *candidate = shape; candidate; candidate = candidate->parent()) {
+        if (candidate->shapeId() == QLatin1String("PictureShape")) {
+            return true;
+        }
+    }
+    return false;
+}
+
 QMenu *findMenu(KoMainWindow *window, const QString &name)
 {
     for (QAction *action : window->menuBar()->actions()) {
@@ -975,15 +985,30 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
     addGroup(page("stageShapeFormatPage"), i18n("Format"), shapeFormat, -1);
     if (auto *box = view->mainWindow()->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
         for (const QString &tool : {QStringLiteral("TextToolFactory_ID"), QStringLiteral("InteractionTool"),
-                                    QStringLiteral("KoPABackgroundTool"), QStringLiteral("ConnectionTool"), QStringLiteral("CreatePathTool")}) {
+                                    QStringLiteral("KoPABackgroundTool"), QStringLiteral("ConnectionTool"), QStringLiteral("CreatePathTool"),
+                                    QStringLiteral("PictureToolFactoryId")}) {
             QMetaObject::invokeMethod(box, "primeToolOptions", Qt::DirectConnection, Q_ARG(QString, tool));
         }
         QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection, Q_ARG(QString, QStringLiteral("stageHomePage")));
     }
     auto *shapePage = page("stageShapeFormatPage");
     auto *tablePage = page("stageTableFormatPage");
+    auto *picturePage = page("stagePictureToolsPage");
     const auto updateContext = [=] {
-        shapePage->setProperty("ribbonContextActive", !canvas->shapeManager()->selection()->selectedShapes().isEmpty());
+        bool pictureSelected = false;
+        bool shapeSelected = false;
+        const QList<KoShape *> selected = canvas->shapeManager()->selection()->selectedShapes();
+        for (KoShape *shape : selected) {
+            if (isPictureShape(shape)) {
+                pictureSelected = true;
+            } else {
+                shapeSelected = true;
+            }
+        }
+        // A picture is not a generic shape in Stage: it gets its own tab and
+        // never activates Shape Format on its own.
+        shapePage->setProperty("ribbonContextActive", shapeSelected);
+        picturePage->setProperty("ribbonContextActive", pictureSelected && !shapeSelected);
         KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(canvas);
         tablePage->setProperty("ribbonContextActive", editor && editor->tableAtCursor());
     };
@@ -1383,6 +1408,9 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
         // the page with both the design commands and the chart options.
         auto *chartDesign = stagePage(i18n("Chart Design"), QStringLiteral("stageChartDesignPage"));
         chartDesign->setProperty("ribbonContextActive", false);
+        // Picture tools, shown instead of Shape Format when only pictures are selected.
+        auto *pictureTools = stagePage(i18n("Picture tools"), QStringLiteral("stagePictureToolsPage"));
+        pictureTools->setProperty("ribbonContextActive", false);
         stagePage(i18n("Help"), QStringLiteral("stageHelpPage"), {QStringLiteral("help")});
     } else {
         auto *filePage = addPage(i18n("File"), {}, true);
