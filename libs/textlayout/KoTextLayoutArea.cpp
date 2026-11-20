@@ -1747,22 +1747,15 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
     // sentence's own font even at the same point size. Compressed line spacing
     // must leave room for it, or the expression overlaps the line above/below.
     bool hasMathFont = false;
-    // Fonts without a measured height stretch above one still get the
-    // word-processing leading: an unmeasured stretch is 1.0, and a stretch
-    // below one means the Linux font is shorter than its Windows counterpart.
-    bool needsLeading = false;
+    // calculateFontYStretch() divides the measured font height by the legacy
+    // 1.16 leading factor, so the factor has to be restored here for every
+    // font. Skipping it for stretches above one makes the line box 1/1.16 of
+    // the font's real height and silently moves page breaks in long documents.
+    bool needsLeading = true;
     const auto noteFont = [&](const QTextCharFormat &format) {
         tallestFont = qMax(tallestFont, format.fontPointSize());
         if (format.font().family().contains(QLatin1String("Math"), Qt::CaseInsensitive))
             hasMathFont = true;
-        const qreal stretch = format.hasProperty(KoCharacterStyle::FontYStretch) ? format.property(KoCharacterStyle::FontYStretch).toDouble() : 1.0;
-        // A substituted face has measured metrics now, but the requested font
-        // is still absent.  Keep the generic leading for it: without that
-        // factor its line box is shorter than the one Word/LibreOffice use.
-        const bool substituted = format.hasProperty(KoCharacterStyle::FontYStretchIsFallback)
-            && format.property(KoCharacterStyle::FontYStretchIsFallback).toBool();
-        if (stretch <= 1.0 || substituted)
-            needsLeading = true;
     };
     const bool useFontProperties = style.value(KoParagraphStyle::LineSpacingFromFont).toBool();
 

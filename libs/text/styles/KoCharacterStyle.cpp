@@ -223,11 +223,20 @@ qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily
     // makes the line box match the other applications' fallback.
     QFont query(fontFamily);
     query.setStyleHint(hint);
-    const QString resolvedFamily = QFontInfo(query).family();
+    const QFontInfo fontInfo(query);
+    const QString resolvedFamily = fontInfo.family();
     const bool substituted = resolvedFamily.compare(fontFamily, Qt::CaseInsensitive) != 0;
     setProperty(FontYStretchIsFallback, substituted);
 
-    const QString cacheKey = resolvedFamily + (externalLeading ? QStringLiteral("/leading") : QStringLiteral("/no-leading"));
+    // A family can contain several faces with different line gaps (for
+    // example regular Calibri and Calibri Light in one family). Match the
+    // face Qt actually selected, including its weight and slant; matching on
+    // family alone picks an arbitrary face and makes every line a fraction of
+    // a point too tall, which moves page breaks over a long document.
+    const bool italic = fontInfo.italic();
+    const QString cacheKey = resolvedFamily + (externalLeading ? QStringLiteral("/leading") : QStringLiteral("/no-leading"))
+        + QStringLiteral("/") + QString::number(fontInfo.weight())
+        + (italic ? QStringLiteral("/italic") : QStringLiteral("/roman"));
     if (textScaleMap.contains(cacheKey)) {
         return textScaleMap.value(cacheKey);
     }
@@ -239,9 +248,12 @@ qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily
     int error = 0;
     QByteArray fontName = resolvedFamily.toLatin1();
 
-    // TODO http://freedesktop.org/software/fontconfig/fontconfig-devel/x19.html
-    //  we should specify slant and weight too
-    FcPattern *font = FcPatternBuild(nullptr, FC_FAMILY, FcTypeString, fontName.data(), FC_SIZE, FcTypeDouble, (qreal)11, nullptr);
+    FcPattern *font = FcPatternBuild(nullptr,
+                                     FC_FAMILY, FcTypeString, fontName.data(),
+                                     FC_SIZE, FcTypeDouble, (qreal)11,
+                                     FC_WEIGHT, FcTypeInteger, fontInfo.weight(),
+                                     FC_SLANT, FcTypeInteger, italic ? FC_SLANT_ITALIC : FC_SLANT_ROMAN,
+                                     nullptr);
     if (font == nullptr) {
         return 1;
     }
