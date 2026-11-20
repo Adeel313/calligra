@@ -11,7 +11,6 @@
 #include <QIODevice>
 #include <QStringList>
 
-#include <QDebug>
 #include <QtAlgorithms>
 
 #include <algorithm>
@@ -35,7 +34,9 @@ CFBWriter::~CFBWriter()
     // Stream devices and directory entries are owned by the writer.  Keeping
     // them behind pointers makes their addresses stable, which is required
     // because the directory tree stores raw pointers to them.
-    qDeleteAll(m_openStreams);
+    const QList<StreamIODevice *> streams = m_openStreams;
+    m_openStreams.clear();
+    qDeleteAll(streams);
     qDeleteAll(m_entries);
 }
 
@@ -106,6 +107,7 @@ CFBWriter::StreamIODevice::StreamIODevice(CFBWriter &writer, DirectoryEntry &ent
 
 CFBWriter::StreamIODevice::~StreamIODevice()
 {
+    m_writer.m_openStreams.removeAll(this);
     close();
 }
 
@@ -144,7 +146,9 @@ void CFBWriter::StreamIODevice::close()
             }
         }
     }
-    m_writer.m_openStreams.removeAll(this);
+    // The writer owns this device until its own destruction.  Clear the buffer
+    // so a second close from CFBWriter::close() is harmless.
+    m_buffer.clear();
 }
 
 bool CFBWriter::StreamIODevice::open(OpenMode)
@@ -437,7 +441,6 @@ unsigned CFBWriter::writeSector(const QByteArray &data, unsigned previousSector)
     Q_ASSERT(static_cast<unsigned int>(data.size()) == m_sectorSize);
     Q_ASSERT(previousSector == unsigned(-1) || previousSector < unsigned(m_fat.size()));
 
-    qDebug() << "writeSector: previousSector=" << previousSector << ", fat-size =" << m_fat.size();
     unsigned sector = m_fat.size();
     m_fat.append(ENDOFCHAIN);
     if (previousSector != unsigned(-1))
@@ -457,7 +460,6 @@ unsigned CFBWriter::writeMiniSector(const QByteArray &data, unsigned previousSec
     Q_ASSERT(data.size() == 64);
     Q_ASSERT(previousSector == unsigned(-1) || previousSector < unsigned(m_miniFat.size()));
 
-    qDebug() << "writeMiniSector: previousSector=" << previousSector << ", fat-size =" << m_miniFat.size();
     unsigned sector = m_miniFat.size();
     m_miniFat.append(ENDOFCHAIN);
     if (previousSector != unsigned(-1))
