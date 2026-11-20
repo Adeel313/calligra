@@ -527,6 +527,7 @@ struct ExportedImage {
     QByteArray data;
     QString suffix;
     QByteArray rgbUid;
+    QRectF rect;          // used for the metafile header of WMF/EMF blips
     quint32 offset = 0;
     quint32 recordSize = 0;
 };
@@ -715,6 +716,18 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
 
     // Native picture payload.
     bool handled = false;
+    // WMF/EMF files imported from ODP load as VectorShape objects, not image
+    // shapes.  The plugin exposes their original bytes as dynamic properties,
+    // so emit them as native binary-PPT blips instead of rasterising.  The
+    // raster cache is often blank in batch mode, and rasterising would also
+    // turn vector text in OLE previews into pixels.
+    auto *shapeObject = dynamic_cast<QObject *>(shape);
+    const QByteArray vectorData = shapeObject ? shapeObject->property("calligra-vector-data").toByteArray() : QByteArray();
+    const QString vectorSuffix = shapeObject ? shapeObject->property("calligra-vector-suffix").toString() : QString();
+    if (!vectorData.isEmpty() && (vectorSuffix == QLatin1String("wmf") || vectorSuffix == QLatin1String("emf"))) {
+        addImageShape(shape, vectorData, vectorSuffix, images, shape->boundingRect());
+        handled = true;
+    }
     if (auto *imageData = qobject_cast<KoImageData *>(shape->userData())) {
         QByteArray data;
         QBuffer buffer(&data);
@@ -722,12 +735,17 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
         if (buffer.open(QIODevice::WriteOnly) && imageData->saveData(buffer))
             suffix = imageData->suffix().toLower();
         if (!data.isEmpty() && (suffix == QLatin1String("png") || suffix == QLatin1String("jpg")
-                                || suffix == QLatin1String("jpeg"))) {
-            addImageShape(shape, data, suffix == QLatin1String("png") ? QStringLiteral("png") : QStringLiteral("jpeg"),
+                                || suffix == QLatin1String("jpeg") || suffix == QLatin1String("wmf")
+                                || suffix == QLatin1String("emf"))) {
+            const QString nativeSuffix = (suffix == QLatin1String("jpg") || suffix == QLatin1String("jpeg"))
+                                         ? QStringLiteral("jpeg") : suffix;
+            addImageShape(shape, data, nativeSuffix,
                           images, QRectF(shape->absolutePosition(KoFlake::TopLeftCorner), shape->size()));
             handled = true;
         }
-        // Unsupported image formats (SVG, WMF, ...) fall through to rasterise.
+        // Unsupported image formats (SVG, ...) fall through to rasterise.
+        // WMF/EMF are written as native binary-PPT blips: rasterising them
+        // would turn vector text in OLE previews into pixels.
     }
 
     // Native text payload.  A text shape with no characters (e.g. an empty
@@ -1213,6 +1231,7 @@ static QList<ExportedImage> registerImages(QList<SlideInfo> &slides)
                 ei.data = img.data;
                 ei.suffix = img.suffix;
                 ei.rgbUid = img.rgbUid;
+                ei.rect = img.rect;
                 images.append(ei);
                 idx = images.size() - 1;
             }
@@ -1222,15 +1241,24 @@ static QList<ExportedImage> registerImages(QList<SlideInfo> &slides)
     return images;
 }
 
+// OfficeArtFBSE blip type: 2=WMF, 3=EMF, 4=JPEG, 5=PNG.
+static quint8 blipTypeForSuffix(const QString &suffix)
+{
+    if (suffix == QLatin1String("wmf")) return 2;
+    if (suffix == QLatin1String("emf")) return 3;
+    if (suffix == QLatin1String("png")) return 5;
+    return 4; // jpeg
+}
+
 // Build an OfficeArtFBSE record for the Dgg's BStoreContainer.
 static Record buildFbse(const ExportedImage &img)
 {
     Record fbse;
     fbse.ver = 2;
-    fbse.inst = (img.suffix == QLatin1String("png")) ? 5 : 4;
+    const quint8 blipType = blipTypeForSuffix(img.suffix);
+    fbse.inst = blipType;
     fbse.type = 0xF007;
     QByteArray p;
-    const quint8 blipType = (img.suffix == QLatin1String("png")) ? 5 : 4;
     p.append(char(blipType)); // btWin32
     p.append(char(blipType)); // btMacOS
     p += img.rgbUid;           // rgbUid (16 bytes)
@@ -1250,14 +1278,42 @@ static QByteArray buildPicturesStream(QList<ExportedImage> &images)
 {
     QByteArray picturesStream;
     for (ExportedImage &img : images) {
-        const bool isPng = (img.suffix == QLatin1String("png"));
         Record blip;
         blip.ver = 0;
-        blip.inst = isPng ? 0x06E0 : 0x046A;
-        blip.type = isPng ? 0xF01E : 0xF01D;
-        QByteArray payload = img.rgbUid;
-        payload.append(char(0));
-        payload += img.data;
+        QByteArray payload = img.rgbUid; // rgbUid1
+        const bool isWmf = img.suffix == QLatin1String("wmf");
+        const bool isEmf = img.suffix == QLatin1String("emf");
+        if (isWmf || isEmf) {
+            // OfficeArtMetafileHeader: cbSize, rcBounds, ptSize, cbsave,
+            // compression (1 = uncompressed), filter.  Keeping the metafile
+            // native preserves vector text in OLE object previews; rasterising
+            // it would turn that text into pixels.
+            // EMF is 0x3D4/0xF01A, WMF is 0x216/0xF01B.
+            blip.inst = isWmf ? 0x0216 : 0x03D4;
+            blip.type = isWmf ? 0xF01B : 0xF01A;
+            QByteArray mh;
+            mh.resize(34);
+            const int w = qMax(1, qRound(img.rect.width()));
+            const int h = qMax(1, qRound(img.rect.height()));
+            writeU32(mh, 0, quint32(img.data.size())); // cbSize
+            writeU32(mh, 4, 0);                        // rcBounds.left
+            writeU32(mh, 8, 0);                        // rcBounds.top
+            writeU32(mh, 12, quint32(w));              // rcBounds.right
+            writeU32(mh, 16, quint32(h));              // rcBounds.bottom
+            writeU32(mh, 20, quint32(w));              // ptSize.x
+            writeU32(mh, 24, quint32(h));              // ptSize.y
+            writeU32(mh, 28, quint32(img.data.size())); // cbsave
+            mh[32] = char(1);                          // compression: none
+            mh[33] = char(0);                          // filter
+            payload += mh;
+            payload += img.data;
+        } else {
+            const bool isPng = (img.suffix == QLatin1String("png"));
+            blip.inst = isPng ? 0x06E0 : 0x046A;
+            blip.type = isPng ? 0xF01E : 0xF01D;
+            payload.append(char(0));
+            payload += img.data;
+        }
         blip.payload = payload;
         img.offset = quint32(picturesStream.size());
         const QByteArray record = blip.serialize();

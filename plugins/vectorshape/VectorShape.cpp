@@ -368,6 +368,14 @@ bool VectorShape::loadOdfFrameElement(const KoXmlElement &element, KoShapeLoadin
     if (m_type == VectorTypeNone)
         return false;
 
+    // Exporters that cannot link against this module (it is a MODULE library)
+    // still need access to the original metafile bytes.  Keep them as dynamic
+    // QObject properties; they are not persisted when the ODP is saved.
+    setProperty("calligra-vector-data", QVariant::fromValue(m_contents));
+    setProperty("calligra-vector-suffix",
+                m_type == VectorTypeWmf ? QStringLiteral("wmf")
+                : m_type == VectorTypeEmf ? QStringLiteral("emf") : QString());
+
     // Compress for biiiig memory savings.
     m_contents = qCompress(m_contents);
 
