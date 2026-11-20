@@ -976,21 +976,30 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
         if (!font.pointSizeF()) {
             font = pStyle.font();
         }
-        const QFontMetricsF metrics(font, documentLayout()->paintDevice());
-        const qreal wordSpacing = -0.25 * metrics.horizontalAdvance(QLatin1Char(' '));
-
-        QVector<QTextLayout::FormatRange> ranges = layout->formats();
-        if (ranges.isEmpty()) {
+        // Build the format ranges from the block's text fragments rather than
+        // from layout->formats(): a fresh QTextLayout reports no formats even
+        // though the QTextDocument carries per-run character formats. Using
+        // block.charFormat() for the whole block would silently drop run-level
+        // font sizes, weights and colors (notably DOCX w:sz on theme-font runs).
+        QVector<QTextLayout::FormatRange> ranges;
+        for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it) {
+            const QTextFragment fragment = it.fragment();
+            if (!fragment.isValid() || fragment.length() == 0 || fragment.charFormat().objectType() != QTextFormat::NoObject)
+                continue;
             QTextLayout::FormatRange range;
-            range.start = 0;
-            range.length = block.text().size();
-            range.format = block.charFormat();
+            range.start = fragment.position() - block.position();
+            range.length = fragment.length();
+            range.format = fragment.charFormat();
+            QFont fragmentFont = range.format.font();
+            if (!fragmentFont.pointSizeF())
+                fragmentFont = font;
+            const QFontMetricsF fragmentMetrics(fragmentFont, documentLayout()->paintDevice());
+            const qreal fragmentWordSpacing = -0.25 * fragmentMetrics.horizontalAdvance(QLatin1Char(' '));
+            range.format.setProperty(QTextCharFormat::FontWordSpacing, fragmentWordSpacing);
             ranges.append(range);
         }
-        for (QTextLayout::FormatRange &range : ranges) {
-            range.format.setProperty(QTextCharFormat::FontWordSpacing, wordSpacing);
-        }
-        layout->setFormats(ranges);
+        if (!ranges.isEmpty())
+            layout->setFormats(ranges);
     }
 
     //==========
