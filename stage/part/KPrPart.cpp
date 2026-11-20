@@ -21,6 +21,8 @@
 
 #include <KMessageBox>
 
+#include <QGuiApplication>
+#include <QScreen>
 #include <QTimer>
 
 KPrPart::KPrPart(QObject *parent)
@@ -55,7 +57,22 @@ QGraphicsItem *KPrPart::createCanvasItem(KoDocument *document)
 
 KoMainWindow *KPrPart::createMainWindow()
 {
-    return new KoMainWindow(STAGE_MIME_TYPE, componentData());
+    KoMainWindow *mainWindow = new KoMainWindow(STAGE_MIME_TYPE, componentData());
+    // RestoreGeometry() can leave a small "normal geometry" behind even when
+    // the saved state is maximized.  Some window systems apply that geometry
+    // after the window is mapped, shrinking it again.  Reset the normal
+    // geometry to the whole screen before maximizing.
+    if (QScreen *screen = QGuiApplication::primaryScreen()) {
+        mainWindow->setGeometry(screen->availableGeometry());
+    }
+    QTimer::singleShot(0, mainWindow, [mainWindow]() {
+        mainWindow->showMaximized();
+    });
+    // Wayland can apply the restored geometry after the first maximize call.
+    QTimer::singleShot(1000, mainWindow, [mainWindow]() {
+        mainWindow->showMaximized();
+    });
+    return mainWindow;
 }
 
 void KPrPart::showStartUpWidget(KoMainWindow *parent, bool alwaysShow)

@@ -24,6 +24,8 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QPainter>
+#include <QPointer>
+#include <QTimer>
 
 #include <kcursor.h>
 
@@ -177,6 +179,10 @@ void KPrViewModePresentation::activate(KoPAViewMode *previousViewMode)
     // showFullScreen() applies the state and maps the window in one step;
     // setting the state separately is not reliable on Wayland.
     m_baseCanvas->showFullScreen();
+    QPointer<KoPACanvas> baseCanvas = m_baseCanvas;
+    QTimer::singleShot(250, m_baseCanvas, [baseCanvas]() {
+        if (baseCanvas) baseCanvas->showFullScreen();
+    });
 
     // setFocus needs to be done after move and resize as otherwise the move and resize have no effect
     m_baseCanvas->setFocus();
@@ -193,6 +199,10 @@ void KPrViewModePresentation::activate(KoPAViewMode *previousViewMode)
             m_presenterViewWidget->setGeometry(pvRect);
             m_presenterViewWidget->updateWidget(pvRect.size(), presentationRect.size());
             m_presenterViewWidget->showFullScreen();
+            QPointer<KPrPresenterViewWidget> presenterView = m_presenterViewWidget;
+            QTimer::singleShot(250, m_presenterViewWidget, [presenterView]() {
+                if (presenterView) presenterView->showFullScreen();
+            });
             m_presenterViewWidget->setFocus(); // it shown full screen
 
             m_pvAnimationDirector = new KPrAnimationDirector(m_view, m_presenterViewCanvas, pages, m_view->activePage());
