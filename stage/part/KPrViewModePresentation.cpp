@@ -174,10 +174,11 @@ void KPrViewModePresentation::activate(KoPAViewMode *previousViewMode)
     m_animationDirector = new KPrAnimationDirector(m_view, m_baseCanvas, pages, m_view->activePage());
     // move and resize now as otherwise it is not set when we call activate on the tool.
     m_baseCanvas->setGeometry(presentationRect);
-    m_baseCanvas->setWindowState(m_baseCanvas->windowState() | Qt::WindowFullScreen); // make it show full screen
+    // showFullScreen() applies the state and maps the window in one step;
+    // setting the state separately is not reliable on Wayland.
+    m_baseCanvas->showFullScreen();
 
-    // show and setFocus needs to be done after move and resize as otherwise the move and resize have no effect
-    m_baseCanvas->show();
+    // setFocus needs to be done after move and resize as otherwise the move and resize have no effect
     m_baseCanvas->setFocus();
 
     KCursor::setAutoHideCursor(m_baseCanvas, true);
@@ -190,9 +191,8 @@ void KPrViewModePresentation::activate(KoPAViewMode *previousViewMode)
             m_presenterViewCanvas = new KoPACanvas(m_view, document);
             m_presenterViewWidget = new KPrPresenterViewWidget(this, pages, m_presenterViewCanvas);
             m_presenterViewWidget->setGeometry(pvRect);
-            m_presenterViewWidget->setWindowState(m_presenterViewWidget->windowState() | Qt::WindowFullScreen);
             m_presenterViewWidget->updateWidget(pvRect.size(), presentationRect.size());
-            m_presenterViewWidget->show();
+            m_presenterViewWidget->showFullScreen();
             m_presenterViewWidget->setFocus(); // it shown full screen
 
             m_pvAnimationDirector = new KPrAnimationDirector(m_view, m_presenterViewCanvas, pages, m_view->activePage());
@@ -230,9 +230,9 @@ void KPrViewModePresentation::deactivate()
     if (!m_baseCanvas)
         return;
 
+    m_baseCanvas->setWindowState(m_baseCanvas->windowState() & ~Qt::WindowFullScreen); // reset
     m_baseCanvas->setParent(m_savedParent, Qt::Widget);
     m_baseCanvas->setFocus();
-    m_baseCanvas->setWindowState(m_baseCanvas->windowState() & ~Qt::WindowFullScreen); // reset
     m_baseCanvas->show();
     KCursor::setAutoHideCursor(m_baseCanvas, false);
     m_baseCanvas->setMouseTracking(true);

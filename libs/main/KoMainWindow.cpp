@@ -364,7 +364,7 @@ KoMainWindow::KoMainWindow(const QByteArray &nativeMimeType, const KoComponentDa
         quint32 w = 0;
         quint32 h = 0;
 
-        // Default size -- maximize on small screens, something useful on big screens
+        // Default size -- use a sane fallback geometry, then maximize below.
         const int deskWidth = screen->availableSize().width();
         if (deskWidth > 1024) {
             // a nice width, and slightly less than total available
@@ -377,6 +377,10 @@ KoMainWindow::KoMainWindow(const QByteArray &nativeMimeType, const KoComponentDa
         }
 
         setGeometry(geometry().x(), geometry().y(), w, h);
+        // No usable saved geometry: prefer a maximized window over a small
+        // default.  The geometry above is only a fallback for window systems
+        // that ignore the maximized state.
+        setWindowState(windowState() | Qt::WindowMaximized);
     }
     restoreState(QByteArray::fromBase64(cfg.readEntry("ko_windowstate", QByteArray())));
 
