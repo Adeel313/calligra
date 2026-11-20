@@ -1955,7 +1955,9 @@ static QByteArray buildDocument(QList<SlideInfo> &slides, const QList<ExportedIm
 
         // The template slide carries its own sample text.  Clear any text
         // shapes we did not fill above, otherwise that sample text leaks
-        // into the exported slide.
+        // into the exported slide.  They must also have their template fill
+        // and outline neutralized: an empty shape still paints the template's
+        // green rectangle and dark-green border when it is re-imported.
         for (int t = info.texts.size(); t < templateShapeCount; ++t) {
             Record &shape = group->children[textShapeIndices.at(t)];
             Record *cd = findRecord(shape.children, 0xF00D);
@@ -1965,6 +1967,7 @@ static QByteArray buildDocument(QList<SlideInfo> &slides, const QList<ExportedIm
             if (!textAtom || !styleAtom) continue;
             textAtom->payload.clear();
             styleAtom->payload = emptyStyleAtomPayload();
+            neutralizeTextShapeStyle(&shape);
         }
 
         // Add picture shapes for this slide's images into the shape group.
