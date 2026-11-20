@@ -936,7 +936,18 @@ bool KoMainWindow::saveDocument(bool saveas, bool silent, int specialOutputFlag)
         if (suggestedURL.isEmpty()) {
             suggestedURL = d->rootDocument->defaultUrl();
         }
-        const QByteArray defaultFormat = koDefaultSaveMimeType(_native_format);
+        // For a document that was loaded from (or already saved to) a file,
+        // keep that file's format as the dialog default. The global OOXML
+        // default is only for new documents; using it here makes Save As on a
+        // binary .ppt/.doc/.xls silently offer PPTX/DOCX/XLSX instead.
+        QByteArray defaultFormat;
+        if (d->rootDocument->url().isEmpty()) {
+            defaultFormat = koDefaultSaveMimeType(_native_format);
+        } else if (!oldOutputFormat.isEmpty() && mimeFilter.contains(QString::fromLatin1(oldOutputFormat))) {
+            defaultFormat = oldOutputFormat;
+        } else {
+            defaultFormat = _native_format;
+        }
         const bool preferOfficeFormat = defaultFormat != _native_format && mimeFilter.contains(QString::fromLatin1(defaultFormat));
         if (preferOfficeFormat && d->rootDocument->url().isEmpty()) {
             QString suggestedFilename = suggestedURL.fileName();
