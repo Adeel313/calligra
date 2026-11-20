@@ -2467,6 +2467,10 @@ QByteArray PptToOdp::createContent(KoGenStyles &styles)
         content.addAttribute("xmlns:presentation", "urn:oasis:names:tc:opendocument:xmlns:presentation:1.0");
         content.addAttribute("xmlns:svg", "urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0");
         content.addAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+        // Transition properties are written as smil:* above; without this
+        // declaration the generated content.xml is not well-formed and Stage
+        // cannot reload the file it just exported.
+        content.addAttribute("xmlns:smil", KoXmlNS::smil);
         content.addAttribute("xmlns:calligra", KoXmlNS::calligra);
 
         // office:automatic-styles
