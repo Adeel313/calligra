@@ -17,6 +17,7 @@
 #include <QDataStream>
 #include <QFontDatabase>
 #include <QMutexLocker>
+#include <QPaintEngine>
 #include <QPainter>
 #include <QPen>
 #include <QSvgRenderer>
@@ -128,35 +129,40 @@ void RenderThread::run()
 
 void RenderThread::draw(QPainter &painter)
 {
+    drawContents(painter, m_contents, m_type, m_size);
+}
+
+void RenderThread::drawContents(QPainter &painter, const QByteArray &contents, VectorShape::VectorType type, const QSizeF &size)
+{
     // If the data is uninitialized, e.g. because loading failed, draw the null shape.
-    if (m_contents.isEmpty()) {
-        drawNull(painter);
+    if (contents.isEmpty()) {
+        drawNull(painter, size);
         return;
     }
 
     // Actually draw the contents
-    switch (m_type) {
+    switch (type) {
     case VectorShape::VectorTypeWmf:
-        drawWmf(painter);
+        drawWmf(painter, contents, size);
         break;
     case VectorShape::VectorTypeEmf:
-        drawEmf(painter);
+        drawEmf(painter, contents, size);
         break;
     case VectorShape::VectorTypeSvm:
-        drawSvm(painter);
+        drawSvm(painter, contents, size);
         break;
     case VectorShape::VectorTypeSvg:
-        drawSvg(painter);
+        drawSvg(painter, contents, size);
         break;
     case VectorShape::VectorTypeNone:
     default:
-        drawNull(painter);
+        drawNull(painter, size);
     }
 }
 
-void RenderThread::drawNull(QPainter &painter) const
+void RenderThread::drawNull(QPainter &painter, const QSizeF &size)
 {
-    QRectF rect(QPointF(0, 0), m_size);
+    QRectF rect(QPointF(0, 0), size);
     painter.save();
 
     // Draw a simple cross in a rectangle just to indicate that there is something here.
@@ -168,11 +174,11 @@ void RenderThread::drawNull(QPainter &painter) const
     painter.restore();
 }
 
-void RenderThread::drawWmf(QPainter &painter) const
+void RenderThread::drawWmf(QPainter &painter, const QByteArray &contents, const QSizeF &size)
 {
-    Libwmf::WmfPainterBackend wmfPainter(&painter, m_size);
-    if (!wmfPainter.load(m_contents)) {
-        drawNull(painter);
+    Libwmf::WmfPainterBackend wmfPainter(&painter, size);
+    if (!wmfPainter.load(contents)) {
+        drawNull(painter, size);
         return;
     }
     painter.save();
@@ -181,14 +187,10 @@ void RenderThread::drawWmf(QPainter &painter) const
     painter.restore();
 }
 
-void RenderThread::drawEmf(QPainter &painter) const
+void RenderThread::drawEmf(QPainter &painter, const QByteArray &contents, const QSizeF &size)
 {
     // FIXME: Make emfOutput use QSizeF
-    QSize shapeSizeInt(m_size.width(), m_size.height());
-    // debugVector << "-------------------------------------------";
-    // debugVector << "size:     " << shapeSizeInt << m_size;
-    // debugVector << "position: " << position();
-    // debugVector << "-------------------------------------------";
+    QSize shapeSizeInt(size.width(), size.height());
 
     Libemf::Parser emfParser;
 
@@ -200,29 +202,44 @@ void RenderThread::drawEmf(QPainter &painter) const
     Libemf::OutputDebugStrategy emfDebugOutput;
     emfParser.setOutput(&emfDebugOutput);
 #endif
-    emfParser.load(m_contents);
+    emfParser.load(contents);
 }
 
-void RenderThread::drawSvm(QPainter &painter) const
+void RenderThread::drawSvm(QPainter &painter, const QByteArray &contents, const QSizeF &size)
 {
-    QSize shapeSizeInt(m_size.width(), m_size.height());
+    QSize shapeSizeInt(size.width(), size.height());
 
     Libsvm::SvmParser svmParser;
 
     // Create a new painter backend.
     Libsvm::SvmPainterBackend svmPaintOutput(&painter, shapeSizeInt);
     svmParser.setBackend(&svmPaintOutput);
-    svmParser.parse(m_contents);
+    svmParser.parse(contents);
 }
 
-void RenderThread::drawSvg(QPainter &painter) const
+void RenderThread::drawSvg(QPainter &painter, const QByteArray &contents, const QSizeF &size)
 {
-    QSvgRenderer renderer(m_contents);
-    renderer.render(&painter, QRectF(0, 0, m_size.width(), m_size.height()));
+    QSvgRenderer renderer(contents);
+    renderer.render(&painter, QRectF(0, 0, size.width(), size.height()));
 }
 
 void VectorShape::paint(QPainter &painter, const KoViewConverter &converter, KoShapePaintingContext &)
 {
+    // When printing to a vector-capable device (PDF, SVG or QPicture), render
+    // the metafile directly onto the painter.  Going through the raster cache
+    // would discard all vector information and embedded text, and would render
+    // at the cache resolution instead of the output device resolution.
+    QPaintEngine *engine = painter.paintEngine();
+    const bool vectorOutput = engine && (engine->type() == QPaintEngine::Pdf || engine->type() == QPaintEngine::SVG || engine->type() == QPaintEngine::Picture);
+
+    if (vectorOutput && m_type != VectorTypeNone && !m_contents.isEmpty()) {
+        QMutexLocker locker(&m_mutex);
+        const QByteArray contents = qUncompress(m_contents);
+
+        RenderThread::drawContents(painter, contents, m_type, size());
+        return;
+    }
+
 #ifdef VECTORSHAPE_PAINT_UNCACHED
     bool useCache = false;
 #else

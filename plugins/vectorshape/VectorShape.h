@@ -91,16 +91,21 @@ public:
     RenderThread(const QByteArray &contents, VectorShape::VectorType type, const QSizeF &size, const QSize &boundingSize, qreal zoomX, qreal zoomY);
     ~RenderThread() override;
     void run() override;
+
+    // Render the metafile directly onto a painter.  Used when the paint device
+    // is vector-capable (PDF/SVG) so the vector content is not rasterized.
+    static void drawContents(QPainter &painter, const QByteArray &contents, VectorShape::VectorType type, const QSizeF &size);
+
 Q_SIGNALS:
     void finished(const QSize &boundingSize, QImage *image);
 
 private:
     void draw(QPainter &painter);
-    void drawNull(QPainter &painter) const;
-    void drawWmf(QPainter &painter) const;
-    void drawEmf(QPainter &painter) const;
-    void drawSvm(QPainter &painter) const;
-    void drawSvg(QPainter &painter) const;
+    static void drawNull(QPainter &painter, const QSizeF &size);
+    static void drawWmf(QPainter &painter, const QByteArray &contents, const QSizeF &size);
+    static void drawEmf(QPainter &painter, const QByteArray &contents, const QSizeF &size);
+    static void drawSvm(QPainter &painter, const QByteArray &contents, const QSizeF &size);
+    static void drawSvg(QPainter &painter, const QByteArray &contents, const QSizeF &size);
 
 private:
     const QByteArray m_contents;
