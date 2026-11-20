@@ -858,6 +858,20 @@ bool PptTextPFRun::isList() const
 GETTER(bool, fontStyle->, , bold, masks.bold, false)
 GETTER(bool, fontStyle->, , italic, masks.italic, false)
 GETTER(bool, fontStyle->, , underline, masks.underline, false)
+
+bool PptTextCFRun::hasColor() const
+{
+    // addCurrentCFRun() prepends the formatting of the current text run; the
+    // remaining entries are inherited defaults which must not count as an
+    // explicit override of the hyperlink style.
+    return !cfs.isEmpty() && cfs.first() && cfs.first()->masks.color;
+}
+
+bool PptTextCFRun::hasUnderline() const
+{
+    return !cfs.isEmpty() && cfs.first() && cfs.first()->masks.underline;
+}
+
 GETTER(bool, fontStyle->, , shadow, masks.shadow, false)
 GETTER(bool, fontStyle->, , fehint, masks.fehint, false)
 GETTER(bool, fontStyle->, , kumi, masks.kumi, false)

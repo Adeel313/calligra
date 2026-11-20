@@ -186,6 +186,8 @@ public:
     bool bold() const;
     bool italic() const;
     bool underline() const;
+    bool hasColor() const;
+    bool hasUnderline() const;
     bool shadow() const;
     bool fehint() const;
     bool kumi() const;

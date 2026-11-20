@@ -1384,7 +1384,8 @@ void PptToOdp::defineTextProperties(KoGenStyle &style,
                                     const TextCFException10 * /*cf10*/,
                                     const TextSIException * /*si*/,
                                     const bool isSymbol,
-                                    const bool isSymbolEncoded)
+                                    const bool isSymbolEncoded,
+                                    const bool isHyperlink)
 {
     // Getting information for all the possible attributes in
     // style:text-properties for clarity in alphabetical order.
@@ -1397,6 +1398,17 @@ void PptToOdp::defineTextProperties(KoGenStyle &style,
     // fo:color
     ColorIndexStruct cis = cf.color();
     QColor color = toQColor(cis);
+    // A PowerPoint hyperlink gets its color from the hlink slot of the
+    // presentation color scheme when the run does not set an explicit color.
+    // SchemeListElementColorSchemeAtom's last two entries are the accent and
+    // followed-hyperlink colors, so hlink is the seventh entry (index 6).
+    // cf.color() may still report an inherited color; override that only for
+    // hyperlinks, because PowerPoint uses the theme color in that case.
+    if (isHyperlink && !cf.hasColor()) {
+        ColorIndexStruct hlink = {};
+        hlink.index = 6;
+        color = toQColor(hlink);
+    }
     if (color.isValid()) {
         style.addProperty("fo:color", color.name(), text);
     }
@@ -1515,7 +1527,13 @@ void PptToOdp::defineTextProperties(KoGenStyle &style,
     // style:text-underline-mode
     // style:text-underline-style
     // style:text-underline-type: "double", "none" or "single"
-    style.addProperty("style:text-underline-type", cf.underline() ? "single" : "none", text);
+    const bool isUnderlined = cf.underline() || (isHyperlink && !cf.hasUnderline());
+    style.addProperty("style:text-underline-type", isUnderlined ? "single" : "none", text);
+    if (isHyperlink && !cf.hasUnderline()) {
+        style.addProperty("style:text-underline-style", "solid", text);
+        style.addProperty("style:text-underline-width", "auto", text);
+        style.addProperty("style:text-underline-color", "font-color", text);
+    }
     // style:text-underline-width
     // style:use-window-font-color
 } // end defineTextProperties()
@@ -2788,20 +2806,6 @@ int PptToOdp::processTextSpan(Writer &out, PptTextCFRun &cf, const MSO::TextCont
         end = mouseover->text.range.end;
     }
 
-    // The alternate symbol typeface applies to private-use glyphs. Ordinary
-    // text uses the run's regular typeface, which can itself be Symbol.
-    const MSO::FontEntityAtom *symbolFont = isSymbol && cf.symbolFontRef() ? getFont(cf.symbolFontRef()) : nullptr;
-    if (!symbolFont) {
-        symbolFont = getFont(cf.fontRef());
-    }
-    const bool isSymbolEncodedRun = isSymbolFontFamily(fontEntityName(symbolFont));
-
-    KoGenStyle style(KoGenStyle::TextAutoStyle, "text");
-    style.setAutoStyleInStylesDotXml(out.stylesxml);
-    defineTextProperties(style, cf, nullptr, nullptr, si, isSymbol, isSymbolEncodedRun);
-    text_span span(&out.xml);
-    span.set_text_style_name(out.styles.insert(style));
-
     // [MS-PPT]: exHyperlinkIdRef must be ignored unless action is in
     // {II_JumpAction, II_HyperlinkAction, II_CustomShowAction (0x7)}
     //
@@ -2834,7 +2838,23 @@ int PptToOdp::processTextSpan(Writer &out, PptTextCFRun &cf, const MSO::TextCont
         } else if (!link.first.isEmpty()) {
             href = link.first;
         }
-    } else {
+    }
+
+    // The alternate symbol typeface applies to private-use glyphs. Ordinary
+    // text uses the run's regular typeface, which can itself be Symbol.
+    const MSO::FontEntityAtom *symbolFont = isSymbol && cf.symbolFontRef() ? getFont(cf.symbolFontRef()) : nullptr;
+    if (!symbolFont) {
+        symbolFont = getFont(cf.fontRef());
+    }
+    const bool isSymbolEncodedRun = isSymbolFontFamily(fontEntityName(symbolFont));
+
+    KoGenStyle style(KoGenStyle::TextAutoStyle, "text");
+    style.setAutoStyleInStylesDotXml(out.stylesxml);
+    defineTextProperties(style, cf, nullptr, nullptr, si, isSymbol, isSymbolEncodedRun, !href.isNull());
+    text_span span(&out.xml);
+    span.set_text_style_name(out.styles.insert(style));
+
+    if (href.isNull()) {
         // count - specifies the number of characters of the
         // corresponding text to which current TextCFException apply
         if (count > 0) {

@@ -267,6 +267,9 @@ private:
      * @param isSymbolEncoded true when the run's text was decoded from a
      *        legacy symbol-font encoding to Unicode; such runs must not carry
      *        the symbol font family or the decoded glyphs render as Latin text
+     * @param isHyperlink true when the run carries an active hyperlink action;
+     *        PowerPoint derives the color and underline from the theme in that
+     *        case unless the run overrides them explicitly
      */
     void defineTextProperties(KoGenStyle &style,
                               const PptTextCFRun &cf,
@@ -274,7 +277,8 @@ private:
                               const MSO::TextCFException10 *cf10,
                               const MSO::TextSIException *si,
                               const bool isSymbol = false,
-                              const bool isSymbolEncoded = false);
+                              const bool isSymbolEncoded = false,
+                              const bool isHyperlink = false);
 
     /**
      * Extract data from TextPFException into the style

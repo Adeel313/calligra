@@ -1743,6 +1743,7 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
     // The largest font of the line, used to recognise formula-like lines that
     // mix big glyphs into smaller text.
     qreal tallestFont = 0.0;
+    qreal lineBaseFont = 0.0;
     // Math is drawn with a font whose ascent and descent are taller than the
     // sentence's own font even at the same point size. Compressed line spacing
     // must leave room for it, or the expression overlaps the line above/below.
@@ -1753,7 +1754,10 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
     // the font's real height and silently moves page breaks in long documents.
     bool needsLeading = true;
     const auto noteFont = [&](const QTextCharFormat &format) {
-        tallestFont = qMax(tallestFont, format.fontPointSize());
+        const qreal pointSize = format.fontPointSize();
+        if (lineBaseFont == 0.0)
+            lineBaseFont = pointSize;
+        tallestFont = qMax(tallestFont, pointSize);
         if (format.font().family().contains(QLatin1String("Math"), Qt::CaseInsensitive))
             hasMathFont = true;
     };
@@ -1898,6 +1902,13 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
     }
 
     const qreal naturalHeight = height;
+    // A uniformly oversized run is a presentation title, not ordinary body
+    // copy. Its proportional line-height is anchored differently by
+    // LibreOffice, so only this case gets the full leading correction below.
+    const qreal paragraphFont = style.font().pointSizeF();
+    const bool isOversizedTitleLine = lineBaseFont >= 30.0 && paragraphFont > 0.0
+            && lineBaseFont > paragraphFont * 2.0
+            && tallestFont <= lineBaseFont * 1.15;
 
     // Calculate adjustment to the height due to line height calculated by qt which shouldn't be
     // there in reality. We will just move the line
@@ -1931,7 +1942,10 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
                 // sentence font, and lines mixing in larger formula runs (like
                 // big parentheses or operators) are taller still. Compressed
                 // spacing must not squeeze those into the neighbouring text.
-                const qreal baseFont = style.font().pointSizeF();
+                // A uniformly oversized title is the exception: its whole run
+                // is larger than the paragraph default, so comparing against
+                // that default would wrongly cancel the proportional spacing.
+                const qreal baseFont = isOversizedTitleLine ? lineBaseFont : paragraphFont;
                 if (tallestFont > 0.0
                         && (hasMathFont || (baseFont > 0.0 && tallestFont > baseFont * 1.15))) {
                     height = qMax(height, tallestFont * 1.2);
@@ -1959,11 +1973,16 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
         if (data && data->autofitLineSpacingReduction() > 0)
             height *= 1.0 - qBound(0, data->autofitLineSpacingReduction(), 80000) / 100000.0;
     }
-    // A presentation's proportional line box has half of its leading above
-    // the glyph baseline and half below. Compressing it without moving the
-    // baseline pushes all text down, especially in centered title frames.
-    if (useFontProperties && style.value(KoParagraphStyle::FixedLineHeight).toDouble() == 0)
-        lineAdjust += (height - naturalHeight) / 2;
+    // A compressed presentation title keeps its glyph baseline at the top of
+    // the line box in LibreOffice. Move only oversized title lines by the full
+    // removed leading; body lines already match the reference renderer.
+    if (useFontProperties && style.value(KoParagraphStyle::FixedLineHeight).toDouble() == 0) {
+        if (isOversizedTitleLine && height < naturalHeight) {
+            lineAdjust += height - naturalHeight;
+        } else {
+            lineAdjust += (height - naturalHeight) / 2;
+        }
+    }
 
     // rounding problems due to Qt-scribe internally using ints.
     // also used when line was moved down because of intersections with other shapes
