@@ -235,6 +235,12 @@ bool CalloutShape::loadOdf(const KoXmlElement &element, KoShapeLoadingContext &c
 
     loadOdfAttributes(element, context, OdfAllAttributes);
 
+    // The label is stored as plain text children of the custom-shape element.
+    // EnhancedPathShape::loadOdf() loads them into its text-on-shape child;
+    // callouts use a wrapper container, so do the same for the path here.
+    // Without this the text is silently dropped when an ODP is reopened.
+    m_path->loadText(element, context);
+
     return true;
 }
 

@@ -26,6 +26,9 @@
 #include <KoPAMasterPage.h>
 #include <KoPAPage.h>
 #include <KoPAPageBase.h>
+#include <KoBorder.h>
+#include <KoPathPoint.h>
+#include <KoPathShape.h>
 #include <KoShape.h>
 #include <KoShapeBackground.h>
 #include <KoShapeContainer.h>
@@ -33,10 +36,12 @@
 #include <KoShapeLayer.h>
 #include <KoShapePainter.h>
 #include <KoShapePaintingContext.h>
+#include <KoShapeStroke.h>
 #include <KoShapeSavingContext.h>
 #include <KoViewConverter.h>
 #include <KoXmlWriter.h>
 #include <KoXmlNS.h>
+#include <KoTextShapeData.h>
 #include <KoTextShapeDataBase.h>
 #include <KoTextDocument.h>
 #include <KoTextMeta.h>
@@ -489,6 +494,11 @@ struct SlideText {
     bool noWrap = false;          // PPT WrapText == wrNone (auto-grow width)
     bool autoGrow = false;        // PPT fFitShapeToText
     qreal rotation = 0;           // clockwise degrees, as stored by binary PPT
+    bool hasFill = false;
+    quint8 fillRed = 0, fillGreen = 0, fillBlue = 0;
+    // Index into SlideInfo::shapes when this text belongs to a native
+    // autoshape.  -1 means an ordinary text box.
+    int nativeShape = -1;
 };
 
 struct SlideImage {
@@ -504,9 +514,26 @@ struct SlideImage {
     bool behindText = false;
 };
 
+// A preset autoshape or straight line that can be written as a native binary
+// PowerPoint shape instead of being rasterised into a picture.
+struct SlideShape {
+    quint16 spt = 0;              // MSOSPT preset type
+    QList<qint32> adjustments;    // raw OfficeArtFOPTE adjust values
+    QRectF rect;                  // position in points
+    bool flipH = false;
+    bool flipV = false;
+    qreal rotation = 0;
+    bool hasFill = false;
+    quint8 fillRed = 0, fillGreen = 0, fillBlue = 0;
+    bool hasLine = false;
+    quint8 lineRed = 0, lineGreen = 0, lineBlue = 0;
+    quint32 lineWidth = 0;        // master units (1/576 inch)
+};
+
 struct SlideInfo {
     QList<SlideText> texts;
     QList<SlideImage> images;
+    QList<SlideShape> shapes;
     bool hasNotes = false;
     SlideText notes;
     // Transition fields, populated from KPrPageApplicationData.
@@ -710,12 +737,241 @@ static void addBackgroundFill(KoShapeBackground *background, const QRectF &rect,
     }
 }
 
-static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<SlideImage> &images)
+// Map the ODF preset names written by the PPT importer back to the legacy
+// MSOSPT values.  Names of the form mso-sptNNN carry the numeric value
+// directly, which also covers exotic presets that have no ODF alias here.
+static quint16 presetShapeType(const QString &preset)
+{
+    static const QHash<QString, quint16> types = {
+        {QStringLiteral("non-primitive"), msosptNotPrimitive},
+        {QStringLiteral("rectangle"), msosptRectangle},
+        {QStringLiteral("round-rectangle"), msosptRoundRectangle},
+        {QStringLiteral("ellipse"), msosptEllipse},
+        {QStringLiteral("diamond"), msosptDiamond},
+        {QStringLiteral("isosceles-triangle"), msosptIsocelesTriangle},
+        {QStringLiteral("right-triangle"), msosptRightTriangle},
+        {QStringLiteral("parallelogram"), msosptParallelogram},
+        {QStringLiteral("trapezoid"), msosptTrapezoid},
+        {QStringLiteral("hexagon"), msosptHexagon},
+        {QStringLiteral("octagon"), msosptOctagon},
+        {QStringLiteral("cross"), msosptPlus},
+        {QStringLiteral("pentagon"), msosptPentagon},
+        {QStringLiteral("home-plate"), msosptHomePlate},
+        {QStringLiteral("can"), msosptCan},
+        {QStringLiteral("cube"), msosptCube},
+        {QStringLiteral("quad-bevel"), msosptBevel},
+        {QStringLiteral("chevron"), msosptChevron},
+        {QStringLiteral("no-smoking"), msosptNoSmoking},
+        {QStringLiteral("smiley"), msosptSmileyFace},
+        {QStringLiteral("heart"), msosptHeart},
+        {QStringLiteral("lightning"), msosptLightningBolt},
+        {QStringLiteral("sun"), msosptSun},
+        {QStringLiteral("moon"), msosptMoon},
+        {QStringLiteral("left-brace"), msosptLeftBrace},
+        {QStringLiteral("right-brace"), msosptRightBrace},
+        {QStringLiteral("left-bracket"), msosptLeftBracket},
+        {QStringLiteral("right-bracket"), msosptRightBracket},
+        {QStringLiteral("brace-pair"), msosptBracePair},
+        {QStringLiteral("bracket-pair"), msosptBracketPair},
+        {QStringLiteral("right-arrow"), msosptArrow},
+        {QStringLiteral("left-arrow"), msosptLeftArrow},
+        {QStringLiteral("up-arrow"), msosptUpArrow},
+        {QStringLiteral("down-arrow"), msosptDownArrow},
+        {QStringLiteral("left-right-arrow"), msosptLeftRightArrow},
+        {QStringLiteral("up-down-arrow"), msosptUpDownArrow},
+        {QStringLiteral("quad-arrow"), msosptQuadArrow},
+        {QStringLiteral("line-callout-1"), msosptBorderCallout1},
+        {QStringLiteral("line-callout-2"), msosptBorderCallout2},
+        {QStringLiteral("line-callout-3"), msosptBorderCallout3},
+        {QStringLiteral("right-arrow-callout"), msosptRightArrowCallout},
+        {QStringLiteral("left-arrow-callout"), msosptLeftArrowCallout},
+        {QStringLiteral("up-arrow-callout"), msosptUpArrowCallout},
+        {QStringLiteral("down-arrow-callout"), msosptDownArrowCallout},
+    };
+    if (const auto it = types.constFind(preset); it != types.constEnd()) return it.value();
+    if (preset.startsWith(QStringLiteral("mso-spt"))) {
+        bool ok = false;
+        const int value = preset.mid(7).toInt(&ok);
+        if (ok && value > 0 && value <= 0xFFFF) return quint16(value);
+    }
+    return 0;
+}
+
+static qreal pptShapeRotation(KoShape *shape)
+{
+    const qreal rotation = shape->rotation();
+    if (!std::isfinite(rotation)) return 0;
+    qreal result = -rotation;
+    while (result < 0) result += 360;
+    while (result >= 360) result -= 360;
+    const qreal snapped = qRound(result);
+    if (qAbs(result - snapped) < 1e-3) return snapped;
+    return result;
+}
+
+// Read the solid fill and line of a shape.  Callout shapes keep the actual
+// decoration in a child path shape, so walk containers as well.
+static void collectShapeStyle(KoShape *shape, SlideShape &out, bool descend = true)
+{
+    if (!shape) return;
+    if (auto *color = dynamic_cast<KoColorBackground *>(shape->background().data())) {
+        const QColor c = color->color();
+        if (c.isValid() && c.alpha() > 0) {
+            out.hasFill = true;
+            out.fillRed = quint8(c.red());
+            out.fillGreen = quint8(c.green());
+            out.fillBlue = quint8(c.blue());
+        }
+    }
+    if (KoBorder *border = shape->border(); border && border->hasBorder()) {
+        const auto side = KoBorder::TopBorder;
+        if (border->borderStyle(side) != KoBorder::BorderNone) {
+            const QColor c = border->borderColor(side);
+            out.hasLine = true;
+            out.lineRed = quint8(c.red());
+            out.lineGreen = quint8(c.green());
+            out.lineBlue = quint8(c.blue());
+            out.lineWidth = quint32(qMax(0, qRound(border->borderWidth(side) * 12700)));
+        }
+    }
+    // Freeform/path shapes (including ODF draw:line) store their outline as a
+    // KoShapeStroke rather than a KoBorder.
+    if (auto *stroke = dynamic_cast<KoShapeStroke *>(shape->stroke())) {
+        const QColor c = stroke->color();
+        if (c.isValid() && c.alpha() > 0 && stroke->lineStyle() != Qt::NoPen) {
+            out.hasLine = true;
+            out.lineRed = quint8(c.red());
+            out.lineGreen = quint8(c.green());
+            out.lineBlue = quint8(c.blue());
+            out.lineWidth = quint32(qMax(0, qRound(stroke->lineWidth() * 12700)));
+        }
+    }
+    if (descend) {
+        if (auto *container = dynamic_cast<KoShapeContainer *>(shape)) {
+            for (KoShape *child : container->shapes()) {
+                // Text-on-shape children may carry the generic text-shape
+                // background, which is not the fill of the custom shape they
+                // belong to.  Never let it override the visible decoration.
+                if (qobject_cast<KoTextShapeDataBase *>(child->userData())) continue;
+                if (!child->isVisible(true)) continue;
+                collectShapeStyle(child, out, true);
+                if (out.hasFill && out.hasLine) break;
+            }
+        }
+    }
+}
+
+// Native autoshapes only carry a solid fill in this exporter.  If any part of
+// a shape uses a gradient, hatch, pattern or ODF-specific background, keep the
+// old raster path instead of silently simplifying it.
+static bool shapeHasUnsupportedBackground(KoShape *shape)
+{
+    if (!shape) return false;
+    const auto background = shape->background();
+    if (background && !dynamic_cast<KoColorBackground *>(background.data())) return true;
+    if (auto *container = dynamic_cast<KoShapeContainer *>(shape)) {
+        for (KoShape *child : container->shapes()) {
+            if (shapeHasUnsupportedBackground(child)) return true;
+        }
+    }
+    return false;
+}
+
+// A callout is a container whose enhanced-path child carries the preset
+// attribute and the (much larger) path bounds.  The ODF frame dimensions live
+// on the owning container, so find that container before exporting geometry.
+static KoShape *findPresetDescendant(KoShape *shape, int depth = 0)
+{
+    if (!shape || depth > 8) return nullptr;
+    if (dynamic_cast<KoShapeLayer *>(shape) || dynamic_cast<KoShapeGroup *>(shape)) return nullptr;
+    if (!shape->additionalAttribute(QStringLiteral("calligra:shape-preset")).isEmpty()) return shape;
+    auto *container = dynamic_cast<KoShapeContainer *>(shape);
+    if (!container) return nullptr;
+    for (KoShape *child : container->shapes()) {
+        if (KoShape *found = findPresetDescendant(child, depth + 1)) return found;
+    }
+    return nullptr;
+}
+
+// Return true when a shape has a native binary-PPT equivalent.  The caller
+// still recurses into its text children so their formatting survives.
+static bool nativeShapeFromShape(KoShape *shape, QList<SlideShape> &shapes)
+{
+    if (!shape) return false;
+
+    SlideShape native;
+    KoShape *presetShape = nullptr;
+    QString preset = shape->additionalAttribute(QStringLiteral("calligra:shape-preset"));
+    if (preset.isEmpty()) {
+        presetShape = findPresetDescendant(shape);
+        if (presetShape) preset = presetShape->additionalAttribute(QStringLiteral("calligra:shape-preset"));
+    } else {
+        presetShape = shape;
+    }
+    const bool isPreset = !preset.isEmpty();
+    if (isPreset) {
+        // A freeform path has no preset geometry to carry across.  Leave it
+        // to the raster fallback instead of emitting an empty shape.
+        if (preset == QLatin1String("non-primitive")) return false;
+        native.spt = presetShapeType(preset);
+        if (!native.spt) return false;
+        // A callout wrapper does not carry the geometry attributes itself;
+        // they live on its enhanced-path child.
+        const QStringList values = presetShape->additionalAttribute(QStringLiteral("calligra:shape-modifiers"))
+                                       .split(QLatin1Char(' '), Qt::SkipEmptyParts);
+        for (const QString &value : values) {
+            bool ok = false;
+            const int adjustment = value.toInt(&ok);
+            if (ok) native.adjustments.append(qint32(adjustment));
+        }
+        native.rect = QRectF(shape->absolutePosition(KoFlake::TopLeftCorner), shape->size());
+        native.rotation = pptShapeRotation(shape);
+    } else if (shape->shapeId() == QLatin1String("KoPathShape")) {
+        auto *path = dynamic_cast<KoPathShape *>(shape);
+        if (!path || path->subpathCount() != 1 || path->subpathPointCount(0) != 2) return false;
+        KoPathPoint *first = path->pointByIndex(KoPathPointIndex(0, 0));
+        KoPathPoint *last = path->pointByIndex(KoPathPointIndex(0, 1));
+        if (!first || !last) return false;
+        // Two points with active Bezier handles describe a curve, which would
+        // be flattened if written as msosptLine.  Leave curves to the raster
+        // fallback.
+        if (first->activeControlPoint1() || first->activeControlPoint2()
+            || last->activeControlPoint1() || last->activeControlPoint2()) {
+            return false;
+        }
+        const QTransform matrix = path->transformation();
+        const QPointF p1 = matrix.map(first->point());
+        const QPointF p2 = matrix.map(last->point());
+        native.spt = msosptLine;
+        native.rect = QRectF(qMin(p1.x(), p2.x()), qMin(p1.y(), p2.y()),
+                             qAbs(p2.x() - p1.x()), qAbs(p2.y() - p1.y()));
+        native.flipH = p2.x() < p1.x();
+        native.flipV = p2.y() < p1.y();
+    } else {
+        return false;
+    }
+
+    if (shapeHasUnsupportedBackground(shape)) return false;
+
+    collectShapeStyle(shape, native);
+    // Preset shapes are kept even without an explicit fill or outline: they
+    // may be invisible layout frames that still need to stay editable.
+    if (!isPreset && !native.hasFill && !native.hasLine) return false;
+    shapes.append(native);
+    return true;
+}
+
+static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<SlideImage> &images,
+                                QList<SlideShape> &shapes, bool insideNativeShape = false)
 {
     if (!shape || !shape->isVisible(true) || shape->shapeId() == QLatin1String(KPrPlaceholderShapeId)) return;
 
-    // Native picture payload.
-    bool handled = false;
+    // Native picture or autoshape payload.  Custom shapes keep their text in
+    // child text shapes; mark that text as belonging to this shape so the
+    // exporter can put it back inside the native PowerPoint object.
+    bool handled = insideNativeShape;
+    const int nativeIndex = !insideNativeShape && nativeShapeFromShape(shape, shapes) ? shapes.size() - 1 : -1;
+    if (nativeIndex >= 0) handled = true;
     // WMF/EMF files imported from ODP load as VectorShape objects, not image
     // shapes.  The plugin exposes their original bytes as dynamic properties,
     // so emit them as native binary-PPT blips instead of rasterising.  The
@@ -771,12 +1027,35 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
                 const qreal snapped = qRound(pptRotation);
                 if (qAbs(pptRotation - snapped) < 1e-3) pptRotation = snapped;
                 const QPointF center = shape->absolutePosition(KoFlake::CenteredPosition);
-                rect.moveTopLeft(center - QPointF(shape->size().width() / 2,
-                                                  shape->size().height() / 2));
+                // OOXML/ODF store the unrotated extent, but the binary PPT
+                // importer turns a rotated anchor back into an ODF frame by
+                // swapping its width and height around the centre.  Write the
+                // swapped extent here so the reloaded frame keeps the
+                // original text layout instead of becoming a 10 mm-wide
+                // column that clips its whole heading.
+                const qreal w = shape->size().height();
+                const qreal h = shape->size().width();
+                rect = QRectF(center.x() - w / 2, center.y() - h / 2, w, h);
             }
             SlideText st = extractSlideText(doc, rect);
             st.rotation = pptRotation;
+            SlideShape textStyle;
+            collectShapeStyle(shape, textStyle, false);
+            st.hasFill = textStyle.hasFill;
+            st.fillRed = textStyle.fillRed;
+            st.fillGreen = textStyle.fillGreen;
+            st.fillBlue = textStyle.fillBlue;
             st.margins = data->shapeMargins();
+            // ODF text-box insets are stored as fo:padding on KoTextShapeData,
+            // not in the generic shapeMargins() insets used by other shapes.
+            // PowerPoint stores the same values as text FOPT insets; without
+            // this, all text shifts by the original 0.1"/0.05" margin.
+            if (auto *textData = qobject_cast<KoTextShapeData *>(data)) {
+                st.margins.left = textData->leftPadding();
+                st.margins.top = textData->topPadding();
+                st.margins.right = textData->rightPadding();
+                st.margins.bottom = textData->bottomPadding();
+            }
             st.verticalAlignment = data->verticalAlignment();
             // draw:auto-grow-width in ODF comes from the PPT's no-wrap flag.
             // Carry it back so narrow text shapes keep their runs on one line.
@@ -797,7 +1076,11 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
     const int imagesBefore = images.size();
     if (auto *container = dynamic_cast<KoShapeContainer *>(shape)) {
         for (KoShape *child : container->shapes())
-            collectShapeContent(child, texts, images);
+            collectShapeContent(child, texts, images, shapes, insideNativeShape || nativeIndex >= 0);
+    }
+    if (nativeIndex >= 0) {
+        for (int i = textsBefore; i < texts.size(); ++i)
+            texts[i].nativeShape = nativeIndex;
     }
     const bool childContent = texts.size() > textsBefore || images.size() > imagesBefore;
 
@@ -851,10 +1134,10 @@ static SlideInfo pageContent(KoPAPageBase *page)
 
     if (master && normalPage->displayMasterShapes()) {
         for (KoShape *shape : master->shapes()) {
-            collectShapeContent(shape, info.texts, info.images);
+            collectShapeContent(shape, info.texts, info.images, info.shapes);
         }
     }
-    for (KoShape *shape : page->shapes()) collectShapeContent(shape, info.texts, info.images);
+    for (KoShape *shape : page->shapes()) collectShapeContent(shape, info.texts, info.images, info.shapes);
     if (info.texts.isEmpty()) {
         SlideText empty;
         empty.rect = QRectF(0, 0, 100, 20);
@@ -1676,6 +1959,50 @@ static void setShapeFopt(Record *shape, quint16 opid, quint32 value)
     fopt->inst = quint16(entries.size());
 }
 
+// Clone the template's text-bearing shape container and turn it into a real
+// preset autoshape.  The template already carries the client text records, so
+// text placed in the shape remains as editable as text in a text box.
+static Record buildNativeShape(const SlideShape &native, const Record &tpl, quint32 spid)
+{
+    Record sp = tpl;
+
+    if (Record *fsp = findRecord(sp.children, 0xF00A)) {
+        fsp->inst = native.spt;
+        fsp->payload = QByteArray(8, '\0');
+        writeU32(fsp->payload, 0, spid);
+        // fHaveAnchor | fHaveSpt, plus mirroring for diagonal lines.
+        quint32 flags = 0x0200 | 0x0800;
+        if (native.flipH) flags |= 0x0040;
+        if (native.flipV) flags |= 0x0080;
+        writeU32(fsp->payload, 4, flags);
+    }
+
+    setShapeFopt(&sp, 0x0180, native.hasFill ? 0u : 9u); // FillStyle::fillType
+    if (native.hasFill) {
+        setShapeFopt(&sp, 0x0181, quint32((quint32(native.fillBlue) << 16)
+                                          | (quint32(native.fillGreen) << 8)
+                                          | native.fillRed));
+    }
+    setShapeFopt(&sp, 0x01CD, 0); // LineStyle::lineStyle = solid
+    setShapeFopt(&sp, 0x01C0, quint32((quint32(native.lineBlue) << 16)
+                                      | (quint32(native.lineGreen) << 8)
+                                      | native.lineRed));
+    setShapeFopt(&sp, 0x01CB, native.lineWidth);
+    setShapeFopt(&sp, 0x01FF, (1u << 19) | (native.hasLine ? (1u << 3) : 0u));
+    for (int i = 0; i < native.adjustments.size() && i < 8; ++i) {
+        setShapeFopt(&sp, quint16(0x0147 + i), quint32(native.adjustments.at(i)));
+    }
+    setShapeFopt(&sp, 0x0004, fixedPointFromDegrees(native.rotation));
+    patchShapeAnchor(findRecord(sp.children, 0xF010), native.rect);
+
+    // The template's sample text must not leak into an empty autoshape.
+    if (Record *cd = findRecord(sp.children, 0xF00D)) {
+        if (Record *textAtom = findRecord(cd->children, 0x0FA0)) textAtom->payload.clear();
+        if (Record *styleAtom = findRecord(cd->children, 0x0FA1)) styleAtom->payload = emptyStyleAtomPayload();
+    }
+    return sp;
+}
+
 // The tiny.ppt template's placeholder text shapes carry a green fill and a
 // dark-green outline.  Those are template decorations, not ODF properties, so
 // every exported text box inherited them.  Clear them by selecting the
@@ -2017,16 +2344,36 @@ static QByteArray buildDocument(QList<SlideInfo> &slides, const QList<ExportedIm
         const int templateShapeCount = textShapeIndices.size();
         const int cloneSource = textShapeIndices.isEmpty() ? -1 : textShapeIndices.last();
 
+        // Write preset autoshapes as native PowerPoint objects.  They are
+        // cloned from the template text shape so their client text records
+        // can hold the shape's own text without a second text box.
+        QList<int> nativeShapeIndices;
+        if (group && cloneSource >= 0) {
+            for (int i = 0; i < info.shapes.size(); ++i) {
+                group->children.append(buildNativeShape(
+                    info.shapes.at(i), group->children.at(cloneSource),
+                    quint32(1000 + si * 200 + i)));
+                nativeShapeIndices.append(group->children.size() - 1);
+            }
+        }
+
+        int plainTextCount = 0;
         for (int t = 0; t < info.texts.size(); ++t) {
             const SlideText &st = info.texts.at(t);
             int index = -1;
-            if (t < templateShapeCount) {
-                index = textShapeIndices.at(t);
+            bool isNative = false;
+            if (st.nativeShape >= 0 && st.nativeShape < nativeShapeIndices.size()) {
+                index = nativeShapeIndices.at(st.nativeShape);
+                isNative = true;
+            } else if (plainTextCount < templateShapeCount) {
+                index = textShapeIndices.at(plainTextCount);
+                ++plainTextCount;
             } else if (group && cloneSource >= 0) {
                 // Clone the last template text shape for extra text boxes.
                 Record clone = group->children.at(cloneSource);
                 group->children.append(clone);
                 index = group->children.size() - 1;
+                ++plainTextCount;
             }
             if (index < 0) break;
 
@@ -2047,9 +2394,23 @@ static QByteArray buildDocument(QList<SlideInfo> &slides, const QList<ExportedIm
                 appendU32(slideNumber.payload, quint32(position));
                 cd->children.insert(fieldIndex++, slideNumber);
             }
-            patchShapeAnchor(findRecord(shape.children, 0xF010), st.rect);
-            neutralizeTextShapeStyle(&shape);
-            setShapeFopt(&shape, 0x0004, fixedPointFromDegrees(st.rotation));
+            if (!isNative) {
+                patchShapeAnchor(findRecord(shape.children, 0xF010), st.rect);
+                neutralizeTextShapeStyle(&shape);
+                if (st.hasFill) {
+                    setShapeFopt(&shape, 0x0180, 0); // msofillSolid
+                    setShapeFopt(&shape, 0x0181, quint32((quint32(st.fillBlue) << 16)
+                                                          | (quint32(st.fillGreen) << 8)
+                                                          | st.fillRed));
+                }
+                // The template shapes are msosptNil (0x0fff).  Calligra's PPT
+                // importer intentionally clears text insets for every shape
+                // except real text boxes, so export ODF text frames as
+                // msosptTextBox (0x00ca) to preserve their fo:padding values.
+                if (Record *fsp = findRecord(shape.children, 0xF00A))
+                    fsp->inst = 0x00ca;
+                setShapeFopt(&shape, 0x0004, fixedPointFromDegrees(st.rotation));
+            }
             setShapeFopt(&shape, 0x0085, st.noWrap ? 2u : 0u);
             setShapeFopt(&shape, 0x0081, quint32(qRound(st.margins.left * 12700)));
             setShapeFopt(&shape, 0x0082, quint32(qRound(st.margins.top * 12700)));
@@ -2076,7 +2437,7 @@ static QByteArray buildDocument(QList<SlideInfo> &slides, const QList<ExportedIm
         // into the exported slide.  They must also have their template fill
         // and outline neutralized: an empty shape still paints the template's
         // green rectangle and dark-green border when it is re-imported.
-        for (int t = info.texts.size(); t < templateShapeCount; ++t) {
+        for (int t = plainTextCount; t < templateShapeCount; ++t) {
             Record &shape = group->children[textShapeIndices.at(t)];
             Record *cd = findRecord(shape.children, 0xF00D);
             if (!cd) continue;

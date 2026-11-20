@@ -551,6 +551,11 @@ bool EnhancedPathShape::loadEnhancedGeometry(const KoXmlElement &enhancedGeometr
         return formula;
     };
     m_officePreset = enhancedGeometry.attributeNS(KoXmlNS::draw, "type");
+    // Export filters cannot link against this MODULE plugin, so expose the
+    // preset and its adjustment values as shape attributes they can read.
+    setAdditionalAttribute(QStringLiteral("calligra:shape-preset"), m_officePreset);
+    setAdditionalAttribute(QStringLiteral("calligra:shape-modifiers"),
+                           enhancedGeometry.attributeNS(KoXmlNS::draw, "modifiers"));
     setPathStretchPointX(enhancedGeometry.attributeNS(KoXmlNS::draw, "path-stretchpoint-x", "-1").toDouble());
     setPathStretchPointY(enhancedGeometry.attributeNS(KoXmlNS::draw, "path-stretchpoint-y", "-1").toDouble());
 
