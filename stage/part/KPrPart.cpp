@@ -66,11 +66,11 @@ KoMainWindow *KPrPart::createMainWindow()
         mainWindow->setGeometry(screen->availableGeometry());
     }
     QTimer::singleShot(0, mainWindow, [mainWindow]() {
-        mainWindow->showFullScreen();
+        mainWindow->showMaximized();
     });
-    // Wayland can apply the restored geometry after the first fullscreen call.
+    // Wayland can apply the restored geometry after the first maximize call.
     QTimer::singleShot(1000, mainWindow, [mainWindow]() {
-        mainWindow->showFullScreen();
+        mainWindow->showMaximized();
     });
     return mainWindow;
 }
