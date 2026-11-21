@@ -17,6 +17,8 @@
 #include <MsooXmlUnits.h>
 #include <MsooXmlUtils.h>
 
+#include <QRegularExpression>
+
 #define MSOOXML_CURRENT_NS "w"
 #define MSOOXML_CURRENT_CLASS MsooXmlNumberingReader
 #define BIND_READ_CLASS MSOOXML_CURRENT_CLASS
@@ -420,11 +422,49 @@ KoFilter::ConversionStatus DocxXmlNumberingReader::read_lvlText()
     TRY_READ_ATTR(val)
     if (!val.isEmpty()) {
         if (!m_bulletStyle) {
-            if (val.at(0) == '%' && val.length() == 2) {
-                m_currentBulletProperties.setSuffix("");
-            } else {
-                m_currentBulletProperties.setSuffix(val.right(1));
+            // Word's lvlText is a label template, e.g. "Chapter %1: " or
+            // "%1.%2.%3". ODF stores the literal parts as num-prefix and
+            // num-suffix, and reproduces dotted multi-level labels with
+            // text:display-levels. Treating only the final character as the
+            // suffix loses the prefix and turns "%1.%2" into "12".
+            const QRegularExpression placeholder(QStringLiteral("%([1-9])"));
+            QRegularExpressionMatchIterator matches = placeholder.globalMatch(val);
+            QString prefix;
+            QString suffix = val;
+            int count = 0;
+            int lastLevel = 0;
+            int previousEnd = 0;
+            bool sequential = true;
+            bool dotSeparators = true;
+            while (matches.hasNext()) {
+                const QRegularExpressionMatch match = matches.next();
+                if (count == 0) {
+                    prefix = val.left(match.capturedStart());
+                } else if (val.mid(previousEnd, match.capturedStart() - previousEnd) != QLatin1String(".")) {
+                    dotSeparators = false;
+                }
+                const int level = match.captured(1).toInt();
+                if (count > 0 && level != lastLevel + 1) {
+                    sequential = false;
+                }
+                lastLevel = level;
+                previousEnd = match.capturedEnd();
+                ++count;
             }
+            suffix = val.mid(previousEnd);
+
+            int displayLevel = 1;
+            if (count > 1 && sequential && dotSeparators && lastLevel == m_currentBulletProperties.m_level) {
+                displayLevel = count;
+            }
+            m_currentBulletProperties.setDisplayLevel(displayLevel);
+
+            // Keep the literal trailing space from w:lvlText: Word renders it
+            // in addition to the separator selected by w:suff.
+            if (!prefix.isEmpty()) {
+                m_currentBulletProperties.setPrefix(prefix);
+            }
+            m_currentBulletProperties.setSuffix(suffix);
         } else {
             m_bulletCharacter = val;
         }

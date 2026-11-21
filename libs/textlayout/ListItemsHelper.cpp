@@ -223,11 +223,23 @@ void ListItemsHelper::recalculateBlock(QTextBlock &block)
     blockData.setCounterPlainText(item);
     blockData.setCounterPrefix(prefix);
     blockData.setCounterSuffix(suffix);
-    if (calcWidth)
-        width = m_fm.boundingRect(item).width();
+    if (calcWidth) {
+        // QTextLayout draws prefix + counter + suffix as one string. Measuring
+        // the parts separately underestimates the real width (kerning/bearings),
+        // which can make the label wrap and drop trailing counter digits. Add
+        // one space of slack so the whole composed label is always laid out.
+        width = m_fm.boundingRect(prefix + item + suffix).width();
+        const qreal spaceWidth = m_fm.horizontalAdvance(QLatin1Char(' '));
+        if (!prefix.isEmpty()) {
+            // Prefixes such as "Chapter " are part of the label, but Calligra's
+            // label layout needs extra room for the separator Word renders in
+            // addition to the literal trailing space in w:lvlText.
+            width += 2.75 * spaceWidth;
+        } else if (!suffix.isEmpty()) {
+            width += spaceWidth;
+        }
+    }
     index++;
-
-    width += m_fm.boundingRect(prefix + suffix).width();
 
     qreal counterSpacing = 0;
     if (format.boolProperty(KoListStyle::AlignmentMode)) {

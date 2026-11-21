@@ -2601,6 +2601,44 @@ void DocxXmlDocumentReader::closeOpenList()
     m_openListWriter = nullptr;
 }
 
+QString DocxXmlDocumentReader::listLevelKey(const QString &numId, int level)
+{
+    return numId + QStringLiteral(".lvl") + QString::number(level - 1);
+}
+
+bool DocxXmlDocumentReader::shouldContinueListLevel(const QString &numId, int level) const
+{
+    // Level one always continues: Word keeps chapter/top-level numbering across
+    // intervening content for the same numId.
+    if (level <= 1) {
+        return true;
+    }
+
+    const QVector<int> sequence = m_numIdLevelSequence.value(numId);
+    const int lastAtThisLevel = sequence.value(level - 1, -1);
+    if (lastAtThisLevel < 0 || !m_numIdXmlId.contains(listLevelKey(numId, level))) {
+        return false;
+    }
+
+    // A lower (more significant) level used since the last item at this level
+    // starts a new instance of this list, so its counter must restart.
+    for (int higherLevel = 1; higherLevel < level; ++higherLevel) {
+        if (sequence.value(higherLevel - 1, -1) > lastAtThisLevel) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void DocxXmlDocumentReader::recordListLevel(const QString &numId, int level)
+{
+    QVector<int> &sequence = m_numIdLevelSequence[numId];
+    if (sequence.size() < level) {
+        sequence.resize(level);
+    }
+    sequence[level - 1] = ++m_listSequence;
+}
+
 void DocxXmlDocumentReader::prepareListForParagraph()
 {
     if (!m_listFound) {
@@ -2612,16 +2650,23 @@ void DocxXmlDocumentReader::prepareListForParagraph()
     const bool numbering = m_currentBulletProperties.m_type
         == MSOOXML::Utils::ParagraphBulletProperties::NumberType;
 
-    auto startLevel = [this, level, numbering](int listLevel, bool continuing) {
+    bool continueCurrentLevel = false;
+    if (numbering) {
+        continueCurrentLevel = shouldContinueListLevel(m_currentNumId, level);
+        recordListLevel(m_currentNumId, level);
+    }
+
+    auto startLevel = [this, level, numbering, continueCurrentLevel](int listLevel) {
         m_openListWriter = body;
         body->startElement("text:list");
         body->addAttribute("text:style-name", createListStyleForLevel(listLevel));
 
-        QString key;
-        QString xmlId;
-        if (listLevel == 1 && numbering) {
-            key = m_currentNumId + QString(".lvl0");
-            xmlId = key;
+        const bool continuing = numbering
+            ? (listLevel == level ? continueCurrentLevel : shouldContinueListLevel(m_currentNumId, listLevel))
+            : false;
+        if (numbering) {
+            const QString key = listLevelKey(m_currentNumId, listLevel);
+            QString xmlId = key;
             xmlId.append(QString("_%1").arg(m_numIdXmlId[key].first)).prepend("lst");
             xmlId.append(QString("_%1").arg(QRandomGenerator::global()->generate()));
             body->addAttribute("xml:id", xmlId);
@@ -2633,7 +2678,7 @@ void DocxXmlDocumentReader::prepareListForParagraph()
         }
 
         body->startElement("text:list-item");
-        if (numbering && !(listLevel == 1 && continuing)) {
+        if (numbering && !continuing) {
             const MSOOXML::Utils::ParagraphBulletProperties *properties = &m_currentBulletProperties;
             if (listLevel != level && listLevel <= m_currentBulletList.size()) {
                 properties = &m_currentBulletList.at(listLevel - 1);
@@ -2649,13 +2694,8 @@ void DocxXmlDocumentReader::prepareListForParagraph()
     const bool sameList = (m_openListLevel > 0 && m_openListNumId == m_currentNumId);
     if (!sameList) {
         closeOpenList();
-        bool continuing = false;
-        if (numbering) {
-            const QString key = m_currentNumId + QString(".lvl0");
-            continuing = m_numIdXmlId.contains(key) && !m_numIdXmlId.value(key).second.isEmpty();
-        }
         for (int listLevel = 1; listLevel <= level; ++listLevel) {
-            startLevel(listLevel, listLevel == 1 && continuing);
+            startLevel(listLevel);
         }
         m_openListNumId = m_currentNumId;
         if (numbering) {
@@ -2666,7 +2706,7 @@ void DocxXmlDocumentReader::prepareListForParagraph()
 
     if (level > m_openItemLevel) {
         for (int listLevel = m_openListLevel + 1; listLevel <= level; ++listLevel) {
-            startLevel(listLevel, false);
+            startLevel(listLevel);
         }
     } else if (level == m_openItemLevel) {
         m_openListWriter->endElement(); // text:list-item of the previous paragraph
@@ -8480,12 +8520,14 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_r_m()
 // ************************************************
 void DocxXmlDocumentReader::saveState()
 {
-    DocumentReaderState state(m_usedListStyles, m_continueListNum, m_numIdXmlId);
+    DocumentReaderState state(m_usedListStyles, m_continueListNum, m_numIdXmlId, m_numIdLevelSequence, m_listSequence);
     m_statesBkp.push(state);
 
     m_usedListStyles.clear();
     m_continueListNum.clear();
     m_numIdXmlId.clear();
+    m_numIdLevelSequence.clear();
+    m_listSequence = 0;
 }
 
 void DocxXmlDocumentReader::restoreState()
@@ -8498,6 +8540,8 @@ void DocxXmlDocumentReader::restoreState()
     m_usedListStyles = s.usedListStyles;
     m_continueListNum = s.continueListNum;
     m_numIdXmlId = s.numIdXmlId;
+    m_numIdLevelSequence = s.numIdLevelSequence;
+    m_listSequence = s.listSequence;
 }
 
 #define DRAWINGML_NS "a"

@@ -81,6 +81,8 @@ public:
 
     void setNumFormat(const QString &numFormat);
 
+    void setDisplayLevel(int level);
+
     void setMargin(const qreal margin);
 
     void setIndent(const qreal indent);
@@ -142,6 +144,7 @@ private:
     QString m_bulletFont;
     QString m_bulletChar;
     QString m_numFormat;
+    int m_displayLevel;
     QString m_prefix;
     QString m_suffix;
     QString m_align;

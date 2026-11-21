@@ -496,6 +496,14 @@ private:
     //! Map of numId.level keys and list-item num./last xml:id pairs.
     QMap<QString, QPair<int, QString>> m_numIdXmlId;
 
+    //! Last document position at which each logical DOCX level was used, per numId.
+    QMap<QString, QVector<int>> m_numIdLevelSequence;
+    int m_listSequence = 0;
+
+    static QString listLevelKey(const QString &numId, int level);
+    bool shouldContinueListLevel(const QString &numId, int level) const;
+    void recordListLevel(const QString &numId, int level);
+
     QMap<QString, QString> m_headers;
     QMap<QString, QString> m_footers;
     bool m_differentFirstPage = false;
@@ -513,10 +521,14 @@ private:
     struct DocumentReaderState {
         explicit DocumentReaderState(const QMap<QString, QString> &usedListStyles,
                                      const QMap<QString, QPair<int, bool>> &continueListNum,
-                                     const QMap<QString, QPair<int, QString>> &numIdXmlId)
+                                     const QMap<QString, QPair<int, QString>> &numIdXmlId,
+                                     const QMap<QString, QVector<int>> &numIdLevelSequence,
+                                     int listSequence)
             : usedListStyles(usedListStyles)
             , continueListNum(continueListNum)
             , numIdXmlId(numIdXmlId)
+            , numIdLevelSequence(numIdLevelSequence)
+            , listSequence(listSequence)
         {
         }
 
@@ -525,6 +537,8 @@ private:
         QMap<QString, QString> usedListStyles;
         QMap<QString, QPair<int, bool>> continueListNum;
         QMap<QString, QPair<int, QString>> numIdXmlId;
+        QMap<QString, QVector<int>> numIdLevelSequence;
+        int listSequence = 0;
     };
 
     void saveState();

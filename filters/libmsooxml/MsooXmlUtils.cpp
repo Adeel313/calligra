@@ -1183,6 +1183,7 @@ void Utils::ParagraphBulletProperties::clear()
     m_bulletFont = UNUSED;
     m_bulletChar = UNUSED;
     m_numFormat = UNUSED;
+    m_displayLevel = 1;
     m_prefix = UNUSED;
     m_suffix = UNUSED;
     m_align = UNUSED;
@@ -1244,6 +1245,11 @@ void Utils::ParagraphBulletProperties::setNumFormat(const QString &numFormat)
 {
     m_numFormat = numFormat;
     m_type = ParagraphBulletProperties::NumberType;
+}
+
+void Utils::ParagraphBulletProperties::setDisplayLevel(int level)
+{
+    m_displayLevel = qMax(1, level);
 }
 
 void Utils::ParagraphBulletProperties::setPicturePath(const QString &picturePath)
@@ -1389,6 +1395,9 @@ void Utils::ParagraphBulletProperties::addInheritedValues(const ParagraphBulletP
     if (properties.m_numFormat != UNUSED) {
         m_numFormat = properties.m_numFormat;
     }
+    if (properties.m_displayLevel > 1) {
+        m_displayLevel = properties.m_displayLevel;
+    }
     if (properties.m_prefix != UNUSED) {
         m_prefix = properties.m_prefix;
     }
@@ -1456,6 +1465,9 @@ QString Utils::ParagraphBulletProperties::convertToListProperties(KoGenStyles &m
         out.startElement("text:list-level-style-number");
         if (m_numFormat != UNUSED) {
             out.addAttribute("style:num-format", m_numFormat);
+        }
+        if (m_displayLevel > 1) {
+            out.addAttribute("text:display-levels", m_displayLevel);
         }
         if (m_prefix != UNUSED) {
             out.addAttribute("style:num-prefix", m_prefix);
