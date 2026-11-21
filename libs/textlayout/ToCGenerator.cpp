@@ -123,6 +123,16 @@ bool ToCGenerator::generate()
         }
     }
 
+    if (m_ToCInfo->m_preserveCachedResults && !cachedEntries.isEmpty()) {
+        // The cached index body already holds the entry text and page numbers
+        // from the source document. Rebuilding it would replace the cached
+        // numbers with freshly resolved page fields, which render as "###"
+        // when no layout pass has completed yet (always the case in headless
+        // conversion, where the timer-driven second pass never runs).
+        m_success = true;
+        return true;
+    }
+
     m_preservePagebreak = m_ToCDocument->begin().blockFormat().intProperty(KoParagraphStyle::BreakBefore) & KoText::PageBreak;
 
     m_success = true;
