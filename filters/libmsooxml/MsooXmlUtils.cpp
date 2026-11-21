@@ -1436,6 +1436,16 @@ QString Utils::ParagraphBulletProperties::convertToListProperties(KoGenStyles &m
         mappedBullet = unicodeBulletForSymbolFont(m_bulletFont, m_bulletChar);
         if (!mappedBullet.isNull()) {
             bulletChar = mappedBullet;
+            // The substituted marker is a real Unicode character that is meant
+            // to be drawn with an ordinary font. Keeping the Symbol/Wingdings
+            // face on the list-level text style leaves the Unicode code point
+            // unmapped in that font (it only carries glyphs in the private-use
+            // range), so the bullet silently disappears. Drop the symbol font
+            // so the substituted glyph is rendered by the paragraph's font.
+            m_textStyle.removeProperty("style:font-name");
+            m_textStyle.removeProperty("style:font-name-asian");
+            m_textStyle.removeProperty("style:font-name-complex");
+            m_textStyle.removeProperty("fo:font-family");
         }
     }
 
