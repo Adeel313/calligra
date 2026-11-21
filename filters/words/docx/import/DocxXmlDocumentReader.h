@@ -167,6 +167,15 @@ protected:
     bool m_widowControl;
     //! Offset of the floating table (w:tblpPr) currently being read, in points.
     QPointF m_tableOffset;
+    //! Raw w:tblpX/w:tblpY of a page-anchored table, before the first cell's
+    //! left margin is applied.  Kept separate because the cell margin is read
+    //! later in w:tblPr.
+    QPointF m_tableRawPosition;
+    //! True when w:tblpPr anchors a table to the page rather than to the text.
+    bool m_tablePositionIsPageAnchored = false;
+    //! Automatic styles of page-anchored tables (style name, raw tblpY) whose
+    //! y offsets are filled in once the section's page margins have been read.
+    QVector<QPair<QString, qreal>> m_pendingPageAnchoredTables;
     KoFilter::ConversionStatus read_trPr();
     KoFilter::ConversionStatus read_cnfStyle();
     KoFilter::ConversionStatus read_trHeight();

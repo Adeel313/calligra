@@ -63,7 +63,8 @@ public:
         UseLastColumnStyles, ///< table:use-last-column-styles ODF 1.2 19.740
         UseLastRowStyles, ///< table:use-last-row-styles ODF 1.2 19.741
         TableOffsetX, ///< Horizontal offset of a freely positioned table, in points
-        TableOffsetY ///< Vertical offset of a freely positioned table, in points
+        TableOffsetY, ///< Vertical offset of a freely positioned table, in points
+        TablePageAnchored ///< True when the table's y offset is from the page top
     };
 
     /// Constructor
@@ -172,6 +173,8 @@ public:
     /// A non zero offset means the table has been dragged away from the flow.
     QPointF tableOffset() const;
     void setTableOffset(const QPointF &offset);
+    bool tablePageAnchored() const;
+    void setTablePageAnchored(bool anchored);
 
     /// copy all the properties from the other style to this style, effectively duplicating it.
     void copyProperties(const KoTableStyle *style);

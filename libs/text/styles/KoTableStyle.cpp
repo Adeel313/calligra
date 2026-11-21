@@ -387,6 +387,16 @@ void KoTableStyle::setTableOffset(const QPointF &offset)
     setProperty(TableOffsetY, offset.y());
 }
 
+bool KoTableStyle::tablePageAnchored() const
+{
+    return propertyBoolean(TablePageAnchored);
+}
+
+void KoTableStyle::setTablePageAnchored(bool anchored)
+{
+    setProperty(TablePageAnchored, anchored);
+}
+
 Qt::Alignment KoTableStyle::alignmentFromString(const QString &align)
 {
     Qt::Alignment alignment = Qt::AlignLeft;
@@ -490,6 +500,9 @@ void KoTableStyle::loadOdfProperties(KoStyleStack &styleStack)
         QPointF offset(KoUnit::parseValue(styleStack.property(KoXmlNS::calligra, "table-offset-x"), 0.0),
                        KoUnit::parseValue(styleStack.property(KoXmlNS::calligra, "table-offset-y"), 0.0));
         setTableOffset(offset);
+    }
+    if (styleStack.hasProperty(KoXmlNS::calligra, "table-page-anchored")) {
+        setTablePageAnchored(styleStack.property(KoXmlNS::calligra, "table-page-anchored") == "true");
     }
 
     // Width
@@ -675,6 +688,8 @@ void KoTableStyle::saveOdf(KoGenStyle &style)
             style.addProperty("calligra:table-offset-x", QString::number(value(TableOffsetX).toReal()) + "pt", KoGenStyle::TableType);
         } else if (key == KoTableStyle::TableOffsetY) {
             style.addProperty("calligra:table-offset-y", QString::number(value(TableOffsetY).toReal()) + "pt", KoGenStyle::TableType);
+        } else if (key == KoTableStyle::TablePageAnchored) {
+            style.addProperty("calligra:table-page-anchored", tablePageAnchored() ? "true" : "false", KoGenStyle::TableType);
         }
     }
 }

@@ -592,15 +592,20 @@ bool KoTextLayoutArea::layout(FrameIterator *cursor)
             const QTextTableFormat tableFormat = table->format();
             const QPointF tableOffset(tableFormat.property(KoTableStyle::TableOffsetX).toReal(),
                                       tableFormat.property(KoTableStyle::TableOffsetY).toReal());
+            // The offset is relative to the position the text flow gives the
+            // table.  DOCX page anchors are converted to that relative offset
+            // by the importer, which knows the section's top margin.
+            const qreal tableTop = d->y + tableOffset.y();
+            const qreal flowOffsetY = tableOffset.y();
 
             tableArea->setVirginPage(virginPage());
-            tableArea->setReferenceRect(left() + tableOffset.x(), right() + tableOffset.x(), d->y + tableOffset.y(), maximumAllowedBottom());
+            tableArea->setReferenceRect(left() + tableOffset.x(), right() + tableOffset.x(), tableTop, maximumAllowedBottom());
             if (tableArea->layoutTable(cursor->tableIterator(table)) == false) {
                 d->endOfArea = new FrameIterator(cursor);
                 // The flow position of the table does not include the offset: the
                 // text after the table keeps the place it would have had without it.
                 const qreal tableBottom = tableArea->bottom();
-                d->y = tableBottom - tableOffset.y();
+                d->y = tableBottom - flowOffsetY;
                 setBottom(qMax(d->y, tableBottom) + d->footNotesHeight);
                 // Expand bounding rect so if we have content outside we show it
                 expandBoundingLeft(tableArea->boundingRect().left());
@@ -613,7 +618,7 @@ bool KoTextLayoutArea::layout(FrameIterator *cursor)
             expandBoundingLeft(tableArea->boundingRect().left());
             expandBoundingRight(tableArea->boundingRect().right());
             d->bottomSpacing = 0;
-            d->y = tableArea->bottom() - tableOffset.y();
+            d->y = tableArea->bottom() - flowOffsetY;
             delete cursor->currentTableIterator;
             cursor->currentTableIterator = nullptr;
         } else if (subFrame) {

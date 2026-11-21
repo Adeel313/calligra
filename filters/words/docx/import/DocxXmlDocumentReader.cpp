@@ -517,6 +517,21 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
         }
     }
 
+    // A page-anchored table's tblpY is measured from the top of the page, but
+    // Calligra lays tables out from the top of the text area.  The section's
+    // page margin is only known now (w:sectPr follows the table in the body),
+    // so convert the stored absolute value into the table style's y offset.
+    if (!m_pendingPageAnchoredTables.isEmpty() && m_pageMargins.contains(MarginTop)) {
+        const qreal topMargin = m_pageMargins.value(MarginTop);
+        for (const auto &pending : m_pendingPageAnchoredTables) {
+            const qreal relativeY = qMax(0.0, pending.second - 0.05 - topMargin);
+            if (KoGenStyle *style = mainStyles->styleForModification(pending.first, "table")) {
+                style->addPropertyPt("calligra:table-offset-y", relativeY);
+            }
+        }
+        m_pendingPageAnchoredTables.clear();
+    }
+
     applyPageBorders(m_currentPageStyle, m_pageMargins, m_pageBorderStyles, m_pageBorderPaddings, m_pageBorderOffsetFrom);
 
     // A section that declares no header/footer references is linked to the
@@ -5151,8 +5166,18 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tblpPr()
     // the representation this filter writes for a table that was dragged away
     // from its place in the flow, so read the position back as that offset.
     m_tableOffset = QPointF();
+    m_tableRawPosition = QPointF();
+    m_tablePositionIsPageAnchored = false;
     if (horzAnchor == "margin" && vertAnchor == "text" && tblpXSpec.isEmpty() && tblpYSpec.isEmpty()) {
         m_tableOffset = QPointF(TWIP_TO_POINT(m_svgX), TWIP_TO_POINT(m_svgY));
+    } else if (horzAnchor == "margin" && vertAnchor == "page" && tblpXSpec.isEmpty() && tblpYSpec.isEmpty()) {
+        // Word's page anchor is absolute: tblpX is measured from the left text
+        // margin and tblpY from the top of the page.  Remember the raw values
+        // until w:tblCellMar has been read; the first cell's left margin moves
+        // the table border further left, and Word places a positive tblpY one
+        // twip above the exact value.
+        m_tableRawPosition = QPointF(TWIP_TO_POINT(m_svgX), TWIP_TO_POINT(m_svgY));
+        m_tablePositionIsPageAnchored = true;
     }
 
     int bottom = 0, left = 0, right = 0, top = 0;
@@ -6171,6 +6196,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     m_currentTableStyleName.clear();
     m_currentDrawStyleName.clear();
     m_tableOffset = QPointF();
+    m_tableRawPosition = QPointF();
+    m_tablePositionIsPageAnchored = false;
 
     m_tableMainStyle = KoTblStyle::create();
     if (!m_pendingParagraphBreak.isEmpty()) {
@@ -6207,6 +6234,19 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
                 TRY_READ(tblPr)
                 m_currentDefaultCellStyle = m_currentTableStyleProperties;
                 m_currentTableStyleProperties = nullptr;
+
+                if (m_tablePositionIsPageAnchored) {
+                    // Word places a floating table so that the first cell's
+                    // text lands at tblpX.  The table border (which ODF lays
+                    // out) is one cell margin further left.
+                    qreal firstCellLeft = 5.4; // 108 twips, the OOXML default
+                    if (m_currentDefaultCellStyle && (m_currentDefaultCellStyle->setProperties & MSOOXML::TableStyleProperties::LeftMargin)) {
+                        firstCellLeft = m_currentDefaultCellStyle->leftMargin;
+                    }
+                    // The vertical part needs the section's top margin, which
+                    // is read at the end of the body; fill it in there.
+                    m_tableOffset = QPointF(m_tableRawPosition.x() - firstCellLeft, 0.0);
+                }
 
                 // debug border information
 #ifdef DOCXXML_DEBUG_TABLES
@@ -6245,6 +6285,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
 
     // Keep the position of a table that was moved away from the text flow.
     m_tableMainStyle->setTableOffset(m_tableOffset);
+    m_tableMainStyle->setTablePageAnchored(m_tablePositionIsPageAnchored);
 
     m_table->setTableStyle(m_tableMainStyle);
 
@@ -6301,6 +6342,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     // line and shifts everything below it down.
     if (!m_currentTableHasHideMark || m_currentTableHasVisibleContent) {
         m_table->saveOdf(*body, *mainStyles);
+        if (m_tablePositionIsPageAnchored) {
+            m_pendingPageAnchoredTables.append(qMakePair(m_tableMainStyle->name(), m_tableRawPosition.y()));
+        }
     }
 
     if (sectionAdded) {

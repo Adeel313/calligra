@@ -82,6 +82,16 @@ QPointF KoTblStyle::tableOffset() const
     return m_tableOffset;
 }
 
+void KoTblStyle::setTablePageAnchored(bool anchored)
+{
+    m_tablePageAnchored = anchored;
+}
+
+bool KoTblStyle::tablePageAnchored() const
+{
+    return m_tablePageAnchored;
+}
+
 KoTblStyle::~KoTblStyle() = default;
 
 void KoTblStyle::setAllowBreakBetweenRows(bool allow)
@@ -281,6 +291,9 @@ void KoTblStyle::prepareStyle(KoGenStyle &style) const
     if (!m_tableOffset.isNull()) {
         style.addPropertyPt("calligra:table-offset-x", m_tableOffset.x());
         style.addPropertyPt("calligra:table-offset-y", m_tableOffset.y());
+    }
+    if (m_tablePageAnchored) {
+        style.addProperty("calligra:table-page-anchored", "true");
     }
 
     style.addPropertyPt("fo:margin-top", m_topMargin);

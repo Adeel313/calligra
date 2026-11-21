@@ -105,6 +105,27 @@ def check(output):
     indent.set(qn('w:type'), 'dxa')
     indented._tbl.tblPr.append(indent)
 
+    # Word anchors a floating table to the page with w:tblpPr.  tblpX is
+    # measured from the text margin, tblpY from the top of the page; the first
+    # cell's left margin moves the table border further left.  Calligra used to
+    # drop the anchor entirely and leave the table at the text margin.
+    page_anchored = doc.add_table(rows=1, cols=1)
+    page_anchored.style = 'Table Grid'
+    page_anchored.cell(0, 0).text = 'Page anchored table'
+    tblpr = page_anchored._tbl.tblPr
+    tblp = OxmlElement('w:tblpPr')
+    for name, value in [('leftFromText', '180'), ('rightFromText', '180'),
+                        ('vertAnchor', 'page'), ('horzAnchor', 'margin'),
+                        ('tblpX', '-612'), ('tblpY', '901')]:
+        tblp.set(qn('w:' + name), value)
+    tblpr.insert(0, tblp)
+    cell_mar = OxmlElement('w:tblCellMar')
+    left = OxmlElement('w:left')
+    left.set(qn('w:w'), '108')
+    left.set(qn('w:type'), 'dxa')
+    cell_mar.append(left)
+    tblpr.insert(1, cell_mar)
+
     # A floating object whose horizontal base is the page margin and whose
     # vertical base is its paragraph travels with that paragraph in Word.
     anchored = doc.add_paragraph('Anchored image follows')
@@ -236,6 +257,15 @@ def check(output):
     indented_table = paragraph('Indented table').getparent().getparent().getparent()
     indent_props = properties(indented_table.get(qn_odf('table:style-name')))
     assert round(points(indent_props[qn_odf('fo:margin-left')]), 1) == 56.7
+
+    page_anchored_table = paragraph('Page anchored table').getparent().getparent().getparent()
+    page_props = properties(page_anchored_table.get(qn_odf('table:style-name')))
+    assert page_props.get(qn_odf('calligra:table-page-anchored')) == 'true'
+    # -612 twips from the margin minus the 108-twip first-cell margin = -36pt.
+    assert round(points(page_props[qn_odf('calligra:table-offset-x')]), 1) == -36.0
+    # 901 twips from the page top minus Word's one-twip adjustment and the
+    # 36pt section top margin = 9pt below the top of the Calligra text area.
+    assert round(points(page_props[qn_odf('calligra:table-offset-y')]), 1) == 9.0
 
     # A margin-horizontal/paragraph-vertical base is char-anchored in ODF.
     # A paragraph anchor makes Calligra put the object at the top of the page.

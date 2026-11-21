@@ -95,6 +95,11 @@ public:
     void setTableOffset(const QPointF &offset);
     QPointF tableOffset() const;
 
+    /// True when w:tblpPr anchored the table to the page: the y offset is
+    /// measured from the top of the page, not from the text flow.
+    void setTablePageAnchored(bool anchored);
+    bool tablePageAnchored() const;
+
     enum KeepWithNext {
         AutoKeepWithNext,
         AlwaysKeepWithNext
@@ -145,6 +150,7 @@ private:
 
     bool m_display;
     QPointF m_tableOffset;
+    bool m_tablePageAnchored = false;
     // TODO style:page-number
     // TODO style:shadow
     // TODO style:background-image
