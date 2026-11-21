@@ -193,6 +193,14 @@ static bool usesCustomRibbonPages(const QString &applicationName)
         || applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive);
 }
 
+// These applications size the ribbon band to the tab that is currently shown,
+// so a tab with fewer commands does not leave empty space below it.
+static bool usesActivePageRibbonBand(const QString &applicationName)
+{
+    return usesCustomRibbonPages(applicationName)
+        || applicationName.contains(QLatin1String("words"), Qt::CaseInsensitive);
+}
+
 KoModeBox::KoModeBox(KoCanvasControllerWidget *canvas, const QString &appName)
     : QWidget()
     , d(std::make_unique<Private>(canvas))
@@ -211,6 +219,19 @@ KoModeBox::KoModeBox(KoCanvasControllerWidget *canvas, const QString &appName)
     d->layout->setSpacing({});
     d->stack = new QStackedWidget;
     d->stack->setObjectName(QStringLiteral("ribbonCommands"));
+    // Active-page ribbons must remeasure when the visible tab changes. Words
+    // also has plain tool tabs, which do not emit the custom-page resize that
+    // Stage and Sheets use for this.
+    connect(d->stack, &QStackedWidget::currentChanged, this, [this](int) {
+        if (d->orientation != Qt::Horizontal || !usesActivePageRibbonBand(applicationName)) {
+            return;
+        }
+        auto *wrapper = qobject_cast<QScrollArea *>(d->stack->currentWidget());
+        if (!wrapper || !wrapper->widget()) {
+            return;
+        }
+        updateRibbonCompactness(wrapper->widget());
+    });
 
     d->header = new QWidget(this);
     d->header->setObjectName(QStringLiteral("ribbonTabsRow"));
@@ -496,9 +517,9 @@ void KoModeBox::updateRibbonCompactness(QWidget *page)
     fitRibbonBand();
 }
 
-// Sheets and Stage size the band to the active page so a tab with fewer
-// commands does not leave empty space below it. Words shares one height
-// across its visible pages. Wide pages can scroll horizontally.
+// Words, Stage and Sheets size the band to the active page so a tab with
+// fewer commands does not leave empty space below it. Wide pages can scroll
+// horizontally.
 void KoModeBox::fitRibbonBand()
 {
     if (d->orientation != Qt::Horizontal || d->fittingRibbonBand) {
@@ -506,7 +527,7 @@ void KoModeBox::fitRibbonBand()
     }
     QScopedValueRollback<bool> fitting(d->fittingRibbonBand, true);
     const bool sheetsRibbon = applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive);
-    const bool activePageBand = sheetsRibbon || applicationName.contains(QLatin1String("stage"), Qt::CaseInsensitive);
+    const bool activePageBand = usesActivePageRibbonBand(applicationName);
     int band = 0;
     auto *currentWrapper = qobject_cast<QScrollArea *>(d->stack->currentWidget());
     if (activePageBand) {
@@ -1764,6 +1785,16 @@ void KoModeBox::setOptionWidgets(const QList<QPointer<QWidget>> &optionWidgetLis
             }
         }
         layout->addStretch();
+    }
+
+    // Selecting a tool tab can create its option widgets only after the tab
+    // is current. Words measures the active page, so refit once the controls
+    // actually exist instead of keeping the empty page's tiny band.
+    if (d->orientation == Qt::Horizontal && usesActivePageRibbonBand(applicationName)) {
+        auto *wrapper = qobject_cast<QScrollArea *>(page->parentWidget() ? page->parentWidget()->parentWidget() : nullptr);
+        if (wrapper && wrapper == d->stack->currentWidget()) {
+            updateRibbonCompactness(page);
+        }
     }
 }
 
