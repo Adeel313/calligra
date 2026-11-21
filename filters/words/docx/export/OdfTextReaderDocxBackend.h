@@ -110,6 +110,7 @@ private:
     int m_insideSection = 0; //!< Number of open <text:section> elements.
     QStack<QString> m_paragraphBreakAfter;
     int m_tocLevels = 3;
+    QString m_tocSourceStyles; //!< Raw \t "Style,Level,..." mapping from the original DOCX.
     bool m_tocHyperlinks = false;
     bool m_tocPageNumbers = false;
     bool m_tocFieldOpen = false; //!< true between TOC field begin and end.

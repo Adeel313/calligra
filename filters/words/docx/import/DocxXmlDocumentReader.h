@@ -89,6 +89,9 @@ protected:
     bool m_tocHyperlinks = false;
     bool m_tocPageNumbers = true;
     QString m_tocInstruction;
+    //! Raw contents of the TOC field's \t "Style,Level,..." argument. Word
+    //! uses this instead of \o when a document maps custom styles to levels.
+    QString m_tocSourceStyles;
     void beginToc();
     void collectTocEntry(const QString &paragraphXml);
     void finishToc();

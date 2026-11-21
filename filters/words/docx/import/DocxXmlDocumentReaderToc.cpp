@@ -36,6 +36,15 @@ void DocxXmlDocumentReader::beginToc()
     }
     m_tocHyperlinks = m_tocInstruction.contains(QRegularExpression(QStringLiteral("\\\\h(?:\\s|$)")));
     m_tocPageNumbers = !m_tocInstruction.contains(QRegularExpression(QStringLiteral("\\\\n(?:\\s|$)")));
+
+    // Word uses \t "Style,Level,..." instead of \o when the ToC is built from
+    // custom styles. Keep the raw mapping so the exported field instruction
+    // still tells Word which styles to use when the ToC is refreshed.
+    m_tocSourceStyles.clear();
+    const auto sourceStyles = QRegularExpression(QStringLiteral("\\\\t\\s+\"([^\"]+)\"")).match(m_tocInstruction);
+    if (sourceStyles.hasMatch()) {
+        m_tocSourceStyles = sourceStyles.captured(1);
+    }
     m_tocEntryFormatting.clear();
     m_tocParentWriter = body;
     m_tocBodyBuffer.setData(QByteArray());
@@ -114,13 +123,41 @@ void DocxXmlDocumentReader::finishToc()
     body->addAttribute("text:name", "Table of Contents");
     body->startElement("text:table-of-content-source");
     body->addAttribute("text:outline-level", m_tocLevels);
-    body->addAttribute("text:use-outline-level", "true");
+    body->addAttribute("text:use-outline-level", m_tocSourceStyles.isEmpty() ? "true" : "false");
     body->addAttribute("text:relative-tab-stop-position", "false");
+    if (!m_tocSourceStyles.isEmpty()) {
+        body->addAttribute("text:use-index-source-styles", "true");
+        // Keep the exact Word mapping; rebuilding it from ODF style names
+        // would lose the display names the \t switch relies on.
+        body->addAttribute("calligra:toc-source-styles", m_tocSourceStyles);
+    }
     if (!m_tocEntryFormatting.isEmpty()) {
         // DOCX field results are the document's last rendered TOC. Preserve
         // them until an explicit update so paragraphs accidentally carrying
         // Heading styles do not expand into pages of prose during import.
         body->addAttribute("calligra:preserve-cached-results", "true");
+    }
+    if (!m_tocSourceStyles.isEmpty()) {
+        // Also declare the mapping in standard ODF so other consumers and
+        // Calligra's own ToC generator can rebuild the index from styles.
+        QMap<int, QStringList> stylesByLevel;
+        const QStringList pairs = m_tocSourceStyles.split(QLatin1Char(','), Qt::SkipEmptyParts);
+        for (int i = 0; i + 1 < pairs.size(); i += 2) {
+            const int level = pairs.at(i + 1).trimmed().toInt();
+            if (level > 0) {
+                stylesByLevel[level].append(pairs.at(i).trimmed());
+            }
+        }
+        for (auto it = stylesByLevel.constBegin(); it != stylesByLevel.constEnd(); ++it) {
+            body->startElement("text:index-source-styles");
+            body->addAttribute("text:outline-level", it.key());
+            for (const QString &style : it.value()) {
+                body->startElement("text:index-source-style");
+                body->addAttribute("text:style-name", style);
+                body->endElement(); // text:index-source-style
+            }
+            body->endElement(); // text:index-source-styles
+        }
     }
     for (int level = 1; level <= m_tocLevels; ++level) {
         KoGenStyle entry(KoGenStyle::ParagraphStyle, "paragraph");

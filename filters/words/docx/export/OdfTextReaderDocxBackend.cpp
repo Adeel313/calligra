@@ -360,8 +360,10 @@ void OdfTextReaderDocxBackend::elementTextTableOfContent(KoXmlStreamReader &read
     if (reader.isStartElement()) {
         if (reader.qualifiedName() == QLatin1StringView("text:table-of-content-source")) {
             m_tocLevels = qBound(1, reader.attributes().value("text:outline-level").toInt(), 9);
+            m_tocSourceStyles = reader.attributes().value("calligra:toc-source-styles").toString();
         } else if (reader.qualifiedName() == QLatin1StringView("text:table-of-content")) {
             m_tocLevels = 3;
+            m_tocSourceStyles.clear();
             m_tocHyperlinks = false;
             m_tocPageNumbers = false;
         } else if (reader.qualifiedName() == QLatin1StringView("text:index-entry-link-start")) {
@@ -416,7 +418,14 @@ void OdfTextReaderDocxBackend::elementTextIndexBody(KoXmlStreamReader &reader, O
     writer->startElement("w:r");
     writer->startElement("w:instrText");
     writer->addAttribute("xml:space", "preserve");
-    QString instruction = QStringLiteral(" TOC \\o \"1-%1\" ").arg(m_tocLevels);
+    QString instruction;
+    if (m_tocSourceStyles.isEmpty()) {
+        instruction = QStringLiteral(" TOC \\o \"1-%1\" ").arg(m_tocLevels);
+    } else {
+        // Restore the original custom-style mapping. Word treats \o and \t as
+        // alternatives; emitting both would make the refresh use \o instead.
+        instruction = QStringLiteral(" TOC \\t \"%1\" ").arg(m_tocSourceStyles);
+    }
     if (m_tocHyperlinks) instruction += QStringLiteral("\\h ");
     if (!m_tocPageNumbers) instruction += QStringLiteral("\\n ");
     instruction += QStringLiteral("\\z \\u ");
