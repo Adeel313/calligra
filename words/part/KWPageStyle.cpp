@@ -38,6 +38,8 @@ void KWPageStylePrivate::clear()
     direction = KoText::AutoDirection;
     headerDynamicSpacing = false;
     footerDynamicSpacing = false;
+    firstPageHeaderDisabled = false;
+    firstPageFooterDisabled = false;
     fullPageBackground.clear();
     nextStyleName.clear();
 }
@@ -175,6 +177,26 @@ bool KWPageStyle::footerDynamicSpacing() const
 void KWPageStyle::setFooterDynamicSpacing(bool dynamic)
 {
     d->footerDynamicSpacing = dynamic;
+}
+
+bool KWPageStyle::firstPageHeaderDisabled() const
+{
+    return d->firstPageHeaderDisabled;
+}
+
+void KWPageStyle::setFirstPageHeaderDisabled(bool disabled)
+{
+    d->firstPageHeaderDisabled = disabled;
+}
+
+bool KWPageStyle::firstPageFooterDisabled() const
+{
+    return d->firstPageFooterDisabled;
+}
+
+void KWPageStyle::setFirstPageFooterDisabled(bool disabled)
+{
+    d->firstPageFooterDisabled = disabled;
 }
 
 void KWPageStyle::clear()

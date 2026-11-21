@@ -155,6 +155,14 @@ public:
     /// set if a growing footer eats the distance first.
     void setFooterDynamicSpacing(bool dynamic);
 
+    /// true when an empty ODF header-first variant suppresses the header on page 1
+    bool firstPageHeaderDisabled() const;
+    void setFirstPageHeaderDisabled(bool disabled);
+
+    /// true when an empty ODF footer-first variant suppresses the footer on page 1
+    bool firstPageFooterDisabled() const;
+    void setFirstPageFooterDisabled(bool disabled);
+
     /// initialize to default settings
     void clear();
 

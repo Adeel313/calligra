@@ -597,6 +597,15 @@ bool KWFrameLayout::shouldHaveHeaderOrFooter(int pageNumber, bool header, Words:
 
 bool KWFrameLayout::shouldHaveHeaderOrFooter(int pageNumber, const KWPageStyle &pageStyle, bool header, Words::TextFrameSetType *origin)
 {
+    if (pageNumber == 1) {
+        if (header && pageStyle.firstPageHeaderDisabled()) {
+            return false;
+        }
+        if (!header && pageStyle.firstPageFooterDisabled()) {
+            return false;
+        }
+    }
+
     Words::HeaderFooterType type = header ? pageStyle.headerPolicy() : pageStyle.footerPolicy();
     switch (type) {
     case Words::HFTypeNone:

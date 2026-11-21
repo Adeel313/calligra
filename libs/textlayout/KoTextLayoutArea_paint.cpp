@@ -361,7 +361,33 @@ void KoTextLayoutArea::paint(QPainter *painter, const KoTextDocumentLayout::Pain
             }
             painter->setClipRect(textClip, Qt::IntersectClip);
 
+            // A paragraph split across pages keeps all of its lines in one
+            // QTextLayout.  Qt's PDF paint engine does not always honour the
+            // clip for those lines, so lines belonging to the neighbouring
+            // page can be drawn a second time here.  Temporarily move such
+            // lines outside the clipped area while drawing, then put them
+            // back so the persistent layout is unchanged.
+            QVector<QPair<int, QPointF>> movedLines;
+            for (int i = 0; i < layout->lineCount(); ++i) {
+                QTextLine line = layout->lineAt(i);
+                if (!line.isValid()) {
+                    continue;
+                }
+                const QPointF pos = line.position();
+                if (pos.y() < br.top() - 2.0 || pos.y() > br.bottom() + 2.0) {
+                    movedLines.append(qMakePair(i, pos));
+                    line.setPosition(QPointF(pos.x(), -10000.0));
+                }
+            }
+
             layout->draw(painter, QPointF(0, 0), selections);
+
+            for (auto it = movedLines.constBegin(); it != movedLines.constEnd(); ++it) {
+                QTextLine line = layout->lineAt(it->first);
+                if (line.isValid()) {
+                    line.setPosition(it->second);
+                }
+            }
 
             if (context.showSectionBounds) {
                 decorateParagraphSections(painter, block);

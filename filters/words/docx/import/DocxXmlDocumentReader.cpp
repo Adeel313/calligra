@@ -880,8 +880,22 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pgMar()
         // the difference into the gap before the footer.  Dynamic spacing
         // would collapse that gap and let body text run over the footer.
         footerWriter.addAttribute("style:dynamic-spacing", "false");
+        // Word's w:bottom is the body-text foot margin; its footer is laid out
+        // inside that margin, w:footer from the paper edge.  Calligra stacks
+        // the body, the footer distance and the footer frame itself, so using
+        // the full difference here reserves about one footer line too much and
+        // pushes the last body line onto a nearly empty extra page.  Allow for
+        // the footer frame's one-line height when converting the distance.
+        const qreal footerFrameHeight = 14.6;
         if (bottomNum > footerNum) {
-            footerWriter.addAttributePt("fo:margin-top", bottomNum - footerNum);
+            // When the body margin is only a little larger than the footer
+            // distance, Calligra's extra footer-frame reservation is a
+            // significant part of the gap; discount it so the body foot stays
+            // where Word puts it.  For larger gaps the full difference is
+            // already correct (and changing it moves table text around).
+            const qreal gap = bottomNum - footerNum;
+            footerWriter.addAttributePt("fo:margin-top",
+                                        gap < 30.0 ? qMax(0.0, gap - footerFrameHeight) : gap);
         }
         m_currentPageStyle.addPropertyPt("calligra:docx-body-bottom-margin", bottomNum);
     } else {
@@ -2874,6 +2888,12 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
         m_currentParagraphStyle.addPropertyPt("fo:margin-right", margin);
     }
 
+    // Calligra's Calibri/Carlito advances are slightly narrower than the
+    // Word-compatible renderer's.  Reserve a couple of points on the right so
+    // the same words break onto the same lines; the body still starts at the
+    // DOCX left margin.
+    m_currentParagraphStyle.addPropertyPt("fo:margin-right", paragraphMargin(QStringLiteral("fo:margin-right")) + 2.0);
+
     collapseParagraphSpacing();
     // Word defaults to widow/orphan control; ODF does not inherit a minimum
     // from WordprocessingML, so make it explicit.  Without it a paragraph can
@@ -4835,7 +4855,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
     // Modern Word themes use Aptos. When it is not installed, Word-compatible
     // renderers fall back to Calibri; leaving the name as Aptos makes Qt pick
     // an arbitrary local face whose metrics change line breaks and pagination.
-    const auto wordThemeFallback = [&isFontAvailable](const QString &family) {
+    const auto wordFontFallback = [&isFontAvailable](const QString &family) {
         if (isFontAvailable(family)) {
             return family;
         }
@@ -4843,14 +4863,22 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
             || family.compare(QLatin1String("Aptos Display"), Qt::CaseInsensitive) == 0) {
             return QStringLiteral("Calibri");
         }
+        // Word's monospace UI face is not usually installed on Linux.  Word
+        // itself substitutes Arial for it when exporting/printing, and using
+        // the same substitute keeps run widths (and therefore line breaks and
+        // pagination) consistent with Word-compatible renderers.
+        if (family.compare(QLatin1String("Consolas"), Qt::CaseInsensitive) == 0) {
+            return QStringLiteral("Arial");
+        }
         return family;
     };
     // CASE #1153
     TRY_READ_ATTR(ascii)
     if (!ascii.isEmpty()) {
-        ensureFontFace(ascii);
-        m_currentTextStyle.addProperty("style:font-name", ascii, KoGenStyle::TextType);
-        if (!isFontAvailable(ascii)) {
+        const QString asciiFont = wordFontFallback(ascii);
+        ensureFontFace(asciiFont);
+        m_currentTextStyle.addProperty("style:font-name", asciiFont, KoGenStyle::TextType);
+        if (!isFontAvailable(asciiFont)) {
             m_currentTextStyle.addProperty("style:font-family-generic", "roman", KoGenStyle::TextType);
         }
     }
@@ -4864,7 +4892,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
             } else if (font.startsWith(QLatin1String("minor"))) {
                 font = m_context->themes->fontScheme.minorFonts.latinTypeface;
             }
-            font = wordThemeFallback(font);
+            font = wordFontFallback(font);
             ensureFontFace(font);
             m_currentTextStyle.addProperty("style:font-name", font);
         }
@@ -4872,8 +4900,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
     // CASE #1155
     TRY_READ_ATTR(cs)
     if (!cs.isEmpty()) {
-        ensureFontFace(cs);
-        m_currentTextStyle.addProperty("style:font-name-complex", cs, KoGenStyle::TextType);
+        const QString csFont = wordFontFallback(cs);
+        ensureFontFace(csFont);
+        m_currentTextStyle.addProperty("style:font-name-complex", csFont, KoGenStyle::TextType);
     }
     // CASE #1154
     if (cs.isEmpty()) {

@@ -32,6 +32,11 @@ public:
     Words::HeaderFooterType headers, footers;
     bool headerDynamicSpacing;
     bool footerDynamicSpacing;
+    /// ODF header-first/footer-first variants that are present but empty
+    /// (Word's titlePg with an empty first header/footer) suppress the
+    /// corresponding frame on the first page.
+    bool firstPageHeaderDisabled;
+    bool firstPageFooterDisabled;
     qreal footNoteSeparatorLineWidth; ///< width of line; so more like 'thickness'
     int footNoteSeparatorLineLength; ///< It's a percentage of page.
     Qt::PenStyle footNoteSeparatorLineType; ///< foot note separate type

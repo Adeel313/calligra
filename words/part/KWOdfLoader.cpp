@@ -398,6 +398,20 @@ void KWOdfLoader::loadHeaderFooterFrame(KoShapeLoadingContext &context, const KW
     context.odfLoadingContext().setUseStylesAutoStyles(false);
 }
 
+static bool headerFooterHasText(const KoXmlElement &elem)
+{
+    for (KoXmlNode child = elem.firstChild(); !child.isNull(); child = child.nextSibling()) {
+        if (child.isText() || child.isCDATASection()) {
+            if (!child.toText().data().trimmed().isEmpty()) {
+                return true;
+            }
+        } else if (child.isElement() && headerFooterHasText(child.toElement())) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // 1.6: KWOasisLoader::loadOasisHeaderFooter
 void KWOdfLoader::loadHeaderFooter(KoShapeLoadingContext &context, KWPageStyle &pageStyle, const KoXmlElement &masterPage, HFLoadType headerFooter)
 {
@@ -409,6 +423,18 @@ void KWOdfLoader::loadHeaderFooter(KoShapeLoadingContext &context, KWPageStyle &
     // different. If they are missing, the content of odd and even (aka left
     // and right) pages are the same.
     KoXmlElement leftElem = KoXml::namedItemNS(masterPage, KoXmlNS::style, headerFooter == LoadHeader ? "header-left" : "footer-left");
+
+    // DOCX titlePg with an empty first-page part is imported as a present but
+    // empty ODF header-first/footer-first.  Words has no separate first-page
+    // frame set, so remember that page 1 must not show the default frame.
+    KoXmlElement firstElem = KoXml::namedItemNS(masterPage, KoXmlNS::style, headerFooter == LoadHeader ? "header-first" : "footer-first");
+    if (!firstElem.isNull() && !headerFooterHasText(firstElem)) {
+        if (headerFooter == LoadHeader) {
+            pageStyle.setFirstPageHeaderDisabled(true);
+        } else {
+            pageStyle.setFirstPageFooterDisabled(true);
+        }
+    }
 
     // Used in KWPageStyle to determine if, and what kind of header/footer to use.
     Words::HeaderFooterType hfType = elem.isNull() ? Words::HFTypeNone : leftElem.isNull() ? Words::HFTypeUniform : Words::HFTypeEvenOdd;

@@ -204,6 +204,8 @@ def check(output):
     sized.font.size = Pt(9)
     missing = doc.add_paragraph().add_run('Missing face')
     missing.font.name = 'ZZZUninstalledTestFont'
+    mono = doc.add_paragraph().add_run('Mono face')
+    mono.font.name = 'Consolas'
 
     # Word reserves vertical space with an empty paragraph whose paragraph-mark
     # run properties carry a large font size.  Dropping it collapses the line
@@ -378,6 +380,11 @@ def check(output):
     missing_props = properties(missing_style)
     assert missing_props.get(qn_odf('style:font-name')) == 'ZZZUninstalledTestFont'
     assert missing_props.get(qn_odf('style:font-family-generic')) == 'roman'
+    # Word's monospace UI face is absent on Linux; Word-compatible renderers
+    # substitute Arial.  Keeping the name would let Qt pick a local monospace
+    # face with different run widths and shift line breaks.
+    mono_style = paragraph('Mono face').find(qn_odf('text:span')).get(qn_odf('text:style-name'))
+    assert properties(mono_style).get(qn_odf('style:font-name')) == 'Arial'
 
     # The empty spacer's 230pt paragraph-mark size must reach the ODF paragraph
     # style; otherwise the line has normal height and following text moves up.
@@ -395,8 +402,9 @@ def check(output):
 
     # w:bottom (720 twips) is the distance to the body text; the footer sits
     # w:footer (360) from the paper edge.  Calligra uses the latter as the page
-    # margin so the footer text and body both land at the Word positions.
-    expected_margins = (36.0, 18.0, 0.0, 18.0, 'false')
+    # margin and discounts the footer frame's one-line height from the gap, so
+    # the body foot lands at the Word position instead of one line too early.
+    expected_margins = (36.0, 18.0, 0.0, 3.4, 'false')
     assert page_heights(roots[0]) == expected_margins
     layout_props = roots[0].xpath('//style:page-layout/style:page-layout-properties', namespaces=NS)[0]
     assert points(layout_props.get('{http://www.calligra.org/2005/}docx-body-bottom-margin')) == 36.0
