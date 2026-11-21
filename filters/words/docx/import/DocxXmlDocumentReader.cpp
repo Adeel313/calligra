@@ -84,6 +84,22 @@ bool paragraphXmlHasVisibleContent(const QString &xml)
     return false;
 }
 
+// True only when the paragraph contains real text. Whitespace, tabs and
+// drawings still use the paragraph mark's font for their line box, so they
+// must keep the mark formatting imported from w:pPr/w:rPr.
+bool paragraphXmlHasText(const QString &xml)
+{
+    QXmlStreamReader reader(QStringLiteral("<root>") + xml + QStringLiteral("</root>"));
+    reader.setNamespaceProcessing(false);
+    while (!reader.atEnd()) {
+        reader.readNext();
+        if (reader.isCharacters() && !reader.isWhitespace()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 //! Maps a WordprocessingML w:themeColor name to the key of the DrawingML colour scheme.
 QString docxThemeKey(const QString &themeColor)
 {
@@ -2928,19 +2944,6 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
     // does not affect other runs of text so it can NOT be saved into
     // text-properties of the paragraph style.
     //
-    if (!textPBuf.isEmpty()) {
-        // Normally paragraph-mark run properties must not leak into the runs
-        // of the paragraph. The font size is the exception: ODF has no separate
-        // paragraph-mark style, and Word uses a large w:pPr/w:rPr/w:sz on an
-        // otherwise empty paragraph to reserve vertical space on cover pages.
-        // Keep just that property so the line box keeps its intended height.
-        const QString markFontSize = m_currentParagraphStyle.property("fo:font-size", KoGenStyle::TextType);
-        m_currentParagraphStyle.removeAllProperties(KoGenStyle::TextType);
-        if (!markFontSize.isEmpty()) {
-            m_currentParagraphStyle.addProperty("fo:font-size", markFontSize, KoGenStyle::TextType);
-        }
-    }
-
     //---------------------------------------------
     // Process Paragraph Content
     //---------------------------------------------
@@ -2963,6 +2966,15 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
             QString paragraphXml;
             (void)textPBuf.releaseWriter(paragraphXml);
             const bool hasParagraphContent = paragraphXmlHasVisibleContent(paragraphXml);
+            // Paragraph-mark run properties must not leak into visible runs.
+            // In particular, w:pPr/w:rPr/w:sz sizes only the paragraph mark;
+            // applying it to the text makes every line taller than in
+            // Word-compatible renderers and changes pagination. Empty or
+            // drawing-only paragraphs keep the mark size because Word uses it
+            // to reserve vertical space on cover pages.
+            if (paragraphXmlHasText(paragraphXml)) {
+                m_currentParagraphStyle.removeAllProperties(KoGenStyle::TextType);
+            }
             if (m_insideTableCell && hasParagraphContent) {
                 m_currentTableHasVisibleContent = true;
             }

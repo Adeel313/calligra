@@ -1897,6 +1897,20 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
         }
     }
 
+    // Word includes the list label's font in the first line's height. The
+    // label is not part of the text fragments, so without this a 12pt bullet
+    // leaves a 10pt paragraph's first line too short and the whole document
+    // reflows several lines per page. Scaling the label size by its ascent
+    // share of the line box makes a 12pt marker reserve the extra height Word
+    // gives the first line of a list paragraph.
+    if (block.textList() && line.textStart() == 0) {
+        const QTextCharFormat labelFormat = blockData.labelFormat();
+        const qreal labelSize = labelFormat.fontPointSize();
+        if (labelSize > 0.0) {
+            height = qMax(height, labelSize * 1.06);
+        }
+    }
+
     // Inline shapes reserve their own extent. Paragraph line spacing applies
     // to the text metrics, not to the image height (otherwise a 1.5-line
     // paragraph adds half an image of blank space below an inline picture).

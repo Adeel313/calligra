@@ -258,6 +258,17 @@ KoFilter::ConversionStatus DocxXmlNumberingReader::read_lvl()
     }
 
     if (!pictureType && m_bulletStyle && !m_bulletCharacter.isEmpty()) {
+        // Word treats a Unicode bullet written with the Symbol face as a
+        // generic glyph: Symbol has no U+2022, so renderers substitute a text
+        // face. Keeping "Symbol" here makes Calligra pick a symbol font with
+        // no U+2022 glyph and the marker disappears. Drop the face and keep
+        // the level's size so the bullet is drawn by the paragraph font.
+        const QString fontName = m_currentTextStyle.property("style:font-name", KoGenStyle::TextType);
+        if (m_bulletCharacter == QChar(0x2022)
+                && fontName.compare(QLatin1String("Symbol"), Qt::CaseInsensitive) == 0) {
+            m_currentTextStyle.removeProperty("style:font-name", KoGenStyle::TextType);
+            m_currentTextStyle.removeProperty("style:font-family-generic", KoGenStyle::TextType);
+        }
         m_currentBulletProperties.setBulletChar(m_bulletCharacter);
     }
     m_currentBulletProperties.setTextStyle(m_currentTextStyle);
