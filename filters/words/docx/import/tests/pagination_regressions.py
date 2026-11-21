@@ -102,6 +102,19 @@ def check(output):
     missing = doc.add_paragraph().add_run('Missing face')
     missing.font.name = 'ZZZUninstalledTestFont'
 
+    # Word reserves vertical space with an empty paragraph whose paragraph-mark
+    # run properties carry a large font size.  Dropping it collapses the line
+    # and shifts everything below it upwards (cover pages use this heavily).
+    spacer = doc.add_paragraph()
+    mark_rpr = OxmlElement('w:rPr')
+    mark_sz = OxmlElement('w:sz'); mark_sz.set(qn('w:val'), '460')
+    mark_rpr.append(mark_sz)
+    spacer._p.get_or_add_pPr().append(mark_rpr)
+    # Cover pages put a tiny (3pt) run carrying the anchored background image
+    # in this paragraph; its size must not override the paragraph mark's 230pt.
+    spacer.add_run().font.size = Pt(3)
+    doc.add_paragraph('After tall spacer')
+
     source = output / 'input.docx'; target = output / 'imported.odt'
     doc.save(source)
     install = ROOT / 'build/install'
@@ -183,6 +196,11 @@ def check(output):
     missing_props = properties(missing_style)
     assert missing_props.get(qn_odf('style:font-name')) == 'ZZZUninstalledTestFont'
     assert missing_props.get(qn_odf('style:font-family-generic')) == 'roman'
+
+    # The empty spacer's 230pt paragraph-mark size must reach the ODF paragraph
+    # style; otherwise the line has normal height and following text moves up.
+    spacer_style = paragraph('After tall spacer').getprevious().get(qn_odf('text:style-name'))
+    assert points(properties(spacer_style)[qn_odf('fo:font-size')]) == 230.0
 
     def page_heights(root):
         props = root.xpath('//style:page-layout/style:page-layout-properties', namespaces=NS)[0]

@@ -76,6 +76,8 @@ private:
     QString m_frameWrap;
     QString m_frameHorizontalRel;
     QString m_frameVerticalRel;
+    QString m_frameHorizontalPos;
+    QString m_frameVerticalPos;
     QString m_frameRunThrough;
     bool m_frameWrapContour = false;
     QString m_frameWrapContourMode;

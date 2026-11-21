@@ -2871,7 +2871,16 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
     // text-properties of the paragraph style.
     //
     if (!textPBuf.isEmpty()) {
+        // Normally paragraph-mark run properties must not leak into the runs
+        // of the paragraph. The font size is the exception: ODF has no separate
+        // paragraph-mark style, and Word uses a large w:pPr/w:rPr/w:sz on an
+        // otherwise empty paragraph to reserve vertical space on cover pages.
+        // Keep just that property so the line box keeps its intended height.
+        const QString markFontSize = m_currentParagraphStyle.property("fo:font-size", KoGenStyle::TextType);
         m_currentParagraphStyle.removeAllProperties(KoGenStyle::TextType);
+        if (!markFontSize.isEmpty()) {
+            m_currentParagraphStyle.addProperty("fo:font-size", markFontSize, KoGenStyle::TextType);
+        }
     }
 
     //---------------------------------------------

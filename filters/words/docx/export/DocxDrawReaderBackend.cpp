@@ -216,6 +216,8 @@ void DocxDrawReaderBackend::elementDrawFrame(KoXmlStreamReader &reader, OdfReade
         m_frameWrap.clear();
         m_frameHorizontalRel.clear();
         m_frameVerticalRel.clear();
+        m_frameHorizontalPos.clear();
+        m_frameVerticalPos.clear();
         m_frameRunThrough.clear();
         m_frameWrapContour = false;
         m_frameWrapContourMode.clear();
@@ -226,6 +228,8 @@ void DocxDrawReaderBackend::elementDrawFrame(KoXmlStreamReader &reader, OdfReade
                 m_frameWrap = properties->attribute(QStringLiteral("style:wrap"));
                 m_frameHorizontalRel = properties->attribute(QStringLiteral("style:horizontal-rel"));
                 m_frameVerticalRel = properties->attribute(QStringLiteral("style:vertical-rel"));
+                m_frameHorizontalPos = properties->attribute(QStringLiteral("style:horizontal-pos"));
+                m_frameVerticalPos = properties->attribute(QStringLiteral("style:vertical-pos"));
                 m_frameRunThrough = properties->attribute(QStringLiteral("style:run-through"));
                 m_frameWrapContour = properties->attribute(QStringLiteral("style:wrap-contour")) == QLatin1String("true");
                 m_frameWrapContourMode = properties->attribute(QStringLiteral("style:wrap-contour-mode"));
@@ -285,6 +289,8 @@ void DocxDrawReaderBackend::elementDrawFrame(KoXmlStreamReader &reader, OdfReade
         m_frameWrap.clear();
         m_frameHorizontalRel.clear();
         m_frameVerticalRel.clear();
+        m_frameHorizontalPos.clear();
+        m_frameVerticalPos.clear();
         m_frameRunThrough.clear();
         m_frameWrapContour = false;
         m_frameWrapContourMode.clear();
@@ -456,6 +462,8 @@ void DocxDrawReaderBackend::writePrimitive(KoXmlStreamReader &reader, const QStr
     m_frameWrap = QStringLiteral("run-through");
     m_frameHorizontalRel.clear();
     m_frameVerticalRel.clear();
+    m_frameHorizontalPos.clear();
+    m_frameVerticalPos.clear();
     m_frameRunThrough.clear();
     m_frameWrapContour = false;
     m_frameWrapContourMode.clear();
@@ -622,17 +630,44 @@ void DocxDrawReaderBackend::writeDrawing(const EmbeddedImage &image, bool chart,
                 verticalReference = QStringLiteral("line");
             }
         }
+        // ODF records alignment separately from the frame's svg:x/svg:y
+        // position. Word uses wp:align for the same thing; emitting posOffset
+        // instead moves a page-bottom image back to the top on re-import.
+        const auto odfPositionToAlign = [](const QString &pos) -> QString {
+            if (pos == QLatin1String("top")) return QStringLiteral("top");
+            if (pos == QLatin1String("bottom")) return QStringLiteral("bottom");
+            if (pos == QLatin1String("middle") || pos == QLatin1String("center")) return QStringLiteral("center");
+            if (pos == QLatin1String("left")) return QStringLiteral("left");
+            if (pos == QLatin1String("right")) return QStringLiteral("right");
+            if (pos == QLatin1String("inside")) return QStringLiteral("inside");
+            if (pos == QLatin1String("outside")) return QStringLiteral("outside");
+            return QString(); // from-left / from-top / ... use wp:posOffset
+        };
         writer->startElement("wp:positionH");
         writer->addAttribute("relativeFrom", horizontalReference);
-        writer->startElement("wp:posOffset");
-        writer->addTextNode(QString::number(qRound64(m_framePosX * EmusPerPoint)));
-        writer->endElement(); // wp:posOffset
+        const QString horizontalAlign = odfPositionToAlign(m_frameHorizontalPos);
+        if (horizontalAlign.isEmpty()) {
+            writer->startElement("wp:posOffset");
+            writer->addTextNode(QString::number(qRound64(m_framePosX * EmusPerPoint)));
+            writer->endElement(); // wp:posOffset
+        } else {
+            writer->startElement("wp:align");
+            writer->addTextNode(horizontalAlign);
+            writer->endElement(); // wp:align
+        }
         writer->endElement(); // wp:positionH
         writer->startElement("wp:positionV");
         writer->addAttribute("relativeFrom", verticalReference);
-        writer->startElement("wp:posOffset");
-        writer->addTextNode(QString::number(qRound64(m_framePosY * EmusPerPoint)));
-        writer->endElement(); // wp:posOffset
+        const QString verticalAlign = odfPositionToAlign(m_frameVerticalPos);
+        if (verticalAlign.isEmpty()) {
+            writer->startElement("wp:posOffset");
+            writer->addTextNode(QString::number(qRound64(m_framePosY * EmusPerPoint)));
+            writer->endElement(); // wp:posOffset
+        } else {
+            writer->startElement("wp:align");
+            writer->addTextNode(verticalAlign);
+            writer->endElement(); // wp:align
+        }
         writer->endElement(); // wp:positionV
         writer->startElement("wp:extent");
         writer->addAttribute("cx", QString::number(cx));
