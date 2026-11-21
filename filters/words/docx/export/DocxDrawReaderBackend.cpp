@@ -629,6 +629,25 @@ void DocxDrawReaderBackend::writeDrawing(const EmbeddedImage &image, bool chart,
             } else if (m_frameVerticalRel == QLatin1String("line") || m_frameVerticalRel == QLatin1String("char")) {
                 verticalReference = QStringLiteral("line");
             }
+        } else {
+            // Body frames need the same basis mapping as header/footer ones.
+            // Defaulting to "page" here makes a paragraph-anchored text box
+            // exported with a tiny paragraph-relative offset come back as a
+            // page-relative offset, i.e. pinned to the top of the page.
+            if (m_frameHorizontalRel == QLatin1String("page-content")) {
+                horizontalReference = QStringLiteral("margin");
+            } else if (m_frameHorizontalRel == QLatin1String("paragraph") || m_frameHorizontalRel == QLatin1String("paragraph-content")) {
+                horizontalReference = QStringLiteral("column");
+            } else if (m_frameHorizontalRel == QLatin1String("char")) {
+                horizontalReference = QStringLiteral("character");
+            }
+            if (m_frameVerticalRel == QLatin1String("page-content")) {
+                verticalReference = QStringLiteral("margin");
+            } else if (m_frameVerticalRel == QLatin1String("paragraph") || m_frameVerticalRel == QLatin1String("paragraph-content")) {
+                verticalReference = QStringLiteral("paragraph");
+            } else if (m_frameVerticalRel == QLatin1String("line") || m_frameVerticalRel == QLatin1String("char")) {
+                verticalReference = QStringLiteral("line");
+            }
         }
         // ODF records alignment separately from the frame's svg:x/svg:y
         // position. Word uses wp:align for the same thing; emitting posOffset

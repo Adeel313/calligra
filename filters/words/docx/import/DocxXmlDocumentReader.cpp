@@ -4231,7 +4231,12 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_drawing()
             body->addAttribute("text:anchor-type", "paragraph");
         } else if (m_relativeFromH == "margin") {
             m_currentDrawStyle->addProperty("style:horizontal-rel", (m_headerActive || m_footerActive) ? "frame" : "page-content");
-            body->addAttribute("text:anchor-type", "paragraph");
+            // Word's "margin" horizontal base is a character-anchored floating
+            // object: it travels with its paragraph while its x offset is
+            // measured from the page margin. A paragraph anchor makes Calligra
+            // drop the object at the top of the page; LibreOffice writes
+            // text:anchor-type="char" for this base too, so do the same here.
+            body->addAttribute("text:anchor-type", "char");
         } else if (m_relativeFromH == "outsideMargin") {
             m_currentDrawStyle->addProperty("style:horizontal-rel", "page-end-margin");
             body->addAttribute("text:anchor-type", "paragraph");
@@ -6411,12 +6416,43 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tblPr()
             ELSE_TRY_READ_IF(tblpPr)
             ELSE_TRY_READ_IF(tblBorders)
             ELSE_TRY_READ_IF(tblCellMar)
+            ELSE_TRY_READ_IF(tblInd)
             ELSE_TRY_READ_IF_IN_CONTEXT(jc)
             SKIP_UNKNOWN
             //! @todo add ELSE_WRONG_FORMAT
         }
     }
 
+    READ_EPILOGUE
+}
+
+#undef CURRENT_EL
+#define CURRENT_EL tblInd
+//! tblInd (Table Indent from Leading Margin) §17.4.51
+/*! Word indents a table with w:tblInd/@w:w (twips, or fiftieths of a percent
+    for type="pct"). Without it the table is laid out flush with the page's
+    left text edge instead of the indentation Word shows.
+*/
+KoFilter::ConversionStatus DocxXmlDocumentReader::read_tblInd()
+{
+    READ_PROLOGUE
+
+    const QXmlStreamAttributes attrs(attributes());
+    READ_ATTR(w)
+    READ_ATTR(type)
+    bool ok = false;
+    const double value = w.toDouble(&ok);
+    if (ok && value != 0.0) {
+        // KoTblStyle stores the indent in points. w:type="pct" is in
+        // fiftieths of a percent of the text width; approximate it with the
+        // same fraction of a standard page's text width since the ODF table
+        // style can only express an absolute margin here.
+        const qreal points = (type == QLatin1String("pct"))
+            ? (value / 5000.0) * 468.0
+            : TWIP_TO_POINT(value);
+        m_tableMainStyle->setLeftMargin(points);
+    }
+    readNext();
     READ_EPILOGUE
 }
 

@@ -203,6 +203,7 @@ protected:
     KoFilter::ConversionStatus read_bdr();
     KoFilter::ConversionStatus read_tbl();
     KoFilter::ConversionStatus read_tblPr();
+    KoFilter::ConversionStatus read_tblInd();
     KoFilter::ConversionStatus read_tblPrEx();
     KoFilter::ConversionStatus read_tblGrid();
     KoFilter::ConversionStatus read_gridCol();

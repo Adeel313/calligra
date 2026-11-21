@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: LGPL-2.0-or-later
 """Check DOCX table, page margin, contextual-spacing and TOC round trips."""
 import argparse
+from base64 import b64decode
+import io
 import os
 import re
 import shutil
@@ -12,7 +14,7 @@ from lxml import etree as E
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Pt, Twips
+from docx.shared import Inches, Pt, Twips
 from docx.enum.text import WD_BREAK, WD_TAB_ALIGNMENT, WD_TAB_LEADER
 
 ROOT = Path(__file__).resolve().parents[5]
@@ -21,6 +23,7 @@ NS = {'text': 'urn:oasis:names:tc:opendocument:xmlns:text:1.0',
       'style': 'urn:oasis:names:tc:opendocument:xmlns:style:1.0',
       'fo': 'urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0',
       'table': 'urn:oasis:names:tc:opendocument:xmlns:table:1.0',
+      'draw': 'urn:oasis:names:tc:opendocument:xmlns:drawing:1.0',
       'calligra': 'http://www.calligra.org/2005/'}
 
 
@@ -93,6 +96,22 @@ def check(output):
     width_table('Width fits', 'Width fits right', 1440, 7200)
     width_table('Width scaled', 'Width scaled right', 2880, 11520)
 
+    # Word indents a table from the text margin with w:tblInd. Without it the
+    # table is laid out flush with the page's left text edge.
+    indented = doc.add_table(rows=1, cols=1)
+    indented.cell(0, 0).text = 'Indented table'
+    indent = OxmlElement('w:tblInd')
+    indent.set(qn('w:w'), '1134')
+    indent.set(qn('w:type'), 'dxa')
+    indented._tbl.tblPr.append(indent)
+
+    # A floating object whose horizontal base is the page margin and whose
+    # vertical base is its paragraph travels with that paragraph in Word.
+    anchored = doc.add_paragraph('Anchored image follows')
+    anchored.add_run().add_picture(io.BytesIO(b64decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC')),
+        width=Inches(1))
+
     # A run that overrides only its size (as table cells typically do) must
     # still carry the document's default font.  Without it Calligra rendered
     # the cell with Noto Sans instead of the theme's Cambria and shifted
@@ -117,6 +136,34 @@ def check(output):
 
     source = output / 'input.docx'; target = output / 'imported.odt'
     doc.save(source)
+
+    # Turn the generated inline picture into the margin-anchored floating
+    # object Word writes for this layout (w:positionH/@relativeFrom="margin",
+    # w:positionV/@relativeFrom="paragraph").
+    with zipfile.ZipFile(source) as package:
+        entries = {name: package.read(name) for name in package.namelist()}
+    document = E.fromstring(entries['word/document.xml'])
+    inline = document.find('.//' + qn('wp:inline'))
+    assert inline is not None, 'fixture has no inline drawing'
+    anchor = E.Element(qn('wp:anchor'), dict(inline.attrib))
+    for name, value in [('distT', '0'), ('distB', '0'), ('distL', '0'), ('distR', '0'),
+                        ('simplePos', '0'), ('relativeHeight', '251658240'),
+                        ('behindDoc', '0'), ('locked', '0'),
+                        ('layoutInCell', '1'), ('allowOverlap', '1')]:
+        anchor.set(name, value)
+    simple = E.SubElement(anchor, qn('wp:simplePos')); simple.set('x', '0'); simple.set('y', '0')
+    horizontal = E.SubElement(anchor, qn('wp:positionH')); horizontal.set('relativeFrom', 'margin')
+    E.SubElement(horizontal, qn('wp:posOffset')).text = '733425'
+    vertical = E.SubElement(anchor, qn('wp:positionV')); vertical.set('relativeFrom', 'paragraph')
+    E.SubElement(vertical, qn('wp:posOffset')).text = '0'
+    for child in list(inline):
+        anchor.append(child)
+    inline.getparent().replace(inline, anchor)
+    entries['word/document.xml'] = E.tostring(document)
+    with zipfile.ZipFile(source, 'w') as package:
+        for name, data in entries.items():
+            package.writestr(name, data)
+
     install = ROOT / 'build/install'
     env = dict(os.environ, QT_QPA_PLATFORM='offscreen', QT_LOGGING_RULES='*.debug=false',
                LD_LIBRARY_PATH=str(ROOT / 'build/bin'),
@@ -185,6 +232,18 @@ def check(output):
     # 2880+11520 twips is wider than the 8640-twip grid, so Word would shrink
     # the table to the text area; the 1:4 proportion has to survive that.
     assert column_widths('Width scaled') == [86.4, 345.6]
+
+    indented_table = paragraph('Indented table').getparent().getparent().getparent()
+    indent_props = properties(indented_table.get(qn_odf('table:style-name')))
+    assert round(points(indent_props[qn_odf('fo:margin-left')]), 1) == 56.7
+
+    # A margin-horizontal/paragraph-vertical base is char-anchored in ODF.
+    # A paragraph anchor makes Calligra put the object at the top of the page.
+    anchored_frame = next(frame for frame in roots[1].xpath('//draw:frame', namespaces=NS)
+                          if frame.get(qn_odf('text:anchor-type')) == 'char')
+    frame_props = properties(anchored_frame.get(qn_odf('draw:style-name')))
+    assert frame_props.get(qn_odf('style:horizontal-rel')) == 'page-content'
+    assert frame_props.get(qn_odf('style:vertical-rel')) == 'paragraph'
 
     # A style that overrides only the size must still name the default face:
     # otherwise Calligra substitutes Noto Sans and pagination changes.
@@ -261,7 +320,8 @@ def check(output):
             'TOC page number painted at %s, past the %s pt right margin' % (entry.group(1), right_edge)
 
     print('PASS: contextual spacing, table defaults/direct overrides, cell widths/grid, '
-          'page margins, TOC entry formatting, hard breaks')
+          'table indent, margin-relative anchors, page margins, TOC entry formatting, '
+          'hard breaks')
 
 
 def qn_odf(name):
