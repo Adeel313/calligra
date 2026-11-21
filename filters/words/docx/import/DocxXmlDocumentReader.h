@@ -177,6 +177,7 @@ protected:
     //! y offsets are filled in once the section's page margins have been read.
     QVector<QPair<QString, qreal>> m_pendingPageAnchoredTables;
     KoFilter::ConversionStatus read_trPr();
+    KoFilter::ConversionStatus read_tblHeader();
     KoFilter::ConversionStatus read_cnfStyle();
     KoFilter::ConversionStatus read_trHeight();
     enum shdCaller {
@@ -456,6 +457,8 @@ private:
 
     uint m_currentTableNumber; //!< table counter, from 0
     uint m_currentTableRowNumber; //!< row counter, from 0, initialized in read_tbl()
+    uint m_currentTableHeaderRows = 0; //!< number of consecutive leading rows marked with w:tblHeader
+    QVector<qreal> m_clearedTabPositions; //!< tab positions cleared for the current paragraph, in points
     uint m_currentTableColumnNumber; //!< column counter, from 0, initialized in read_tr()
     qreal m_tableGridWidth = 0; //!< width of the current table grid, in points
     QHash<int, qreal> m_tableColumnWidths; //!< preferred cell widths (points) by column

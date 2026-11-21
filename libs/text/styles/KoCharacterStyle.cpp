@@ -541,6 +541,20 @@ void KoCharacterStyle::applyStyle(QTextCharFormat &format, bool emitSignal) cons
         debugText << "clearProperty" << property;
         format.clearProperty(property);
     }
+
+    // Word keeps standard OpenType ligatures off for ordinary body text, and
+    // Qt's PDF engine cannot map a ligature glyph back to its Unicode string.
+    // Disabling them preserves both the extracted text and the glyph advances
+    // used by the DOCX layout.
+    QMap<QFont::Tag, quint32> fontFeatures = format.fontFeatures();
+    const QFont::Tag ligatureTags[] = {
+        QFont::Tag("liga"), QFont::Tag("clig"), QFont::Tag("dlig"), QFont::Tag("hlig")
+    };
+    for (const QFont::Tag &tag : ligatureTags) {
+        fontFeatures.insert(tag, 0);
+    }
+    format.setFontFeatures(fontFeatures);
+
     if (emitSignal) {
         Q_EMIT styleApplied(this);
         d->m_inUse = true;

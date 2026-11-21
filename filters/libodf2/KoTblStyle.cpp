@@ -205,6 +205,16 @@ bool KoTblStyle::display() const
     return m_display;
 }
 
+void KoTblStyle::setNumberHeadingRows(int rows)
+{
+    m_numberHeadingRows = rows;
+}
+
+int KoTblStyle::numberHeadingRows() const
+{
+    return m_numberHeadingRows;
+}
+
 void KoTblStyle::setBreakBefore(KoTblStyle::BreakType breakBefore)
 {
     m_breakBefore = breakBefore;

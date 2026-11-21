@@ -39,6 +39,7 @@
 #include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QScopedValueRollback>
+#include <QSet>
 #include <QXmlStreamReader>
 
 #define MSOOXML_CURRENT_NS "w"
@@ -872,12 +873,19 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pgMar()
     KoXmlWriter footerWriter(&footerBuffer, 3);
     footerWriter.startElement("style:footer-style");
     footerWriter.startElement("style:header-footer-properties");
-    footerWriter.addAttribute("style:dynamic-spacing", "true");
     if (m_footerActive) {
+        // Word's w:bottom is the distance to the body text; its footer sits
+        // w:footer from the paper edge.  Calligra places the footer frame at
+        // the page's bottom margin, so use the footer distance there and put
+        // the difference into the gap before the footer.  Dynamic spacing
+        // would collapse that gap and let body text run over the footer.
+        footerWriter.addAttribute("style:dynamic-spacing", "false");
         if (bottomNum > footerNum) {
-            // Both values are in points already; see the header note above.
-            footerWriter.addAttributePt("fo:min-height", bottomNum - footerNum);
+            footerWriter.addAttributePt("fo:margin-top", bottomNum - footerNum);
         }
+        m_currentPageStyle.addPropertyPt("calligra:docx-body-bottom-margin", bottomNum);
+    } else {
+        footerWriter.addAttribute("style:dynamic-spacing", "true");
     }
     footerWriter.endElement(); // style:header-footer-properties
     footerWriter.endElement(); // style:footer-style
@@ -5505,6 +5513,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tabs()
 {
     READ_PROLOGUE
 
+    m_clearedTabPositions.clear();
+
     QBuffer tabs;
     tabs.open(QIODevice::WriteOnly);
     KoXmlWriter elementWriter(&tabs, 4 /*proper indentation*/);
@@ -5532,6 +5542,56 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tabs()
     elementWriter.endElement(); // style-tab-stops
 
     QString tabStops = QString::fromUtf8(tabs.buffer(), tabs.buffer().size());
+
+    // Word's w:tabs is additive across the style hierarchy; a w:tab with
+    // val="clear" removes only the inherited stop at that position.  ODF
+    // automatic styles replace their parent's tab list, so copy the surviving
+    // named-style stops into the direct style instead of losing them.
+    const auto tabKey = [](qreal point) { return qRound(point * 100.0); };
+    QSet<int> occupiedTabKeys;
+    for (qreal cleared : m_clearedTabPositions) {
+        occupiedTabKeys.insert(tabKey(cleared));
+    }
+    const QRegularExpression stopPattern(QStringLiteral("<style:tab-stop\\b[^>]*/>"));
+    const QRegularExpression positionPattern(QStringLiteral("style:position=\"([^\"]+)\""));
+    for (QRegularExpressionMatchIterator it = stopPattern.globalMatch(tabStops); it.hasNext();) {
+        const QString stop = it.next().captured();
+        const QRegularExpressionMatch position = positionPattern.match(stop);
+        if (position.hasMatch()) {
+            occupiedTabKeys.insert(tabKey(KoUnit::parseValue(position.captured(1))));
+        }
+    }
+
+    QString inheritedTabStops;
+    QString parentName = m_currentParagraphStyle.parentName();
+    for (int depth = 0; depth < 16 && !parentName.isEmpty(); ++depth) {
+        const KoGenStyle *parentStyle = mainStyles->style(parentName, "paragraph");
+        if (!parentStyle) {
+            break;
+        }
+        const QString parentTabStops = parentStyle->childProperty("style:tab-stops");
+        for (QRegularExpressionMatchIterator it = stopPattern.globalMatch(parentTabStops); it.hasNext();) {
+            const QString stop = it.next().captured();
+            const QRegularExpressionMatch position = positionPattern.match(stop);
+            if (!position.hasMatch()) {
+                continue;
+            }
+            const int key = tabKey(KoUnit::parseValue(position.captured(1)));
+            if (occupiedTabKeys.contains(key)) {
+                continue;
+            }
+            occupiedTabKeys.insert(key);
+            inheritedTabStops += stop;
+        }
+        parentName = parentStyle->parentName();
+    }
+    if (!inheritedTabStops.isEmpty()) {
+        const int close = tabStops.lastIndexOf(QStringLiteral("</style:tab-stops>"));
+        if (close >= 0) {
+            tabStops.insert(close, inheritedTabStops);
+        }
+    }
+
     debugDocx << tabStops;
     m_currentParagraphStyle.addChildElement("style:tab-stops", tabStops);
 
@@ -5567,15 +5627,14 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tab()
 
     // "clear" - Specifies that the current tab stop is cleared and
     // shall be removed and ignored when processing the contents of
-    // this document.
-    //
-    // NOTE: This is a workaround!  The correct approach would be to
-    // clear the tab-stop inherited from the parent named style at the
-    // specified position.  But this must be done during ODF loading
-    // and it's not supported by ODF.  The solution for a viewer would
-    // be to not save tab-stop elements to the named style and only
-    // save the final set into each "child" style.
+    // this document.  ODF has no equivalent on a direct style, so
+    // read_tabs() folds the remaining inherited stops into this style.
     if (val == "clear") {
+        bool ok = false;
+        const qreal clearedPoint = TWIP_TO_POINT(pos.toDouble(&ok));
+        if (ok) {
+            m_clearedTabPositions.append(clearedPoint);
+        }
         readNext();
         READ_EPILOGUE
     }
@@ -6181,6 +6240,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
 
     m_table->setName(QLatin1String("Table") + QString::number(++m_currentTableNumber));
     m_currentTableRowNumber = 0;
+    m_currentTableHeaderRows = 0;
     m_currentTableColumnNumber = 0;
 
     m_tableColumnWidths.clear();
@@ -6286,6 +6346,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     // Keep the position of a table that was moved away from the text flow.
     m_tableMainStyle->setTableOffset(m_tableOffset);
     m_tableMainStyle->setTablePageAnchored(m_tablePositionIsPageAnchored);
+    if (m_currentTableHeaderRows > 0) {
+        m_tableMainStyle->setNumberHeadingRows(static_cast<int>(m_currentTableHeaderRows));
+    }
 
     m_table->setTableStyle(m_tableMainStyle);
 
@@ -6726,7 +6789,7 @@ child elements:
  - ins (Inserted Table Row) §17.13.5.17
  - jc (Table Row Alignment) §17.4.28
  - tblCellSpacing (Table Row Cell Spacing) §17.4.44
- - tblHeader (Repeat Table Row on Every New Page) §17.4.50
+ - [done] tblHeader (Repeat Table Row on Every New Page) §17.4.50
  - [done] trHeight (Table Row Height) §17.4.81
  - trPrChange (Revision Information for Table Row Properties) §17.13.5.37
  - wAfter (Preferred Width After Table Row) §17.4.86
@@ -6740,10 +6803,26 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_trPr()
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             TRY_READ_IF(trHeight)
+            ELSE_TRY_READ_IF(tblHeader)
             ELSE_TRY_READ_IF(cnfStyle)
             SKIP_UNKNOWN
         }
     }
+    READ_EPILOGUE
+}
+
+#undef CURRENT_EL
+#define CURRENT_EL tblHeader
+//! tblHeader (Repeat Table Row on Every New Page)
+KoFilter::ConversionStatus DocxXmlDocumentReader::read_tblHeader()
+{
+    READ_PROLOGUE
+
+    // ODF only supports leading header rows. Word normally marks a contiguous
+    // prefix of the table, so remember the last marked row as the header count.
+    m_currentTableHeaderRows = m_currentTableRowNumber + 1;
+
+    readNext();
     READ_EPILOGUE
 }
 

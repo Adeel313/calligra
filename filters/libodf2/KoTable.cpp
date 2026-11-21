@@ -121,9 +121,18 @@ void KoTable::saveOdf(KoXmlWriter &writer, KoGenStyles &styles)
         }
     }
 
+    const int headingRows = m_style ? qBound(0, m_style->numberHeadingRows(), rowCount()) : 0;
+    if (headingRows > 0) {
+        writer.startElement("table:table-header-rows");
+    }
+
     {
         KoRow defaultRow;
         for (int r = 0; r < rowCount(); ++r) {
+            if (headingRows > 0 && r == headingRows) {
+                writer.endElement(); // table:table-header-rows
+                writer.startElement("table:table-rows");
+            }
             KoRow *row = m_rows.value(r);
             if (row) {
                 row->saveOdf(writer, styles);
@@ -155,6 +164,10 @@ void KoTable::saveOdf(KoXmlWriter &writer, KoGenStyles &styles)
                 defaultRow.finishSaveOdf(writer, styles);
             }
         }
+    }
+
+    if (headingRows > 0) {
+        writer.endElement(); // table:table-rows
     }
 
     writer.endElement(); // table:table

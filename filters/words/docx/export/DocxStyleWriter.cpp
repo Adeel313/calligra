@@ -115,7 +115,11 @@ void DocxStyleWriter::read(const QMap<int, QString> &tocStyles)
             }
             m_documentWriter->startElement("w:pPr");
             KoOdfStyleProperties *paragraphProperties = style->properties("style:paragraph-properties");
-            DocxStyleHelper::handleParagraphStyles(paragraphProperties, m_documentWriter);
+            DocxStyleHelper::ParagraphExtras extras;
+            if (auto *context = dynamic_cast<OdfReaderDocxContext *>(m_readerContext)) {
+                extras.tabStops = context->tabStopsForStyle(style->name());
+            }
+            DocxStyleHelper::handleParagraphStyles(paragraphProperties, m_documentWriter, extras);
             m_documentWriter->endElement(); // w:pPr
             KoOdfStyleProperties *textProperties = style->properties("style:text-properties");
             m_documentWriter->startElement("w:rPr");

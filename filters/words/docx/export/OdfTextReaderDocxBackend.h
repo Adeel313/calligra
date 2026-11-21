@@ -40,6 +40,7 @@ public:
 
     void elementOfficeAnnotation(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void elementTableTable(KoXmlStreamReader &reader, OdfReaderContext *context) override;
+    void elementTableTableHeaderRows(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void elementTableTableRow(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void elementTableTableCell(KoXmlStreamReader &reader, OdfReaderContext *context) override;
     void elementTableCoveredTableCell(KoXmlStreamReader &reader, OdfReaderContext *context) override;
@@ -85,6 +86,7 @@ private:
         QVector<int> rowSpanRemaining; //!< rows still covered below, per column
         QVector<bool> rowSpanActive; //!< columns covered by a row span in this row
         int currentColumn = 0;
+        int headerRowsRemaining = 0; //!< rows still inside table:table-header-rows
         bool gridOpen = false;
         qreal widthScale = 1.0; //!< scale applied to absolute column widths
     };

@@ -91,6 +91,10 @@ public:
     void setDisplay(bool display);
     bool display() const;
 
+    /// Number of leading rows ODF should wrap in table:table-header-rows.
+    void setNumberHeadingRows(int rows);
+    int numberHeadingRows() const;
+
     /// Offset of a table that was dragged away from its place in the text flow.
     void setTableOffset(const QPointF &offset);
     QPointF tableOffset() const;
@@ -149,6 +153,7 @@ private:
     WritingMode m_writingMode;
 
     bool m_display;
+    int m_numberHeadingRows = 0;
     QPointF m_tableOffset;
     bool m_tablePageAnchored = false;
     // TODO style:page-number

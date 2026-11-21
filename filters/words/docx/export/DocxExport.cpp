@@ -65,6 +65,7 @@ struct PageGeometry {    bool valid = false;
     qreal marginLeft = 0.0;
     qreal headerMinHeight = 0.0;
     qreal footerMinHeight = 0.0;
+    qreal bodyBottomMargin = 0.0;
     bool landscape = false;
     QString numberFormat;
     QString sectionType = QStringLiteral("nextPage");
@@ -761,6 +762,8 @@ void exportMasterPageSections(OdfReaderDocxContext &context, OdfTextReader &text
                             geometry.marginRight = pageMargin(QStringLiteral("fo:margin-right"));
                             geometry.marginBottom = pageMargin(QStringLiteral("fo:margin-bottom"));
                             geometry.marginLeft = pageMargin(QStringLiteral("fo:margin-left"));
+                            geometry.bodyBottomMargin = KoUnit::parseValue(
+                                attrs.value(QStringLiteral("calligra:docx-body-bottom-margin")).toString());
                             geometry.numberFormat = attrs.value(QStringLiteral("style:num-format")).toString();
                             geometry.landscape = attrs.value(QStringLiteral("style:print-orientation")) == QLatin1StringView("landscape");
                             const QString allBorder = attrs.value(QStringLiteral("fo:border")).toString();
@@ -960,7 +963,10 @@ void exportMasterPageSections(OdfReaderDocxContext &context, OdfTextReader &text
         writer.startElement("w:pgMar");
         writer.addAttribute("w:top", toTwips(geometry.marginTop + (headers.isEmpty() ? 0 : geometry.headerMinHeight)));
         writer.addAttribute("w:right", toTwips(geometry.marginRight));
-        writer.addAttribute("w:bottom", toTwips(geometry.marginBottom + (footers.isEmpty() ? 0 : geometry.footerMinHeight)));
+        const qreal bodyBottom = geometry.bodyBottomMargin > 0.0
+            ? geometry.bodyBottomMargin
+            : geometry.marginBottom + (footers.isEmpty() ? 0 : geometry.footerMinHeight);
+        writer.addAttribute("w:bottom", toTwips(bodyBottom));
         writer.addAttribute("w:left", toTwips(geometry.marginLeft));
         writer.addAttribute("w:header", toTwips(geometry.marginTop));
         writer.addAttribute("w:footer", toTwips(geometry.marginBottom));

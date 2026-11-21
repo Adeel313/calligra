@@ -929,6 +929,17 @@ void OdfTextReaderDocxBackend::elementTableTableColumn(KoXmlStreamReader &reader
     }
 }
 
+void OdfTextReaderDocxBackend::elementTableTableHeaderRows(KoXmlStreamReader &reader, OdfReaderContext *context)
+{
+    Q_UNUSED(context)
+    if (!reader.isStartElement() || m_tables.isEmpty()) {
+        return;
+    }
+    // The ODF reader calls this once on the opening tag and once on the
+    // closing tag; only the opening tag starts a run of repeated rows.
+    m_tables.top().headerRowsRemaining++;
+}
+
 void OdfTextReaderDocxBackend::elementTableTableRow(KoXmlStreamReader &reader, OdfReaderContext *context)
 {
     DEBUG_BACKEND();
@@ -973,14 +984,28 @@ void OdfTextReaderDocxBackend::elementTableTableRow(KoXmlStreamReader &reader, O
             if (KoOdfStyle *style = docxContext->styleManager()->style(rowStyle, "table-row")) {
                 if (KoOdfStyleProperties *properties = style->properties("style:table-row-properties")) {
                     qint64 height = 0;
-                    if (toTwipsValue(properties->attribute("style:row-height"), &height) && height > 0) {
+                    QByteArray rule;
+                    // DOCX trHeight defaults to atLeast, so the DOCX importer
+                    // stores it as ODF min-row-height. Accept both forms or a
+                    // DOCX -> ODT -> DOCX round trip silently drops the height.
+                    if (toTwipsValue(properties->attribute("style:min-row-height"), &height) && height > 0) {
+                        rule = "atLeast";
+                    } else if (toTwipsValue(properties->attribute("style:row-height"), &height) && height > 0) {
+                        rule = "exact";
+                    }
+                    if (!rule.isEmpty()) {
                         writer->startElement("w:trHeight");
                         writer->addAttribute("w:val", static_cast<int>(height));
-                        writer->addAttribute("w:hRule", "atLeast");
+                        writer->addAttribute("w:hRule", rule.constData());
                         writer->endElement(); // w:trHeight
                     }
                 }
             }
+        }
+        if (state.headerRowsRemaining > 0) {
+            writer->startElement("w:tblHeader");
+            writer->endElement(); // w:tblHeader
+            --state.headerRowsRemaining;
         }
         trPrWriter->endElement(); // w:trPr
     } else {
@@ -1056,6 +1081,36 @@ void OdfTextReaderDocxBackend::elementTableTableCell(KoXmlStreamReader &reader, 
                         writer->addAttribute("w:color", "auto");
                         writer->addAttribute("w:fill", background.mid(background.startsWith(QLatin1Char('#')) ? 1 : 0));
                         writer->endElement(); // w:shd
+                    }
+                    const QString sharedPadding = properties->attribute("fo:padding");
+                    const auto paddingFor = [properties, &sharedPadding](const char *side) {
+                        QString value = properties->attribute(QStringLiteral("fo:padding-%1").arg(QLatin1String(side)));
+                        if (value.isEmpty()) {
+                            value = sharedPadding;
+                        }
+                        qint64 twips = 0;
+                        return toTwipsValue(value, &twips) ? twips : 0;
+                    };
+                    const qint64 topPadding = paddingFor("top");
+                    const qint64 leftPadding = paddingFor("left");
+                    const qint64 bottomPadding = paddingFor("bottom");
+                    const qint64 rightPadding = paddingFor("right");
+                    if (topPadding || leftPadding || bottomPadding || rightPadding) {
+                        writer->startElement("w:tcMar");
+                        const auto writeMargin = [writer](const char *element, qint64 value) {
+                            if (value == 0) {
+                                return;
+                            }
+                            writer->startElement(element);
+                            writer->addAttribute("w:w", static_cast<int>(value));
+                            writer->addAttribute("w:type", "dxa");
+                            writer->endElement();
+                        };
+                        writeMargin("w:top", topPadding);
+                        writeMargin("w:left", leftPadding);
+                        writeMargin("w:bottom", bottomPadding);
+                        writeMargin("w:right", rightPadding);
+                        writer->endElement(); // w:tcMar
                     }
                     const QString verticalAlign = properties->attribute("style:vertical-align");
                     if (!verticalAlign.isEmpty()) {

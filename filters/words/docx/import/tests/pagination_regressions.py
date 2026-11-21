@@ -15,6 +15,7 @@ from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, Twips
+from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.text import WD_BREAK, WD_TAB_ALIGNMENT, WD_TAB_LEADER
 
 ROOT = Path(__file__).resolve().parents[5]
@@ -125,6 +126,52 @@ def check(output):
     left.set(qn('w:type'), 'dxa')
     cell_mar.append(left)
     tblpr.insert(1, cell_mar)
+
+    # Word repeats rows carrying w:tblHeader when a table splits over pages.
+    # ODF expresses that with table:table-header-rows, which must survive the
+    # DOCX -> ODT -> DOCX round trip.
+    header_table = doc.add_table(rows=3, cols=1)
+    header_table.style = 'Table Grid'
+    header_table.cell(0, 0).text = 'Repeated header'
+    header_table.cell(1, 0).text = 'Body one'
+    header_table.cell(2, 0).text = 'Body two'
+    for row, height in zip(header_table.rows, (1200, 675, 675)):
+        tr_pr = row._tr.get_or_add_trPr()
+        tr_height = OxmlElement('w:trHeight')
+        tr_height.set(qn('w:val'), str(height))
+        tr_pr.append(tr_height)
+    header_tr_pr = header_table.rows[0]._tr.get_or_add_trPr()
+    header_tr_pr.append(OxmlElement('w:tblHeader'))
+
+    # Named paragraph styles carry tab stops that direct paragraph tabs may
+    # clear or override.  Exporting them is necessary for footer alignment.
+    named_tabs = doc.styles.add_style('Named tabs', WD_STYLE_TYPE.PARAGRAPH)
+    named_tpr = named_tabs.element.get_or_add_pPr()
+    named_tab_list = OxmlElement('w:tabs')
+    named_tab = OxmlElement('w:tab')
+    named_tab.set(qn('w:val'), 'center')
+    named_tab.set(qn('w:pos'), '4800')
+    named_tab_list.append(named_tab)
+    named_tab = OxmlElement('w:tab')
+    named_tab.set(qn('w:val'), 'right')
+    named_tab.set(qn('w:pos'), '9600')
+    named_tab_list.append(named_tab)
+    named_tpr.append(named_tab_list)
+    doc.add_paragraph('Named tab paragraph', style='Named tabs')
+    overridden = doc.add_paragraph('Named tab override', style='Named tabs')
+    tabs = OxmlElement('w:tabs')
+    for value, position in [('clear', '9600'), ('right', '9200')]:
+        tab = OxmlElement('w:tab')
+        tab.set(qn('w:val'), value)
+        tab.set(qn('w:pos'), position)
+        tabs.append(tab)
+    overridden._p.get_or_add_pPr().append(tabs)
+
+    # Word disables standard ligatures for ordinary text; PDF text extraction
+    # must still see the original letters instead of ligature glyphs.
+    ligature = doc.add_paragraph().add_run(
+        'Di Martino Motivazione firmata attribuito attività')
+    ligature.font.name = 'Calibri'
 
     # A floating object whose horizontal base is the page margin and whose
     # vertical base is its paragraph travels with that paragraph in Word.
@@ -267,6 +314,30 @@ def check(output):
     # 36pt section top margin = 9pt below the top of the Calligra text area.
     assert round(points(page_props[qn_odf('calligra:table-offset-y')]), 1) == 9.0
 
+    def ancestor_table(text):
+        return next(a for a in paragraph(text).iterancestors() if a.tag == qn_odf('table:table'))
+
+    header_rows = ancestor_table('Repeated header').find(qn_odf('table:table-header-rows'))
+    assert header_rows is not None, 'w:tblHeader did not become table:table-header-rows'
+    assert len(header_rows.findall(qn_odf('table:table-row'))) == 1
+    assert ''.join(header_rows.itertext()).strip() == 'Repeated header'
+    header_style = header_rows.find(qn_odf('table:table-row')).get(qn_odf('table:style-name'))
+    assert points(properties(header_style)[qn_odf('style:min-row-height')]) == 60.0
+
+    def direct_tab_stops(text):
+        style = styles[paragraph(text).get(qn_odf('text:style-name'))]
+        stops = style.find('.//' + qn_odf('style:tab-stops'))
+        if stops is None:
+            return []
+        return [(stop.get(qn_odf('style:type')),
+                 round(points(stop.get(qn_odf('style:position'))), 2))
+                for stop in stops.findall(qn_odf('style:tab-stop'))]
+
+    # w:tabs is additive; clearing the style's right tab must leave its center
+    # tab in the automatic style instead of replacing the whole list.
+    actual_tabs = direct_tab_stops('Named tab override')
+    assert actual_tabs == [('right', 460.0), ('center', 240.0)], actual_tabs
+
     # A margin-horizontal/paragraph-vertical base is char-anchored in ODF.
     # A paragraph anchor makes Calligra put the object at the top of the page.
     anchored_frame = next(frame for frame in roots[1].xpath('//draw:frame', namespaces=NS)
@@ -296,12 +367,17 @@ def check(output):
         footer = root.xpath('//style:page-layout/style:footer-style/style:header-footer-properties', namespaces=NS)[0]
         return (float(props.get(qn_odf('fo:margin-top'))[:-2]),
                 float(props.get(qn_odf('fo:margin-bottom'))[:-2]),
-                float(footer.get(qn_odf('fo:min-height'))[:-2]))
+                points(footer.get(qn_odf('fo:min-height'))) if footer.get(qn_odf('fo:min-height')) else 0.0,
+                points(footer.get(qn_odf('fo:margin-top'))) if footer.get(qn_odf('fo:margin-top')) else 0.0,
+                footer.get(qn_odf('style:dynamic-spacing')))
 
-    # w:top/w:bottom (720 twips) include the header/footer distance (360);
-    # Calligra splits them into the text margin and the footer's own height.
-    expected_margins = (36.0, 18.0, 18.0)
+    # w:bottom (720 twips) is the distance to the body text; the footer sits
+    # w:footer (360) from the paper edge.  Calligra uses the latter as the page
+    # margin so the footer text and body both land at the Word positions.
+    expected_margins = (36.0, 18.0, 0.0, 18.0, 'false')
     assert page_heights(roots[0]) == expected_margins
+    layout_props = roots[0].xpath('//style:page-layout/style:page-layout-properties', namespaces=NS)[0]
+    assert points(layout_props.get('{http://www.calligra.org/2005/}docx-body-bottom-margin')) == 36.0
 
     exported = output / 'exported.docx'
     subprocess.run([str(ROOT / 'build/bin/calligraconverter'), '--batch', str(target), str(exported)],
@@ -320,6 +396,20 @@ def check(output):
 
     assert exported_grid('Width fits') == ['1440', '7200']
     assert exported_grid('Width scaled') == ['1728', '6912']
+    exported_header_table = exported_document.xpath('//w:tbl[.//w:t[text()="Repeated header"]]', namespaces=wn)[0]
+    exported_header_row = exported_header_table.xpath('.//w:tr[.//w:t[text()="Repeated header"]]', namespaces=wn)[0]
+    assert exported_header_row.find('w:trPr/w:tblHeader', namespaces=wn) is not None
+    exported_heights = exported_header_table.xpath('.//w:trPr/w:trHeight', namespaces=wn)
+    assert [(h.get('{%s}val' % W), h.get('{%s}hRule' % W)) for h in exported_heights] == [
+        ('1200', 'atLeast'), ('675', 'atLeast'), ('675', 'atLeast')]
+    exported_named_tabs = exported_styles.xpath('//w:style[w:name/@w:val="Named tabs"]//w:tab', namespaces=wn)
+    assert [(tab.get('{%s}val' % W), tab.get('{%s}pos' % W)) for tab in exported_named_tabs] == [
+        ('center', '4800'), ('right', '9600')]
+    exported_override = exported_document.xpath(
+        '//w:p[.//w:t[text()="Named tab override"]]', namespaces=wn)[0]
+    exported_override_tabs = exported_override.xpath('./w:pPr/w:tabs/w:tab', namespaces=wn)
+    assert [(tab.get('{%s}val' % W), tab.get('{%s}pos' % W)) for tab in exported_override_tabs] == [
+        ('right', '9200'), ('center', '4800')]
     bullet = exported_styles.xpath('//w:style[@w:styleId="ListBullet"]', namespaces=wn)[0]
     assert bullet.find('.//{%s}contextualSpacing' % W) is not None
 
@@ -342,6 +432,10 @@ def check(output):
         subprocess.run(['pdftotext', '-f', '1', '-l', '1', '-bbox-layout', str(pdf), str(boxes)],
                        check=True, timeout=60)
         markup = boxes.read_text(errors='replace')
+        plain_pdf_text = subprocess.run(['pdftotext', '-layout', str(pdf), '-'],
+                                        capture_output=True, text=True, check=True).stdout
+        for word in ('Martino', 'Motivazione', 'firmata', 'attribuito', 'attività'):
+            assert word in plain_pdf_text, f'ligature-shaped word {word!r} was not extracted'
         entry = next(m for m in re.finditer(r'<line[^>]*xMax="([\d.]+)"[^>]*>(.*?)</line>', markup, re.S)
                      if 'Entry' in m.group(2))
         layout = roots[0].xpath('//style:page-layout/style:page-layout-properties', namespaces=NS)[0]
@@ -350,8 +444,8 @@ def check(output):
             'TOC page number painted at %s, past the %s pt right margin' % (entry.group(1), right_edge)
 
     print('PASS: contextual spacing, table defaults/direct overrides, cell widths/grid, '
-          'table indent, margin-relative anchors, page margins, TOC entry formatting, '
-          'hard breaks')
+          'table indent, header rows, named tab stops, margin-relative anchors, '
+          'page margins, TOC entry formatting, hard breaks')
 
 
 def qn_odf(name):
