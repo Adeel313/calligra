@@ -1662,9 +1662,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::readBorderElement(BorderSide b
     if (!space.isEmpty()) {
         int sp = 0;
         STRING_TO_INT(space, sp, QString("w:%1@space").arg(borderSideName));
-        // w:space is in points (1/20th of a point, i.e. twips); padding
-        // properties are written in points.
-        sourcePadding.insert(borderSide, TWIP_TO_POINT(sp));
+        // ECMA-376 w:space is already in points.  ODF padding is in points
+        // too; converting it as twips would shrink an 8pt callout inset to
+        // 0.4pt and reflow the text.
+        sourcePadding.insert(borderSide, sp);
     }
     readNext();
     return KoFilter::OK;
@@ -2718,6 +2719,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
     m_paragraphStyleNameWritten = false;
     m_paragraphHasText = false;
     m_widowControl = true;
+    m_paragraphBorderInsetLeft = 0.0;
+    m_paragraphBorderInsetRight = 0.0;
     m_currentStyleName.clear();
     m_listFound = false;
     m_closeHyperlink = false;
@@ -2857,6 +2860,18 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
         }
         KoGenStyle::copyPropertiesFromStyle(m_currentParagraphStyle, merged, KoGenStyle::ParagraphType);
         m_currentParagraphStyle = merged;
+    }
+
+    // Rebase the border-and-space width against the final indent.  Doing this
+    // here rather than in read_ind() also covers paragraphs whose indent comes
+    // from a named style or from the table paragraph defaults.
+    if (m_paragraphBorderInsetLeft > 0.0) {
+        const qreal margin = paragraphMargin(QStringLiteral("fo:margin-left")) - m_paragraphBorderInsetLeft;
+        m_currentParagraphStyle.addPropertyPt("fo:margin-left", margin);
+    }
+    if (m_paragraphBorderInsetRight > 0.0) {
+        const qreal margin = paragraphMargin(QStringLiteral("fo:margin-right")) - m_paragraphBorderInsetRight;
+        m_currentParagraphStyle.addPropertyPt("fo:margin-right", margin);
     }
 
     collapseParagraphSpacing();
@@ -3672,6 +3687,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rPr()
 KoFilter::ConversionStatus DocxXmlDocumentReader::read_pPr()
 {
     READ_PROLOGUE
+
+    m_paragraphBorderInsetLeft = 0.0;
+    m_paragraphBorderInsetRight = 0.0;
 
     while (!atEnd()) {
         readNext();
@@ -5775,6 +5793,20 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pBdr()
         }
     }
     applyBorders(&m_currentParagraphStyle, m_borderStyles, m_borderPaddings);
+
+    // OOXML keeps the text at w:ind and paints the border inside that indent.
+    // ODF puts padding inside the border and margins outside it, so the border
+    // width and w:space must be subtracted from the margin to keep the text in
+    // the same place.  This is what makes an 8pt callout inset fit its indent
+    // instead of pushing every wrapped line rightwards.
+    const auto borderInset = [](const QString &border, qreal padding) {
+        const QStringList parts = border.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+        const qreal width = parts.isEmpty() ? 0.0 : KoUnit::parseValue(parts.first());
+        return qMax<qreal>(0.0, width) + qMax<qreal>(0.0, padding);
+    };
+    m_paragraphBorderInsetLeft = borderInset(m_borderStyles.value(LeftBorder), m_borderPaddings.value(LeftBorder, 0.0));
+    m_paragraphBorderInsetRight = borderInset(m_borderStyles.value(RightBorder), m_borderPaddings.value(RightBorder, 0.0));
+
     READ_EPILOGUE
 }
 
@@ -5819,7 +5851,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_bdr()
     TRY_READ_ATTR(space)
     if (!space.isEmpty()) {
         bool ok = false;
-        const qreal sp = qreal(TWIP_TO_POINT(space.toDouble(&ok)));
+        const qreal sp = space.toDouble(&ok);
         if (ok) {
             m_textBorderPaddings.insert(TopBorder, sp);
             m_textBorderPaddings.insert(LeftBorder, sp);

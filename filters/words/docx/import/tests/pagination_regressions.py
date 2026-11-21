@@ -173,6 +173,22 @@ def check(output):
         'Di Martino Motivazione firmata attribuito attività')
     ligature.font.name = 'Calibri'
 
+    # w:pBdr/@w:space is measured in points, not twips.  Shrinking it by 20
+    # collapses callout insets and heading underline gaps, which reflows text.
+    bordered = doc.add_paragraph('Border space in points')
+    pbdr = OxmlElement('w:pBdr')
+    for side, space in [('left', '8'), ('bottom', '6')]:
+        border = OxmlElement('w:' + side)
+        border.set(qn('w:val'), 'single')
+        border.set(qn('w:sz'), '12')
+        border.set(qn('w:space'), space)
+        border.set(qn('w:color'), 'FF9900')
+        pbdr.append(border)
+    bordered._p.get_or_add_pPr().append(pbdr)
+    ind = OxmlElement('w:ind')
+    ind.set(qn('w:left'), '200')
+    bordered._p.get_or_add_pPr().append(ind)
+
     # A floating object whose horizontal base is the page margin and whose
     # vertical base is its paragraph travels with that paragraph in Word.
     anchored = doc.add_paragraph('Anchored image follows')
@@ -255,6 +271,12 @@ def check(output):
 
     assert properties(paragraph('Bullet one').get(qn_odf('text:style-name')))[qn_odf('style:contextual-spacing')] == 'true'
     assert properties(paragraph('Context disabled').get(qn_odf('text:style-name')))[qn_odf('style:contextual-spacing')] == 'false'
+
+    border_props = properties(paragraph('Border space in points').get(qn_odf('text:style-name')))
+    assert points(border_props[qn_odf('fo:padding-left')]) == 8.0
+    assert points(border_props[qn_odf('fo:padding-bottom')]) == 6.0
+    # 1.5pt border + 8pt space is carved out of the 10pt OOXML indent.
+    assert points(border_props[qn_odf('fo:margin-left')]) == 0.5
 
     # A zero list-tab position makes other renderers advance to the next default
     # tab stop instead of aligning the text at fo:margin-left.
@@ -443,9 +465,9 @@ def check(output):
         assert float(entry.group(1)) <= right_edge + 0.5, \
             'TOC page number painted at %s, past the %s pt right margin' % (entry.group(1), right_edge)
 
-    print('PASS: contextual spacing, table defaults/direct overrides, cell widths/grid, '
-          'table indent, header rows, named tab stops, margin-relative anchors, '
-          'page margins, TOC entry formatting, hard breaks')
+    print('PASS: contextual spacing, border padding, table defaults/direct overrides, '
+          'cell widths/grid, table indent, header rows, named tab stops, '
+          'margin-relative anchors, page margins, TOC entry formatting, hard breaks')
 
 
 def qn_odf(name):

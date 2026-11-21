@@ -342,6 +342,10 @@ protected:
     //! Used for setting up properties for paragraphs
     QMap<BorderSide, qreal> m_borderPaddings;
 
+    //! Border width plus w:space is carved out of the Word indent, not added to it.
+    qreal m_paragraphBorderInsetLeft = 0.0;
+    qreal m_paragraphBorderInsetRight = 0.0;
+
     // ! Used for setting up properties for border padding
     QMap<BorderSide, qreal> m_textBorderPaddings;
 
