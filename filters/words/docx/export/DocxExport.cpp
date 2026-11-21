@@ -1527,6 +1527,7 @@ KoFilter::ConversionStatus DocxExport::convert(const QByteArray &from, const QBy
         notesWriter.startDocument(nullptr);
         notesWriter.startElement("w:footnotes");
         notesWriter.addAttribute("xmlns:w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main");
+        notesWriter.addAttribute("xmlns:r", "http://schemas.openxmlformats.org/officeDocument/2006/relationships");
         notesWriter.addCompleteElement(
             QByteArray("<w:footnote w:type=\"separator\" w:id=\"-1\"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>"
                        "<w:footnote w:type=\"continuationSeparator\" w:id=\"0\"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>"));
@@ -1545,6 +1546,7 @@ KoFilter::ConversionStatus DocxExport::convert(const QByteArray &from, const QBy
         notesWriter.startDocument(nullptr);
         notesWriter.startElement("w:endnotes");
         notesWriter.addAttribute("xmlns:w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main");
+        notesWriter.addAttribute("xmlns:r", "http://schemas.openxmlformats.org/officeDocument/2006/relationships");
         notesWriter.addCompleteElement(
             QByteArray("<w:endnote w:type=\"separator\" w:id=\"-1\"><w:p><w:r><w:separator/></w:r></w:p></w:endnote>"
                        "<w:endnote w:type=\"continuationSeparator\" w:id=\"0\"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:endnote>"));

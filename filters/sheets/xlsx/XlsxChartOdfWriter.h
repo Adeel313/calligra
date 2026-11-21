@@ -35,6 +35,7 @@ class XlsxChartOdfWriter : public KoOdfChartWriter
 public:
     explicit XlsxChartOdfWriter(KoChart::Chart *chart, const MSOOXML::DrawingMLTheme *const contextWithThemeInfo = nullptr);
     ~XlsxChartOdfWriter() override;
+    QColor themeColor(const QString &name) const;
 
 private:
     // All of these are virtual functions called from other functions (mainly

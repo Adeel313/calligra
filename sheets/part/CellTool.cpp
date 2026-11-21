@@ -39,6 +39,7 @@
 #include <KoPointerEvent.h>
 #include <KoSelection.h>
 #include <KoShapeManager.h>
+#include <KoToolManager.h>
 #include <KoViewConverter.h>
 
 #include "engine/calligra_sheets_limits.h"
@@ -74,12 +75,18 @@ CellTool::~CellTool()
 
 void CellTool::mousePressEvent(KoPointerEvent *event)
 {
-    // Shapes and charts are drawn above the cells, so a press on one selects
-    // the shape. Otherwise the cell selection takes the press and the object
-    // can never be selected.
+    // A single press manipulates the object; the default tool enters its
+    // specialized editor on double-click. Going straight to the chart editor
+    // leaves no move strategy or deleteSelection implementation.
     if (event->button() == Qt::LeftButton && canvas()->shapeManager()->shapeAt(event->point)) {
-        canvas()->shapeManager()->suggestChangeTool(event);
-        return;
+        selection()->emitCloseEditor(true);
+        KoToolManager *manager = KoToolManager::instance();
+        manager->switchToolRequested(KoInteractionTool_ID);
+        if (KoToolBase *tool = manager->toolById(canvas(), KoInteractionTool_ID)) {
+            // Forward this press so dragging can start with the same gesture.
+            tool->mousePressEvent(event);
+            return;
+        }
     }
     CellToolBase::mousePressEvent(event);
 }

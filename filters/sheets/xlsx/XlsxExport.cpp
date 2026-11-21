@@ -25,6 +25,7 @@
 #include <sheets/core/RowFormatStorage.h>
 #include <sheets/core/ColFormatStorage.h>
 #include <sheets/core/Sheet.h>
+#include <sheets/core/ShapeApplicationData.h>
 #include <sheets/core/Style.h>
 #include <sheets/core/StyleManager.h>
 #include <sheets/core/StyleStorage.h>
@@ -37,6 +38,14 @@
 
 #include <ChartShape.h>
 #include <ChartProxyModel.h>
+#include <DataSet.h>
+#include <Axis.h>
+#include <Legend.h>
+#include <PlotArea.h>
+#include <CellRegion.h>
+#include <TableSource.h>
+#include <KoTextShapeData.h>
+#include <QTextDocument>
 #include <ChartTableModel.h>
 #include <kochart_global.h>
 
@@ -310,10 +319,13 @@ struct EmbeddedImage {
     int index = 0;
 };
 
-QByteArray chartXml(const KoChart::ChartShape *chart)
+QByteArray chartXml(const KoChart::ChartShape *chart, const Map *map)
 {
-    const QAbstractItemModel *model = chart->proxyModel();
-    if (!model || model->rowCount() < 2 || model->columnCount() < 2) return {};
+    // ChartProxyModel::data() is not implemented; its rows count series, not
+    // spreadsheet rows. Read the actual DataSets, including single-series and
+    // single-point charts, instead of treating it as a table with headers.
+    const auto dataSets = chart->proxyModel()->dataSets();
+    if (dataSets.isEmpty()) return {};
     QString chartType;
     switch (chart->chartType()) {
     case KoChart::BarChartType: chartType = QStringLiteral("barChart"); break;
@@ -324,77 +336,267 @@ QByteArray chartXml(const KoChart::ChartShape *chart)
     case KoChart::ScatterChartType: chartType = QStringLiteral("scatterChart"); break;
     default: return {};
     }
-    const int rows = model->rowCount();
-    const int columns = model->columnCount();
     const bool pie = chartType == QLatin1String("pieChart") || chartType == QLatin1String("doughnutChart");
     const bool scatter = chartType == QLatin1String("scatterChart");
     return xmlBytes([&](QXmlStreamWriter &xml) {
         xml.writeStartElement(QStringLiteral("c:chartSpace"));
         xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/chart"), QStringLiteral("c"));
         xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/main"), QStringLiteral("a"));
+        xml.writeEmptyElement(QStringLiteral("c:roundedCorners")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("0"));
         xml.writeStartElement(QStringLiteral("c:chart"));
+        if (chart->title() && chart->title()->isVisible()) {
+            const auto *text = dynamic_cast<KoTextShapeData *>(chart->title()->userData());
+            if (text && text->document() && !text->document()->toPlainText().isEmpty()) {
+                xml.writeStartElement(QStringLiteral("c:title"));
+                xml.writeStartElement(QStringLiteral("c:tx"));
+                xml.writeStartElement(QStringLiteral("c:rich"));
+                xml.writeEmptyElement(QStringLiteral("a:bodyPr"));
+                xml.writeEmptyElement(QStringLiteral("a:lstStyle"));
+                xml.writeStartElement(QStringLiteral("a:p"));
+                xml.writeStartElement(QStringLiteral("a:r"));
+                xml.writeTextElement(QStringLiteral("a:t"), text->document()->toPlainText());
+                xml.writeEndElement(); xml.writeEndElement(); xml.writeEndElement();
+                xml.writeEndElement(); // tx
+                xml.writeEmptyElement(QStringLiteral("c:overlay"));
+                xml.writeAttribute(QStringLiteral("val"), QStringLiteral("0"));
+                xml.writeEndElement(); // title
+            }
+        }
         xml.writeStartElement(QStringLiteral("c:plotArea")); xml.writeEmptyElement(QStringLiteral("c:layout"));
         xml.writeStartElement(QStringLiteral("c:") + chartType);
         if (chartType == QLatin1String("barChart")) { xml.writeEmptyElement(QStringLiteral("c:barDir")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("col")); xml.writeEmptyElement(QStringLiteral("c:grouping")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("clustered")); }
         else if (chartType == QLatin1String("lineChart") || chartType == QLatin1String("areaChart")) { xml.writeEmptyElement(QStringLiteral("c:grouping")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("standard")); }
+        if (scatter) { xml.writeEmptyElement(QStringLiteral("c:scatterStyle")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("lineMarker")); }
         xml.writeEmptyElement(QStringLiteral("c:varyColors")); xml.writeAttribute(QStringLiteral("val"), pie ? QStringLiteral("1") : QStringLiteral("0"));
-        const int seriesCount = pie ? qMin(columns, 2) : columns;
-        for (int col = 1; col < seriesCount; ++col) {
+        auto reference = [&](const KoChart::CellRegion &region) -> QString {
+            if (!region.isValid() || !region.table() || region.rects().size() != 1
+                || !map->findSheet(region.table()->name())) return {};
+            QString name = region.table()->name();
+            name.replace(QLatin1Char('\''), QStringLiteral("''"));
+            const QRect rect = region.rects().first();
+            auto address = [](int col, int row) {
+                return QLatin1Char('$') + columnName(col) + QLatin1Char('$') + QString::number(row);
+            };
+            return QLatin1Char('\'') + name + QStringLiteral("'!") + address(rect.left(), rect.top())
+                + (rect.size() == QSize(1, 1) ? QString() : QLatin1Char(':') + address(rect.right(), rect.bottom()));
+        };
+        const int seriesCount = pie ? qMin(dataSets.size(), qsizetype(1)) : dataSets.size();
+        for (int series = 0; series < seriesCount; ++series) {
+            const KoChart::DataSet *dataSet = dataSets[series];
+            const int points = dataSet->size();
             xml.writeStartElement(QStringLiteral("c:ser"));
-            xml.writeEmptyElement(QStringLiteral("c:idx")); xml.writeAttribute(QStringLiteral("val"), QString::number(col - 1));
-            xml.writeEmptyElement(QStringLiteral("c:order")); xml.writeAttribute(QStringLiteral("val"), QString::number(col - 1));
-            xml.writeStartElement(QStringLiteral("c:tx")); xml.writeTextElement(QStringLiteral("c:v"), model->index(0, col).data().toString()); xml.writeEndElement();
-            if (scatter) {
-                xml.writeStartElement(QStringLiteral("c:xVal")); xml.writeStartElement(QStringLiteral("c:numLit")); xml.writeTextElement(QStringLiteral("c:formatCode"), QStringLiteral("General")); xml.writeEmptyElement(QStringLiteral("c:ptCount")); xml.writeAttribute(QStringLiteral("val"), QString::number(rows - 1));
-                for (int row = 1; row < rows; ++row) { xml.writeStartElement(QStringLiteral("c:pt")); xml.writeAttribute(QStringLiteral("idx"), QString::number(row - 1)); xml.writeTextElement(QStringLiteral("c:v"), model->index(row, 0).data().toString()); xml.writeEndElement(); }
-                xml.writeEndElement(); xml.writeEndElement();
+            xml.writeEmptyElement(QStringLiteral("c:idx")); xml.writeAttribute(QStringLiteral("val"), QString::number(series));
+            xml.writeEmptyElement(QStringLiteral("c:order")); xml.writeAttribute(QStringLiteral("val"), QString::number(series));
+            xml.writeStartElement(QStringLiteral("c:tx"));
+            const QString labelRef = reference(dataSet->labelDataRegion());
+            if (!labelRef.isEmpty()) {
+                xml.writeStartElement(QStringLiteral("c:strRef"));
+                xml.writeTextElement(QStringLiteral("c:f"), labelRef);
+                xml.writeStartElement(QStringLiteral("c:strCache"));
+                xml.writeEmptyElement(QStringLiteral("c:ptCount")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("1"));
+                xml.writeStartElement(QStringLiteral("c:pt")); xml.writeAttribute(QStringLiteral("idx"), QStringLiteral("0"));
+                xml.writeTextElement(QStringLiteral("c:v"), dataSet->labelData().toString());
+                xml.writeEndElement(); xml.writeEndElement(); xml.writeEndElement();
             } else {
-                        xml.writeStartElement(QStringLiteral("c:cat")); xml.writeStartElement(QStringLiteral("c:strLit")); xml.writeEmptyElement(QStringLiteral("c:ptCount")); xml.writeAttribute(QStringLiteral("val"), QString::number(rows - 1));
-                        for (int row = 1; row < rows; ++row) { xml.writeStartElement(QStringLiteral("c:pt")); xml.writeAttribute(QStringLiteral("idx"), QString::number(row - 1)); xml.writeTextElement(QStringLiteral("c:v"), model->index(row, 0).data().toString()); xml.writeEndElement(); }
-                        xml.writeEndElement(); xml.writeEndElement();
+                xml.writeTextElement(QStringLiteral("c:v"), dataSet->labelData().toString());
             }
-            if (scatter) {
-                xml.writeStartElement(QStringLiteral("c:yVal")); xml.writeStartElement(QStringLiteral("c:numLit")); xml.writeTextElement(QStringLiteral("c:formatCode"), QStringLiteral("General")); xml.writeEmptyElement(QStringLiteral("c:ptCount")); xml.writeAttribute(QStringLiteral("val"), QString::number(rows - 1));
-                for (int row = 1; row < rows; ++row) { xml.writeStartElement(QStringLiteral("c:pt")); xml.writeAttribute(QStringLiteral("idx"), QString::number(row - 1)); xml.writeTextElement(QStringLiteral("c:v"), model->index(row, col).data().toString()); xml.writeEndElement(); }
+            xml.writeEndElement();
+            // Keep per-point colours and labels instead of reducing every
+            // series to Excel's default blue bars and a "Series 1" legend.
+            auto writeFill = [&](const QColor &color) {
+                xml.writeStartElement(QStringLiteral("c:spPr"));
+                xml.writeStartElement(QStringLiteral("a:solidFill"));
+                xml.writeEmptyElement(QStringLiteral("a:srgbClr"));
+                xml.writeAttribute(QStringLiteral("val"), color.name(QColor::HexRgb).mid(1).toUpper());
                 xml.writeEndElement(); xml.writeEndElement();
-            } else {
-                        xml.writeStartElement(QStringLiteral("c:val")); xml.writeStartElement(QStringLiteral("c:numLit")); xml.writeTextElement(QStringLiteral("c:formatCode"), QStringLiteral("General")); xml.writeEmptyElement(QStringLiteral("c:ptCount")); xml.writeAttribute(QStringLiteral("val"), QString::number(rows - 1));
-                        for (int row = 1; row < rows; ++row) { xml.writeStartElement(QStringLiteral("c:pt")); xml.writeAttribute(QStringLiteral("idx"), QString::number(row - 1)); xml.writeTextElement(QStringLiteral("c:v"), model->index(row, col).data().toString()); xml.writeEndElement(); }
-                        xml.writeEndElement(); xml.writeEndElement();
+            };
+            if (dataSet->brush().style() != Qt::NoBrush && dataSet->brush().color().isValid())
+                writeFill(dataSet->brush().color());
+            for (int point = 0; point < points; ++point) {
+                const QBrush brush = dataSet->brush(point);
+                if (brush.style() == Qt::NoBrush || !brush.color().isValid()) continue;
+                xml.writeStartElement(QStringLiteral("c:dPt"));
+                xml.writeEmptyElement(QStringLiteral("c:idx")); xml.writeAttribute(QStringLiteral("val"), QString::number(point));
+                writeFill(brush.color());
+                xml.writeEndElement();
             }
+            const auto labels = dataSet->valueLabelType();
+            xml.writeStartElement(QStringLiteral("c:dLbls"));
+            for (int point = 0; point < points; ++point) {
+                const auto pointLabels = dataSet->valueLabelType(point);
+                if (pointLabels.number == labels.number) continue;
+                xml.writeStartElement(QStringLiteral("c:dLbl"));
+                xml.writeEmptyElement(QStringLiteral("c:idx")); xml.writeAttribute(QStringLiteral("val"), QString::number(point));
+                if (chartType == QLatin1String("barChart") && pointLabels.number) {
+                    xml.writeEmptyElement(QStringLiteral("c:dLblPos")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("outEnd"));
+                }
+                for (const auto &label : {qMakePair(QStringLiteral("c:showLegendKey"), false),
+                                          qMakePair(QStringLiteral("c:showVal"), pointLabels.number),
+                                          qMakePair(QStringLiteral("c:showCatName"), pointLabels.category),
+                                          qMakePair(QStringLiteral("c:showSerName"), false),
+                                          qMakePair(QStringLiteral("c:showPercent"), pointLabels.percentage),
+                                          qMakePair(QStringLiteral("c:showBubbleSize"), false)}) {
+                    xml.writeEmptyElement(label.first); xml.writeAttribute(QStringLiteral("val"), label.second ? QStringLiteral("1") : QStringLiteral("0"));
+                }
+                xml.writeEndElement();
+            }
+            if (chartType == QLatin1String("barChart") && labels.number) {
+                xml.writeEmptyElement(QStringLiteral("c:dLblPos")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("outEnd"));
+            }
+            for (const auto &label : {qMakePair(QStringLiteral("c:showLegendKey"), false),
+                                      qMakePair(QStringLiteral("c:showVal"), labels.number),
+                                      qMakePair(QStringLiteral("c:showCatName"), labels.category),
+                                      qMakePair(QStringLiteral("c:showSerName"), false),
+                                      qMakePair(QStringLiteral("c:showPercent"), labels.percentage)}) {
+                xml.writeEmptyElement(label.first); xml.writeAttribute(QStringLiteral("val"), label.second ? QStringLiteral("1") : QStringLiteral("0"));
+            }
+            xml.writeEndElement();
+            auto writeData = [&](const QString &element, const KoChart::CellRegion &region, bool numeric,
+                                 const std::function<QVariant(int)> &value) {
+                const QString formula = reference(region);
+                xml.writeStartElement(element);
+                xml.writeStartElement(numeric ? (formula.isEmpty() ? QStringLiteral("c:numLit") : QStringLiteral("c:numRef"))
+                                              : (formula.isEmpty() ? QStringLiteral("c:strLit") : QStringLiteral("c:strRef")));
+                if (!formula.isEmpty()) {
+                    xml.writeTextElement(QStringLiteral("c:f"), formula);
+                    xml.writeStartElement(numeric ? QStringLiteral("c:numCache") : QStringLiteral("c:strCache"));
+                }
+                if (numeric) xml.writeTextElement(QStringLiteral("c:formatCode"), QStringLiteral("General"));
+                xml.writeEmptyElement(QStringLiteral("c:ptCount")); xml.writeAttribute(QStringLiteral("val"), QString::number(points));
+                for (int point = 0; point < points; ++point) {
+                    const QVariant data = value(point);
+                    bool ok = false;
+                    const double number = numeric ? data.toDouble(&ok) : 0;
+                    if (numeric && !ok) continue;
+                    xml.writeStartElement(QStringLiteral("c:pt")); xml.writeAttribute(QStringLiteral("idx"), QString::number(point));
+                    xml.writeTextElement(QStringLiteral("c:v"), numeric ? QString::number(number, 'g', 15) : data.toString());
+                    xml.writeEndElement();
+                }
+                if (!formula.isEmpty()) xml.writeEndElement();
+                xml.writeEndElement(); xml.writeEndElement();
+            };
+            if (scatter) {
+                writeData(QStringLiteral("c:xVal"), dataSet->xDataRegion(), true, [&](int i) { return dataSet->xData(i); });
+            } else {
+                writeData(QStringLiteral("c:cat"), dataSet->categoryDataRegion(), false, [&](int i) { return dataSet->categoryData(i); });
+            }
+            writeData(scatter ? QStringLiteral("c:yVal") : QStringLiteral("c:val"), dataSet->yDataRegion(), true,
+                      [&](int i) { return dataSet->yData(i); });
             xml.writeEndElement();
         }
         if (chartType == QLatin1String("barChart") || chartType == QLatin1String("lineChart") || chartType == QLatin1String("areaChart") || scatter) { xml.writeEmptyElement(QStringLiteral("c:axId")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("80000001")); xml.writeEmptyElement(QStringLiteral("c:axId")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("80000002")); }
         if (pie) { xml.writeEmptyElement(QStringLiteral("c:firstSliceAng")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("0")); }
         xml.writeEndElement();
-        if (scatter) {
-            xml.writeStartElement(QStringLiteral("c:valAx")); xml.writeEmptyElement(QStringLiteral("c:axId")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("80000001"));
-            xml.writeStartElement(QStringLiteral("c:scaling")); xml.writeEmptyElement(QStringLiteral("c:orientation")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("minMax")); xml.writeEndElement();
-            xml.writeEmptyElement(QStringLiteral("c:axPos")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("b"));
-            xml.writeEmptyElement(QStringLiteral("c:crossAx")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("80000002"));
-            xml.writeEmptyElement(QStringLiteral("c:crosses")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("autoZero"));
-            xml.writeEmptyElement(QStringLiteral("c:crossBetween")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("midCat"));
+        auto writeAxis = [&](const KoChart::Axis *axis, bool category, const QString &id, const QString &crossId, const QString &position) {
+            xml.writeStartElement(category ? QStringLiteral("c:catAx") : QStringLiteral("c:valAx"));
+            xml.writeEmptyElement(QStringLiteral("c:axId")); xml.writeAttribute(QStringLiteral("val"), id);
+            xml.writeStartElement(QStringLiteral("c:scaling"));
+            xml.writeEmptyElement(QStringLiteral("c:orientation"));
+            xml.writeAttribute(QStringLiteral("val"), axis && axis->axisDirectionReversed() ? QStringLiteral("maxMin") : QStringLiteral("minMax"));
             xml.writeEndElement();
-            xml.writeStartElement(QStringLiteral("c:valAx")); xml.writeEmptyElement(QStringLiteral("c:axId")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("80000002"));
-            xml.writeStartElement(QStringLiteral("c:scaling")); xml.writeEmptyElement(QStringLiteral("c:orientation")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("minMax")); xml.writeEndElement();
-            xml.writeEmptyElement(QStringLiteral("c:axPos")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("l"));
-            xml.writeEmptyElement(QStringLiteral("c:crossAx")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("80000001"));
+            xml.writeEmptyElement(QStringLiteral("c:delete")); xml.writeAttribute(QStringLiteral("val"), axis && !axis->isVisible() ? QStringLiteral("1") : QStringLiteral("0"));
+            xml.writeEmptyElement(QStringLiteral("c:axPos")); xml.writeAttribute(QStringLiteral("val"), position);
+            if (axis && axis->showMajorGrid()) {
+                xml.writeStartElement(QStringLiteral("c:majorGridlines"));
+                xml.writeStartElement(QStringLiteral("c:spPr"));
+                xml.writeStartElement(QStringLiteral("a:ln")); xml.writeAttribute(QStringLiteral("w"), QStringLiteral("6350"));
+                xml.writeStartElement(QStringLiteral("a:solidFill"));
+                xml.writeEmptyElement(QStringLiteral("a:srgbClr")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("BFBFBF"));
+                xml.writeEndElement(); xml.writeEndElement(); xml.writeEndElement(); xml.writeEndElement();
+            }
+            xml.writeEmptyElement(QStringLiteral("c:numFmt"));
+            xml.writeAttribute(QStringLiteral("formatCode"), QStringLiteral("General")); xml.writeAttribute(QStringLiteral("sourceLinked"), QStringLiteral("1"));
+            xml.writeEmptyElement(QStringLiteral("c:majorTickMark"));
+            xml.writeAttribute(QStringLiteral("val"), axis && axis->showOuterMajorTicks() ? QStringLiteral("out") : QStringLiteral("none"));
+            xml.writeEmptyElement(QStringLiteral("c:minorTickMark")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("none"));
+            xml.writeEmptyElement(QStringLiteral("c:tickLblPos"));
+            xml.writeAttribute(QStringLiteral("val"), axis && !axis->showLabels() ? QStringLiteral("none") : QStringLiteral("nextTo"));
+            // Explicit, bounded text metrics avoid importing chart text as
+            // uninitialized defaults in consumers that do not infer them.
+            xml.writeStartElement(QStringLiteral("c:txPr"));
+            xml.writeEmptyElement(QStringLiteral("a:bodyPr"));
+            xml.writeEmptyElement(QStringLiteral("a:lstStyle"));
+            xml.writeStartElement(QStringLiteral("a:p"));
+            xml.writeStartElement(QStringLiteral("a:pPr"));
+            xml.writeStartElement(QStringLiteral("a:defRPr"));
+            xml.writeAttribute(QStringLiteral("sz"), QString::number(qRound(qBound(5.0, axis ? axis->fontSize() : 10.0, 72.0) * 100)));
+            xml.writeStartElement(QStringLiteral("a:solidFill"));
+            xml.writeEmptyElement(QStringLiteral("a:srgbClr")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("000000"));
+            xml.writeEndElement(); xml.writeEndElement(); xml.writeEndElement();
+            xml.writeEmptyElement(QStringLiteral("a:endParaRPr"));
+            xml.writeEndElement(); xml.writeEndElement();
+            xml.writeEmptyElement(QStringLiteral("c:crossAx")); xml.writeAttribute(QStringLiteral("val"), crossId);
             xml.writeEmptyElement(QStringLiteral("c:crosses")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("autoZero"));
-            xml.writeEmptyElement(QStringLiteral("c:crossBetween")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("midCat"));
+            if (category) {
+                xml.writeEmptyElement(QStringLiteral("c:auto")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("1"));
+                xml.writeEmptyElement(QStringLiteral("c:lblAlgn")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("ctr"));
+                xml.writeEmptyElement(QStringLiteral("c:lblOffset")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("100"));
+            } else {
+                xml.writeEmptyElement(QStringLiteral("c:crossBetween")); xml.writeAttribute(QStringLiteral("val"), scatter ? QStringLiteral("midCat") : QStringLiteral("between"));
+            }
             xml.writeEndElement();
-        } else if (!pie) {
-            xml.writeStartElement(QStringLiteral("c:catAx")); xml.writeEmptyElement(QStringLiteral("c:axId")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("80000001"));
-            xml.writeStartElement(QStringLiteral("c:scaling")); xml.writeEmptyElement(QStringLiteral("c:orientation")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("minMax")); xml.writeEndElement(); xml.writeEmptyElement(QStringLiteral("c:axPos")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("b")); xml.writeEmptyElement(QStringLiteral("c:crossAx")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("80000002")); xml.writeEmptyElement(QStringLiteral("c:crosses")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("autoZero")); xml.writeEmptyElement(QStringLiteral("c:lblOffset")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("100")); xml.writeEndElement();
-            xml.writeStartElement(QStringLiteral("c:valAx")); xml.writeEmptyElement(QStringLiteral("c:axId")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("80000002")); xml.writeStartElement(QStringLiteral("c:scaling")); xml.writeEmptyElement(QStringLiteral("c:orientation")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("minMax")); xml.writeEndElement(); xml.writeEmptyElement(QStringLiteral("c:axPos")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("l")); xml.writeEmptyElement(QStringLiteral("c:crossAx")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("80000001")); xml.writeEmptyElement(QStringLiteral("c:crosses")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("autoZero")); xml.writeEmptyElement(QStringLiteral("c:crossBetween")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("between")); xml.writeEndElement();
+        };
+        if (!pie) {
+            writeAxis(chart->plotArea()->xAxis(), !scatter, QStringLiteral("80000001"), QStringLiteral("80000002"), QStringLiteral("b"));
+            writeAxis(chart->plotArea()->yAxis(), false, QStringLiteral("80000002"), QStringLiteral("80000001"), QStringLiteral("l"));
         }
-        xml.writeEndElement();
-        xml.writeStartElement(QStringLiteral("c:legend")); xml.writeEmptyElement(QStringLiteral("c:legendPos")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("b")); xml.writeEmptyElement(QStringLiteral("c:layout")); xml.writeEmptyElement(QStringLiteral("c:overlay")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("0")); xml.writeEndElement();
-        xml.writeEmptyElement(QStringLiteral("c:plotVisOnly")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("1"));
+        xml.writeStartElement(QStringLiteral("c:spPr"));
+        xml.writeStartElement(QStringLiteral("a:solidFill"));
+        xml.writeEmptyElement(QStringLiteral("a:srgbClr")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("FFFFFF"));
         xml.writeEndElement(); xml.writeEndElement();
+        xml.writeEndElement(); // plotArea
+        if (chart->legend() && chart->legend()->isVisible()) {
+            xml.writeStartElement(QStringLiteral("c:legend"));
+            xml.writeEmptyElement(QStringLiteral("c:legendPos")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("b"));
+            xml.writeEmptyElement(QStringLiteral("c:layout"));
+            xml.writeEmptyElement(QStringLiteral("c:overlay")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("0"));
+            xml.writeEndElement();
+        }
+        xml.writeEmptyElement(QStringLiteral("c:plotVisOnly")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("1"));
+        xml.writeEndElement(); // chart
+        // Do not let worksheet borders bleed through an unspecified chart fill.
+        xml.writeStartElement(QStringLiteral("c:spPr"));
+        xml.writeStartElement(QStringLiteral("a:solidFill"));
+        xml.writeEmptyElement(QStringLiteral("a:srgbClr")); xml.writeAttribute(QStringLiteral("val"), QStringLiteral("FFFFFF"));
+        xml.writeEndElement();
+        xml.writeStartElement(QStringLiteral("a:ln")); xml.writeEmptyElement(QStringLiteral("a:noFill")); xml.writeEndElement();
+        xml.writeEndElement();
+        xml.writeEndElement(); // chartSpace
     });
 }
 
-QByteArray drawingXml(const QList<EmbeddedImage> &images)
+struct DrawingMarker {
+    int column;
+    int row;
+    qint64 columnOffset;
+    qint64 rowOffset;
+
+    bool isValid() const
+    {
+        return column >= 1 && column <= 16384 && row >= 1 && row <= 1048576 && columnOffset >= 0 && rowOffset >= 0;
+    }
+};
+
+DrawingMarker drawingMarker(const Sheet &sheet, const QPointF &position)
+{
+    double left = 0;
+    double top = 0;
+    const int column = sheet.leftColumn(position.x(), left);
+    const int row = sheet.topRow(position.y(), top);
+    return {column, row, qRound64((position.x() - left) * 12700.0), qRound64((position.y() - top) * 12700.0)};
+}
+
+void writeDrawingMarker(QXmlStreamWriter &xml, const QString &tag, const DrawingMarker &marker)
+{
+    xml.writeStartElement(tag);
+    xml.writeTextElement(QStringLiteral("xdr:col"), QString::number(marker.column - 1));
+    xml.writeTextElement(QStringLiteral("xdr:colOff"), QString::number(marker.columnOffset));
+    xml.writeTextElement(QStringLiteral("xdr:row"), QString::number(marker.row - 1));
+    xml.writeTextElement(QStringLiteral("xdr:rowOff"), QString::number(marker.rowOffset));
+    xml.writeEndElement();
+}
+
+QByteArray drawingXml(const Sheet &sheet, const QList<EmbeddedImage> &images)
 {
     return xmlBytes([&](QXmlStreamWriter &xml) {
         xml.writeStartElement(QStringLiteral("xdr:wsDr"));
@@ -404,13 +606,39 @@ QByteArray drawingXml(const QList<EmbeddedImage> &images)
         for (const EmbeddedImage &image : images) {
             const QPointF pos = image.shape->absolutePosition(KoFlake::TopLeftCorner);
             const QSizeF size = image.shape->size();
-            xml.writeStartElement(QStringLiteral("xdr:absoluteAnchor"));
-            xml.writeEmptyElement(QStringLiteral("xdr:pos")); xml.writeAttribute(QStringLiteral("x"), QString::number(qRound64(pos.x() * 12700.0))); xml.writeAttribute(QStringLiteral("y"), QString::number(qRound64(pos.y() * 12700.0)));
-            xml.writeStartElement(QStringLiteral("xdr:ext")); xml.writeAttribute(QStringLiteral("cx"), QString::number(qRound64(size.width() * 12700.0))); xml.writeAttribute(QStringLiteral("cy"), QString::number(qRound64(size.height() * 12700.0))); xml.writeEndElement();
-            if (!image.chartXml.isEmpty()) {
+            const bool isChart = !image.chartXml.isEmpty();
+            const auto *data = dynamic_cast<const ShapeApplicationData *>(image.shape->applicationData());
+            bool cellAnchor = false;
+            if (isChart && data && data->isAnchoredToCell() && pos.x() >= 0 && pos.y() >= 0) {
+                const DrawingMarker from = drawingMarker(sheet, pos);
+                const DrawingMarker to = drawingMarker(sheet, pos + QPointF(size.width(), size.height()));
+                cellAnchor = from.isValid() && to.isValid();
+                if (cellAnchor) {
+                    xml.writeStartElement(QStringLiteral("xdr:twoCellAnchor"));
+                    writeDrawingMarker(xml, QStringLiteral("xdr:from"), from);
+                    writeDrawingMarker(xml, QStringLiteral("xdr:to"), to);
+                }
+            }
+            if (!cellAnchor) {
+                xml.writeStartElement(QStringLiteral("xdr:absoluteAnchor"));
+                xml.writeEmptyElement(QStringLiteral("xdr:pos"));
+                xml.writeAttribute(QStringLiteral("x"), QString::number(qRound64(pos.x() * 12700.0)));
+                xml.writeAttribute(QStringLiteral("y"), QString::number(qRound64(pos.y() * 12700.0)));
+                xml.writeEmptyElement(QStringLiteral("xdr:ext"));
+                xml.writeAttribute(QStringLiteral("cx"), QString::number(qRound64(size.width() * 12700.0)));
+                xml.writeAttribute(QStringLiteral("cy"), QString::number(qRound64(size.height() * 12700.0)));
+            }
+            if (isChart) {
                 xml.writeStartElement(QStringLiteral("xdr:graphicFrame")); xml.writeAttribute(QStringLiteral("macro"), QString());
                 xml.writeStartElement(QStringLiteral("xdr:nvGraphicFramePr")); xml.writeEmptyElement(QStringLiteral("xdr:cNvPr")); xml.writeAttribute(QStringLiteral("id"), QString::number(image.index)); xml.writeAttribute(QStringLiteral("name"), QStringLiteral("Chart %1").arg(image.index)); xml.writeEmptyElement(QStringLiteral("xdr:cNvGraphicFramePr")); xml.writeEndElement();
-                xml.writeStartElement(QStringLiteral("xdr:xfrm")); xml.writeEmptyElement(QStringLiteral("a:off")); xml.writeAttribute(QStringLiteral("x"), QStringLiteral("0")); xml.writeAttribute(QStringLiteral("y"), QStringLiteral("0")); xml.writeEmptyElement(QStringLiteral("a:ext")); xml.writeAttribute(QStringLiteral("cx"), QString::number(qRound64(size.width() * 12700.0))); xml.writeAttribute(QStringLiteral("cy"), QString::number(qRound64(size.height() * 12700.0))); xml.writeEndElement();
+                xml.writeStartElement(QStringLiteral("xdr:xfrm"));
+                xml.writeEmptyElement(QStringLiteral("a:off"));
+                xml.writeAttribute(QStringLiteral("x"), QStringLiteral("0"));
+                xml.writeAttribute(QStringLiteral("y"), QStringLiteral("0"));
+                xml.writeEmptyElement(QStringLiteral("a:ext"));
+                xml.writeAttribute(QStringLiteral("cx"), QString::number(cellAnchor ? 0 : qRound64(size.width() * 12700.0)));
+                xml.writeAttribute(QStringLiteral("cy"), QString::number(cellAnchor ? 0 : qRound64(size.height() * 12700.0)));
+                xml.writeEndElement();
                 xml.writeStartElement(QStringLiteral("a:graphic")); xml.writeStartElement(QStringLiteral("a:graphicData")); xml.writeAttribute(QStringLiteral("uri"), QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/chart")); xml.writeEmptyElement(QStringLiteral("c:chart")); xml.writeAttribute(QStringLiteral("xmlns:c"), QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/chart")); xml.writeAttribute(QStringLiteral("r:id"), QStringLiteral("rId%1").arg(image.index)); xml.writeEndElement(); xml.writeEndElement(); xml.writeEndElement();
             } else {
             xml.writeStartElement(QStringLiteral("xdr:pic"));
@@ -847,15 +1075,40 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
         }
         qCDebug(lcXlsxTiming, "XLSX worksheet %s: empty %lld style %lld value %lld write %lld iter %lld", qPrintable(sheet->sheetName()), (long long)(emptyNanos/1000000), (long long)(styleNanos/1000000), (long long)(valueNanos/1000000), (long long)(writeNanos/1000000), (long long)(iterNanos/1000000));
         xml.writeEndElement(); // sheetData
-        if (links && !links->isEmpty()) {
-            xml.writeStartElement(QStringLiteral("hyperlinks"));
-            for (int i = 0; i < links->size(); ++i) {
-                xml.writeEmptyElement(QStringLiteral("hyperlink"));
-                xml.writeAttribute(QStringLiteral("ref"), links->at(i).first);
-                xml.writeAttribute(QStringLiteral("r:id"), QStringLiteral("rId%1").arg(hasDrawing ? i + 2 : i + 1));
+        for (const SheetFilter &filter : filters) {
+            if (filter.range.isEmpty()) continue;
+            xml.writeStartElement(QStringLiteral("autoFilter"));
+            xml.writeAttribute(QStringLiteral("ref"), rangeAddress(filter.range));
+            for (const SheetFilterColumn &column : filter.columns) {
+                xml.writeStartElement(QStringLiteral("filterColumn"));
+                xml.writeAttribute(QStringLiteral("colId"), QString::number(column.index));
+                if (!column.values.isEmpty() || column.blank) {
+                    // Equality only: <filters> compares the cell literally.
+                    xml.writeStartElement(QStringLiteral("filters"));
+                    if (column.blank)
+                        xml.writeAttribute(QStringLiteral("blank"), QStringLiteral("1"));
+                    for (const QString &value : column.values) {
+                        xml.writeEmptyElement(QStringLiteral("filter"));
+                        xml.writeAttribute(QStringLiteral("val"), value);
+                    }
+                    xml.writeEndElement();
+                }
+                if (!column.customFilters.isEmpty()) {
+                    xml.writeStartElement(QStringLiteral("customFilters"));
+                    if (column.customFilters.size() > 1)
+                        xml.writeAttribute(QStringLiteral("and"), filter.isAnd ? QStringLiteral("true") : QStringLiteral("false"));
+                    for (const auto &customFilter : column.customFilters) {
+                        xml.writeEmptyElement(QStringLiteral("customFilter"));
+                        xml.writeAttribute(QStringLiteral("operator"), customFilter.first);
+                        xml.writeAttribute(QStringLiteral("val"), customFilter.second);
+                    }
+                    xml.writeEndElement();
+                }
+                xml.writeEndElement();
             }
             xml.writeEndElement();
         }
+
         auto *storage = static_cast<CellStorage *>(sheet->cellStorage());
         const QList<Cell> mergedCells = storage->masterCells(Region(area, const_cast<Sheet *>(sheet)));
         QList<QString> mergedRanges;
@@ -953,40 +1206,6 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
                 }
                 xml.writeEndElement();
             }
-        }
-
-        for (const SheetFilter &filter : filters) {
-            if (filter.range.isEmpty()) continue;
-            xml.writeStartElement(QStringLiteral("autoFilter"));
-            xml.writeAttribute(QStringLiteral("ref"), rangeAddress(filter.range));
-            for (const SheetFilterColumn &column : filter.columns) {
-                xml.writeStartElement(QStringLiteral("filterColumn"));
-                xml.writeAttribute(QStringLiteral("colId"), QString::number(column.index));
-                if (!column.values.isEmpty() || column.blank) {
-                    // Equality only: <filters> compares the cell literally.
-                    xml.writeStartElement(QStringLiteral("filters"));
-                    if (column.blank)
-                        xml.writeAttribute(QStringLiteral("blank"), QStringLiteral("1"));
-                    for (const QString &value : column.values) {
-                        xml.writeEmptyElement(QStringLiteral("filter"));
-                        xml.writeAttribute(QStringLiteral("val"), value);
-                    }
-                    xml.writeEndElement();
-                }
-                if (!column.customFilters.isEmpty()) {
-                    xml.writeStartElement(QStringLiteral("customFilters"));
-                    if (column.customFilters.size() > 1)
-                        xml.writeAttribute(QStringLiteral("and"), filter.isAnd ? QStringLiteral("true") : QStringLiteral("false"));
-                    for (const auto &customFilter : column.customFilters) {
-                        xml.writeEmptyElement(QStringLiteral("customFilter"));
-                        xml.writeAttribute(QStringLiteral("operator"), customFilter.first);
-                        xml.writeAttribute(QStringLiteral("val"), customFilter.second);
-                    }
-                    xml.writeEndElement();
-                }
-                xml.writeEndElement();
-            }
-            xml.writeEndElement();
         }
 
         // Data validations. The model stores one Validity per cell; cells that
@@ -1097,19 +1316,15 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
             }
         }
 
-        if (!tables.isEmpty()) {
-            // Hyperlinks and the drawing are written before the tables, so the
-            // table relationships continue their numbering.
-            const int firstTableLinkId = (hasDrawing ? 2 : 1) + links->size();
-            xml.writeStartElement(QStringLiteral("tableParts"));
-            xml.writeAttribute(QStringLiteral("count"), QString::number(tables.size()));
-            for (int t = 0; t < tables.size(); ++t) {
-                xml.writeEmptyElement(QStringLiteral("tablePart"));
-                xml.writeAttribute(QStringLiteral("r:id"), QStringLiteral("rId%1").arg(firstTableLinkId + t));
+        if (links && !links->isEmpty()) {
+            xml.writeStartElement(QStringLiteral("hyperlinks"));
+            for (int i = 0; i < links->size(); ++i) {
+                xml.writeEmptyElement(QStringLiteral("hyperlink"));
+                xml.writeAttribute(QStringLiteral("ref"), links->at(i).first);
+                xml.writeAttribute(QStringLiteral("r:id"), QStringLiteral("rId%1").arg(hasDrawing ? i + 2 : i + 1));
             }
             xml.writeEndElement();
         }
-        if (hasDrawing) { xml.writeStartElement(QStringLiteral("drawing")); xml.writeAttribute(QStringLiteral("r:id"), QStringLiteral("rId1")); xml.writeEndElement(); }
         const KoPageLayout pageLayout = print->pageLayout();
         constexpr qreal pointsPerInch = 72.0;
         xml.writeEmptyElement(QStringLiteral("pageMargins"));
@@ -1135,7 +1350,20 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
         } else {
             xml.writeAttribute(QStringLiteral("scale"), QString::number(qBound(10, qRound(print->zoom() * 100.0), 400)));
         }
-        xml.writeEndElement();
+        if (hasDrawing) { xml.writeStartElement(QStringLiteral("drawing")); xml.writeAttribute(QStringLiteral("r:id"), QStringLiteral("rId1")); xml.writeEndElement(); }
+        if (!tables.isEmpty()) {
+            // Hyperlinks and the drawing are written before the tables, so the
+            // table relationships continue their numbering.
+            const int firstTableLinkId = (hasDrawing ? 2 : 1) + links->size();
+            xml.writeStartElement(QStringLiteral("tableParts"));
+            xml.writeAttribute(QStringLiteral("count"), QString::number(tables.size()));
+            for (int t = 0; t < tables.size(); ++t) {
+                xml.writeEmptyElement(QStringLiteral("tablePart"));
+                xml.writeAttribute(QStringLiteral("r:id"), QStringLiteral("rId%1").arg(firstTableLinkId + t));
+            }
+            xml.writeEndElement();
+        }
+        xml.writeEndElement(); // worksheet
     });
 }
 
@@ -1301,7 +1529,7 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
             // painting them would add empty pictures to the exported drawing.
             if (shape->shapeId() == QLatin1String("UnavailShapeID")) continue;
             QByteArray chartPart;
-            if (auto *chart = dynamic_cast<KoChart::ChartShape *>(shape)) { chartPart = chartXml(chart); }
+            if (auto *chart = dynamic_cast<KoChart::ChartShape *>(shape)) { chartPart = chartXml(chart, document->map()); }
             QByteArray png;
             if (chartPart.isEmpty()) {
                 // KoShapePainter::paint(QImage&) paints into an existing image;
@@ -1502,7 +1730,7 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
             if (!write(QStringLiteral("xl/worksheets/_rels/sheet%1.xml.rels").arg(i + 1), xmlBytes([i, &sheetImages, &sheetLinks, &sheetTableList, firstLinkId, firstTableId, nextTableId](QXmlStreamWriter &xml) {
                 xml.writeStartElement(QStringLiteral("Relationships")); xml.writeDefaultNamespace(QStringLiteral("http://schemas.openxmlformats.org/package/2006/relationships"));
                 if (!sheetImages[i].isEmpty()) {
-                    xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId1")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../drawings/drawing%1.xml").arg(i + 1)); xml.writeEndElement();
+                    xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId1")); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing")); xml.writeAttribute(QStringLiteral("Target"), QStringLiteral("../drawings/drawing%1.xml").arg(i + 1));
                 }
                 for (int li = 0; li < sheetLinks.size(); ++li) {
                     xml.writeEmptyElement(QStringLiteral("Relationship")); xml.writeAttribute(QStringLiteral("Id"), QStringLiteral("rId%1").arg(firstLinkId + li)); xml.writeAttribute(QStringLiteral("Type"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink")); xml.writeAttribute(QStringLiteral("Target"), sheetLinks.at(li).second); xml.writeAttribute(QStringLiteral("TargetMode"), QStringLiteral("External"));
@@ -1512,7 +1740,7 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
                 }
                 xml.writeEndElement();
             }))) return CreationError;
-            if (!sheetImages[i].isEmpty() && !write(QStringLiteral("xl/drawings/drawing%1.xml").arg(i + 1), drawingXml(sheetImages[i]))) return CreationError;
+            if (!sheetImages[i].isEmpty() && !write(QStringLiteral("xl/drawings/drawing%1.xml").arg(i + 1), drawingXml(*sheets[i], sheetImages[i]))) return CreationError;
         }
         if (!sheetImages[i].isEmpty()) {
             if (!write(QStringLiteral("xl/drawings/_rels/drawing%1.xml.rels").arg(i + 1), drawingRelsXml(sheetImages[i]))) return CreationError;

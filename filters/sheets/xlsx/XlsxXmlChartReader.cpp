@@ -188,7 +188,7 @@ public:
 
 QString XVal::writeRefToInternalTable(XlsxXmlChartReader *chartReader)
 {
-    if (m_numRef.m_numCache.m_ptCount != 0) {
+    if (!m_numRef.m_f.isEmpty()) {
         chartReader->WriteIntoInternalTable(m_numRef.m_f, m_numRef.m_numCache.m_cache, KoGenStyle::NumericNumberStyle);
         return m_numRef.m_f;
     }
@@ -857,12 +857,14 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_xVal()
 {
     READ_PROLOGUE
     d->m_currentNumRef = &d->m_currentXVal->m_numRef;
+    d->m_currentNumLit = &d->m_currentXVal->m_numLit;
     d->m_currentStrRef = &d->m_currentXVal->m_strRef;
     while (!atEnd()) {
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             TRY_READ_IF(numRef)
+            ELSE_TRY_READ_IF(numLit)
             ELSE_TRY_READ_IF(strRef)
         }
     }
@@ -886,11 +888,13 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_yVal()
 {
     READ_PROLOGUE
     d->m_currentNumRef = &d->m_currentYVal->m_numRef;
+    d->m_currentNumLit = &d->m_currentYVal->m_numLit;
     while (!atEnd()) {
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             TRY_READ_IF(numRef)
+            ELSE_TRY_READ_IF(numLit)
         }
     }
     READ_EPILOGUE
@@ -1181,13 +1185,25 @@ void XlsxXmlChartReader::read_showDataLabel()
 KoFilter::ConversionStatus XlsxXmlChartReader::read_dLbl()
 {
     READ_PROLOGUE
+    int index = -1;
+    bool showValue = false, hasShowValue = false;
     while (!atEnd()) {
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
-            read_showDataLabel();
+            if (name() == QLatin1StringView("idx")) {
+                bool ok;
+                index = attributes().value(QLatin1String("val")).toInt(&ok);
+                if (!ok) index = -1;
+            } else if (name() == QLatin1StringView("showVal")) {
+                const auto value = attributes().value(QLatin1String("val"));
+                showValue = value == QLatin1StringView("1") || value == QLatin1StringView("true");
+                hasShowValue = true;
+            }
         }
     }
+    if (m_currentSeries && index >= 0 && hasShowValue)
+        m_currentSeries->pointFormat()->valueLabels.insert(index, showValue);
     READ_EPILOGUE
 }
 
@@ -1254,6 +1270,41 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_dLbls()
             read_showDataLabel();
         }
     }
+    READ_EPILOGUE
+}
+
+#undef CURRENT_EL
+#define CURRENT_EL dPt
+KoFilter::ConversionStatus XlsxXmlChartReader::read_dPt()
+{
+    READ_PROLOGUE
+    int index = -1;
+    int depth = 0, solidDepth = -1;
+    QColor color;
+    const QString drawingNs = QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/main");
+    while (!atEnd()) {
+        readNext();
+        BREAK_IF_END_OF(CURRENT_EL)
+        if (isStartElement()) {
+            ++depth;
+            if (depth == 1 && name() == QLatin1StringView("idx")) {
+                bool ok;
+                index = attributes().value(QLatin1String("val")).toInt(&ok);
+                if (!ok) index = -1;
+            } else if (namespaceUri() == drawingNs) {
+                if (depth == 2 && name() == QLatin1StringView("solidFill")) solidDepth = depth;
+                else if (solidDepth >= 0 && name() == QLatin1StringView("srgbClr"))
+                    color = QColor(QLatin1Char('#') + attributes().value(QLatin1String("val")).toString());
+                else if (solidDepth >= 0 && name() == QLatin1StringView("schemeClr"))
+                    color = m_context->m_chartWriter->themeColor(attributes().value(QLatin1String("val")).toString());
+            }
+        } else if (isEndElement()) {
+            if (depth == solidDepth) solidDepth = -1;
+            --depth;
+        }
+    }
+    if (m_currentSeries && index >= 0 && color.isValid())
+        m_currentSeries->pointFormat()->colors.insert(index, color);
     READ_EPILOGUE
 }
 
@@ -1708,6 +1759,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_area3DChart()
 */
 KoFilter::ConversionStatus XlsxXmlChartReader::read_barChart()
 {
+    bool varyColors = false;
     if (!m_context->m_chart->m_impl) {
         m_context->m_chart->m_impl = new KoChart::BarImpl();
     }
@@ -1721,9 +1773,23 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_barChart()
             }
             ELSE_TRY_READ_IF(barDir)
             ELSE_TRY_READ_IF(grouping)
+            else if (QUALIFIED_NAME_IS(varyColors)) {
+                const auto value = attributes().value(QLatin1String("val"));
+                varyColors = value == QLatin1StringView("1") || value == QLatin1StringView("true");
+                skipCurrentElement();
+            }
         }
     }
 
+    if (varyColors) {
+        for (KoChart::Series *series : m_context->m_chart->m_series) {
+            for (int point = 0; point < series->m_countYValues; ++point) {
+                if (series->pointFormat()->colors.contains(point)) continue;
+                const QColor color = m_context->m_chartWriter->themeColor(QStringLiteral("accent%1").arg(point % 6 + 1));
+                if (color.isValid()) series->pointFormat()->colors.insert(point, color);
+            }
+        }
+    }
     qDeleteAll(d->m_seriesData);
     d->m_seriesData.clear();
 
@@ -2058,7 +2124,6 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_bubbleChart()
 {
     if (!m_context->m_chart->m_impl) {
         m_context->m_chart->m_impl = new KoChart::BubbleImpl();
-        m_context->m_chart->m_is3d = true;
     }
 
     while (!atEnd()) {
@@ -2072,14 +2137,6 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_bubbleChart()
             ELSE_TRY_READ_IF(bubble3D)
         }
     }
-
-    // check if there are some c:strLit or c:numLit data and if yes then write them into internalTable
-    //    for (int i=0; i<d->m_seriesData.size(); i++ ){
-    //        QString range = ((BubbleSeries *)d->m_seriesData[i])->m_bubbleSize.writeLitToInternalTable(this);
-    //        if (!range.isEmpty()) {
-    //            m_context->m_chart->m_series[i]->m_domainValuesCellRangeAddress.push_back(range);
-    //        }
-    //    }
 
     qDeleteAll(d->m_seriesData);
     d->m_seriesData.clear();
@@ -2275,21 +2332,16 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_bubbleChart_Ser()
     // set data ranges and write data to internal table
     m_currentSeries->m_labelCell = tempBubbleSeriesData->m_tx.writeRefToInternalTable(this);
 
-    m_currentSeries->m_countYValues = tempBubbleSeriesData->m_yVal.m_numRef.m_numCache.m_ptCount;
+    auto &xValues = tempBubbleSeriesData->m_xVal;
+    auto &yValues = tempBubbleSeriesData->m_yVal;
+    auto &sizes = tempBubbleSeriesData->m_bubbleSize;
+    m_currentSeries->m_countYValues = yValues.m_numRef.m_f.isEmpty() ? yValues.m_numLit.m_ptCount : yValues.m_numRef.m_numCache.m_ptCount;
 
-    m_currentSeries->m_domainValuesCellRangeAddress << tempBubbleSeriesData->m_yVal.writeRefToInternalTable(this);
-
-    if (tempBubbleSeriesData->m_bubbleSize.m_numRef.m_f.isEmpty())
-        m_currentSeries->m_valuesCellRangeAddress = tempBubbleSeriesData->m_bubbleSize.writeLitToInternalTable(this);
-    else
-        m_currentSeries->m_valuesCellRangeAddress = tempBubbleSeriesData->m_bubbleSize.writeRefToInternalTable(this);
-
-    //    m_currentSeries->m_domainValuesCellRangeAddress.push_back(tempBubbleSeriesData->m_xVal.writeRefToInternalTable(this));
-    //
-    //    QString bubbleSizeRange = tempBubbleSeriesData->m_bubbleSize.writeRefToInternalTable(this);
-    //    if (!bubbleSizeRange.isEmpty()) {
-    //        m_currentSeries->m_domainValuesCellRangeAddress.push_back(tempBubbleSeriesData->m_bubbleSize.writeRefToInternalTable(this));
-    //    }
+    // ODF bubble series use Y and X as domains, with bubble size as the series value.
+    m_currentSeries->m_domainValuesCellRangeAddress
+        << (yValues.m_numRef.m_f.isEmpty() ? yValues.writeLitToInternalTable(this) : yValues.writeRefToInternalTable(this))
+        << (xValues.m_numRef.m_f.isEmpty() && xValues.m_strRef.m_f.isEmpty() ? xValues.writeLitToInternalTable(this) : xValues.writeRefToInternalTable(this));
+    m_currentSeries->m_valuesCellRangeAddress = sizes.m_numRef.m_f.isEmpty() ? sizes.writeLitToInternalTable(this) : sizes.writeRefToInternalTable(this);
 
     READ_EPILOGUE
 }
@@ -2362,18 +2414,18 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_scatterChart_Ser()
     // set data ranges and write data to internal table
     m_currentSeries->m_labelCell = tempScatterSeriesData->m_tx.writeRefToInternalTable(this);
 
-    m_currentSeries->m_countXValues = tempScatterSeriesData->m_xVal.m_numLit.m_ptCount;
-    if (m_currentSeries->m_countXValues == 0) {
-        m_currentSeries->m_countXValues = tempScatterSeriesData->m_xVal.m_strRef.m_strCache.m_ptCount;
-        m_currentSeries->m_domainValuesCellRangeAddress << tempScatterSeriesData->m_xVal.writeRefToInternalTable(this);
+    auto &xValues = tempScatterSeriesData->m_xVal;
+    auto &yValues = tempScatterSeriesData->m_yVal;
+    if (xValues.m_numRef.m_f.isEmpty() && xValues.m_strRef.m_f.isEmpty()) {
+        m_currentSeries->m_countXValues = xValues.m_numLit.m_ptCount;
+        m_currentSeries->m_domainValuesCellRangeAddress << xValues.writeLitToInternalTable(this);
     } else {
-        m_currentSeries->m_domainValuesCellRangeAddress << tempScatterSeriesData->m_xVal.writeLitToInternalTable(this);
+        m_currentSeries->m_countXValues = xValues.m_numRef.m_f.isEmpty() ? xValues.m_strRef.m_strCache.m_ptCount : xValues.m_numRef.m_numCache.m_ptCount;
+        m_currentSeries->m_domainValuesCellRangeAddress << xValues.writeRefToInternalTable(this);
     }
 
-    m_currentSeries->m_countYValues = tempScatterSeriesData->m_yVal.m_numRef.m_numCache.m_ptCount;
-    m_currentSeries->m_valuesCellRangeAddress = tempScatterSeriesData->m_yVal.writeRefToInternalTable(this);
-
-    // m_currentSeries->m_domainValuesCellRangeAddress.push_back(tempScatterSeriesData->m_xVal.writeRefToInternalTable(this));
+    m_currentSeries->m_countYValues = yValues.m_numRef.m_f.isEmpty() ? yValues.m_numLit.m_ptCount : yValues.m_numRef.m_numCache.m_ptCount;
+    m_currentSeries->m_valuesCellRangeAddress = yValues.m_numRef.m_f.isEmpty() ? yValues.writeLitToInternalTable(this) : yValues.writeRefToInternalTable(this);
 
     READ_EPILOGUE
 }
@@ -2426,7 +2478,7 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_barChart_Ser()
         if (isStartElement()) {
             TRY_READ_IF(order)
             ELSE_TRY_READ_IF(idx)
-            else if (QUALIFIED_NAME_IS(tx)){TRY_READ(seriesText_Tx)} ELSE_TRY_READ_IF(cat) ELSE_TRY_READ_IF(val) ELSE_TRY_READ_IF(dLbls)
+            else if (QUALIFIED_NAME_IS(tx)){TRY_READ(seriesText_Tx)} ELSE_TRY_READ_IF(cat) ELSE_TRY_READ_IF(val) ELSE_TRY_READ_IF(dLbls) ELSE_TRY_READ_IF(dPt)
         }
     }
     if (!m_autoTitleDeleted && m_context->m_chart->m_title.isEmpty() && m_context->m_chart->m_series.size() == 1
@@ -3461,6 +3513,19 @@ void XlsxXmlChartReader::WriteIntoInternalTable(QString &range, QVector<QString>
     const QStringList &res = cellRange.split(QRegularExpression("[$:]"), Qt::SkipEmptyParts);
 
     if (res.size() <= 1) {
+        // Some producers (notably Word's chart exporter) write symbolic
+        // formulas such as "categories" or "label 0" together with a cache.
+        // There is no cell reference to write into, so allocate a local column
+        // for the cached values instead of dropping the series data entirely.
+        auto it = m_generatedChartRanges.constFind(range);
+        if (it == m_generatedChartRanges.constEnd()) {
+            const QString generated = AlocateAndWriteIntoInternalTable(buffer, formatType);
+            if (generated.isEmpty()) {
+                return;
+            }
+            it = m_generatedChartRanges.insert(range, generated);
+        }
+        range = *it;
         return;
     }
 

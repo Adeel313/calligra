@@ -109,6 +109,18 @@ void TestDataSet::initTestCase()
     m_sourceModel2.setData(m_sourceModel2.index(3, 4), 12);
 }
 
+void TestDataSet::testPointBrushes()
+{
+    DataSet dataSet(0);
+    dataSet.setBrush(QBrush(Qt::blue));
+    dataSet.setBrush(0, QBrush(Qt::green));
+    dataSet.setBrush(1, QBrush(Qt::red));
+    QCOMPARE(dataSet.brush().color(), QColor(Qt::blue));
+    QCOMPARE(dataSet.brush(0).color(), QColor(Qt::green));
+    QCOMPARE(dataSet.brush(1).color(), QColor(Qt::red));
+    QCOMPARE(dataSet.brush(2).color(), QColor(Qt::blue));
+}
+
 void TestDataSet::testFooData()
 {
     DataSet dataSet(0);

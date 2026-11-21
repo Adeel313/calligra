@@ -1598,6 +1598,17 @@ bool KoDocument::openFile()
     if (ok) {
         setMimeTypeAfterLoading(typeName);
 
+        // Content detection lets Sheets open an ODS package named .xlsx. Keep
+        // using ODS for loading, but make the next Save produce actual XLSX
+        // rather than silently writing another ODS package under that name.
+        const QByteArray xlsxMime("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        if (typeName == QLatin1String("application/vnd.oasis.opendocument.spreadsheet")
+            && QMimeDatabase().mimeTypeForFile(url().path(), QMimeDatabase::MatchExtension).name() == QString::fromLatin1(xlsxMime)) {
+            setOutputMimeType(xlsxMime);
+            setConfirmNonNativeSave(false, true);
+            setConfirmNonNativeSave(true, true);
+        }
+
         KNotification *notify = new KNotification("DocumentLoaded", KNotification::CloseOnTimeout, this);
         notify->setText(i18n("Document <i>%1</i> loaded", url().url()));
         notify->setUrls(QList<QUrl>{url()});

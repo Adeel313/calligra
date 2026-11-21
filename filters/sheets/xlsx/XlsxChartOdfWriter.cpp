@@ -50,6 +50,13 @@ XlsxChartOdfWriter::XlsxChartOdfWriter(KoChart::Chart *chart, const MSOOXML::Dra
 
 XlsxChartOdfWriter::~XlsxChartOdfWriter() = default;
 
+QColor XlsxChartOdfWriter::themeColor(const QString &name) const
+{
+    if (!m_theme) return {};
+    const auto color = m_theme->colorScheme.value(name);
+    return color ? color->value() : QColor();
+}
+
 QColor XlsxChartOdfWriter::calculateColorFromGradientStop(const KoChart::Gradient::GradientStop &grad)
 {
     QColor color = grad.knownColorValue;

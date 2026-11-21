@@ -63,6 +63,15 @@ public:
     virtual ~Format() = default;
 };
 
+// Optional point overrides live in the existing format list so adding them
+// does not change the shared Series layout used by other import filters.
+class PointFormat : public Format
+{
+public:
+    QMap<int, QColor> colors;
+    QMap<int, bool> valueLabels;
+};
+
 class LineFormat : public Format
 {
 public:
@@ -628,6 +637,21 @@ public:
     MarkerType m_markerType;
     ShapeProperties *spPr;
     QString m_numberFormat;
+
+    const PointFormat *pointFormat() const
+    {
+        for (const Format *format : m_datasetFormat)
+            if (const auto *points = dynamic_cast<const PointFormat *>(format)) return points;
+        return nullptr;
+    }
+    PointFormat *pointFormat()
+    {
+        for (Format *format : m_datasetFormat)
+            if (auto *points = dynamic_cast<PointFormat *>(format)) return points;
+        auto *points = new PointFormat;
+        m_datasetFormat.append(points);
+        return points;
+    }
 
     explicit Series()
         : Obj()

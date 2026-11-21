@@ -216,6 +216,8 @@ void DocxXmlDocumentReader::init()
     m_listFound = false;
     m_insideParagraph = false;
     m_createSectionStyle = false;
+    m_currentTableHasHideMark = false;
+    m_currentTableHasVisibleContent = false;
     m_bodyParagraphCount = 0;
     m_createSectionToNext = false;
     m_bodySectionProperties = false;
@@ -2894,6 +2896,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
             QString paragraphXml;
             (void)textPBuf.releaseWriter(paragraphXml);
             const bool hasParagraphContent = paragraphXmlHasVisibleContent(paragraphXml);
+            if (m_insideTableCell && hasParagraphContent) {
+                m_currentTableHasVisibleContent = true;
+            }
             // The document's first paragraph is the carrier for the section's
             // page style. When it is empty it still occupies a line in Word, so
             // keep its placeholder master page and let the final sectPr update
@@ -3042,6 +3047,16 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
 
                 if (!paragraphXml.contains(QLatin1String("calligra:hard-break"))) {
                     body->addCompleteElement(paragraphXml.toUtf8());
+                    if (!hasParagraphContent && !m_insideTableCell && !m_headerActive && !m_footerActive) {
+                        // An empty Word paragraph still has a line box based
+                        // on the paragraph mark's font. Calligra's text layout
+                        // can collapse that box when the ODF paragraph has no
+                        // text run, causing blank lines to shrink and every
+                        // later paragraph to drift upward. A zero-width space
+                        // retains the inherited font metrics without painting
+                        // a visible character or adding horizontal advance.
+                        body->addTextNode(QString(QChar(0x200B)));
+                    }
                 } else {
                     QXmlStreamReader fragment(QStringLiteral("<root>") + paragraphXml + QStringLiteral("</root>"));
                     fragment.setNamespaceProcessing(false);
@@ -4762,6 +4777,19 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
     const auto isFontAvailable = [](const QString &family) {
         return QFontInfo(QFont(family)).family().compare(family, Qt::CaseInsensitive) == 0;
     };
+    // Modern Word themes use Aptos. When it is not installed, Word-compatible
+    // renderers fall back to Calibri; leaving the name as Aptos makes Qt pick
+    // an arbitrary local face whose metrics change line breaks and pagination.
+    const auto wordThemeFallback = [&isFontAvailable](const QString &family) {
+        if (isFontAvailable(family)) {
+            return family;
+        }
+        if (family.compare(QLatin1String("Aptos"), Qt::CaseInsensitive) == 0
+            || family.compare(QLatin1String("Aptos Display"), Qt::CaseInsensitive) == 0) {
+            return QStringLiteral("Calibri");
+        }
+        return family;
+    };
     // CASE #1153
     TRY_READ_ATTR(ascii)
     if (!ascii.isEmpty()) {
@@ -4781,6 +4809,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
             } else if (font.startsWith(QLatin1String("minor"))) {
                 font = m_context->themes->fontScheme.minorFonts.latinTypeface;
             }
+            font = wordThemeFallback(font);
             ensureFontFace(font);
             m_currentTextStyle.addProperty("style:font-name", font);
         }
@@ -6118,6 +6147,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     m_tableColumnWidths.clear();
     m_currentCellWidth = 0;
     m_tableGridWidth = 0;
+    m_currentTableHasHideMark = false;
+    m_currentTableHasVisibleContent = false;
 
     m_currentDefaultCellStyle = nullptr;
     m_currentTableStyleProperties = nullptr;
@@ -6251,7 +6282,12 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     debugDocx << "----------------------------------------";
 #endif
 
-    m_table->saveOdf(*body, *mainStyles);
+    // A table whose only cell content is a hidden end-of-cell marker has no
+    // height in Word. Writing it as an empty ODF table adds an unwanted blank
+    // line and shifts everything below it down.
+    if (!m_currentTableHasHideMark || m_currentTableHasVisibleContent) {
+        m_table->saveOdf(*body, *mainStyles);
+    }
 
     if (sectionAdded) {
         const QString tableName = m_table->tableStyle()->name();
@@ -6929,6 +6965,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tcPr()
             ELSE_TRY_READ_IF(tcMar)
             ELSE_TRY_READ_IF(vMerge)
             ELSE_TRY_READ_IF(vAlign)
+            else if (name() == QLatin1StringView("hideMark")) {
+                // The end-of-cell marker must not contribute to row height.
+                m_currentTableHasHideMark = true;
+            }
             else if (name() == QLatin1StringView("textDirection")){TRY_READ(textDirectionTc)} SKIP_UNKNOWN
             //! @todo add ELSE_WRONG_FORMAT
         }

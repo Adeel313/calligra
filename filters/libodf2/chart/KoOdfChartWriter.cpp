@@ -57,7 +57,7 @@ QString KoOdfChartWriter::normalizeCellRange(QString range)
     range.remove('$');
 
     const bool isPoint = !range.contains(':');
-    QRegularExpression regEx(isPoint ? "(|.*\\.|.*\\!)([A-Z0-9]+)" : "(|.*\\.|.*\\!)([A-Z]+[0-9]+)\\:(|.*\\.|.*\\!)([A-Z0-9]+)");
+    QRegularExpression regEx(isPoint ? "^(|.*\\.|.*\\!)([A-Z]+[0-9]+)$" : "^(|.*\\.|.*\\!)([A-Z]+[0-9]+)\\:(|.*\\.|.*\\!)([A-Z]+[0-9]+)$");
     QRegularExpressionMatch match;
     if (range.indexOf(regEx, 0, &match) >= 0) {
         range.clear();
@@ -827,11 +827,17 @@ bool KoOdfChartWriter::saveSeries(KoGenStyles &styles, KoGenStyles &mainStyles, 
         //             }
         //         }
 
+        const KoChart::PointFormat *pointFormat = static_cast<const KoChart::Series *>(series)->pointFormat();
         for (int j = 0; j < series->m_countYValues; ++j) {
             bodyWriter->startElement("chart:data-point");
             KoGenStyle gs(KoGenStyle::GraphicAutoStyle, "chart");
+            if (pointFormat && pointFormat->valueLabels.contains(j))
+                gs.addProperty("chart:data-label-number", pointFormat->valueLabels.value(j) ? "value" : "none", KoGenStyle::ChartType);
 
-            if (chart()->m_impl->name() == QByteArrayView("circle") || chart()->m_impl->name() == QByteArrayView("ring")) {
+            if (pointFormat && pointFormat->colors.contains(j)) {
+                gs.addProperty("draw:fill", "solid", KoGenStyle::GraphicType);
+                gs.addProperty("draw:fill-color", pointFormat->colors.value(j).name(), KoGenStyle::GraphicType);
+            } else if (chart()->m_impl->name() == QByteArrayView("circle") || chart()->m_impl->name() == QByteArrayView("ring")) {
                 QColor fillColor;
                 if (j < series->m_dataPoints.count()) {
                     KoChart::DataPoint *dataPoint = series->m_dataPoints[j];

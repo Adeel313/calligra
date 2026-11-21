@@ -68,6 +68,10 @@ bool convertPdf(const QUrl &uIn,
     printJob->printer().setOutputFileName(uOut.path());
     printJob->printer().setOutputFormat(QPrinter::PdfFormat);
     printJob->printer().setColorMode(QPrinter::Color);
+    // Converter mode has no user to dismiss the print progress dialog. Run the
+    // print job synchronously and close its output before returning.
+    printJob->setProperty("blocking", true);
+    printJob->setProperty("noprogressdialog", true);
 
     if (orientation == "Portrait")
         printJob->printer().pageLayout().setOrientation(QPageLayout::Portrait);
@@ -141,7 +145,7 @@ bool convertPdf(const QUrl &uIn,
         _margin = 0.2;
     printJob->printer().setPageMargins({_margin, _margin, _margin, _margin}, QPageLayout::Point);
 
-    printJob->startPrinting();
+    printJob->startPrinting(KoPrintJob::DeleteWhenDone);
 
     doc->deleteLater();
 
@@ -273,8 +277,12 @@ int main(int argc, char **argv)
         ok = convert(urlIn, inputMimetype.name(), urlOut, outputFormat, batch);
     }
 
-    QTimer::singleShot(0, &app, &QApplication::quit);
-    app.exec();
+    // Non-PDF filters may complete asynchronously. PDF printing is synchronous
+    // in convertPdf(), so its QPrinter output is closed before we get here.
+    if (outputFormat != QLatin1String("application/pdf")) {
+        QTimer::singleShot(0, &app, &QApplication::quit);
+        app.exec();
+    }
 
     QApplication::restoreOverrideCursor();
 

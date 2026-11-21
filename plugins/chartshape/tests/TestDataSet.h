@@ -27,6 +27,7 @@ private Q_SLOTS:
 
     // Tests DataSet::*Data() methods
     void testFooData();
+    void testPointBrushes();
     void testFooDataMultipleTables();
 
 private:

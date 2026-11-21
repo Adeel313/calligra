@@ -19,6 +19,8 @@
 #include <KoBorder.h> // Needed in DrawingMLMethods.h
 #include <KoXmlWriter.h>
 
+#include <optional>
+
 class XlsxImport;
 class XlsxXmlWorksheetReaderContext;
 class XlsxXmlChartReaderContext;
@@ -68,17 +70,15 @@ public:
         }
     };
     QMap<AnchorType, Position> m_positions;
-    QSize m_extent; //!< size from xdr:ext for one-cell anchors
+    QSize m_extent; //!< size from xdr:ext
+    std::optional<QPair<qint64, qint64>> m_absolutePosition; // x and y in EMUs
     explicit XlsxDrawingObject(Sheet *sheet)
         : m_sheet(sheet)
         , m_type(Unknown)
         , m_shapeBody(nullptr)
     {
     }
-    ~XlsxDrawingObject()
-    {
-        delete m_shapeBody;
-    }
+    ~XlsxDrawingObject();
     void setPicture(XlsxXmlEmbeddedPicture *picture)
     {
         m_type = Picture;

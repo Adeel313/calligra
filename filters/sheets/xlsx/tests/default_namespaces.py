@@ -16,6 +16,7 @@ retained there.
 import argparse
 import importlib.util
 import subprocess
+import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
@@ -23,6 +24,8 @@ from openpyxl import Workbook
 from openpyxl.chart import BarChart, Reference
 from openpyxl.comments import Comment
 from openpyxl.drawing.image import Image as XLImage
+from openpyxl.drawing.spreadsheet_drawing import AbsoluteAnchor
+from openpyxl.drawing.xdr import XDRPoint2D, XDRPositiveSize2D
 from PIL import Image as PILImage
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -66,6 +69,13 @@ def main():
     chart.add_data(Reference(chart_sheet, min_col=2, min_row=1, max_row=3))
     chart.set_categories(Reference(chart_sheet, min_col=1, min_row=1, max_row=3))
     chart_sheet.add_chart(chart, 'D2')
+    absolute_chart = BarChart()
+    absolute_chart.add_data(Reference(chart_sheet, min_col=2, min_row=1, max_row=3))
+    absolute_chart.anchor = AbsoluteAnchor(
+        pos=XDRPoint2D(12700 * 60, 12700 * 120),
+        ext=XDRPositiveSize2D(12700 * 240, 12700 * 150),
+    )
+    chart_sheet.add_chart(absolute_chart)
 
     source = out / 'default-namespaces.xlsx'
     workbook.save(source)
@@ -88,6 +98,15 @@ def main():
         names = package.namelist()
         content = package.read('content.xml').decode()
     assert any(name.startswith('Chart1/') for name in names), names
+    chart_frames = ET.fromstring(content).findall(
+        './/table:shapes/draw:frame[draw:object]',
+        {'table': 'urn:oasis:names:tc:opendocument:xmlns:table:1.0',
+         'draw': 'urn:oasis:names:tc:opendocument:xmlns:drawing:1.0'},
+    )
+    assert len(chart_frames) == 1, 'The absolutely anchored chart must be on the sheet drawing layer'
+    svg = '{urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0}'
+    for attr, points in {'x': 60, 'y': 120, 'width': 240, 'height': 150}.items():
+        assert float(chart_frames[0].attrib[svg + attr].removesuffix('pt')) == points
     assert 'draw:image' in content, content[:400]
     # openpyxl stores the note in xl/comments/comment1.xml, not xl/comments1.xml.
     assert '<office:annotation>' in content, content[:400]

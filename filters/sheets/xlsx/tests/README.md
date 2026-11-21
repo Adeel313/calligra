@@ -1,5 +1,21 @@
 # XLSX export precision regression
 
+Check that single-series, single-point, multi-series and scatter charts stay
+editable, retaining data values, titles and worksheet references. The test also
+checks point colours, theme colours, value labels, visible axes, opaque chart
+backgrounds and hidden legends:
+
+```sh
+/usr/bin/python3 filters/sheets/xlsx/tests/chart_roundtrip.py \
+  --output build/xlsx-chart-roundtrip-check
+```
+
+To check an existing workbook, add `--source /absolute/path/to/workbook.xlsx`.
+This mode checks all cell values and formulas, merged ranges, chart types,
+series counts, source references and cached chart points after a native round
+trip. It does not use ZIP size as a fidelity measure or check every visual
+chart property. The source file is never modified.
+
 Check XLSX package content types (including absence of the ODF `mimetype`
 entry, which causes Excel to report damaged content):
 

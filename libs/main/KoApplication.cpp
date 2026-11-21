@@ -436,8 +436,12 @@ bool KoApplication::start()
         const bool doTemplate = parser.isSet("template");
         const bool doNew = parser.isSet("new");
         const bool benchmarkLoading = parser.isSet("benchmark-loading") || parser.isSet("benchmark-loading-show-window") || !d->roundtripFileName.isEmpty();
-        // only show the mainWindow when no command-line mode option is passed
-        const bool showmainWindow = parser.isSet("benchmark-loading-show-window") || (parser.isSet("export-pdf"))
+        // PDF export is a non-interactive command-line operation.  Keeping the
+        // window hidden also makes KoMainWindow suppress the print-progress
+        // dialog, which otherwise blocks unattended/offscreen exports.
+        // Only show a window when explicitly requested or in normal editing
+        // mode.
+        const bool showmainWindow = parser.isSet("benchmark-loading-show-window")
             || (!parser.isSet("benchmark-loading") && !parser.isSet("roundtrip-filename") && d->roundtripFileName.isEmpty());
         const QString profileFileName = parser.value("profile-filename");
 
@@ -546,6 +550,10 @@ bool KoApplication::start()
                     if (print) {
                         connect(mainWindow, &KoMainWindow::loadCompleted, this, &KoApplication::slotFilePrint);
                     } else if (exportAsPdf) {
+                        // openDocument() can finish synchronously.  Account
+                        // for this export before connecting/loading so the
+                        // completion slot cannot decrement an empty count.
+                        d->pdfExportsPending++;
                         connect(mainWindow, &KoMainWindow::loadCompleted, this, &KoApplication::slotExportToPdf);
                     }
                     if (mainWindow->openDocument(part, url)) {
@@ -558,9 +566,7 @@ bool KoApplication::start()
                         }
                         if (print || exportAsPdf)
                             nPrinted++;
-                        if (exportAsPdf)
-                            d->pdfExportsPending++;
-                        else
+                        if (!exportAsPdf)
                             numberOfOpenDocuments++;
                     } else {
                         // .... if failed

@@ -65,6 +65,14 @@ QString columnName2(uint column)
     return s;
 }
 
+XlsxDrawingObject::~XlsxDrawingObject()
+{
+    if (m_type == Chart) {
+        delete m_chart;
+    }
+    delete m_shapeBody;
+}
+
 KoXmlWriter *XlsxDrawingObject::setShape(XlsxShape *shape)
 {
     m_type = Shape;
@@ -300,6 +308,9 @@ KoFilter::ConversionStatus XlsxXmlDrawingReader::read_anchor(const QString &refe
     Q_ASSERT(!m_currentDrawingObject);
     m_currentDrawingObject = new XlsxDrawingObject(m_context->sheet);
     DrawingObjectGuard _guard(&m_currentDrawingObject);
+    const bool absolute = reference == QLatin1StringView("absoluteAnchor");
+    m_svgX = m_svgY = 0;
+    m_svgWidth = m_svgHeight = 0;
 
     while (!atEnd()) {
         readNext();
@@ -310,6 +321,13 @@ KoFilter::ConversionStatus XlsxXmlDrawingReader::read_anchor(const QString &refe
             // twoCellAnchor does define the 'from' and 'to' elements which do define the anchor-points
             TRY_READ_IF(from)
             ELSE_TRY_READ_IF(to)
+            else if (absolute && isElement("xdr:pos"))
+            {
+                const auto attrs = attributes();
+                m_currentDrawingObject->m_absolutePosition.emplace(attrs.value(QLatin1StringView("x")).toLongLong(),
+                                                                   attrs.value(QLatin1StringView("y")).toLongLong());
+                skipCurrentElement();
+            }
             else if (isElement("xdr:ext"))
             {
                 // read_ext expects the qualifed name a:ext
@@ -343,6 +361,13 @@ KoFilter::ConversionStatus XlsxXmlDrawingReader::read_anchor(const QString &refe
             Cell *cell = m_context->sheet->cell(pos.m_col, pos.m_row, true);
             cell->appendDrawing(m_currentDrawingObject);
             m_currentDrawingObject = nullptr;
+        } else if (absolute && m_currentDrawingObject->m_type == XlsxDrawingObject::Chart) {
+            auto *chartWriter = m_currentDrawingObject->m_chart->m_chartWriter;
+            if (const auto &position = m_currentDrawingObject->m_absolutePosition) {
+                chartWriter->m_x = EMU_TO_POINT(position->first);
+                chartWriter->m_y = EMU_TO_POINT(position->second);
+            }
+            m_currentDrawingObject->save(body);
         }
     }
     return KoFilter::OK;
@@ -459,16 +484,20 @@ KoFilter::ConversionStatus XlsxXmlDrawingReader::read_graphicFrame()
         }
     }
 
-    body = buffer.originalWriter();
-
-    if (m_context->graphicObjectIsGroup) {
-        body->startElement("draw:g");
+    if (m_currentDrawingObject->m_type == XlsxDrawingObject::Chart) {
+        // The chart writer emits its own frame once the anchor has been read.
+        body = buffer.releaseWriter();
     } else {
-        body->startElement("draw:frame");
-    }
+        body = buffer.originalWriter();
 
-    buffer.releaseWriter();
-    body->endElement(); // draw:g/draw:frame
+        if (m_context->graphicObjectIsGroup) {
+            body->startElement("draw:g");
+        } else {
+            body->startElement("draw:frame");
+        }
+        buffer.releaseWriter();
+        body->endElement(); // draw:g/draw:frame
+    }
 
     READ_EPILOGUE
 }

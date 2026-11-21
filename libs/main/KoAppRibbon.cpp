@@ -143,6 +143,7 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
         return;
     }
     const bool sheetsPage = page->objectName().startsWith(QLatin1String("sheets"));
+    const bool insertPage = page->objectName() == QLatin1String("stageInsertPage");
     auto *layout = qobject_cast<QHBoxLayout *>(page->layout());
     if (!layout) {
         layout = new QHBoxLayout(page);
@@ -158,7 +159,7 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
         const QStringList order = {i18n("Clipboard"), i18n("Slides"), i18n("Font"), i18n("Paragraph"), i18n("Drawing"), i18n("Editing"), i18n("More Editing")};
         group->setProperty("ribbonGroupOrder", (order.indexOf(title) + 1) * 10);
     }
-    if (page->objectName() == QLatin1String("stageInsertPage")) {
+    if (insertPage) {
         const QStringList order = {i18n("Slides"), i18n("Tables"), i18n("Images"), i18n("Illustrations"),
                                    i18n("Links"), i18n("Comments"), i18n("Text"), i18n("Symbols")};
         group->setProperty("ribbonGroupOrder", (order.indexOf(title) + 1) * 10);
@@ -198,8 +199,9 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
     // narrow enough to show every caption instead of falling back to icons.
     const bool formulaLibrary = sheetsPage && page->objectName() == QLatin1String("sheetsFormulasPage")
         && title == i18n("Function Library");
-    const int rows = formulaLibrary ? 3 : 2;
-    const int largeCount = largeButtons < 0 ? (actions.size() <= 4 ? actions.size() : 0) : largeButtons;
+    const int rows = insertPage ? 1 : (formulaLibrary ? 3 : 2);
+    const int largeCount = insertPage ? actions.size()
+                                      : largeButtons < 0 ? (actions.size() <= 4 ? actions.size() : 0) : largeButtons;
     int position = 0;
     for (QAction *action : actions) {
         if (!action || action->isSeparator()) {
@@ -238,8 +240,7 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
             }
             const bool large = position < largeCount;
             const bool iconOnly = action->property("ribbonIconOnly").toBool();
-            const bool insertPage = page->objectName() == QLatin1String("stageInsertPage");
-            const bool textUnderIcon = insertPage || large;
+            const bool textUnderIcon = large;
             KoRibbonLayout::configureButton(button, iconOnly ? Qt::ToolButtonIconOnly
                                                             : (textUnderIcon ? Qt::ToolButtonTextUnderIcon
                                                                              : Qt::ToolButtonTextBesideIcon), sheetsPage);
@@ -961,7 +962,7 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
     group("stageInsertPage", i18n("Illustrations"), {"add_shape", "insert_chart"}, 1);
     group("stageInsertPage", i18n("Comments"), {"insert_annotation"}, 1);
     group("stageInsertPage", i18n("Text"),
-          {"stage_insert_textbox", "insert_wordart", "insert_variable", "stage_insert_object"}, 1);
+          {"stage_insert_textbox", "insert_wordart", "stage_insert_object", "insert_variable"}, 1);
     group("stageInsertPage", i18n("Symbols"), {"insert_formula", "insert_specialchar"}, 1);
     group("stageSlideShowPage", i18n("Start Slide Show"), {"slideshow_start_from_beginning", "slideshow_start_from_current"}, 2);
     group("stageSlideShowPage", i18n("Set Up"), {"slideshow_configure", "edit_customslideshows", "slideshow_presenterview"}, 1);

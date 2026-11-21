@@ -99,6 +99,16 @@ sheets_add_unit_test(Selection
     LINK_LIBRARIES calligrasheetspartlib Qt6::Test
 )
 
+sheets_add_unit_test(CellTool
+    TestCellTool.cpp
+    LINK_LIBRARIES calligrasheetspartlib Qt6::Test
+)
+
+sheets_add_unit_test(DocumentSaving
+    TestDocumentSaving.cpp
+    LINK_LIBRARIES calligrasheetspartlib Qt6::Test
+)
+
 ########### next target ###############
 
 sheets_add_unit_test(Value

@@ -13,6 +13,8 @@
 #ifndef XLSXXMLCHARTREADER_H
 #define XLSXXMLCHARTREADER_H
 
+#include <QHash>
+
 #include <MsooXmlCommonReader.h>
 
 namespace KoChart
@@ -54,6 +56,7 @@ protected:
     KoFilter::ConversionStatus read_spPr();
     KoFilter::ConversionStatus read_dLbl();
     KoFilter::ConversionStatus read_dLbls();
+    KoFilter::ConversionStatus read_dPt();
 
     KoFilter::ConversionStatus read_pieChart();
     KoFilter::ConversionStatus read_pie3DChart();
@@ -135,6 +138,10 @@ private:
     ReadAreaContext m_areaContext;
     bool m_serMarkerDefined;
     bool m_autoTitleDeleted;
+    //! Charts embedded in Word often use symbolic c:f names instead of cell
+    //! references. Remember the generated local range for each name so all
+    //! series that share a formula reuse the same cached data column.
+    QHash<QString, QString> m_generatedChartRanges;
 
     class Private;
     Private *const d;

@@ -36,6 +36,17 @@ def check_package(path):
                 root = ET.fromstring(package.read(name))
                 if name.startswith('xl/worksheets/') and name.endswith('.xml'):
                     ns = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
+                    order = ['sheetPr', 'dimension', 'sheetViews', 'sheetFormatPr', 'cols', 'sheetData',
+                             'sheetCalcPr', 'sheetProtection', 'protectedRanges', 'scenarios', 'autoFilter',
+                             'sortState', 'dataConsolidate', 'customSheetViews', 'mergeCells', 'phoneticPr',
+                             'conditionalFormatting', 'dataValidations', 'hyperlinks', 'printOptions',
+                             'pageMargins', 'pageSetup', 'headerFooter', 'rowBreaks', 'colBreaks',
+                             'customProperties', 'cellWatches', 'ignoredErrors', 'smartTags', 'drawing',
+                             'legacyDrawing', 'legacyDrawingHF', 'picture', 'oleObjects', 'controls',
+                             'webPublishItems', 'tableParts', 'extLst']
+                    children = [e.tag.removeprefix(ns) for e in root]
+                    positions = [order.index(tag) for tag in children]
+                    assert positions == sorted(positions), ('Invalid worksheet element order', name, children)
                     for column in root.findall(ns + 'cols/' + ns + 'col'):
                         first, last = int(column.attrib['min']), int(column.attrib['max'])
                         assert 1 <= first <= last <= 16384, (

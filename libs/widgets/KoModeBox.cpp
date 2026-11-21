@@ -314,8 +314,9 @@ void KoModeBox::setOrientation(Qt::Orientation orientation)
         QString ribbonStyle = QStringLiteral(
             "#wordsRibbon, #ribbonTabsRow { background: palette(base); }"
             "#ribbonCommands QWidget { background-color: palette(base); }"
-            "#ribbonTabs::tab { padding: 7px 12px; border: 0; background: transparent; }"
-            "#ribbonTabs::tab:selected { color: palette(highlight); border-bottom: 3px solid palette(highlight); padding-bottom: 4px; }"
+            "#ribbonTabs::tab { padding: 4px 12px; border: 0; border-top: 3px solid transparent;"
+            "border-bottom: 3px solid transparent; background: transparent; }"
+            "#ribbonTabs::tab:selected { color: palette(highlight); border-bottom-color: palette(highlight); }"
             "#ribbonTabs::tab:hover { background: palette(alternate-base); }"
             "#ribbonCommands QToolButton { border: 1px solid transparent; border-radius: 3px; padding: 3px; }"
             "#ribbonCommands QToolButton:hover { background: palette(alternate-base); border-color: palette(mid); }"
@@ -324,8 +325,7 @@ void KoModeBox::setOrientation(Qt::Orientation orientation)
             "QLabel[ribbonGroupTitle=\"true\"] { color: palette(text); font-size: 11px; padding-top: 3px; }");
         if (sheetsRibbon) {
             ribbonStyle += QStringLiteral(
-                "#ribbonTabs::tab { padding-top: 5px; padding-bottom: 5px; }"
-                "#ribbonTabs::tab:selected { padding-bottom: 2px; }"
+                "#ribbonTabs::tab { padding-top: 2px; padding-bottom: 2px; }"
                 "#ribbonCommands QToolButton { padding: 1px 3px; }"
                 "QLabel[ribbonGroupTitle=\"true\"] { padding-top: 1px; }");
         }
@@ -369,6 +369,7 @@ void KoModeBox::setOrientation(Qt::Orientation orientation)
     d->tabBar->setSizePolicy(horizontal ? QSizePolicy::Maximum : QSizePolicy::Minimum,
                              horizontal ? QSizePolicy::Minimum : QSizePolicy::Expanding);
     d->headerLayout->setDirection(horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
+    d->headerLayout->setAlignment(d->tabBar, horizontal ? Qt::AlignVCenter : Qt::Alignment{});
     d->layout->setAlignment(d->header, Qt::Alignment{});
 
     d->separator->setFrameStyle(horizontal ? QFrame::HLine : QFrame::VLine);
@@ -1780,7 +1781,11 @@ void ScrollArea::showEvent(QShowEvent *e)
             const int contentWidth = qMax(widget()->minimumSizeHint().width(), widget()->layout()->minimumSize().width());
             widget()->setMinimumWidth(contentWidth);
         }
-        setMinimumHeight(qMax(0, widget()->minimumSizeHint().height()) + (horizontalScrollBar()->isVisible() ? horizontalScrollBar()->height() : 0));
+        // Custom ribbon pages already have a height from fitRibbonBand().
+        // A scrollbar can still be visible while the new page is laid out.
+        if (maximumHeight() == QWIDGETSIZE_MAX) {
+            setMinimumHeight(qMax(0, widget()->minimumSizeHint().height()) + (horizontalScrollBar()->isVisible() ? horizontalScrollBar()->height() : 0));
+        }
     }
 }
 

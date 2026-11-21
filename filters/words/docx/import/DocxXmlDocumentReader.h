@@ -257,6 +257,10 @@ protected:
     void readWrapAttrs();
 
     bool m_createSectionStyle;
+    //! True when a table cell uses w:hideMark and no cell has visible content.
+    //! Such a table has zero height in Word.
+    bool m_currentTableHasHideMark;
+    bool m_currentTableHasVisibleContent;
     //! Number of paragraphs written in the document body so far.
     int m_bodyParagraphCount;
     QString m_currentSectionStyleName;

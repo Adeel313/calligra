@@ -750,7 +750,10 @@ KChart::PieAttributes DataSet::pieAttributes() const
 
 QBrush DataSet::brush(int section) const
 {
-    Qt::Orientation modelDataDirection = d->kdChartModel->dataDirection();
+    // Explicit point formatting also applies to bars and other Cartesian
+    // charts, not only pie slices. The model orientation only picks defaults.
+    if (d->brushes.contains(section)) return d->brushes[section];
+    const Qt::Orientation modelDataDirection = d->kdChartModel ? d->kdChartModel->dataDirection() : Qt::Vertical;
     // Horizontally aligned diagrams have a specific color per category
     // See for example pie or ring charts. A pie chart contains a single
     // data set, but the slices must have different brushes.
