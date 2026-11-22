@@ -649,6 +649,24 @@ void KoModeBox::showRibbonPage(const QString &objectName)
     }
 }
 
+void KoModeBox::setRibbonPageTitle(const QString &objectName, const QString &title)
+{
+    if (objectName.isEmpty() || title.isEmpty()) {
+        return;
+    }
+    for (auto &customPage : d->customPages) {
+        if (!customPage.page || customPage.page->objectName() != objectName) {
+            continue;
+        }
+        customPage.title = title;
+        const int index = d->stack->indexOf(customPage.wrapper);
+        if (index >= 0) {
+            d->tabBar->setTabText(index, title);
+        }
+        break;
+    }
+}
+
 void KoModeBox::setActiveTool(KoCanvasController *canvas, int id)
 {
     if (canvas->canvas() == d->canvas) {
@@ -1403,15 +1421,18 @@ void KoModeBox::routeOfficeOptions(const QString &toolId, const QList<QPointer<Q
 {
     const bool spreadsheet = applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive);
     const QString prefix = spreadsheet ? QStringLiteral("sheets") : QStringLiteral("stage");
+    const bool drawingTool = toolId == QLatin1String("ConnectionTool") || toolId == QLatin1String("CreatePathTool")
+        || toolId == QLatin1String("KoPencilTool") || toolId == QLatin1String("PathToolFactoryId");
     QString defaultPage = prefix + QStringLiteral("ShapeFormatPage");
     if (toolId == QLatin1String("KSpreadCellToolId")
         || (!spreadsheet && toolId == QLatin1String("TextToolFactory_ID")))
         defaultPage = prefix + QStringLiteral("HomePage");
     else if (toolId == QLatin1String("KoPABackgroundTool"))
         defaultPage = prefix + QStringLiteral("DesignPage");
-    else if (toolId == QLatin1String("ConnectionTool") || toolId == QLatin1String("CreatePathTool")
-             || toolId == QLatin1String("KoPencilTool") || toolId == QLatin1String("PathToolFactoryId"))
-        defaultPage = prefix + QStringLiteral("DrawPage");
+    else if (drawingTool)
+        // Sheets merges the drawing tools into the one contextual Shape Format
+        // tab; Stage keeps its separate Draw tab.
+        defaultPage = spreadsheet ? QStringLiteral("sheetsShapeFormatPage") : prefix + QStringLiteral("DrawPage");
 
     for (QWidget *widget : widgets) {
         if (!widget || widget->property("ribbonManagedExternally").toBool())
@@ -1464,6 +1485,10 @@ void KoModeBox::routeOfficeOptions(const QString &toolId, const QList<QPointer<Q
             auto *group = new KoRibbonGroupWidget(customPage.page);
             group->setProperty("ribbonRoutedGroup", true);
             group->setProperty("ribbonGroupOrder", widget->property("ribbonGroupOrder"));
+            if (spreadsheet && drawingTool && target.isEmpty()) {
+                group->setProperty("ribbonDrawingToolOnly", true);
+                group->setVisible(!customPage.page->property("sheetsChartFormatActive").toBool());
+            }
             auto *vertical = new QVBoxLayout(group);
             vertical->setContentsMargins(8, 0, 8, 0);
             vertical->addWidget(widget, 0, Qt::AlignTop);

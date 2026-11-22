@@ -137,10 +137,10 @@ private:
     QString m_name;
 };
 
-void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actions, int largeButtons = -1)
+QWidget *addGroup(QWidget *page, const QString &title, const QList<QAction *> &actions, int largeButtons = -1)
 {
     if (actions.isEmpty()) {
-        return;
+        return nullptr;
     }
     const bool sheetsPage = page->objectName().startsWith(QLatin1String("sheets"));
     const bool insertPage = page->objectName() == QLatin1String("stageInsertPage");
@@ -298,6 +298,7 @@ void addGroup(QWidget *page, const QString &title, const QList<QAction *> &actio
         ++positionInPage;
     }
     layout->insertWidget(positionInPage, group);
+    return group;
 }
 
 // A ribbon button whose drop-down holds the native actions of one command
@@ -1157,7 +1158,7 @@ void populate(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages, QWid
             QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection, Q_ARG(QString, startPage));
         }
         for (const Page &page : pages) {
-            if (page.widget->objectName() != QLatin1String("sheetsDrawPage"))
+            if (page.widget->objectName() != QLatin1String("sheetsShapeFormatPage"))
                 continue;
             QList<QAction *> actions;
             const QStringList tools = {QStringLiteral("InteractionTool"), QStringLiteral("KoPencilTool"),
@@ -1184,10 +1185,18 @@ void populate(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages, QWid
                 actions.append(action);
             }
             // All drawing tools fit one row at large size, which keeps the
-            // group from stacking them into a tall single column.
-            addGroup(page.widget, i18n("Tools"), actions, -1);
-            if (QAction *shapes = findAction(view, QStringLiteral("add_shape")))
-                addGroup(page.widget, i18n("Shapes"), {shapes}, -1);
+            // group from stacking them into a tall single column. They are
+            // hidden while the same tab is presented as Chart Format.
+            if (QWidget *group = addGroup(page.widget, i18n("Tools"), actions, -1)) {
+                group->setProperty("ribbonDrawingToolOnly", true);
+                group->setVisible(!page.widget->property("sheetsChartFormatActive").toBool());
+            }
+            if (QAction *shapes = findAction(view, QStringLiteral("add_shape"))) {
+                if (QWidget *group = addGroup(page.widget, i18n("Shapes"), {shapes}, -1)) {
+                    group->setProperty("ribbonDrawingToolOnly", true);
+                    group->setVisible(!page.widget->property("sheetsChartFormatActive").toBool());
+                }
+            }
         }
     }
     for (const QString &name : {QStringLiteral("file_new"), QStringLiteral("file_open"), QStringLiteral("file_save"),
@@ -1421,9 +1430,6 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
         home->setProperty("ribbonDefaultTool", homeTool);
         home->setProperty("ribbonActivateTool", homeTool);
         addPage(i18n("Insert"), {})->setObjectName(QStringLiteral("sheetsInsertPage"));
-        auto *draw = addPage(i18n("Draw"), {}, false, true);
-        draw->setObjectName(QStringLiteral("sheetsDrawPage"));
-        draw->setProperty("ribbonContextActive", false);
         addPage(i18n("Page Layout"), {})->setObjectName(QStringLiteral("sheetsLayoutPage"));
         addPage(i18n("Data"), {})->setObjectName(QStringLiteral("sheetsDataPage"));
         addPage(i18n("Formulas"), {})->setObjectName(QStringLiteral("sheetsFormulasPage"));
@@ -1436,14 +1442,10 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
         auto *chartDesign = addPage(i18n("Chart Design"), {}, false, true);
         chartDesign->setObjectName(QStringLiteral("sheetsChartDesignPage"));
         chartDesign->setProperty("ribbonContextActive", false);
-        const auto updateContext = [canvas, shapeFormat] {
-            shapeFormat->setProperty("ribbonContextActive", !canvas->shapeManager()->selection()->selectedShapes().isEmpty());
-        };
-        QObject::connect(canvas->shapeManager()->selection(), &KoSelection::selectionChanged, shapeFormat, updateContext);
-        QObject::connect(canvas->shapeManager()->selection(), &KoSelection::selectionChanged, draw, [canvas, draw] {
-            draw->setProperty("ribbonContextActive", !canvas->shapeManager()->selection()->selectedShapes().isEmpty());
-        });
-        const auto updateChartContext = [view, canvas, chartDesign] {
+        // Draw and Shape Format share one contextual page. It is titled
+        // "Chart Format" while a chart is selected and hides the drawing-tool
+        // groups in that state, so only chart-relevant formatting remains.
+        const auto updateContext = [view, canvas, shapeFormat, chartDesign] {
             bool chartSelected = false;
             const QList<KoShape *> shapes = canvas->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
             for (KoShape *shape : shapes) {
@@ -1459,6 +1461,27 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
             if (!chartSelected && KoToolManager::instance()->activeToolId() == QLatin1String("ChartToolFactory_ID")) {
                 chartSelected = true;
             }
+
+            const bool wasChartFormat = shapeFormat->property("sheetsChartFormatActive").toBool();
+            shapeFormat->setProperty("sheetsChartFormatActive", chartSelected);
+            shapeFormat->setProperty("ribbonContextActive",
+                                     chartSelected || !canvas->shapeManager()->selection()->selectedShapes().isEmpty());
+
+            const QString title = chartSelected ? i18n("Chart Format") : i18n("Shape Format");
+            if (shapeFormat->property("ribbonPageTitle").toString() != title) {
+                shapeFormat->setProperty("ribbonPageTitle", title);
+                if (auto *box = view->mainWindow()->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
+                    QMetaObject::invokeMethod(box, "setRibbonPageTitle", Qt::DirectConnection,
+                                              Q_ARG(QString, QStringLiteral("sheetsShapeFormatPage")),
+                                              Q_ARG(QString, title));
+                }
+            }
+            for (QWidget *group : shapeFormat->findChildren<QWidget *>()) {
+                if (group->property("ribbonDrawingToolOnly").toBool()) {
+                    group->setVisible(!chartSelected);
+                }
+            }
+
             if (chartSelected && !chartDesign->property("chartTabBuilt").toBool()) {
                 // The chart plugin only knows its commands once it is loaded,
                 // and that happens with the first chart of the document.
@@ -1469,23 +1492,30 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
             }
             if (chartDesign->property("ribbonContextActive").toBool() != chartSelected) {
                 chartDesign->setProperty("ribbonContextActive", chartSelected);
-                // Selecting the chart also shows the shape page of the canvas;
-                // bring the chart tab forward once that page switch settled.
-                if (chartSelected) {
-                    QTimer::singleShot(0, chartDesign, [view] {
-                        if (auto *box = view->mainWindow()->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
-                            QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection,
-                                                      Q_ARG(QString, QStringLiteral("sheetsChartDesignPage")));
-                        }
-                    });
-                }
+            }
+            if (wasChartFormat != chartSelected) {
+                const QString page = chartSelected ? QStringLiteral("sheetsChartDesignPage")
+                                                   : QStringLiteral("sheetsShapeFormatPage");
+                QTimer::singleShot(0, shapeFormat, [view, page] {
+                    if (auto *box = view->mainWindow()->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
+                        QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection, Q_ARG(QString, page));
+                    }
+                });
             }
         };
-        QObject::connect(canvas->shapeManager()->selection(), &KoSelection::selectionChanged, chartDesign, updateChartContext);
-        QObject::connect(KoToolManager::instance(), &KoToolManager::changedTool, chartDesign,
-                         [updateChartContext](KoCanvasController *, int) { updateChartContext(); });
-        updateChartContext();
+        QObject::connect(canvas->shapeManager()->selection(), &KoSelection::selectionChanged, shapeFormat, updateContext);
+        QObject::connect(KoToolManager::instance(), &KoToolManager::changedTool, shapeFormat,
+                         [updateContext](KoCanvasController *, int) { updateContext(); });
         updateContext();
+        // The ribbon tab bar does not exist yet during configure(); apply the
+        // initial title once the dock has been created.
+        QTimer::singleShot(0, shapeFormat, [view, shapeFormat] {
+            if (auto *box = view->mainWindow()->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
+                QMetaObject::invokeMethod(box, "setRibbonPageTitle", Qt::DirectConnection,
+                                          Q_ARG(QString, QStringLiteral("sheetsShapeFormatPage")),
+                                          Q_ARG(QString, shapeFormat->property("ribbonPageTitle").toString()));
+            }
+        });
         addPage(i18n("Help"), {}, false, true)->setObjectName(QStringLiteral("sheetsHelpPage"));
     }
 
