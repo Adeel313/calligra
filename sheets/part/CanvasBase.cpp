@@ -372,15 +372,24 @@ void CanvasBase::paint(QPainter *painter, const QRectF &painterRect)
 
     const auto sourceRanges = d->chartSourceRanges.constFind(sheet->sheetName());
     if (sourceRanges != d->chartSourceRanges.cend()) {
-        const QColor border = canvasWidget()->palette().highlight().color();
-        QColor fill = border;
-        fill.setAlpha(45);
-        QPen pen(border);
+        // Excel-style chart data selection: colored outlines and a handle at
+        // the bottom-right of every source range, but no opaque fill that
+        // would hide the cell values.
+        static const QList<QColor> rangeColors{
+            QColor(QStringLiteral("#4472c4")), // blue
+            QColor(QStringLiteral("#ed7d31")), // orange
+            QColor(QStringLiteral("#7030a0")), // purple
+            QColor(QStringLiteral("#70ad47")), // green
+            QColor(QStringLiteral("#c00000")) // red
+        };
+        QPen pen;
         pen.setCosmetic(true);
         pen.setWidth(2);
-        painter->setPen(pen);
-        painter->setBrush(fill);
-        for (const QRect &range : sourceRanges.value()) {
+        painter->setBrush(Qt::NoBrush);
+
+        const QList<QRect> &ranges = sourceRanges.value();
+        for (int i = 0; i < ranges.size(); ++i) {
+            const QRect &range = ranges.at(i);
             if (!range.intersects(visibleRect)) {
                 continue;
             }
@@ -388,7 +397,16 @@ void CanvasBase::paint(QPainter *painter, const QRectF &painterRect)
             if (layoutReversed) {
                 area.moveLeft(paintRect.width() - area.right());
             }
+
+            pen.setColor(rangeColors.at(i % rangeColors.size()));
+            painter->setPen(pen);
             painter->drawRect(area);
+
+            // Keep the handle a constant screen size even when zoomed.
+            const QSizeF handleSize(10.0 / zoomX, 10.0 / zoomY);
+            const QRectF handle(area.right() - handleSize.width() / 2, area.bottom() - handleSize.height() / 2, handleSize.width(), handleSize.height());
+            painter->fillRect(handle, Qt::white);
+            painter->drawRect(handle);
         }
     }
 

@@ -15,11 +15,17 @@
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMap>
 #include <QMenu>
+#include <QMetaObject>
+#include <QObject>
 #include <QPainter>
 #include <QPen>
+#include <QRect>
 #include <QTabWidget>
 #include <QToolButton>
+#include <QVariantList>
+#include <QVariantMap>
 #include <QVBoxLayout>
 #include <QWidgetAction>
 
@@ -54,6 +60,7 @@
 #include "BubbleDataEditor.h"
 #include "ChartDebug.h"
 #include "ChartTableModel.h"
+#include "CellRegion.h"
 #include "ChartLayout.h"
 #include "ChartProxyModel.h"
 #include "DataSet.h"
@@ -83,6 +90,64 @@
 #include "commands/PlotAreaCommand.h"
 
 using namespace KoChart;
+
+namespace {
+
+// Sheets highlights chart source ranges when a chart is double-clicked. The
+// same painting state is used by "Edit Data" so the worksheet cells are marked
+// directly, like Excel, without opening a range dialog. The descriptors keep
+// enough metadata (data set and region role) for dragged handles to update the
+// real chart regions without making the chart shape depend on Sheets.
+bool highlightWorksheetSourceRanges(KoCanvasBase *canvas, ChartShape *chart, QObject *receiver)
+{
+    if (!canvas || !chart || !canvas->canvasWidget()) {
+        return false;
+    }
+
+    const auto isExternal = [chart](const CellRegion &region) {
+        return region.isValid() && region.table() && region.table()->model() != chart->internalModel();
+    };
+    const auto append = [&](QVariantList &regions, const CellRegion &region, const QString &role, int dataSet) {
+        if (!isExternal(region)) {
+            return;
+        }
+        for (const QRect &rect : region.rects()) {
+            QVariantMap entry;
+            entry.insert(QStringLiteral("dataSet"), dataSet);
+            entry.insert(QStringLiteral("role"), role);
+            entry.insert(QStringLiteral("sheet"), region.sheetName());
+            entry.insert(QStringLiteral("rect"), rect);
+            regions.append(entry);
+        }
+    };
+
+    QVariantList sourceRegions;
+    int dataSetIndex = 0;
+    for (DataSet *dataSet : chart->proxyModel()->dataSets()) {
+        append(sourceRegions, dataSet->yDataRegion(), QStringLiteral("y"), dataSetIndex);
+        append(sourceRegions, dataSet->xDataRegion(), QStringLiteral("x"), dataSetIndex);
+        append(sourceRegions, dataSet->customDataRegion(), QStringLiteral("custom"), dataSetIndex);
+        append(sourceRegions, dataSet->categoryDataRegion(), QStringLiteral("category"), dataSetIndex);
+        append(sourceRegions, dataSet->labelDataRegion(), QStringLiteral("label"), dataSetIndex);
+        ++dataSetIndex;
+    }
+    if (sourceRegions.isEmpty()) {
+        return false;
+    }
+
+    QObject::connect(canvas->canvasWidget(),
+                     SIGNAL(chartSourceRangesEdited(QVariantList)),
+                     receiver,
+                     SLOT(applyEditedChartSourceRanges(QVariantList)),
+                     Qt::UniqueConnection);
+
+    return QMetaObject::invokeMethod(canvas->canvasWidget(),
+                                     "highlightChartSourceRegions",
+                                     Qt::DirectConnection,
+                                     Q_ARG(QVariantList, sourceRegions));
+}
+
+} // namespace
 
 class ChartTool::Private
 {
@@ -131,6 +196,7 @@ ChartTool::~ChartTool()
 
 void ChartTool::shapeSelectionChanged()
 {
+    updateAddElementActions();
     // When this chart tool is activated with one chart and a new chart is created,
     // the new chart is selected but the deactivate method is not called,
     // so this tool will still operate on the old chart.
@@ -262,6 +328,7 @@ void ChartTool::activate(ToolActivation, const QSet<KoShape *> &shapes)
         }
     }
     d->shape->update(); // to paint decoration
+    updateAddElementActions();
 }
 
 void ChartTool::deactivate()
@@ -328,6 +395,7 @@ QList<QPointer<QWidget>> ChartTool::createOptionWidgets()
     connect(plotarea, &PlotAreaConfigWidget::chartSubTypeChanged, this, &ChartTool::setChartSubType);
     connect(plotarea, &PlotAreaConfigWidget::threeDModeToggled, this, &ChartTool::setThreeDMode);
     connect(plotarea, &PlotAreaConfigWidget::chartOrientationChanged, this, &ChartTool::setChartOrientation);
+    connect(plotarea, &PlotAreaConfigWidget::showTableEditorRequested, this, &ChartTool::highlightDataRanges);
 
     // data set edit dialog
     connect(plotarea, &PlotAreaConfigWidget::dataSetXDataRegionChanged, this, &ChartTool::setDataSetXDataRegion);
@@ -687,6 +755,7 @@ void ChartTool::bindOptionPanels()
         }
         panel->updateData();
     }
+    updateAddElementActions();
 }
 
 QWidget *ChartTool::createLayoutsGroup(QWidget *page)
@@ -694,8 +763,25 @@ QWidget *ChartTool::createLayoutsGroup(QWidget *page)
     QWidget *content = nullptr;
     QWidget *group = ribbonGroup(page, i18n("Chart Layouts"), 10, &content);
     QHBoxLayout *layout = ribbonRow(content);
-    layout->addWidget(ribbonMenuButton(content, i18n("Add Chart Element"), QStringLiteral("category"), createAddElementMenu(content)));
+
+    // Show the add-element commands as small icon buttons, like the expanded
+    // element gallery in Excel, instead of hiding them behind one menu button.
+    auto *elements = new QWidget(content);
+    auto *elementsLayout = new QGridLayout(elements);
+    elementsLayout->setContentsMargins(0, 0, 0, 0);
+    elementsLayout->setHorizontalSpacing(2);
+    elementsLayout->setVerticalSpacing(2);
+    const QList<QAction *> actions = createAddElementActions(this);
+    for (int i = 0; i < actions.size(); ++i) {
+        auto *button = new QToolButton(elements);
+        button->setDefaultAction(actions.at(i));
+        KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly, content->property("sheetsRibbon").toBool());
+        elementsLayout->addWidget(button, i / 4, i % 4, Qt::AlignLeft | Qt::AlignTop);
+    }
+    layout->addWidget(elements);
+
     layout->addWidget(ribbonMenuButton(content, i18n("Quick Layout"), QStringLiteral("view_column"), createQuickLayoutMenu(content)));
+    updateAddElementActions();
     return group;
 }
 
@@ -777,46 +863,47 @@ QWidget *ChartTool::createTypeGroup(QWidget *page)
     return group;
 }
 
-QMenu *ChartTool::createAddElementMenu(QWidget *parent)
+QList<QAction *> ChartTool::createAddElementActions(QObject *parent)
 {
-    auto *menu = new QMenu(parent);
+    QList<QAction *> actions;
+    const auto add = [this, parent, &actions](const QString &role, const QString &iconName, const QString &text) {
+        auto *action = new QAction(ribbonIcon(iconName), text, parent);
+        action->setData(role);
+        action->setCheckable(true);
+        actions.append(action);
+        m_addElementActions.append(action);
+        return action;
+    };
 
-    QAction *title = menu->addAction(ribbonIcon(QStringLiteral("text_fields")), i18n("Chart Title"));
-    title->setCheckable(true);
+    QAction *title = add(QStringLiteral("title"), QStringLiteral("text_fields"), i18n("Chart Title"));
     connect(title, &QAction::triggered, this, [this](bool show) {
         if (ChartShape *chart = currentChart(); chart && chart->title()) {
             canvas()->addCommand(new ChartTextShapeCommand(chart->title(), chart, show));
         }
     });
 
-    QAction *subTitle = menu->addAction(ribbonIcon(QStringLiteral("format_color_text")), i18n("Chart Subtitle"));
-    subTitle->setCheckable(true);
+    QAction *subTitle = add(QStringLiteral("subTitle"), QStringLiteral("format_color_text"), i18n("Chart Subtitle"));
     connect(subTitle, &QAction::triggered, this, [this](bool show) {
         if (ChartShape *chart = currentChart(); chart && chart->subTitle()) {
             canvas()->addCommand(new ChartTextShapeCommand(chart->subTitle(), chart, show));
         }
     });
 
-    QAction *footer = menu->addAction(ribbonIcon(QStringLiteral("vertical_align_bottom")), i18n("Chart Footer"));
-    footer->setCheckable(true);
+    QAction *footer = add(QStringLiteral("footer"), QStringLiteral("vertical_align_bottom"), i18n("Chart Footer"));
     connect(footer, &QAction::triggered, this, [this](bool show) {
         if (ChartShape *chart = currentChart(); chart && chart->footer()) {
             canvas()->addCommand(new ChartTextShapeCommand(chart->footer(), chart, show));
         }
     });
 
-    menu->addSeparator();
-
-    QAction *legend = menu->addAction(ribbonIcon(QStringLiteral("format_list_bulleted")), i18n("Legend"));
-    legend->setCheckable(true);
+    QAction *legend = add(QStringLiteral("legend"), QStringLiteral("format_list_bulleted"), i18n("Legend"));
     connect(legend, &QAction::triggered, this, [this](bool show) {
         if (ChartShape *chart = currentChart(); chart && chart->legend()) {
             canvas()->addCommand(new ChartTextShapeCommand(chart->legend(), chart, show));
         }
     });
 
-    QAction *axisTitles = menu->addAction(ribbonIcon(QStringLiteral("border_bottom")), i18n("Axis Titles"));
-    axisTitles->setCheckable(true);
+    QAction *axisTitles = add(QStringLiteral("axisTitles"), QStringLiteral("border_bottom"), i18n("Axis Titles"));
     connect(axisTitles, &QAction::triggered, this, [this](bool show) {
         ChartShape *chart = currentChart();
         if (!chart) {
@@ -830,50 +917,68 @@ QMenu *ChartTool::createAddElementMenu(QWidget *parent)
         canvas()->addCommand(macro);
     });
 
-    QAction *labels = menu->addAction(ribbonIcon(QStringLiteral("numbers")), i18n("Data Labels"));
-    labels->setCheckable(true);
+    QAction *labels = add(QStringLiteral("labels"), QStringLiteral("numbers"), i18n("Data Labels"));
     connect(labels, &QAction::triggered, this, [this](bool show) { setDataLabels(show); });
 
-    QAction *gridLines = menu->addAction(ribbonIcon(QStringLiteral("border_all")), i18n("Major Gridlines"));
-    gridLines->setCheckable(true);
+    QAction *gridLines = add(QStringLiteral("gridLines"), QStringLiteral("border_all"), i18n("Major Gridlines"));
     connect(gridLines, &QAction::triggered, this, [this](bool show) { setMajorGridLines(show); });
 
-    // The chart changes while the tab stays: refresh the marks when it opens.
-    connect(menu, &QMenu::aboutToShow, this, [this, title, subTitle, footer, legend, axisTitles, labels, gridLines] {
-        const auto setChecked = [](QAction *action, bool checked) {
-            const QSignalBlocker blocker(action);
-            action->setChecked(checked);
-        };
-        ChartShape *chart = currentChart();
-        if (!chart) {
-            for (QAction *action : {title, subTitle, footer, legend, axisTitles, labels, gridLines}) {
-                setChecked(action, false);
-            }
+    return actions;
+}
+
+void ChartTool::updateAddElementActions()
+{
+    QMap<QString, QAction *> byRole;
+    for (QAction *action : m_addElementActions) {
+        byRole.insert(action->data().toString(), action);
+    }
+    const auto setChecked = [](QAction *action, bool checked) {
+        if (!action) {
             return;
         }
-        setChecked(title, chart->title() && chart->title()->isVisible());
-        setChecked(subTitle, chart->subTitle() && chart->subTitle()->isVisible());
-        setChecked(footer, chart->footer() && chart->footer()->isVisible());
-        setChecked(legend, chart->legend() && chart->legend()->isVisible());
-        bool anyAxisTitle = false;
-        bool anyGridLines = false;
-        for (Axis *axis : chartAxes(chart)) {
-            anyAxisTitle = anyAxisTitle || (axis->title() && axis->title()->isVisible());
-            anyGridLines = anyGridLines || axis->showMajorGrid();
+        const QSignalBlocker blocker(action);
+        action->setChecked(checked);
+    };
+
+    ChartShape *chart = currentChart();
+    for (QAction *action : m_addElementActions) {
+        action->setEnabled(chart != nullptr);
+    }
+    if (!chart) {
+        for (QAction *action : m_addElementActions) {
+            setChecked(action, false);
         }
-        bool anyLabels = false;
-        if (chart->plotArea()) {
-            for (DataSet *dataSet : chart->plotArea()->dataSets()) {
-                anyLabels = anyLabels || dataSet->valueLabelType().number;
-            }
+        return;
+    }
+
+    setChecked(byRole.value(QStringLiteral("title")), chart->title() && chart->title()->isVisible());
+    setChecked(byRole.value(QStringLiteral("subTitle")), chart->subTitle() && chart->subTitle()->isVisible());
+    setChecked(byRole.value(QStringLiteral("footer")), chart->footer() && chart->footer()->isVisible());
+    setChecked(byRole.value(QStringLiteral("legend")), chart->legend() && chart->legend()->isVisible());
+
+    bool anyAxisTitle = false;
+    bool anyGridLines = false;
+    for (Axis *axis : chartAxes(chart)) {
+        anyAxisTitle = anyAxisTitle || (axis->title() && axis->title()->isVisible());
+        anyGridLines = anyGridLines || axis->showMajorGrid();
+    }
+    bool anyLabels = false;
+    if (chart->plotArea()) {
+        for (DataSet *dataSet : chart->plotArea()->dataSets()) {
+            anyLabels = anyLabels || dataSet->valueLabelType().number;
         }
-        setChecked(axisTitles, anyAxisTitle);
-        setChecked(labels, anyLabels);
-        setChecked(gridLines, anyGridLines);
-        axisTitles->setEnabled(isCartesian(chart->chartType()));
-        gridLines->setEnabled(isCartesian(chart->chartType()));
-    });
-    return menu;
+    }
+    setChecked(byRole.value(QStringLiteral("axisTitles")), anyAxisTitle);
+    setChecked(byRole.value(QStringLiteral("labels")), anyLabels);
+    setChecked(byRole.value(QStringLiteral("gridLines")), anyGridLines);
+
+    const bool cartesian = isCartesian(chart->chartType());
+    if (QAction *action = byRole.value(QStringLiteral("axisTitles"))) {
+        action->setEnabled(cartesian);
+    }
+    if (QAction *action = byRole.value(QStringLiteral("gridLines"))) {
+        action->setEnabled(cartesian);
+    }
 }
 
 QMenu *ChartTool::createQuickLayoutMenu(QWidget *parent)
@@ -960,34 +1065,22 @@ void ChartTool::changeChartType(ChartType type, ChartSubtype subtype)
     canvas()->addCommand(command);
 }
 
+void ChartTool::highlightDataRanges()
+{
+    highlightWorksheetSourceRanges(canvas(), currentChart(), this);
+}
+
 void ChartTool::showDataEditor()
 {
     ChartShape *chart = currentChart();
     if (!chart || !canvas()) {
         return;
     }
-    if (!chart->usesInternalModelOnly() && chart->plotArea()) {
-        const auto isSheetRange = [chart](const CellRegion &region) {
-            const Table *table = region.table();
-            return table && table->model() != chart->internalModel();
-        };
-        const auto dataSets = chart->plotArea()->dataSets();
-        const bool usesSheetRanges = std::any_of(dataSets.cbegin(), dataSets.cend(), [&](const DataSet *dataSet) {
-            return isSheetRange(dataSet->labelDataRegion()) || isSheetRange(dataSet->categoryDataRegion())
-                || isSheetRange(dataSet->xDataRegion()) || isSheetRange(dataSet->yDataRegion()) || isSheetRange(dataSet->customDataRegion());
-        });
-        if (usesSheetRanges) {
-            for (QWidget *widget : optionWidgets()) {
-                if (auto *plotArea = qobject_cast<PlotAreaConfigWidget *>(widget)) {
-                    d->shape = chart;
-                    if (plotArea->chart != chart) {
-                        plotArea->open(chart);
-                    }
-                    plotArea->slotShowTableEditor();
-                    return;
-                }
-            }
-        }
+
+    // Worksheet-backed charts are edited in place: highlight the source cells
+    // and leave them marked. Excel behaves the same way and opens no dialog.
+    if (highlightWorksheetSourceRanges(canvas(), chart, this)) {
+        return;
     }
 
     QWidget *parent = canvas()->canvasWidget();
@@ -1151,6 +1244,75 @@ void ChartTool::setChartSubType(ChartSubtype subtype)
 {
     if (ChartShape *chart = currentChart()) {
         changeChartType(chart->chartType(), subtype);
+    }
+}
+
+void ChartTool::applyEditedChartSourceRanges(const QVariantList &sourceRegions)
+{
+    ChartShape *chart = currentChart();
+    if (!chart || !chart->plotArea()) {
+        return;
+    }
+    d->shape = chart;
+    const QList<DataSet *> dataSets = chart->proxyModel()->dataSets();
+
+    const auto updateRegion = [&](DataSet *dataSet, const QString &role, const QRect &rect) {
+        if (!dataSet) {
+            return;
+        }
+        CellRegion old;
+        if (role == QLatin1String("y")) {
+            old = dataSet->yDataRegion();
+        } else if (role == QLatin1String("x")) {
+            old = dataSet->xDataRegion();
+        } else if (role == QLatin1String("custom")) {
+            old = dataSet->customDataRegion();
+        } else if (role == QLatin1String("category")) {
+            old = dataSet->categoryDataRegion();
+        } else if (role == QLatin1String("label")) {
+            old = dataSet->labelDataRegion();
+        } else {
+            return;
+        }
+        if (!old.isValid() || !old.table()) {
+            return;
+        }
+
+        const CellRegion updated(old.table(), rect);
+        if (role == QLatin1String("y")) {
+            setDataSetYDataRegion(dataSet, updated);
+        } else if (role == QLatin1String("x")) {
+            setDataSetXDataRegion(dataSet, updated);
+        } else if (role == QLatin1String("custom")) {
+            setDataSetCustomDataRegion(dataSet, updated);
+        } else if (role == QLatin1String("category")) {
+            setDataSetCategoryDataRegion(dataSet, updated);
+        } else {
+            setDataSetLabelDataRegion(dataSet, updated);
+        }
+    };
+
+    for (const QVariant &value : sourceRegions) {
+        const QVariantMap entry = value.toMap();
+        bool ok = false;
+        const int dataSetIndex = entry.value(QStringLiteral("dataSet")).toInt(&ok);
+        const QString role = entry.value(QStringLiteral("role")).toString();
+        const QRect rect = entry.value(QStringLiteral("rect")).toRect();
+        if (!ok || dataSetIndex < 0 || dataSetIndex >= dataSets.size() || !rect.isValid()) {
+            continue;
+        }
+        if (role == QLatin1String("category")) {
+            for (DataSet *dataSet : dataSets) {
+                updateRegion(dataSet, role, rect);
+            }
+        } else {
+            updateRegion(dataSets.at(dataSetIndex), role, rect);
+        }
+    }
+
+    chart->update();
+    if (chart->legend()) {
+        chart->legend()->update();
     }
 }
 

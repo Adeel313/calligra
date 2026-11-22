@@ -21,6 +21,8 @@
 
 #include "CanvasBase.h"
 
+#include <QVariant>
+#include <QVariantList>
 #include <QWidget>
 
 namespace Calligra
@@ -78,8 +80,14 @@ public Q_SLOTS:
         CanvasBase::setDocumentSize(size);
     }
 
+    /// Highlight the source cell ranges of a chart, as done on chart double-click.
+    void highlightChartSourceRanges(const QVariantMap &sourceRanges);
+    /// Highlight editable chart source regions with data-set metadata for drag resizing.
+    void highlightChartSourceRegions(const QVariantList &sourceRegions);
+
 Q_SIGNALS:
     /* virtual */ void documentSizeChanged(const QSize &) override;
+    void chartSourceRangesEdited(const QVariantList &sourceRegions);
 
 protected:
     bool event(QEvent *e) override;
@@ -162,6 +170,7 @@ public:
     RowHeader *rowHeader() const override;
 
 private:
+    void finishChartSourceHighlight();
     void setVertScrollBarPos(qreal pos) override;
     void setHorizScrollBarPos(qreal pos) override;
 

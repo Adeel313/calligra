@@ -85,6 +85,7 @@ private Q_SLOTS:
 Q_SIGNALS:
     void chartTypeChanged(KoChart::ChartType type, KoChart::ChartSubtype subType);
     void chartSubTypeChanged(KoChart::ChartSubtype subType);
+    void showTableEditorRequested();
 
     void threeDModeToggled(bool threeD);
     void chartOrientationChanged(Qt::Orientation);

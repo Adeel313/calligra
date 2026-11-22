@@ -67,10 +67,128 @@
 
 using namespace Calligra::Sheets;
 
+namespace {
+
+struct ChartSourceRegion {
+    int dataSet = -1;
+    QString role;
+    QString sheet;
+    QRect rect;
+};
+
+QVariantMap chartSourceRangesToVariant(const QMap<QString, QList<QRect>> &sourceRanges)
+{
+    QVariantMap result;
+    for (auto it = sourceRanges.cbegin(); it != sourceRanges.cend(); ++it) {
+        QVariantList ranges;
+        ranges.reserve(it.value().size());
+        for (const QRect &range : it.value()) {
+            ranges.append(QVariant(range));
+        }
+        result.insert(it.key(), ranges);
+    }
+    return result;
+}
+
+QVariantList chartSourceRegionsToVariant(const QList<ChartSourceRegion> &regions)
+{
+    QVariantList result;
+    result.reserve(regions.size());
+    for (const ChartSourceRegion &region : regions) {
+        QVariantMap entry;
+        entry.insert(QStringLiteral("dataSet"), region.dataSet);
+        entry.insert(QStringLiteral("role"), region.role);
+        entry.insert(QStringLiteral("sheet"), region.sheet);
+        entry.insert(QStringLiteral("rect"), region.rect);
+        result.append(entry);
+    }
+    return result;
+}
+
+QList<ChartSourceRegion> chartSourceRegionsFromVariant(const QVariantList &values)
+{
+    QList<ChartSourceRegion> result;
+    result.reserve(values.size());
+    for (const QVariant &value : values) {
+        const QVariantMap entry = value.toMap();
+        ChartSourceRegion region;
+        bool dataSetOk = false;
+        region.dataSet = entry.value(QStringLiteral("dataSet")).toInt(&dataSetOk);
+        if (!dataSetOk) {
+            region.dataSet = -1;
+        }
+        region.role = entry.value(QStringLiteral("role")).toString();
+        region.sheet = entry.value(QStringLiteral("sheet")).toString();
+        region.rect = entry.value(QStringLiteral("rect")).toRect();
+        if (!region.sheet.isEmpty() && region.rect.isValid()) {
+            result.append(region);
+        }
+    }
+    return result;
+}
+
+QList<ChartSourceRegion> chartSourceRegionsFromVariantMap(const QVariantMap &sourceRanges)
+{
+    QList<ChartSourceRegion> result;
+    for (auto it = sourceRanges.cbegin(); it != sourceRanges.cend(); ++it) {
+        const QVariantList values = it.value().toList();
+        for (const QVariant &value : values) {
+            if (!value.canConvert<QRect>()) {
+                continue;
+            }
+            ChartSourceRegion region;
+            region.sheet = it.key();
+            region.rect = value.toRect();
+            if (region.rect.isValid()) {
+                result.append(region);
+            }
+        }
+    }
+    return result;
+}
+
+QMap<QString, QList<QRect>> chartSourceRangesFromRegions(const QList<ChartSourceRegion> &regions)
+{
+    QMap<QString, QList<QRect>> result;
+    for (const ChartSourceRegion &region : regions) {
+        auto &ranges = result[region.sheet];
+        if (!ranges.contains(region.rect)) {
+            ranges.append(region.rect);
+        }
+    }
+    return result;
+}
+
+QRectF chartRangeDocumentRect(CanvasBase *canvas, Sheet *sheet, const QRect &range)
+{
+    QRectF area = sheet->cellCoordinatesToDocument(range);
+    if (sheet->layoutDirection() == Qt::RightToLeft) {
+        const QRectF paintRect(canvas->viewConverter()->viewToDocument(canvas->canvasWidget()->rect()).translated(canvas->offset()));
+        area.moveLeft(paintRect.width() - area.right());
+    }
+    return area;
+}
+
+QRectF chartRangeHandleRect(CanvasBase *canvas, Sheet *sheet, const QRect &range)
+{
+    qreal zoomX = 1.0;
+    qreal zoomY = 1.0;
+    canvas->viewConverter()->zoom(&zoomX, &zoomY);
+    const QRectF area = chartRangeDocumentRect(canvas, sheet, range);
+    const QSizeF handleSize(10.0 / zoomX, 10.0 / zoomY);
+    return QRectF(area.right() - handleSize.width() / 2, area.bottom() - handleSize.height() / 2, handleSize.width(), handleSize.height());
+}
+
+} // namespace
+
 class Q_DECL_HIDDEN Canvas::Private
 {
 public:
     View *view;
+    QList<ChartSourceRegion> chartSourceRegions;
+    bool draggingChartSourceRegion = false;
+    int draggedSourceRegionIndex = -1;
+    QRect draggedOriginalRect;
 };
 
 /****************************************************************
@@ -150,8 +268,45 @@ void Canvas::validateSelection()
 
 void Canvas::mousePressEvent(QMouseEvent *event)
 {
+    QPointF highlightPosition;
+    if (layoutDirection() == Qt::LeftToRight) {
+        highlightPosition = viewConverter()->viewToDocument(event->position().toPoint()) + offset();
+    } else {
+        const QPoint position(QWidget::width() - event->position().x(), event->position().y());
+        highlightPosition = viewConverter()->viewToDocument(position) + offset();
+    }
+
+    if (event->button() == Qt::LeftButton && !cd->chartSourceRegions.isEmpty()) {
+        Sheet *sheet = activeSheet();
+        if (sheet) {
+            qreal zoomX = 1.0;
+            qreal zoomY = 1.0;
+            viewConverter()->zoom(&zoomX, &zoomY);
+            const qreal slackX = 4.0 / zoomX;
+            const qreal slackY = 4.0 / zoomY;
+            for (int i = 0; i < cd->chartSourceRegions.size(); ++i) {
+                const ChartSourceRegion &region = cd->chartSourceRegions.at(i);
+                if (region.sheet != sheet->sheetName()) {
+                    continue;
+                }
+                const QRectF handle = chartRangeHandleRect(this, sheet, region.rect)
+                                          .adjusted(-slackX, -slackY, slackX, slackY);
+                if (!handle.contains(highlightPosition)) {
+                    continue;
+                }
+                cd->draggingChartSourceRegion = true;
+                cd->draggedSourceRegionIndex = i;
+                cd->draggedOriginalRect = region.rect;
+                setCursor(Qt::SizeFDiagCursor);
+                event->accept();
+                return;
+            }
+        }
+    }
+
     if (!d->chartSourceRanges.isEmpty()) {
         d->chartSourceRanges.clear();
+        cd->chartSourceRegions.clear();
         update();
     }
 
@@ -227,6 +382,18 @@ void Canvas::mouseReleaseEvent(QMouseEvent *event)
         event = new QMouseEvent(QEvent::MouseButtonRelease, position, mapToGlobal(position), event->button(), event->buttons(), event->modifiers());
     }
 
+    if (cd->draggingChartSourceRegion) {
+        cd->draggingChartSourceRegion = false;
+        cd->draggedSourceRegionIndex = -1;
+        unsetCursor();
+        Q_EMIT chartSourceRangesEdited(chartSourceRegionsToVariant(cd->chartSourceRegions));
+        event->accept();
+        if (layoutDirection() == Qt::RightToLeft) {
+            delete event;
+        }
+        return;
+    }
+
     // flake
     if (d->toolProxy)
         d->toolProxy->mouseReleaseEvent(event, documentPosition);
@@ -249,6 +416,27 @@ void Canvas::mouseMoveEvent(QMouseEvent *event)
         const QPointF offset(this->offset().x(), this->offset().y());
         documentPosition = viewConverter()->viewToDocument(position) + offset;
         event = new QMouseEvent(QEvent::MouseMove, position, mapToGlobal(position), event->button(), event->buttons(), event->modifiers());
+    }
+
+    if (cd->draggingChartSourceRegion && (event->buttons() & Qt::LeftButton)) {
+        Sheet *sheet = activeSheet();
+        const int index = cd->draggedSourceRegionIndex;
+        if (sheet && index >= 0 && index < cd->chartSourceRegions.size()) {
+            const QRect cell = sheet->documentToCellCoordinates(QRectF(documentPosition, QSizeF(1.0, 1.0)));
+            QRect resized = cd->draggedOriginalRect;
+            resized.setRight(qMax(resized.right(), cell.left()));
+            resized.setBottom(qMax(resized.bottom(), cell.top()));
+            if (resized != cd->chartSourceRegions[index].rect) {
+                cd->chartSourceRegions[index].rect = resized;
+                d->chartSourceRanges = chartSourceRangesFromRegions(cd->chartSourceRegions);
+                update();
+            }
+        }
+        event->accept();
+        if (layoutDirection() == Qt::RightToLeft) {
+            delete event;
+        }
+        return;
     }
 
     // flake
@@ -310,8 +498,34 @@ void Canvas::mouseDoubleClickEvent(QMouseEvent *event)
         return;
     }
 
-    d->chartSourceRanges = std::move(sourceRanges);
+    highlightChartSourceRanges(chartSourceRangesToVariant(sourceRanges));
+}
+
+void Canvas::highlightChartSourceRanges(const QVariantMap &sourceRanges)
+{
+    cd->chartSourceRegions = chartSourceRegionsFromVariantMap(sourceRanges);
+    finishChartSourceHighlight();
+}
+
+void Canvas::highlightChartSourceRegions(const QVariantList &sourceRegions)
+{
+    cd->chartSourceRegions = chartSourceRegionsFromVariant(sourceRegions);
+    finishChartSourceHighlight();
+}
+
+void Canvas::finishChartSourceHighlight()
+{
+    d->chartSourceRanges = chartSourceRangesFromRegions(cd->chartSourceRegions);
+    if (d->chartSourceRanges.isEmpty()) {
+        update();
+        return;
+    }
+
     Sheet *sheet = activeSheet();
+    if (!sheet) {
+        update();
+        return;
+    }
     if (!d->chartSourceRanges.contains(sheet->sheetName())) {
         for (auto it = d->chartSourceRanges.cbegin(); it != d->chartSourceRanges.cend(); ++it) {
             auto *source = static_cast<Sheet *>(doc()->map()->findSheet(it.key()));
@@ -327,7 +541,9 @@ void Canvas::mouseDoubleClickEvent(QMouseEvent *event)
     const QRect visible = visibleCells();
     if (!ranges.isEmpty() && std::none_of(ranges.cbegin(), ranges.cend(), [&](const QRect &range) { return visible.intersects(range); })) {
         const QRectF firstCell = sheet->cellCoordinatesToDocument(QRect(ranges.first().topLeft(), QSize(1, 1)));
-        canvasController()->ensureVisible(viewConverter()->documentToView(firstCell), true);
+        if (canvasController()) {
+            canvasController()->ensureVisible(viewConverter()->documentToView(firstCell), true);
+        }
     }
     update();
 }

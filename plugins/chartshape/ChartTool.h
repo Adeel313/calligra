@@ -8,6 +8,9 @@
 #ifndef KCHART_CHARTTOOL_H
 #define KCHART_CHARTTOOL_H
 
+// Qt
+#include <QVariantList>
+
 // Calligra
 #include <KoToolBase.h>
 
@@ -74,6 +77,7 @@ private Q_SLOTS:
     void setFooterResize(int index);
 
     // Datasets
+    void applyEditedChartSourceRanges(const QVariantList &sourceRegions);
     void setDataSetXDataRegion(KoChart::DataSet *dataSet, const KoChart::CellRegion &region);
     void setDataSetYDataRegion(KoChart::DataSet *dataSet, const KoChart::CellRegion &region);
     void setDataSetCustomDataRegion(KoChart::DataSet *dataSet, const KoChart::CellRegion &region);
@@ -131,6 +135,7 @@ private:
     ChartShape *currentChart() const;
     QList<Axis *> chartAxes(ChartShape *chart) const;
     void showDataEditor();
+    void highlightDataRanges();
     void changeChartType(ChartType type, ChartSubtype subtype);
     QMenu *createChartTypeMenu(QWidget *parent);
     QWidget *createOptionsGroup(QWidget *page);
@@ -138,7 +143,8 @@ private:
     QWidget *createStylesGroup(QWidget *page);
     QWidget *createDataGroup(QWidget *page);
     QWidget *createTypeGroup(QWidget *page);
-    QMenu *createAddElementMenu(QWidget *parent);
+    QList<QAction *> createAddElementActions(QObject *parent);
+    void updateAddElementActions();
     QMenu *createQuickLayoutMenu(QWidget *parent);
     QMenu *createColorSchemeMenu(QWidget *parent);
     void applyColorScheme(int scheme);
@@ -150,6 +156,9 @@ private:
 
     // The chart panels shown in the tab, in the order of their buttons.
     QList<QWidget *> m_optionPanels;
+
+    // Checkable actions behind the compact Add Chart Element buttons.
+    QList<QAction *> m_addElementActions;
 
     class Private;
     Private *const d;
