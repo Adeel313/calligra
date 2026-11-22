@@ -630,28 +630,30 @@ QIcon ribbonIcon(const QString &name)
     return symbol.isNull() ? KoRibbonIcons::forThemeIcon(name) : symbol;
 }
 
+const QSize chartElementIconSize(58, 50);
+
 // Compose the symbol and a short caption into one icon. The ribbon buttons
 // stay icon-only; the text is part of the artwork so no button labels appear.
 QIcon labelledRibbonIcon(const QString &name, const QString &label)
 {
-    const QSize size(46, 38);
+    const QSize size = chartElementIconSize;
     auto render = [&](QIcon::Mode mode) {
         QPixmap pixmap(size);
         pixmap.fill(Qt::transparent);
         QPainter painter(&pixmap);
         painter.setRenderHint(QPainter::Antialiasing, true);
 
-        const QSize symbolSize(22, 22);
+        const QSize symbolSize(28, 28);
         const QPixmap symbol = ribbonIcon(name).pixmap(symbolSize, mode, QIcon::Off);
         painter.drawPixmap((size.width() - symbol.width()) / 2, 0, symbol);
 
         QFont font = painter.font();
-        font.setPixelSize(9);
+        font.setPixelSize(10);
         painter.setFont(font);
         const QPalette::ColorGroup group = mode == QIcon::Disabled ? QPalette::Disabled : QPalette::Active;
         painter.setPen(QGuiApplication::palette().color(group, QPalette::WindowText));
         const QFontMetrics metrics(font);
-        painter.drawText(QRect(1, 23, size.width() - 2, 14), Qt::AlignHCenter | Qt::AlignTop,
+        painter.drawText(QRect(1, 31, size.width() - 2, 18), Qt::AlignHCenter | Qt::AlignTop,
                          metrics.elidedText(label, Qt::ElideRight, size.width() - 2));
         painter.end();
         return pixmap;
@@ -803,21 +805,21 @@ QWidget *ChartTool::createLayoutsGroup(QWidget *page)
     QWidget *group = ribbonGroup(page, i18n("Chart Layouts"), 10, &content);
     QHBoxLayout *layout = ribbonRow(content);
 
-    // Seven add-element commands in two rows. Their captions are drawn into
-    // the icons, so the buttons themselves remain icon-only.
+    // Seven larger add-element commands in one row. Their captions are drawn
+    // into the icons, so the buttons themselves remain icon-only.
     auto *elements = new QWidget(content);
     auto *elementsLayout = new QGridLayout(elements);
     elementsLayout->setContentsMargins(0, 0, 0, 0);
-    elementsLayout->setHorizontalSpacing(2);
-    elementsLayout->setVerticalSpacing(2);
+    elementsLayout->setHorizontalSpacing(1);
+    elementsLayout->setVerticalSpacing(1);
     elementsLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     const QList<QAction *> actions = createAddElementActions(this);
     for (int i = 0; i < actions.size(); ++i) {
         auto *button = new QToolButton(elements);
         button->setDefaultAction(actions.at(i));
-        button->setProperty("ribbonPreferredIconSize", QSize(46, 38));
+        button->setProperty("ribbonPreferredIconSize", chartElementIconSize);
         KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly, content->property("sheetsRibbon").toBool());
-        elementsLayout->addWidget(button, i / 4, i % 4, Qt::AlignLeft | Qt::AlignTop);
+        elementsLayout->addWidget(button, 0, i, Qt::AlignLeft | Qt::AlignTop);
     }
     layout->addWidget(elements);
 
