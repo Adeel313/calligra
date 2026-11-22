@@ -145,7 +145,7 @@ private:
     QWidget *createTypeGroup(QWidget *page);
     QList<QAction *> createAddElementActions(QObject *parent);
     void updateAddElementActions();
-    QMenu *createQuickLayoutMenu(QWidget *parent);
+    QList<QAction *> createQuickLayoutActions(QObject *parent);
     QMenu *createColorSchemeMenu(QWidget *parent);
     void applyColorScheme(int scheme);
     void applyStylePreset(int style);

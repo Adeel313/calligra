@@ -12,6 +12,7 @@
 #include <QAction>
 #include <QBrush>
 #include <QCheckBox>
+#include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -764,8 +765,8 @@ QWidget *ChartTool::createLayoutsGroup(QWidget *page)
     QWidget *group = ribbonGroup(page, i18n("Chart Layouts"), 10, &content);
     QHBoxLayout *layout = ribbonRow(content);
 
-    // Show the add-element commands as small icon buttons, like the expanded
-    // element gallery in Excel, instead of hiding them behind one menu button.
+    // Show the add-element and quick-layout commands as small icon buttons,
+    // like the expanded galleries in Excel, instead of menu buttons.
     auto *elements = new QWidget(content);
     auto *elementsLayout = new QGridLayout(elements);
     elementsLayout->setContentsMargins(0, 0, 0, 0);
@@ -780,7 +781,27 @@ QWidget *ChartTool::createLayoutsGroup(QWidget *page)
     }
     layout->addWidget(elements);
 
-    layout->addWidget(ribbonMenuButton(content, i18n("Quick Layout"), QStringLiteral("view_column"), createQuickLayoutMenu(content)));
+    const QList<QAction *> quickActions = createQuickLayoutActions(this);
+    if (!quickActions.isEmpty()) {
+        auto *separator = new QFrame(content);
+        separator->setFrameShape(QFrame::VLine);
+        separator->setFrameShadow(QFrame::Sunken);
+        layout->addWidget(separator);
+
+        auto *quick = new QWidget(content);
+        auto *quickLayout = new QGridLayout(quick);
+        quickLayout->setContentsMargins(0, 0, 0, 0);
+        quickLayout->setHorizontalSpacing(2);
+        quickLayout->setVerticalSpacing(2);
+        for (int i = 0; i < quickActions.size(); ++i) {
+            auto *button = new QToolButton(quick);
+            button->setDefaultAction(quickActions.at(i));
+            KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly, content->property("sheetsRibbon").toBool());
+            quickLayout->addWidget(button, i / 3, i % 3, Qt::AlignLeft | Qt::AlignTop);
+        }
+        layout->addWidget(quick);
+    }
+
     updateAddElementActions();
     return group;
 }
@@ -869,6 +890,7 @@ QList<QAction *> ChartTool::createAddElementActions(QObject *parent)
     const auto add = [this, parent, &actions](const QString &role, const QString &iconName, const QString &text) {
         auto *action = new QAction(ribbonIcon(iconName), text, parent);
         action->setData(role);
+        action->setProperty("ribbonIconName", iconName);
         action->setCheckable(true);
         actions.append(action);
         m_addElementActions.append(action);
@@ -981,22 +1003,44 @@ void ChartTool::updateAddElementActions()
     }
 }
 
-QMenu *ChartTool::createQuickLayoutMenu(QWidget *parent)
+QList<QAction *> ChartTool::createQuickLayoutActions(QObject *parent)
 {
-    auto *menu = new QMenu(parent);
-    const char *const layouts[] = {
-        QT_TRANSLATE_NOOP("ChartTool", "Title and Legend"),
-        QT_TRANSLATE_NOOP("ChartTool", "Title and Data Labels"),
-        QT_TRANSLATE_NOOP("ChartTool", "Title, Legend and Data Labels"),
-        QT_TRANSLATE_NOOP("ChartTool", "Title Only"),
-        QT_TRANSLATE_NOOP("ChartTool", "Chart Only"),
+    struct Layout {
+        int index;
+        const char *name;
+        const char *icon;
     };
-    const char *const layoutIcons[] = {"dashboard_customize", "numbers", "fact_check", "text_fields", "bar_chart"};
-    for (int layout = 0; layout < int(sizeof(layouts) / sizeof(layouts[0])); ++layout) {
-        QAction *action = menu->addAction(ribbonIcon(QLatin1String(layoutIcons[layout])), i18n(layouts[layout]));
-        connect(action, &QAction::triggered, this, [this, layout] { applyQuickLayout(layout); });
+    const Layout layouts[] = {
+        {0, QT_TRANSLATE_NOOP("ChartTool", "Title and Legend"), "dashboard_customize"},
+        {1, QT_TRANSLATE_NOOP("ChartTool", "Title and Data Labels"), "numbers"},
+        {2, QT_TRANSLATE_NOOP("ChartTool", "Title, Legend and Data Labels"), "fact_check"},
+        {3, QT_TRANSLATE_NOOP("ChartTool", "Title Only"), "text_fields"},
+        {4, QT_TRANSLATE_NOOP("ChartTool", "Chart Only"), "bar_chart"},
+    };
+
+    QList<QString> usedIcons;
+    for (QAction *action : m_addElementActions) {
+        const QString iconName = action->property("ribbonIconName").toString();
+        if (!iconName.isEmpty() && !usedIcons.contains(iconName)) {
+            usedIcons.append(iconName);
+        }
     }
-    return menu;
+
+    QList<QAction *> actions;
+    for (const Layout &layout : layouts) {
+        const QString iconName = QLatin1String(layout.icon);
+        // The element gallery already has buttons with these symbols; keep
+        // only one button for each behavior instead of repeating the icon.
+        if (usedIcons.contains(iconName)) {
+            continue;
+        }
+        usedIcons.append(iconName);
+        auto *action = new QAction(ribbonIcon(iconName), i18n(layout.name), parent);
+        action->setProperty("ribbonIconName", iconName);
+        connect(action, &QAction::triggered, this, [this, layout] { applyQuickLayout(layout.index); });
+        actions.append(action);
+    }
+    return actions;
 }
 
 QMenu *ChartTool::createColorSchemeMenu(QWidget *parent)
@@ -1205,6 +1249,7 @@ void ChartTool::applyQuickLayout(int layout)
     }
     canvas()->addCommand(macro);
     setDataLabels(showLabels);
+    updateAddElementActions();
 }
 
 void ChartTool::applyStylePreset(int style)
@@ -1227,6 +1272,7 @@ void ChartTool::applyStylePreset(int style)
     setDataLabels(preset.valueLabels);
     chart->relayout();
     chart->update();
+    updateAddElementActions();
 }
 
 void ChartTool::setChartType(ChartType type, ChartSubtype subtype)
