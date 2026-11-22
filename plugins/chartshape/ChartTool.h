@@ -145,11 +145,9 @@ private:
     QWidget *createTypeGroup(QWidget *page);
     QList<QAction *> createAddElementActions(QObject *parent);
     void updateAddElementActions();
-    QList<QAction *> createQuickLayoutActions(QObject *parent);
     QMenu *createColorSchemeMenu(QWidget *parent);
     void applyColorScheme(int scheme);
     void applyStylePreset(int style);
-    void applyQuickLayout(int layout);
     void setDataLabels(bool show);
     void setMajorGridLines(bool show);
     void bindOptionPanels();

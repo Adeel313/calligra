@@ -12,16 +12,21 @@
 #include <QAction>
 #include <QBrush>
 #include <QCheckBox>
-#include <QFrame>
+#include <QFont>
+#include <QFontMetrics>
 #include <QGridLayout>
+#include <QGuiApplication>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QMap>
 #include <QMenu>
 #include <QMetaObject>
 #include <QObject>
 #include <QPainter>
+#include <QPalette>
 #include <QPen>
+#include <QPixmap>
 #include <QRect>
 #include <QTabWidget>
 #include <QToolButton>
@@ -625,6 +630,39 @@ QIcon ribbonIcon(const QString &name)
     return symbol.isNull() ? KoRibbonIcons::forThemeIcon(name) : symbol;
 }
 
+// Compose the symbol and a short caption into one icon. The ribbon buttons
+// stay icon-only; the text is part of the artwork so no button labels appear.
+QIcon labelledRibbonIcon(const QString &name, const QString &label)
+{
+    const QSize size(46, 38);
+    auto render = [&](QIcon::Mode mode) {
+        QPixmap pixmap(size);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+
+        const QSize symbolSize(22, 22);
+        const QPixmap symbol = ribbonIcon(name).pixmap(symbolSize, mode, QIcon::Off);
+        painter.drawPixmap((size.width() - symbol.width()) / 2, 0, symbol);
+
+        QFont font = painter.font();
+        font.setPixelSize(9);
+        painter.setFont(font);
+        const QPalette::ColorGroup group = mode == QIcon::Disabled ? QPalette::Disabled : QPalette::Active;
+        painter.setPen(QGuiApplication::palette().color(group, QPalette::WindowText));
+        const QFontMetrics metrics(font);
+        painter.drawText(QRect(1, 23, size.width() - 2, 14), Qt::AlignHCenter | Qt::AlignTop,
+                         metrics.elidedText(label, Qt::ElideRight, size.width() - 2));
+        painter.end();
+        return pixmap;
+    };
+
+    QIcon icon;
+    icon.addPixmap(render(QIcon::Normal), QIcon::Normal, QIcon::Off);
+    icon.addPixmap(render(QIcon::Disabled), QIcon::Disabled, QIcon::Off);
+    return icon;
+}
+
 QToolButton *ribbonButton(QWidget *parent, const QString &text, const QString &iconName)
 {
     auto *button = new QToolButton(parent);
@@ -765,42 +803,23 @@ QWidget *ChartTool::createLayoutsGroup(QWidget *page)
     QWidget *group = ribbonGroup(page, i18n("Chart Layouts"), 10, &content);
     QHBoxLayout *layout = ribbonRow(content);
 
-    // Show the add-element and quick-layout commands as small icon buttons,
-    // like the expanded galleries in Excel, instead of menu buttons.
+    // Seven add-element commands in two rows. Their captions are drawn into
+    // the icons, so the buttons themselves remain icon-only.
     auto *elements = new QWidget(content);
     auto *elementsLayout = new QGridLayout(elements);
     elementsLayout->setContentsMargins(0, 0, 0, 0);
     elementsLayout->setHorizontalSpacing(2);
     elementsLayout->setVerticalSpacing(2);
+    elementsLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     const QList<QAction *> actions = createAddElementActions(this);
     for (int i = 0; i < actions.size(); ++i) {
         auto *button = new QToolButton(elements);
         button->setDefaultAction(actions.at(i));
+        button->setProperty("ribbonPreferredIconSize", QSize(46, 38));
         KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly, content->property("sheetsRibbon").toBool());
         elementsLayout->addWidget(button, i / 4, i % 4, Qt::AlignLeft | Qt::AlignTop);
     }
     layout->addWidget(elements);
-
-    const QList<QAction *> quickActions = createQuickLayoutActions(this);
-    if (!quickActions.isEmpty()) {
-        auto *separator = new QFrame(content);
-        separator->setFrameShape(QFrame::VLine);
-        separator->setFrameShadow(QFrame::Sunken);
-        layout->addWidget(separator);
-
-        auto *quick = new QWidget(content);
-        auto *quickLayout = new QGridLayout(quick);
-        quickLayout->setContentsMargins(0, 0, 0, 0);
-        quickLayout->setHorizontalSpacing(2);
-        quickLayout->setVerticalSpacing(2);
-        for (int i = 0; i < quickActions.size(); ++i) {
-            auto *button = new QToolButton(quick);
-            button->setDefaultAction(quickActions.at(i));
-            KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly, content->property("sheetsRibbon").toBool());
-            quickLayout->addWidget(button, i / 3, i % 3, Qt::AlignLeft | Qt::AlignTop);
-        }
-        layout->addWidget(quick);
-    }
 
     updateAddElementActions();
     return group;
@@ -887,8 +906,9 @@ QWidget *ChartTool::createTypeGroup(QWidget *page)
 QList<QAction *> ChartTool::createAddElementActions(QObject *parent)
 {
     QList<QAction *> actions;
-    const auto add = [this, parent, &actions](const QString &role, const QString &iconName, const QString &text) {
-        auto *action = new QAction(ribbonIcon(iconName), text, parent);
+    const auto add = [this, parent, &actions](const QString &role, const QString &iconName,
+                                              const QString &text, const QString &caption) {
+        auto *action = new QAction(labelledRibbonIcon(iconName, caption), text, parent);
         action->setData(role);
         action->setProperty("ribbonIconName", iconName);
         action->setCheckable(true);
@@ -897,35 +917,35 @@ QList<QAction *> ChartTool::createAddElementActions(QObject *parent)
         return action;
     };
 
-    QAction *title = add(QStringLiteral("title"), QStringLiteral("text_fields"), i18n("Chart Title"));
+    QAction *title = add(QStringLiteral("title"), QStringLiteral("text_fields"), i18n("Chart Title"), i18n("Title"));
     connect(title, &QAction::triggered, this, [this](bool show) {
         if (ChartShape *chart = currentChart(); chart && chart->title()) {
             canvas()->addCommand(new ChartTextShapeCommand(chart->title(), chart, show));
         }
     });
 
-    QAction *subTitle = add(QStringLiteral("subTitle"), QStringLiteral("format_color_text"), i18n("Chart Subtitle"));
+    QAction *subTitle = add(QStringLiteral("subTitle"), QStringLiteral("format_color_text"), i18n("Chart Subtitle"), i18n("Subtitle"));
     connect(subTitle, &QAction::triggered, this, [this](bool show) {
         if (ChartShape *chart = currentChart(); chart && chart->subTitle()) {
             canvas()->addCommand(new ChartTextShapeCommand(chart->subTitle(), chart, show));
         }
     });
 
-    QAction *footer = add(QStringLiteral("footer"), QStringLiteral("vertical_align_bottom"), i18n("Chart Footer"));
+    QAction *footer = add(QStringLiteral("footer"), QStringLiteral("vertical_align_bottom"), i18n("Chart Footer"), i18n("Footer"));
     connect(footer, &QAction::triggered, this, [this](bool show) {
         if (ChartShape *chart = currentChart(); chart && chart->footer()) {
             canvas()->addCommand(new ChartTextShapeCommand(chart->footer(), chart, show));
         }
     });
 
-    QAction *legend = add(QStringLiteral("legend"), QStringLiteral("format_list_bulleted"), i18n("Legend"));
+    QAction *legend = add(QStringLiteral("legend"), QStringLiteral("format_list_bulleted"), i18n("Legend"), i18n("Legend"));
     connect(legend, &QAction::triggered, this, [this](bool show) {
         if (ChartShape *chart = currentChart(); chart && chart->legend()) {
             canvas()->addCommand(new ChartTextShapeCommand(chart->legend(), chart, show));
         }
     });
 
-    QAction *axisTitles = add(QStringLiteral("axisTitles"), QStringLiteral("border_bottom"), i18n("Axis Titles"));
+    QAction *axisTitles = add(QStringLiteral("axisTitles"), QStringLiteral("border_bottom"), i18n("Axis Titles"), i18n("Axes"));
     connect(axisTitles, &QAction::triggered, this, [this](bool show) {
         ChartShape *chart = currentChart();
         if (!chart) {
@@ -939,10 +959,10 @@ QList<QAction *> ChartTool::createAddElementActions(QObject *parent)
         canvas()->addCommand(macro);
     });
 
-    QAction *labels = add(QStringLiteral("labels"), QStringLiteral("numbers"), i18n("Data Labels"));
+    QAction *labels = add(QStringLiteral("labels"), QStringLiteral("numbers"), i18n("Data Labels"), i18n("Labels"));
     connect(labels, &QAction::triggered, this, [this](bool show) { setDataLabels(show); });
 
-    QAction *gridLines = add(QStringLiteral("gridLines"), QStringLiteral("border_all"), i18n("Major Gridlines"));
+    QAction *gridLines = add(QStringLiteral("gridLines"), QStringLiteral("border_all"), i18n("Major Gridlines"), i18n("Gridlines"));
     connect(gridLines, &QAction::triggered, this, [this](bool show) { setMajorGridLines(show); });
 
     return actions;
@@ -1001,46 +1021,6 @@ void ChartTool::updateAddElementActions()
     if (QAction *action = byRole.value(QStringLiteral("gridLines"))) {
         action->setEnabled(cartesian);
     }
-}
-
-QList<QAction *> ChartTool::createQuickLayoutActions(QObject *parent)
-{
-    struct Layout {
-        int index;
-        const char *name;
-        const char *icon;
-    };
-    const Layout layouts[] = {
-        {0, QT_TRANSLATE_NOOP("ChartTool", "Title and Legend"), "dashboard_customize"},
-        {1, QT_TRANSLATE_NOOP("ChartTool", "Title and Data Labels"), "numbers"},
-        {2, QT_TRANSLATE_NOOP("ChartTool", "Title, Legend and Data Labels"), "fact_check"},
-        {3, QT_TRANSLATE_NOOP("ChartTool", "Title Only"), "text_fields"},
-        {4, QT_TRANSLATE_NOOP("ChartTool", "Chart Only"), "bar_chart"},
-    };
-
-    QList<QString> usedIcons;
-    for (QAction *action : m_addElementActions) {
-        const QString iconName = action->property("ribbonIconName").toString();
-        if (!iconName.isEmpty() && !usedIcons.contains(iconName)) {
-            usedIcons.append(iconName);
-        }
-    }
-
-    QList<QAction *> actions;
-    for (const Layout &layout : layouts) {
-        const QString iconName = QLatin1String(layout.icon);
-        // The element gallery already has buttons with these symbols; keep
-        // only one button for each behavior instead of repeating the icon.
-        if (usedIcons.contains(iconName)) {
-            continue;
-        }
-        usedIcons.append(iconName);
-        auto *action = new QAction(ribbonIcon(iconName), i18n(layout.name), parent);
-        action->setProperty("ribbonIconName", iconName);
-        connect(action, &QAction::triggered, this, [this, layout] { applyQuickLayout(layout.index); });
-        actions.append(action);
-    }
-    return actions;
 }
 
 QMenu *ChartTool::createColorSchemeMenu(QWidget *parent)
@@ -1226,30 +1206,6 @@ void ChartTool::setMajorGridLines(bool show)
         command->setAxisShowMajorGridLines(show);
     }
     canvas()->addCommand(macro);
-}
-
-void ChartTool::applyQuickLayout(int layout)
-{
-    ChartShape *chart = currentChart();
-    if (!chart) {
-        return;
-    }
-    const bool showTitle = layout != 4;
-    const bool showLegend = layout == 0 || layout == 2;
-    const bool showLabels = layout == 1 || layout == 2;
-    if (chart->legend()) {
-        chart->legend()->setLegendPosition(layout == 1 ? BottomPosition : EndPosition);
-    }
-    auto *macro = new KUndo2Command(kundo2_i18n("Change Chart Layout"));
-    if (chart->title()) {
-        new ChartTextShapeCommand(chart->title(), chart, showTitle, macro);
-    }
-    if (chart->legend()) {
-        new ChartTextShapeCommand(chart->legend(), chart, showLegend, macro);
-    }
-    canvas()->addCommand(macro);
-    setDataLabels(showLabels);
-    updateAddElementActions();
 }
 
 void ChartTool::applyStylePreset(int style)
