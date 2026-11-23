@@ -158,67 +158,32 @@ static QString cellStyleCacheKey(const QString &styleId, const QList<QMap<QStrin
     return key;
 }
 
-QList<QMap<QString, QString>> XlsxXmlWorksheetReaderContext::conditionalStyleForPosition(const QString &positionLetter, int positionNumber)
+QList<QMap<QString, QString>> XlsxXmlWorksheetReaderContext::conditionalStyleForPosition(int column, int row)
 {
-    QString startLetter, endLetter;
-    int startNumber, endNumber;
-
     QList<QMap<QString, QString>> returnMaps;
-
-    // Known positions which are hits/misses for this
-    // purpose is to optimize this code part for a large set of conditions
-    QList<QString> cachedHits, cachedMisses;
-
-    // We do not wish to add the same condition twice
     QList<QString> addedConditions;
+    const int row1 = row + 1; // 1-based
+    const int col1 = column + 1;
 
-    int index = 0;
-    while (index < conditionalStyles.size()) {
-        startLetter.clear();
-        endLetter.clear();
-
-        QString range = conditionalStyles.at(index).first;
-        if (cachedHits.contains(range)) {
-            if (!addedConditions.contains(conditionalStyles.at(index).second.value("style:condition"))) {
-                returnMaps.push_back(conditionalStyles.at(index).second);
-                addedConditions.push_back(conditionalStyles.at(index).second.value("style:condition"));
-            }
-            ++index;
-            continue;
-        }
-        if (cachedMisses.contains(range)) {
-            ++index;
-            continue;
-        }
-
-        QByteArray ba = range.toLatin1();
-
-        int columnIndex = ba.indexOf(':');
-        if (columnIndex < 0) {
-            splitToRowAndColumn(ba.constData(), 0, ba.length(), startLetter, startNumber);
-            endLetter.clear();
+    for (const ConditionalRange &cr : conditionalStyles) {
+        bool hit = false;
+        if (cr.wholeCol) {
+            hit = (col1 >= cr.startCol && col1 <= cr.endCol);
+        } else if (cr.wholeRow) {
+            hit = (row1 >= cr.startRow && row1 <= cr.endRow);
+        } else if (cr.endCol == 0 && cr.endRow == 0) {
+            hit = (col1 == cr.startCol && row1 == cr.startRow);
         } else {
-            splitToRowAndColumn(ba.constData(), 0, columnIndex, startLetter, startNumber);
-            splitToRowAndColumn(ba.constData(), columnIndex + 1, ba.size() - (columnIndex + 1), endLetter, endNumber);
+            hit = (col1 >= cr.startCol && row1 >= cr.startRow && col1 <= cr.endCol && row1 <= cr.endRow);
         }
-
-        if ((positionLetter == startLetter && positionNumber == startNumber && endLetter.isEmpty())
-            || (positionLetter >= startLetter && positionNumber >= startNumber && positionLetter <= endLetter && positionNumber <= endNumber)) {
-            if (!addedConditions.contains(conditionalStyles.at(index).second.value("style:condition"))) {
-                returnMaps.push_back(conditionalStyles.at(index).second);
-                addedConditions.push_back(conditionalStyles.at(index).second.value("style:condition"));
-            }
-            cachedHits.push_back(range);
-            ++index;
+        if (!hit)
             continue;
-        } else {
-            cachedMisses.push_back(range);
-            ++index;
-            continue;
+        const QString cond = cr.style.value(QStringLiteral("style:condition"));
+        if (!addedConditions.contains(cond)) {
+            returnMaps.push_back(cr.style);
+            addedConditions.push_back(cond);
         }
-        ++index;
     }
-
     return returnMaps;
 }
 
@@ -244,6 +209,10 @@ public:
     int drawingNumber;
     QHash<int, Cell *> sharedFormulas;
     QHash<QString, QString> savedStyles;
+    QHash<qreal, QString> rowStyles;
+    QHash<QPair<int, QString>, QString> positionStyles;
+    int styleFirstRow = -1;
+    int styleLastRow = -1;
 };
 
 XlsxXmlWorksheetReader::XlsxXmlWorksheetReader(KoOdfWriters *writers)
@@ -366,6 +335,8 @@ inline static QString encodeLabelText(int col, int row)
 
 void XlsxXmlWorksheetReader::saveAnnotation(int col, int row)
 {
+    if (m_context->comments->isEmpty())
+        return;
     QString ref(encodeLabelText(col + 1, row + 1));
     qCDebug(lcXlsxImport) << ref;
     XlsxComment *comment = m_context->comments->value(ref);
@@ -573,12 +544,42 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
         std::sort(priorityActualIndex.begin(), priorityActualIndex.end());
 
         // Finally we have the list sorted and we can store the conditions in right priority order
+        auto parseRef = [&](const QString &ref, int &col, int &row, bool &wholeCol, bool &wholeRow) {
+            wholeCol = wholeRow = false; col = 0; row = 0;
+            QRegularExpression cellRe(QStringLiteral("^\\$?([A-Za-z]+)\\$?([0-9]+)$"));
+            QRegularExpression wholeColRe(QStringLiteral("^\\$?([A-Za-z]+)$"));
+            QRegularExpression wholeRowRe(QStringLiteral("^\\$?([0-9]+)$"));
+            QRegularExpressionMatch m;
+            if ((m = cellRe.match(ref)).hasMatch()) {
+                col = Calligra::Sheets::Util::decodeColumnLabelText(m.captured(1));
+                row = m.captured(2).toInt();
+            } else if ((m = wholeColRe.match(ref)).hasMatch()) {
+                col = Calligra::Sheets::Util::decodeColumnLabelText(m.captured(1));
+                wholeCol = true;
+            } else if ((m = wholeRowRe.match(ref)).hasMatch()) {
+                row = m.captured(1).toInt();
+                wholeRow = true;
+            }
+        };
         index = 0;
         while (index < priorityActualIndex.size()) {
-            QPair<QString, QMap<QString, QString>> odfValue;
-            odfValue.first = diffFormulasList.at(priorityActualIndex.at(index).second).first.first;
-            odfValue.second = diffFormulasList.at(priorityActualIndex.at(index).second).first.second;
-            m_context->conditionalStyles.push_back(odfValue);
+            XlsxXmlWorksheetReaderContext::ConditionalRange cr;
+            cr.range = diffFormulasList.at(priorityActualIndex.at(index).second).first.first;
+            cr.style = diffFormulasList.at(priorityActualIndex.at(index).second).first.second;
+            const QString &range = cr.range;
+            const int colon = range.indexOf(QLatin1Char(':'));
+            bool sc=false,sr=false,ec=false,er=false;
+            if (colon < 0) {
+                parseRef(range, cr.startCol, cr.startRow, sc, sr);
+            } else {
+                parseRef(range.left(colon), cr.startCol, cr.startRow, sc, sr);
+                parseRef(range.mid(colon+1), cr.endCol, cr.endRow, ec, er);
+            }
+            cr.wholeCol = sc || ec;
+            cr.wholeRow = sr || er;
+            if (cr.wholeCol && cr.endCol == 0) cr.endCol = cr.startCol;
+            if (cr.wholeRow && cr.endRow == 0) cr.endRow = cr.startRow;
+            m_context->conditionalStyles.push_back(cr);
             ++index;
         }
     }
@@ -1416,6 +1417,9 @@ QString XlsxXmlWorksheetReader::processRowStyle(qreal height)
     if (height == -1.0) {
         height = m_context->sheet->m_defaultRowHeight;
     }
+    const auto cached = d->rowStyles.constFind(height);
+    if (cached != d->rowStyles.cend())
+        return cached.value();
     KoGenStyle tableRowStyle(KoGenStyle::TableRowAutoStyle, "table-row");
     //! @todo alter fo:break-before?
     tableRowStyle.addProperty("fo:break-before", MsooXmlReader::constAuto);
@@ -1425,6 +1429,7 @@ QString XlsxXmlWorksheetReader::processRowStyle(qreal height)
         tableRowStyle.addProperty("style:row-height", printCm(POINT_TO_CM(height)));
     }
     const QString currentTableRowStyleName(mainStyles->insert(tableRowStyle, "ro"));
+    d->rowStyles.insert(height, currentTableRowStyleName);
     return currentTableRowStyleName;
 }
 
@@ -1548,7 +1553,17 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
     const QXmlStreamAttributes attrs(attributes());
     TRY_READ_ATTR_WITHOUT_NS(r)
     if (!r.isEmpty()) {
-        m_currentColumn = Calligra::Sheets::Util::decodeColumnLabelText(r) - 1;
+        // XLSX references contain an uppercase ASCII column followed by a row.
+        int column = 0;
+        for (QChar ch : r) {
+            const ushort c = ch.unicode();
+            if (c < 'A' || c > 'Z')
+                break;
+            column = column * 26 + c - 'A' + 1;
+            if (column > int(MSOOXML::maximumSpreadsheetColumns()))
+                return KoFilter::WrongFormat;
+        }
+        m_currentColumn = column - 1;
         if (m_currentColumn < 0)
             return KoFilter::WrongFormat;
     }
@@ -1590,9 +1605,6 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
         row->fontSize = qMax(row->fontSize, m_context->styles->fontSize(cellFormat->fontId));
     }
 
-    QString formattedStyle;
-    if (cellFormat->applyNumberFormat)
-        formattedStyle = m_context->styles->numberFormatStyleName(cellFormat->numFmtId);
 
     // qCDebug(lcXlsxImport) << "type=" << t << "styleId=" << styleId << "applyNumberFormat=" << cellFormat->applyNumberFormat << "numberFormat=" <<
     // numberFormat << "value=" << m_value;
@@ -1654,29 +1666,9 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
                     return KoFilter::WrongFormat;
                 }
             }
-            const KoGenStyle *const style = mainStyles->style(formattedStyle, "");
-            if (style == nullptr || valueIsNumeric(m_value)) {
-                //            body->addTextSpan(m_value);
-                cell->valueType = Cell::ConstFloat;
-                cell->valueAttr = Cell::OfficeValue;
-            } else {
-                // Tests showed that this code is never executed even when a style was set.
-                switch (style->type()) {
-                case KoGenStyle::NumericDateStyle:
-                    cell->valueType = Cell::ConstDate;
-                    cell->valueAttr = Cell::OfficeDateValue;
-                    m_value = QDate(1899, 12, 30).addDays(m_value.toInt()).toString(Qt::ISODate);
-                    break;
-                case KoGenStyle::NumericTextStyle:
-                    cell->valueType = Cell::ConstString;
-                    cell->valueAttr = Cell::OfficeStringValue;
-                    break;
-                default:
-                    cell->valueType = Cell::ConstFloat;
-                    cell->valueAttr = Cell::OfficeValue;
-                    break;
-                }
-            }
+            // The value has already passed numeric validation above.
+            cell->valueType = Cell::ConstFloat;
+            cell->valueAttr = Cell::OfficeValue;
         } else if (t == QLatin1String("e")) {
             cell->text = m_value;
             // Keep the error code as the cell content. Mapping it to the number
@@ -1695,56 +1687,73 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_c()
     // Conditional formats are matched per cell, but the resulting styles are
     // shared: cells with the same style and the same matching rules use one
     // style instead of each creating and inserting their own.
-    const bool hasConditionals = !m_context->conditionalStyles.isEmpty();
-    QList<QMap<QString, QString>> conditionalMaps;
-    if (hasConditionals) {
-        QString positionLetter;
-        int positionNumber;
-        splitToRowAndColumn(r.toLatin1().constData(), 0, r.size(), positionLetter, positionNumber);
-        conditionalMaps = m_context->conditionalStyleForPosition(positionLetter, positionNumber);
+    if (!s.isEmpty() && (!ok || !cellFormat)) {
+        raiseUnexpectedAttributeValueError(s, "c@s");
+        return KoFilter::WrongFormat;
     }
-    if (!s.isEmpty()) {
-        if (!ok || !cellFormat) {
-            raiseUnexpectedAttributeValueError(s, "c@s");
-            return KoFilter::WrongFormat;
+    // Conditional membership only changes at the edges of its row ranges.
+    // Reuse the resolved style for each column and source style within a band.
+    if (m_currentRow < d->styleFirstRow || m_currentRow > d->styleLastRow) {
+        d->positionStyles.clear();
+        d->styleFirstRow = m_currentRow;
+        d->styleLastRow = int(MSOOXML::maximumSpreadsheetRows());
+        const int row = m_currentRow + 1;
+        for (const auto &range : std::as_const(m_context->conditionalStyles)) {
+            if (range.wholeCol)
+                continue;
+            const int endRow = range.endRow == 0 ? range.startRow : range.endRow;
+            if (range.startRow > row)
+                d->styleLastRow = qMin(d->styleLastRow, range.startRow - 2);
+            else if (endRow >= row)
+                d->styleLastRow = qMin(d->styleLastRow, endRow - 1);
+        }
+    }
+    const auto positionKey = qMakePair(m_currentColumn, s);
+    const auto positionStyle = d->positionStyles.constFind(positionKey);
+    if (positionStyle != d->positionStyles.cend()) {
+        cell->styleName = positionStyle.value();
+    } else {
+        const bool hasConditionals = !m_context->conditionalStyles.isEmpty();
+        QList<QMap<QString, QString>> conditionalMaps;
+        if (hasConditionals) {
+            conditionalMaps = m_context->conditionalStyleForPosition(m_currentColumn, m_currentRow);
+        }
+        if (!s.isEmpty() || !conditionalMaps.isEmpty()) {
+            const QString cacheKey = cellStyleCacheKey(s.isEmpty() ? QString() : QString::number(styleId), conditionalMaps);
+            const auto cachedStyle = m_cellStyleCache.constFind(cacheKey);
+            if (cachedStyle != m_cellStyleCache.cend()) {
+                cell->styleName = cachedStyle.value();
+            } else {
+                KoGenStyle cellStyle(KoGenStyle::TableCellAutoStyle, "table-cell");
+                if (!s.isEmpty()) {
+                    QString formattedStyle;
+                    if (cellFormat->applyNumberFormat)
+                        formattedStyle = m_context->styles->numberFormatStyleName(cellFormat->numFmtId);
+
+                    KoGenStyle *fontStyle = m_context->styles->fontStyle(cellFormat->fontId);
+                    if (!fontStyle) {
+                        qCWarning(lcXlsxImport) << "No font with ID:" << cellFormat->fontId;
+                    } else {
+                        KoGenStyle::copyPropertiesFromStyle(*fontStyle, cellStyle, KoGenStyle::TextType);
+                    }
+                    if (!cellFormat->setupCellStyle(m_context->styles, &cellStyle)) {
+                        return KoFilter::WrongFormat;
+                    }
+                    if (!formattedStyle.isEmpty()) {
+                        cellStyle.addAttribute("style:data-style-name", formattedStyle);
+                    }
+                }
+                // Adding the lists in reversed priority order, as KoGenStyle when creating the style
+                // adds last added first
+                for (int index = conditionalMaps.size(); index > 0; --index) {
+                    cellStyle.addStyleMap(conditionalMaps.at(index - 1));
+                }
+                cell->styleName = mainStyles->insert(cellStyle, "ce");
+                m_cellStyleCache.insert(cacheKey, cell->styleName);
+            }
         }
 
-        // Without a row height, the row has to grow to fit the largest font in it.
-        Row *row = m_context->sheet->row(m_currentRow, true);
-        row->fontSize = qMax(row->fontSize, m_context->styles->fontSize(cellFormat->fontId));
-    }
-    if (!s.isEmpty() || !conditionalMaps.isEmpty()) {
-        const QString cacheKey = cellStyleCacheKey(s.isEmpty() ? QString() : QString::number(styleId), conditionalMaps);
-        if (m_cellStyleCache.contains(cacheKey)) {
-            cell->styleName = m_cellStyleCache.value(cacheKey);
-        } else {
-            KoGenStyle cellStyle(KoGenStyle::TableCellAutoStyle, "table-cell");
-            if (!s.isEmpty()) {
-                QString formattedStyle;
-                if (cellFormat->applyNumberFormat)
-                    formattedStyle = m_context->styles->numberFormatStyleName(cellFormat->numFmtId);
-
-                KoGenStyle *fontStyle = m_context->styles->fontStyle(cellFormat->fontId);
-                if (!fontStyle) {
-                    qCWarning(lcXlsxImport) << "No font with ID:" << cellFormat->fontId;
-                } else {
-                    KoGenStyle::copyPropertiesFromStyle(*fontStyle, cellStyle, KoGenStyle::TextType);
-                }
-                if (!cellFormat->setupCellStyle(m_context->styles, &cellStyle)) {
-                    return KoFilter::WrongFormat;
-                }
-                if (!formattedStyle.isEmpty()) {
-                    cellStyle.addAttribute("style:data-style-name", formattedStyle);
-                }
-            }
-            // Adding the lists in reversed priority order, as KoGenStyle when creating the style
-            // adds last added first
-            for (int index = conditionalMaps.size(); index > 0; --index) {
-                cellStyle.addStyleMap(conditionalMaps.at(index - 1));
-            }
-            cell->styleName = mainStyles->insert(cellStyle, "ce");
-            m_cellStyleCache.insert(cacheKey, cell->styleName);
-        }
+        d->positionStyles.insert(positionKey, cell->styleName);
     }
 
     delete cell->valueAttrValue;

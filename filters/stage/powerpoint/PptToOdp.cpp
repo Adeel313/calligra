@@ -1679,6 +1679,9 @@ void PptToOdp::defineDrawingPageStyle(KoGenStyle &style,
             }
             // TODO:
             case msofillBackground:
+                style.addProperty("draw:fill", "none", dp);
+                style.addProperty("loext:fill-use-slide-background", "true", dp);
+                break;
             default:
                 break;
             }
@@ -2471,6 +2474,7 @@ QByteArray PptToOdp::createContent(KoGenStyles &styles)
         // declaration the generated content.xml is not well-formed and Stage
         // cannot reload the file it just exported.
         content.addAttribute("xmlns:smil", KoXmlNS::smil);
+        content.addAttribute("xmlns:loext", "urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0");
         content.addAttribute("xmlns:calligra", KoXmlNS::calligra);
 
         // office:automatic-styles

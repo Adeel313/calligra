@@ -384,6 +384,7 @@ private:
     void startingSimpleEdit();
     void characterInserted();
     void runUrl(KoPointerEvent *event, QString &url);
+    void smartLookup();
     void useTableBorderCursor();
 
     QWidget *ensureMiniToolbar();

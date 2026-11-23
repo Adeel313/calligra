@@ -87,10 +87,6 @@ bool Odf::loadCell(Cell *cell,
                    QList<ShapeLoadingData> &shapeData)
 {
     static const QString sFormula = QString::fromLatin1("formula");
-    // OpenDocument names the attribute table:content-validation-name; older
-    // Calligra documents used table:validation-name and are still readable.
-    static const QString sValidationName = QString::fromLatin1("content-validation-name");
-    static const QString sLegacyValidationName = QString::fromLatin1("validation-name");
     static const QString sValueType = QString::fromLatin1("value-type");
     static const QString sBoolean = QString::fromLatin1("boolean");
     static const QString sBooleanValue = QString::fromLatin1("boolean-value");
@@ -115,6 +111,23 @@ bool Odf::loadCell(Cell *cell,
                                                                << "kspr:"
                                                                << "of:"
                                                                << "msoxl:";
+
+    // Plain numeric cells dominate large tables. They have no text, objects,
+    // annotations or merges to load, so avoid the general text/shape path.
+    if (element.attributeNS(KoXmlNS::office, sValueType, QString()) == sFloat
+        && !element.hasChildNodes()
+        && !element.hasAttributeNS(KoXmlNS::table, sFormula)
+        && !element.hasAttributeNS(KoXmlNS::table, sNumberColumnsSpanned)
+        && !element.hasAttributeNS(KoXmlNS::table, sNumberRowsSpanned)) {
+        bool ok = false;
+        Value value(element.attributeNS(KoXmlNS::office, sValue, QString()).toDouble(&ok));
+        if (ok) {
+            value.setFormat(Value::fmt_Number);
+            cell->setValue(value);
+            cell->setUserInput(cell->sheet()->map()->converter()->asString(value).asString());
+            return true;
+        }
+    }
 
     // Search and load each paragraph of text. Each paragraph is separated by a line break.
     loadCellText(cell, element, tableContext, autoStyles, cellStyleName);
@@ -145,20 +158,6 @@ bool Odf::loadCell(Cell *cell,
     } else if (!cell->userInput().isEmpty() && cell->userInput().at(0) == '=') { // prepend ' to the text to avoid = to be painted
         rawTextValue = cell->userInput();
         cell->setUserInput(cell->userInput().prepend('\''));
-    }
-
-    //
-    // validation
-    //
-    if (element.hasAttributeNS(KoXmlNS::table, sValidationName) || element.hasAttributeNS(KoXmlNS::table, sLegacyValidationName)) {
-        const QString validationName = element.hasAttributeNS(KoXmlNS::table, sValidationName)
-            ? element.attributeNS(KoXmlNS::table, sValidationName, QString())
-            : element.attributeNS(KoXmlNS::table, sLegacyValidationName, QString());
-        debugSheetsODF << "cell:" << cell->name() << sValidationName << validationName;
-        Validity validity;
-        loadValidation(&validity, cell, validationName, tableContext);
-        if (!validity.isEmpty())
-            cell->setValidity(validity);
     }
 
     //
@@ -233,7 +232,8 @@ bool Odf::loadCell(Cell *cell,
 #endif
             }
         } else if (valuetype == sDate) {
-            QStringView value = element.attributeNS(KoXmlNS::office, sDateValue, QString());
+            const QString dateValue = element.attributeNS(KoXmlNS::office, sDateValue, QString());
+            const QStringView value(dateValue);
             // "1980-10-15" or "2001-01-01T19:27:41.123456"
             int year = 0, month = 0, day = 0, hours = 0, minutes = 0;
             Number seconds = 0.0; // seconds may have fractions
@@ -779,14 +779,6 @@ void Odf::loadCellText(Cell *cell, const KoXmlElement &parent, OdfLoadingContext
 
 void Odf::loadObjects(Cell *cell, const KoXmlElement &parent, OdfLoadingContext &tableContext, QList<ShapeLoadingData> &shapeData)
 {
-    // Register additional attributes, that identify shapes anchored in cells.
-    // Their dimensions need adjustment after all rows are loaded,
-    // because the position of the end cell is not always known yet.
-    KoShapeLoadingContext::addAdditionalAttributeData(
-        KoShapeLoadingContext::AdditionalAttributeData(KoXmlNS::table, "end-cell-address", "table:end-cell-address"));
-    KoShapeLoadingContext::addAdditionalAttributeData(KoShapeLoadingContext::AdditionalAttributeData(KoXmlNS::table, "end-x", "table:end-x"));
-    KoShapeLoadingContext::addAdditionalAttributeData(KoShapeLoadingContext::AdditionalAttributeData(KoXmlNS::table, "end-y", "table:end-y"));
-
     KoXmlElement element;
     forEachElement(element, parent)
     {

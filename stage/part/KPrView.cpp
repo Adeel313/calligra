@@ -79,6 +79,9 @@ namespace
 {
 void configurePowerPointPanels(KPrView *view, int attempts = 30)
 {
+    if (qApp->property("headlessPdfExport").toBool()) {
+        return;
+    }
     if (!view->mainWindow() || !view->activePage()) {
         if (attempts > 0) {
             QTimer::singleShot(100, view, [view, attempts] { configurePowerPointPanels(view, attempts - 1); });

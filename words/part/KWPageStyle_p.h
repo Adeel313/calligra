@@ -29,6 +29,7 @@ public:
     QString displayName;
     qreal headerDistance, footerDistance, footNoteDistance, endNoteDistance;
     qreal headerMinimumHeight, footerMinimumHeight;
+    std::optional<qreal> docxBodyBottomMargin;
     Words::HeaderFooterType headers, footers;
     bool headerDynamicSpacing;
     bool footerDynamicSpacing;

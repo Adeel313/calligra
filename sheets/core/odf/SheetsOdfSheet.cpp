@@ -29,6 +29,7 @@
 #include <KoProgressUpdater.h>
 #include <KoShape.h>
 #include <KoShapeRegistry.h>
+#include <KoShapeLoadingContext.h>
 #include <KoStyleStack.h>
 #include <KoUpdater.h>
 #include <KoXmlNS.h>
@@ -49,6 +50,7 @@
 #include "StyleManager.h"
 #include "StyleStorage.h"
 #include "engine/CalculationSettings.h"
+#include "engine/Validity.h"
 
 #include <QBuffer>
 
@@ -89,6 +91,44 @@ private:
 
 namespace Odf
 {
+// Cells arrive in row order. Combine vertically adjacent runs with the
+// same style or validation before passing them to the rectangle storages.
+class CellRegions
+{
+public:
+    void add(const QString &name, const QRect &rect)
+    {
+        auto &runs = m_data[name][{rect.left(), rect.width()}];
+        if (!runs.isEmpty() && runs.last().bottom() + 1 == rect.top()) {
+            runs.last().setBottom(rect.bottom());
+        } else {
+            runs.append(rect);
+        }
+    }
+
+    QHash<QString, Region> regions() const
+    {
+        QHash<QString, Region> result;
+        for (auto entry = m_data.cbegin(); entry != m_data.cend(); ++entry) {
+            auto &region = result[entry.key()];
+            for (const auto &runs : entry.value()) {
+                for (const QRect &rect : runs) {
+                    region.add(rect, nullptr, false, false, false, false, true);
+                }
+            }
+        }
+        return result;
+    }
+
+private:
+    QHash<QString, QHash<QPair<int, int>, QList<QRect>>> m_data;
+};
+
+struct CellLoadRegions {
+    CellRegions styles;
+    CellRegions validations;
+};
+
 // Sheet loading - helper functions
 /**
  * Inserts the styles contained in \p styleRegions into the style storage.
@@ -112,7 +152,7 @@ void loadRowNodes(Sheet *sheet,
                   int &maxColumn,
                   OdfLoadingContext &tableContext,
                   QHash<QString, Region> &rowStyleRegions,
-                  QHash<QString, Region> &cellStyleRegions,
+                  CellLoadRegions &cellRegions,
                   const IntervalMap<QString> &columnStyles,
                   const Styles &autoStyles,
                   QList<ShapeLoadingData> &shapeData);
@@ -134,7 +174,7 @@ int loadRowFormat(Sheet *sheet,
                   int &rowIndex,
                   OdfLoadingContext &tableContext,
                   QHash<QString, Region> &rowStyleRegions,
-                  QHash<QString, Region> &cellStyleRegions,
+                  CellLoadRegions &cellRegions,
                   const IntervalMap<QString> &columnStyles,
                   const Styles &autoStyles,
                   QList<ShapeLoadingData> &shapeData);
@@ -161,6 +201,14 @@ bool Odf::loadSheet(Sheet *sheet,
                     const Styles &autoStyles,
                     const QHash<QString, Conditions> &conditionalStyles)
 {
+    // Register additional attributes, that identify shapes anchored in cells.
+    // Their dimensions need adjustment after all rows are loaded,
+    // because the position of the end cell is not always known yet.
+    KoShapeLoadingContext::addAdditionalAttributeData(
+        KoShapeLoadingContext::AdditionalAttributeData(KoXmlNS::table, "end-cell-address", "table:end-cell-address"));
+    KoShapeLoadingContext::addAdditionalAttributeData(KoShapeLoadingContext::AdditionalAttributeData(KoXmlNS::table, "end-x", "table:end-x"));
+    KoShapeLoadingContext::addAdditionalAttributeData(KoShapeLoadingContext::AdditionalAttributeData(KoXmlNS::table, "end-y", "table:end-y"));
+
     QPointer<KoUpdater> updater;
     if (sheet->doc() && sheet->doc()->progressUpdater()) {
         updater = sheet->doc()->progressUpdater()->startSubtask(1, "Calligra::Sheets::Odf::loadSheet");
@@ -303,7 +351,7 @@ bool Odf::loadSheet(Sheet *sheet,
     }
 
     // Cell style regions
-    QHash<QString, Region> cellStyleRegions;
+    CellLoadRegions cellRegions;
     // Cell style regions (row defaults)
     QHash<QString, Region> rowStyleRegions;
     // Cell style regions (column defaults)
@@ -348,13 +396,13 @@ bool Odf::loadSheet(Sheet *sheet,
                 } else if (rowElement.localName() == "table-header-rows") {
                     // NOTE Handle header rows as ordinary ones
                     //      as long as they're not supported.
-                    loadRowNodes(sheet, rowElement, rowIndex, maxColumn, tableContext, rowStyleRegions, cellStyleRegions, columnStyles, autoStyles, shapeData);
+                    loadRowNodes(sheet, rowElement, rowIndex, maxColumn, tableContext, rowStyleRegions, cellRegions, columnStyles, autoStyles, shapeData);
                 } else if (rowElement.localName() == "table-row-group") {
-                    loadRowNodes(sheet, rowElement, rowIndex, maxColumn, tableContext, rowStyleRegions, cellStyleRegions, columnStyles, autoStyles, shapeData);
+                    loadRowNodes(sheet, rowElement, rowIndex, maxColumn, tableContext, rowStyleRegions, cellRegions, columnStyles, autoStyles, shapeData);
                 } else if (rowElement.localName() == "table-row") {
                     // debugSheetsODF << " table-row found :index row before" << rowIndex;
                     int columnMaximal =
-                        loadRowFormat(sheet, rowElement, rowIndex, tableContext, rowStyleRegions, cellStyleRegions, columnStyles, autoStyles, shapeData);
+                        loadRowFormat(sheet, rowElement, rowIndex, tableContext, rowStyleRegions, cellRegions, columnStyles, autoStyles, shapeData);
                     // allow the row to define more columns then defined via table-column
                     maxColumn = qMax(maxColumn, columnMaximal);
                     // debugSheetsODF << " table-row found :index row after" << rowIndex;
@@ -407,10 +455,18 @@ bool Odf::loadSheet(Sheet *sheet,
     loadSheetInsertStyles(sheet, autoStyles, rowStyleRegions, conditionalStyles, QRect(1, 1, maxColumn, rowIndex - 1), styleRegions, conditionRegions);
     // insert the styles into the storage
     debugSheetsODF << "Inserting cell styles ...";
-    loadSheetInsertStyles(sheet, autoStyles, cellStyleRegions, conditionalStyles, QRect(1, 1, maxColumn, rowIndex - 1), styleRegions, conditionRegions);
+    loadSheetInsertStyles(sheet, autoStyles, cellRegions.styles.regions(), conditionalStyles, QRect(1, 1, maxColumn, rowIndex - 1), styleRegions, conditionRegions);
 
     sheet->fullCellStorage()->loadStyles(styleRegions);
     sheet->fullCellStorage()->loadConditions(conditionRegions);
+    const auto validationRegions = cellRegions.validations.regions();
+    for (auto entry = validationRegions.cbegin(); entry != validationRegions.cend(); ++entry) {
+        Validity validity;
+        loadValidation(&validity, sheet->map()->calculationSettings(), entry.key(), tableContext);
+        if (!validity.isEmpty()) {
+            sheet->cellStorage()->setValidity(entry.value(), validity);
+        }
+    }
 
     if (sheetElement.hasAttributeNS(KoXmlNS::table, "print-ranges")) {
         // e.g.: Sheet4.A1:Sheet4.E28
@@ -448,7 +504,7 @@ void Odf::loadRowNodes(Sheet *sheet,
                        int &maxColumn,
                        OdfLoadingContext &tableContext,
                        QHash<QString, Region> &rowStyleRegions,
-                       QHash<QString, Region> &cellStyleRegions,
+                       CellLoadRegions &cellRegions,
                        const IntervalMap<QString> &columnStyles,
                        const Styles &autoStyles,
                        QList<ShapeLoadingData> &shapeData)
@@ -458,11 +514,11 @@ void Odf::loadRowNodes(Sheet *sheet,
         KoXmlElement elem = node.toElement();
         if (!elem.isNull() && elem.namespaceURI() == KoXmlNS::table) {
             if (elem.localName() == "table-row") {
-                int columnMaximal = loadRowFormat(sheet, elem, rowIndex, tableContext, rowStyleRegions, cellStyleRegions, columnStyles, autoStyles, shapeData);
+                int columnMaximal = loadRowFormat(sheet, elem, rowIndex, tableContext, rowStyleRegions, cellRegions, columnStyles, autoStyles, shapeData);
                 // allow the row to define more columns then defined via table-column
                 maxColumn = qMax(maxColumn, columnMaximal);
             } else if (elem.localName() == "table-row-group") {
-                loadRowNodes(sheet, elem, rowIndex, maxColumn, tableContext, rowStyleRegions, cellStyleRegions, columnStyles, autoStyles, shapeData);
+                loadRowNodes(sheet, elem, rowIndex, maxColumn, tableContext, rowStyleRegions, cellRegions, columnStyles, autoStyles, shapeData);
             }
         }
         node = node.nextSibling();
@@ -901,7 +957,7 @@ int Odf::loadRowFormat(Sheet *sheet,
                        int &rowIndex,
                        OdfLoadingContext &tableContext,
                        QHash<QString, Region> &rowStyleRegions,
-                       QHash<QString, Region> &cellStyleRegions,
+                       CellLoadRegions &cellRegions,
                        const IntervalMap<QString> &columnStyles,
                        const Styles &autoStyles,
                        QList<ShapeLoadingData> &shapeData)
@@ -1023,7 +1079,7 @@ int Odf::loadRowFormat(Sheet *sheet,
         // Styles are inserted at the end of the loading process, so check the XML directly here.
         const QString styleName = cellElement.attributeNS(KoXmlNS::table, sStyleName, QString());
         if (!styleName.isEmpty())
-            cellStyleRegions[styleName].add(QRect(columnIndex, rowIndex, numberColumns, number), nullptr, false, false, false, false, true);
+            cellRegions.styles.add(styleName, QRect(columnIndex, rowIndex, numberColumns, number));
 
         // figure out exact cell style for loading of cell content
         QString cellStyleName = styleName;
@@ -1047,10 +1103,18 @@ int Odf::loadRowFormat(Sheet *sheet,
         // If comment/conditions/etc are set, copy them to all the cells in range.
         if (!isMatrixFollower && !cell.conditions().isEmpty())
             sheet->fullCellStorage()->setConditions(Region(columnIndex, rowIndex, numberColumns, number, sheet), cell.conditions());
-        if (!isMatrixFollower && !cell.validity().isEmpty())
-            sheet->cellStorage()->setValidity(Region(columnIndex, rowIndex, numberColumns, number, sheet), cell.validity());
+        if (!isMatrixFollower || loadMatrixFollowerValue) {
+            QString validationName = cellElement.attributeNS(KoXmlNS::table, "content-validation-name"_L1);
+            if (validationName.isEmpty()) {
+                validationName = cellElement.attributeNS(KoXmlNS::table, "validation-name"_L1);
+            }
+            if (!validationName.isEmpty()) {
+                const QRect range(columnIndex, rowIndex, isMatrixFollower ? 1 : numberColumns, isMatrixFollower ? 1 : number);
+                cellRegions.validations.add(validationName, range);
+            }
+        }
 
-        if (!isMatrixFollower && !cell.hasDefaultContent()) {
+        if (!isMatrixFollower && (numberColumns > 1 || endRow > rowIndex) && !cell.hasDefaultContent()) {
             // Row-wise filling of PointStorages is faster than column-wise filling.
             const Formula formula = cell.formula();
             const QString userInput = cell.userInput();
@@ -1061,7 +1125,7 @@ int Odf::loadRowFormat(Sheet *sheet,
             const int mergedXCells = cell.mergedXCells();
             const int mergedYCells = cell.mergedYCells();
             for (int r = rowIndex; r <= endRow; ++r) {
-                for (int c = 0; c < numberColumns; ++c) {
+                for (int c = r == rowIndex ? 1 : 0; c < numberColumns; ++c) {
                     Cell target(sheet, columnIndex + c, r);
                     target.setFormula(formula);
                     target.setUserInput(userInput);

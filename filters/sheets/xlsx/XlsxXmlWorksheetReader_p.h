@@ -13,6 +13,8 @@
 #ifndef XLSXXMLWORKSHEETREADER_P_H
 #define XLSXXMLWORKSHEETREADER_P_H
 
+#include <array>
+
 //! @todo the workboot was designed after filters/kspread/excel/sidewinder to allow to shared as much
 //!       logic as possible. Goal is to let them both share the same structures and OpenDocument logic
 //!       some day.
@@ -186,6 +188,7 @@ public:
     bool hidden : 1;
     //! Largest font size of the cells in this row, in points
     qreal fontSize = 0;
+    int lastColumn = 0;
 
     Row(int index)
         : rowIndex(index)
@@ -229,26 +232,33 @@ public:
     ~Sheet()
     {
         qDeleteAll(m_rows);
-        qDeleteAll(m_columns); /*qDeleteAll(m_cells);*/
+        qDeleteAll(m_columns);
+        for (const auto &block : std::as_const(m_cells))
+            qDeleteAll(block);
     }
 
     Row *row(int rowIndex, bool autoCreate)
     {
-        Row *r = m_rows[rowIndex];
+        if (m_lastRow && m_lastRow->rowIndex == rowIndex)
+            return m_lastRow;
+        Row *r = m_rows.value(rowIndex);
         if (!r && autoCreate) {
             r = new Row(/*this,*/ rowIndex);
             m_rows[rowIndex] = r;
             if (rowIndex > m_maxRow)
                 m_maxRow = rowIndex;
         }
+        m_lastRow = r;
         return r;
     }
 
     Column *column(int columnIndex, bool autoCreate)
     {
-        Column *c = m_columns[columnIndex];
+        Column *c = m_columns.value(columnIndex);
         if (!c && autoCreate) {
             c = new Column(/*this,*/ columnIndex);
+            if (columnIndex >= m_columns.size())
+                m_columns.resize(columnIndex + 1);
             m_columns[columnIndex] = c;
             if (columnIndex > m_maxColumn)
                 m_maxColumn = columnIndex;
@@ -258,19 +268,29 @@ public:
 
     Cell *cell(int columnIndex, int rowIndex, bool autoCreate)
     {
-        const unsigned hashed = (rowIndex + 1) * MSOOXML::maximumSpreadsheetColumns() + columnIndex + 1;
-        Cell *c = m_cells[hashed];
+        // Small contiguous chunks serve dense rows without a hash lookup for
+        // every cell, while sparse or widely separated cells remain cheap.
+        const quint64 key = (quint64(rowIndex) << 32) | quint32(columnIndex / cellsPerBlock);
+        if (!m_lastBlock || m_lastBlockKey != key) {
+            auto it = m_cells.find(key);
+            if (it == m_cells.end()) {
+                if (!autoCreate)
+                    return nullptr;
+                it = m_cells.insert(key, CellBlock{});
+            }
+            m_lastBlock = &it.value();
+            m_lastBlockKey = key;
+        }
+        Cell *&c = (*m_lastBlock)[columnIndex % cellsPerBlock];
         if (!c && autoCreate) {
             c = new Cell(columnIndex, rowIndex);
-            m_cells[hashed] = c;
             this->column(columnIndex, true);
-            this->row(rowIndex, true);
+            Row *r = this->row(rowIndex, true);
+            r->lastColumn = qMax(r->lastColumn, columnIndex);
             if (rowIndex > m_maxRow)
                 m_maxRow = rowIndex;
             if (columnIndex > m_maxColumn)
                 m_maxColumn = columnIndex;
-            if (!m_maxCellsInRow.contains(rowIndex) || columnIndex > m_maxCellsInRow[rowIndex])
-                m_maxCellsInRow[rowIndex] = columnIndex;
         }
         return c;
     }
@@ -285,7 +305,8 @@ public:
     }
     int maxCellsInRow(int rowIndex) const
     {
-        return m_maxCellsInRow[rowIndex];
+        const Row *r = m_rows.value(rowIndex);
+        return r ? r->lastColumn : 0;
     }
 
     bool visible() const
@@ -308,9 +329,13 @@ public:
 
 private:
     QHash<int, Row *> m_rows;
-    QHash<int, Column *> m_columns;
-    QHash<unsigned, Cell *> m_cells;
-    QHash<int, int> m_maxCellsInRow;
+    QVector<Column *> m_columns;
+    static constexpr int cellsPerBlock = 16;
+    using CellBlock = std::array<Cell *, cellsPerBlock>;
+    QHash<quint64, CellBlock> m_cells;
+    CellBlock *m_lastBlock = nullptr;
+    quint64 m_lastBlockKey = 0;
+    Row *m_lastRow = nullptr;
     QString m_pictureBackgroundPath;
     int m_maxRow;
     int m_maxColumn;

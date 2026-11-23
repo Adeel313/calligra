@@ -1712,7 +1712,32 @@ bool KoShape::loadOdfAttributes(const KoXmlElement &element, KoShapeLoadingConte
 
 QSharedPointer<KoShapeBackground> KoShape::loadOdfFill(KoShapeLoadingContext &context) const
 {
-    QString fill = KoShapePrivate::getStyleProperty("fill", context);
+    // LO uses loext:fill-use-slide-background="true" to paint the
+    // slide/page background instead of a transparent fill. Honour it before
+    // the normal fill handling so draw:fill="none" does not let earlier page
+    // objects show through (e.g. callout labels behind content boxes).
+    const QString fill = KoShapePrivate::getStyleProperty("fill", context);
+    KoStyleStack &styleStack = context.odfLoadingContext().styleStack();
+    const QString useSlideBg = styleStack.property(
+        QStringLiteral("urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0"),
+        QStringLiteral("fill-use-slide-background"));
+    if (useSlideBg == QLatin1String("true") && (fill == QLatin1String("none") || fill.isEmpty())) {
+        QColor bgColor(Qt::white);
+        const KoShape *p = parent();
+        while (p) {
+            const KoShapeContainer *c = dynamic_cast<const KoShapeContainer *>(p);
+            if (c) {
+                QSharedPointer<KoShapeBackground> pbg = c->background();
+                KoColorBackground *cbg = dynamic_cast<KoColorBackground *>(pbg.data());
+                if (cbg) {
+                    bgColor = cbg->color();
+                    break;
+                }
+            }
+            p = p->parent();
+        }
+        return QSharedPointer<KoShapeBackground>(new KoColorBackground(bgColor));
+    }
     QSharedPointer<KoShapeBackground> bg;
     if (fill == "solid") {
         bg = QSharedPointer<KoShapeBackground>(new KoColorBackground());

@@ -45,7 +45,8 @@ public:
         Chart,
         Diagram,
         Picture,
-        Shape
+        Shape,
+        Formula
     };
     Type m_type;
     union {
@@ -54,6 +55,7 @@ public:
         XlsxXmlEmbeddedPicture *m_picture;
         XlsxShape *m_shape;
     };
+    QByteArray m_formulaMathML;
     enum AnchorType {
         NoAnchor,
         FromAnchor,
@@ -175,6 +177,7 @@ protected:
     KoFilter::ConversionStatus read_graphicData2();
     KoFilter::ConversionStatus read_chart2();
     KoFilter::ConversionStatus read_diagram();
+    KoFilter::ConversionStatus read_mathAlternateContent();
 
 private:
     XlsxXmlDrawingReaderContext *m_context;

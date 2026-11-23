@@ -202,7 +202,7 @@ private:
     bool presentationListTabWorkaround(qreal indent, qreal labelBoxWidth, qreal presentationListTabValue);
 
     /// Returns vertical height of line
-    qreal addLine(QTextLine &line, FrameIterator *cursor, const QTextBlock &currentBlock, const KoParagraphStyle &currentStyle, KoTextBlockData &blockData);
+    qreal addLine(QTextLine &line, FrameIterator *cursor, const QTextBlock &currentBlock, const KoParagraphStyle &currentStyle, KoTextBlockData &blockData, bool measureOnly = false);
 
     /// looks for footnotes and preregisters them
     void findFootNotes(const QTextBlock &block, const QTextLine &line, qreal bottomOfText);

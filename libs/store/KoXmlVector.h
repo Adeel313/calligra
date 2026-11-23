@@ -19,6 +19,8 @@
 #include <QDataStream>
 #include <QVector>
 
+#include <algorithm>
+
 /**
  * KoXmlVector
  *
@@ -37,13 +39,17 @@
  *      cost of speed bigger value will be better in term of speed, but use
  *      more memory
  */
-template<typename T, int uncompressedItemCount = 256, int reservedBufferSize = 1024 * 1024>
+template<typename T, int uncompressedItemCount = 256, int reservedBufferSize = 1024 * 1024, int retainedBytes = 0>
 class KoXmlVector
 {
 private:
     unsigned m_totalItems;
     QVector<unsigned> m_startIndex;
     QVector<QByteArray> m_blocks;
+    // An optional bounded prefix stays in its original form. This avoids
+    // serializing, compressing and reconstructing the initial working set.
+    QVector<QVector<T>> m_retainedBlocks;
+    unsigned m_retainedItems = 0;
 
     mutable unsigned m_bufferStartIndex;
     mutable QVector<T> m_bufferItems;
@@ -57,6 +63,7 @@ private:
     static constexpr int decodedBlockCacheSize = 8;
     mutable QVector<DecodedBlock> m_decodedBlocks;
     mutable unsigned m_useCounter = 0;
+    mutable int m_lastDecodedBlock = -1;
     mutable QByteArray m_decodeBuffer;
 
 protected:
@@ -66,23 +73,24 @@ protected:
      */
     const DecodedBlock &decodeBlock(unsigned index) const
     {
-        for (int i = 0; i < m_decodedBlocks.count(); ++i) {
-            DecodedBlock &block = m_decodedBlocks[i];
+        if (m_lastDecodedBlock >= 0) {
+            DecodedBlock &block = m_decodedBlocks[m_lastDecodedBlock];
             if (index >= block.startIndex && index - block.startIndex < (unsigned)block.items.count()) {
                 block.lastUse = ++m_useCounter;
                 return block;
             }
         }
+        for (int i = 0; i < m_decodedBlocks.count(); ++i) {
+            DecodedBlock &block = m_decodedBlocks[i];
+            if (index >= block.startIndex && index - block.startIndex < (unsigned)block.items.count()) {
+                block.lastUse = ++m_useCounter;
+                m_lastDecodedBlock = i;
+                return block;
+            }
+        }
 
-        // search in the stored blocks
-        // TODO: binary search to speed up
-        int loc = m_startIndex.count() - 1;
-        for (int c = 0; c < m_startIndex.count() - 1; ++c)
-            if (index >= m_startIndex[c])
-                if (index < m_startIndex[c + 1]) {
-                    loc = c;
-                    break;
-                }
+        const auto next = std::upper_bound(m_startIndex.cbegin(), m_startIndex.cend(), index);
+        const auto loc = next - m_startIndex.cbegin() - 1;
 
         DecodedBlock *slot = nullptr;
         if (m_decodedBlocks.count() < decodedBlockCacheSize) {
@@ -107,6 +115,7 @@ protected:
         in >> slot->items;
         slot->startIndex = m_startIndex[loc];
         slot->lastUse = ++m_useCounter;
+        m_lastDecodedBlock = int(slot - m_decodedBlocks.data());
         return *slot;
     }
 
@@ -115,6 +124,17 @@ protected:
      */
     void storeBuffer()
     {
+        if (m_bufferItems.isEmpty())
+            return;
+        if constexpr (retainedBytes > 0) {
+            if (m_blocks.isEmpty()
+                && quint64(m_retainedItems + m_bufferItems.size()) * sizeof(T) <= retainedBytes) {
+                m_bufferStartIndex += m_bufferItems.size();
+                m_retainedItems += m_bufferItems.size();
+                m_retainedBlocks.append(std::move(m_bufferItems));
+                return;
+            }
+        }
         QBuffer buffer;
         buffer.open(QIODevice::WriteOnly);
         QDataStream out(&buffer);
@@ -141,10 +161,13 @@ public:
         m_totalItems = 0;
         m_startIndex.clear();
         m_blocks.clear();
+        m_retainedBlocks.clear();
+        m_retainedItems = 0;
 
         m_bufferStartIndex = 0;
         m_bufferItems.clear();
         m_decodedBlocks.clear();
+        m_lastDecodedBlock = -1;
         m_decodeBuffer.reserve(reservedBufferSize);
     }
 
@@ -173,8 +196,7 @@ public:
             storeBuffer();
 
         ++m_totalItems;
-        m_bufferItems.resize(m_bufferItems.count() + 1);
-        return m_bufferItems[m_bufferItems.count() - 1];
+        return m_bufferItems.emplaceBack();
     }
 
     /**
@@ -184,6 +206,10 @@ public:
     const T &operator[](int i) const
     {
         const unsigned index = (unsigned)i;
+        if constexpr (retainedBytes > 0) {
+            if (index < m_retainedItems)
+                return m_retainedBlocks.at(index / (uncompressedItemCount - 1)).at(index % (uncompressedItemCount - 1));
+        }
         if (index >= m_bufferStartIndex && index - m_bufferStartIndex < (unsigned)m_bufferItems.count())
             return m_bufferItems[index - m_bufferStartIndex];
 

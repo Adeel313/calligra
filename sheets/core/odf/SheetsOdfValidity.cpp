@@ -29,10 +29,9 @@ void loadValidationCondition(Validity *validity, QString &valExpression, Calcula
 void loadValidationValue(Validity *validity, const QStringList &listVal, CalculationSettings *cs);
 }
 
-void Odf::loadValidation(Validity *validity, CellBase *const cell, const QString &validationName, OdfLoadingContext &tableContext)
+void Odf::loadValidation(Validity *validity, CalculationSettings *cs, const QString &validationName, OdfLoadingContext &tableContext)
 {
     KoXmlElement element = tableContext.validities.value(validationName);
-    CalculationSettings *cs = cell->sheet()->map()->calculationSettings();
     if (element.hasAttributeNS(KoXmlNS::table, "condition")) {
         QString valExpression = element.attributeNS(KoXmlNS::table, "condition", QString());
         if (valExpression.startsWith(QLatin1String("of:")) || valExpression.startsWith(QLatin1String("oooc:")))

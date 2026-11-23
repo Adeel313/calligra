@@ -26,6 +26,7 @@
 #endif
 
 #include "dockers/KWNavigationDockerFactory.h"
+#include "dockers/KWResearchDockerFactory.h"
 #include "dockers/KWStatisticsDocker.h"
 #include "mailmerge/KWMailMergeFieldFactory.h"
 #include "pagetool/KWPageToolFactory.h"
@@ -82,6 +83,7 @@ const KoComponentData &KWFactory::componentData()
         KoDockRegistry *dockRegistry = KoDockRegistry::instance();
         dockRegistry->add(new KWStatisticsDockerFactory());
         dockRegistry->add(new KWNavigationDockerFactory());
+        dockRegistry->add(new KWResearchDockerFactory());
 #ifndef NDEBUG
         dockRegistry->add(new KWDebugDockerFactory());
 #endif

@@ -4,14 +4,21 @@
 
 #include <ValidityStorage.h>
 
+#include "DocxMathWriter.h"
+
 #include <KPluginFactory>
 #include <KoDocument.h>
+#include <KoEmbeddedDocumentSaver.h>
 #include <KoFilterChain.h>
+#include <KoGenStyles.h>
 #include <KoImageData.h>
 #include <KoPageLayout.h>
 #include <KoShape.h>
 #include <KoShapePainter.h>
+#include <KoShapeSavingContext.h>
 #include <KoStore.h>
+#include <KoXmlNS.h>
+#include <KoXmlWriter.h>
 
 #include <sheets/core/Cell.h>
 #include <sheets/core/CellVisuals.h>
@@ -51,6 +58,9 @@
 #include <kochart_global.h>
 
 #include <QBuffer>
+#include <QDomDocument>
+#include <QTextStream>
+#include <QXmlStreamReader>
 #include <QElapsedTimer>
 #include <QImage>
 #include <QHash>
@@ -317,8 +327,40 @@ struct EmbeddedImage {
     KoShape *shape = nullptr;
     QByteArray png;
     QByteArray chartXml;
+    QByteArray mathXml;
     int index = 0;
 };
+
+static QByteArray shapeMathML(KoShape *shape)
+{
+    if (shape->shapeId() != QLatin1String("FormulaShapeID"))
+        return {};
+
+    QBuffer frame;
+    frame.open(QIODevice::WriteOnly);
+    KoXmlWriter writer(&frame);
+    KoGenStyles styles;
+    KoEmbeddedDocumentSaver embedded;
+    KoShapeSavingContext context(writer, styles, embedded);
+    writer.startElement("frame-wrapper");
+    writer.addAttribute("xmlns:draw", KoXmlNS::draw);
+    writer.addAttribute("xmlns:math", KoXmlNS::math);
+    writer.addAttribute("xmlns:svg", KoXmlNS::svg);
+    shape->saveOdf(context);
+    writer.endElement();
+
+    QDomDocument document;
+    if (!document.setContent(frame.data()))
+        return {};
+    QDomElement math = document.elementsByTagName(QStringLiteral("math:math")).item(0).toElement();
+    if (math.isNull())
+        return {};
+    math.setAttribute(QStringLiteral("xmlns:math"), KoXmlNS::math);
+    QString xml;
+    QTextStream output(&xml);
+    math.save(output, -1);
+    return xml.toUtf8();
+}
 
 QByteArray chartXml(const KoChart::ChartShape *chart, const Map *map)
 {
@@ -604,13 +646,17 @@ QByteArray drawingXml(const Sheet &sheet, const QList<EmbeddedImage> &images)
         xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"), QStringLiteral("xdr"));
         xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/main"), QStringLiteral("a"));
         xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships"), QStringLiteral("r"));
+        xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/markup-compatibility/2006"), QStringLiteral("mc"));
+        xml.writeNamespace(QStringLiteral("http://schemas.microsoft.com/office/drawing/2010/main"), QStringLiteral("a14"));
+        xml.writeNamespace(QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/math"), QStringLiteral("m"));
         for (const EmbeddedImage &image : images) {
             const QPointF pos = image.shape->absolutePosition(KoFlake::TopLeftCorner);
             const QSizeF size = image.shape->size();
             const bool isChart = !image.chartXml.isEmpty();
+            const bool isMath = !image.mathXml.isEmpty();
             const auto *data = dynamic_cast<const ShapeApplicationData *>(image.shape->applicationData());
             bool cellAnchor = false;
-            if (isChart && data && data->isAnchoredToCell() && pos.x() >= 0 && pos.y() >= 0) {
+            if ((isChart || isMath) && data && data->isAnchoredToCell() && pos.x() >= 0 && pos.y() >= 0) {
                 const DrawingMarker from = drawingMarker(sheet, pos);
                 const DrawingMarker to = drawingMarker(sheet, pos + QPointF(size.width(), size.height()));
                 cellAnchor = from.isValid() && to.isValid();
@@ -641,6 +687,39 @@ QByteArray drawingXml(const Sheet &sheet, const QList<EmbeddedImage> &images)
                 xml.writeAttribute(QStringLiteral("cy"), QString::number(cellAnchor ? 0 : qRound64(size.height() * 12700.0)));
                 xml.writeEndElement();
                 xml.writeStartElement(QStringLiteral("a:graphic")); xml.writeStartElement(QStringLiteral("a:graphicData")); xml.writeAttribute(QStringLiteral("uri"), QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/chart")); xml.writeEmptyElement(QStringLiteral("c:chart")); xml.writeAttribute(QStringLiteral("xmlns:c"), QStringLiteral("http://schemas.openxmlformats.org/drawingml/2006/chart")); xml.writeAttribute(QStringLiteral("r:id"), QStringLiteral("rId%1").arg(image.index)); xml.writeEndElement(); xml.writeEndElement(); xml.writeEndElement();
+            } else if (isMath) {
+                xml.writeStartElement(QStringLiteral("mc:AlternateContent"));
+                xml.writeStartElement(QStringLiteral("mc:Choice"));
+                xml.writeAttribute(QStringLiteral("Requires"), QStringLiteral("a14"));
+                xml.writeStartElement(QStringLiteral("a14:m"));
+                QXmlStreamReader omml(image.mathXml);
+                while (!omml.atEnd()) {
+                    omml.readNext();
+                    if (omml.isStartDocument() || omml.isEndDocument())
+                        continue;
+                    if (omml.isStartElement()) {
+                        xml.writeStartElement(omml.qualifiedName().toString());
+                        const auto attrs = omml.attributes();
+                        for (const auto &a : attrs)
+                            xml.writeAttribute(a.qualifiedName().toString(), a.value().toString());
+                        for (const auto &ns : omml.namespaceDeclarations())
+                            xml.writeNamespace(ns.namespaceUri().toString(), ns.prefix().toString());
+                    } else if (omml.isEndElement()) {
+                        xml.writeEndElement();
+                    } else if (omml.isCharacters() && !omml.isWhitespace()) {
+                        xml.writeCharacters(omml.text().toString());
+                    }
+                }
+                xml.writeEndElement(); // a14:m
+                xml.writeEndElement(); // mc:Choice
+                xml.writeStartElement(QStringLiteral("mc:Fallback"));
+                xml.writeStartElement(QStringLiteral("xdr:pic"));
+                xml.writeStartElement(QStringLiteral("xdr:nvPicPr")); xml.writeEmptyElement(QStringLiteral("xdr:cNvPr")); xml.writeAttribute(QStringLiteral("id"), QString::number(image.index)); xml.writeAttribute(QStringLiteral("name"), QStringLiteral("Equation %1").arg(image.index)); xml.writeEmptyElement(QStringLiteral("xdr:cNvPicPr")); xml.writeEndElement();
+                xml.writeStartElement(QStringLiteral("xdr:blipFill")); xml.writeEmptyElement(QStringLiteral("a:blip")); xml.writeAttribute(QStringLiteral("r:embed"), QStringLiteral("rId%1").arg(image.index)); xml.writeStartElement(QStringLiteral("a:stretch")); xml.writeEmptyElement(QStringLiteral("a:fillRect")); xml.writeEndElement(); xml.writeEndElement();
+                xml.writeStartElement(QStringLiteral("xdr:spPr")); xml.writeStartElement(QStringLiteral("a:prstGeom")); xml.writeAttribute(QStringLiteral("prst"), QStringLiteral("rect")); xml.writeEmptyElement(QStringLiteral("a:avLst")); xml.writeEndElement(); xml.writeEndElement();
+                xml.writeEndElement(); // xdr:pic
+                xml.writeEndElement(); // mc:Fallback
+                xml.writeEndElement(); // mc:AlternateContent
             } else {
             xml.writeStartElement(QStringLiteral("xdr:pic"));
             xml.writeStartElement(QStringLiteral("xdr:nvPicPr")); xml.writeEmptyElement(QStringLiteral("xdr:cNvPr")); xml.writeAttribute(QStringLiteral("id"), QString::number(image.index)); xml.writeAttribute(QStringLiteral("name"), QStringLiteral("Image %1").arg(image.index)); xml.writeEmptyElement(QStringLiteral("xdr:cNvPicPr")); xml.writeEndElement();
@@ -1534,8 +1613,14 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
             if (shape->shapeId() == QLatin1String("UnavailShapeID")) continue;
             QByteArray chartPart;
             if (auto *chart = dynamic_cast<KoChart::ChartShape *>(shape)) { chartPart = chartXml(chart, document->map()); }
-            QByteArray png;
+            QByteArray mathPart;
             if (chartPart.isEmpty()) {
+                const QByteArray mathml = shapeMathML(shape);
+                if (!mathml.isEmpty())
+                    mathPart = mathmlToOmml(mathml);
+            }
+            QByteArray png;
+            if (chartPart.isEmpty() && mathPart.isEmpty()) {
                 // KoShapePainter::paint(QImage&) paints into an existing image;
                 // a default-constructed QImage is null and nothing is drawn.
                 const QRectF bounds = shape->boundingRect();
@@ -1551,7 +1636,7 @@ KoFilter::ConversionStatus XlsxExport::convert(const QByteArray &from, const QBy
                 QBuffer buffer(&png);
                 if (!buffer.open(QIODevice::WriteOnly) || !image.save(&buffer, "PNG")) continue;
             }
-            images.append({shape, png, chartPart, nextImageIndex++});
+            images.append({shape, png, chartPart, mathPart, nextImageIndex++});
         }
         sheetImages.append(images);
     }

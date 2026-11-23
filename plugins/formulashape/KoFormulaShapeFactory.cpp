@@ -53,6 +53,17 @@ KoShape *KoFormulaShapeFactory::createDefaultShape(KoDocumentResourceManager *re
 {
     KoFormulaShape *formula = new KoFormulaShape(resourceManager);
     formula->setShapeId(KoFormulaShapeId);
+    // Lay out at the formula's natural size, then scale to a medium default so a
+    // newly inserted equation appears at roughly 12-14pt text size. The frame
+    // can be resized afterwards; glyphs scale with the frame.
+    formula->updateLayout();
+    const QSizeF natural = formula->size();
+    if (natural.height() > 0.0) {
+        const qreal targetHeight = 20.0;
+        const qreal scale = qMin(1.0, targetHeight / natural.height());
+        if (!qFuzzyCompare(scale, 1.0))
+            formula->setSize(natural * scale);
+    }
     return formula;
 }
 

@@ -29,14 +29,21 @@
 #include <KoTextEditor.h>
 #include <KoTextLayoutRootArea.h>
 #include <KoRibbonLayout.h>
+#include <KoRibbonIcons.h>
 #include <QMessageBox>
 
 #include <QAction>
 #include <QBoxLayout>
 #include <QDebug>
+#include <QDesktopServices>
+#include <QDockWidget>
 #include <QLineEdit>
 #include <QMenu>
+#include <QTextCursor>
 #include <QTextDocument>
+#include <QUrl>
+#include <QUrlQuery>
+#include <QWidget>
 #include <QWidgetAction>
 
 LabeledWidget::~LabeledWidget() = default;
@@ -164,6 +171,11 @@ void ReferencesTool::createActions()
     addAction("insert_bibliography", action);
     action->setToolTip(i18n("Insert a bibliography into the document."));
 
+    action = new QAction(koIcon("search"), i18n("Smart Lookup"), this);
+    addAction("smart_lookup", action);
+    action->setToolTip(i18n("Look up the selected text on the web."));
+    connect(action, &QAction::triggered, this, &ReferencesTool::smartLookup);
+
     action = new QAction(i18n("Insert Custom Bibliography"), this);
     addAction("insert_custom_bibliography", action);
     action->setToolTip(i18n("Insert a custom Bibliography into the document."));
@@ -244,14 +256,74 @@ QList<QPointer<QWidget>> ReferencesTool::createOptionWidgets()
     m_slw->setProperty("ribbonGroupOrder", 40);
     widgets.append(m_slw);
     if (qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
-        KoRibbonLayout::arrange(m_stocw, {m_stocw->findChild<QToolButton *>(QStringLiteral("addToC"))}, {});
-        KoRibbonLayout::arrange(m_sfenw,
-                               {m_sfenw->findChild<QToolButton *>(QStringLiteral("addFootnote"))},
-                               {m_sfenw->findChild<QToolButton *>(QStringLiteral("addEndnote"))});
-        KoRibbonLayout::arrange(m_scbw,
-                               {m_scbw->findChild<QToolButton *>(QStringLiteral("addCitation"))},
-                               {m_scbw->findChild<QToolButton *>(QStringLiteral("configureBibliography")),
-                                m_scbw->findChild<QToolButton *>(QStringLiteral("addBibliography"))});
+        // Keep the familiar References order while retaining the existing
+        // galleries and actions. Unsupported document features are explicit.
+        const auto button = [](QWidget *panel, const QString &name, const QString &text,
+                               const QString &icon, QAction *action = nullptr) {
+            auto *control = new QToolButton(panel);
+            control->setObjectName(name);
+            if (action) {
+                control->setDefaultAction(action);
+            } else {
+                control->setEnabled(false);
+                control->setToolTip(i18n("%1 is not yet supported in Calligra Words.", text));
+            }
+            control->setText(text);
+            control->setIcon(KoRibbonIcons::forCommand(icon));
+            return control;
+        };
+        const auto group = [&widgets](const QString &title, int order) {
+            auto *panel = new QWidget;
+            panel->setWindowTitle(title);
+            panel->setProperty("ribbonGroupOrder", order);
+            widgets.append(panel);
+            return panel;
+        };
+        auto *contents = m_stocw->findChild<QToolButton *>(QStringLiteral("addToC"));
+        contents->setText(i18n("Table of\nContents"));
+        auto *addText = button(m_stocw, QStringLiteral("addTocText"), i18n("Add Text"), QStringLiteral("description"));
+        auto *configureToc = button(m_stocw, QStringLiteral("configureToc"), i18n("Configure Table"),
+                                    QStringLiteral("settings"), action("format_tableofcontents"));
+        KoRibbonLayout::arrange(m_stocw, {contents}, {addText, configureToc});
+
+        auto *footnote = m_sfenw->findChild<QToolButton *>(QStringLiteral("addFootnote"));
+        auto *endnote = m_sfenw->findChild<QToolButton *>(QStringLiteral("addEndnote"));
+        const QIcon noteIcon = KoRibbonIcons::forThemeIcon(QStringLiteral("insert-footnote"), koIcon("insert-footnote"));
+        const QSize noteIconSize(36, 36);
+        for (QToolButton *noteButton : {footnote, endnote}) {
+            noteButton->setIcon(noteIcon);
+            noteButton->setProperty("ribbonPreferredIconSize", noteIconSize);
+        }
+        footnote->setText(i18n("Insert\nFootnote"));
+        endnote->setText(i18n("Insert\nEndnote"));
+        auto *nextNote = button(m_sfenw, QStringLiteral("nextFootnote"), i18n("Next Footnote"), QStringLiteral("description"));
+        auto *showNotes = button(m_sfenw, QStringLiteral("showNotes"), i18n("Show Notes"), QStringLiteral("description"));
+        KoRibbonLayout::arrange(m_sfenw, {footnote, endnote}, {nextNote, showNotes});
+
+        auto *citation = m_scbw->findChild<QToolButton *>(QStringLiteral("addCitation"));
+        citation->setText(i18n("Insert\nCitation"));
+        auto *configureBibliography = m_scbw->findChild<QToolButton *>(QStringLiteral("configureBibliography"));
+        configureBibliography->setText(i18n("Bibliography Settings"));
+        auto *bibliography = m_scbw->findChild<QToolButton *>(QStringLiteral("addBibliography"));
+        bibliography->setText(i18n("Bibliography"));
+        KoRibbonLayout::arrange(m_scbw, {citation}, {configureBibliography, bibliography});
+
+        auto *captions = group(i18n("Captions"), 40);
+        KoRibbonLayout::arrange(captions,
+                               {button(captions, QStringLiteral("insertCaption"), i18n("Insert\nCaption"), QStringLiteral("description")),
+                                button(captions, QStringLiteral("insertTableOfFigures"), i18n("Insert Table\nof Figures"), QStringLiteral("format_list_bulleted"))},
+                               {button(captions, QStringLiteral("updateTableOfFigures"), i18n("Update Table"), QStringLiteral("refresh")),
+                                button(captions, QStringLiteral("crossReference"), i18n("Cross-reference"), QStringLiteral("link"))});
+        auto *index = group(i18n("Index"), 50);
+        KoRibbonLayout::arrange(index,
+                               {button(index, QStringLiteral("markIndexEntry"), i18n("Mark\nEntry"), QStringLiteral("description"))},
+                               {button(index, QStringLiteral("insertIndex"), i18n("Insert Index"), QStringLiteral("format_list_bulleted")),
+                                button(index, QStringLiteral("updateIndex"), i18n("Update Index"), QStringLiteral("refresh"))});
+        auto *authorities = group(i18n("Table of Authorities"), 60);
+        KoRibbonLayout::arrange(authorities,
+                               {button(authorities, QStringLiteral("markCitation"), i18n("Mark\nCitation"), QStringLiteral("description"))},
+                               {button(authorities, QStringLiteral("insertTableOfAuthorities"), i18n("Insert Table of Authorities"), QStringLiteral("format_list_bulleted")),
+                                button(authorities, QStringLiteral("updateTableOfAuthorities"), i18n("Update Table"), QStringLiteral("refresh"))});
         // Links belong to Insert; keep the same bookmark and link menus.
         widgets.removeAll(m_slw);
         m_slw->setParent(m_stocw);
@@ -409,4 +481,41 @@ void ReferencesTool::insertBookmark(QString bookMarkName)
         editor()->addBookmark(bookMarkName);
         m_bmark->clearLineEdit();
     }
+}
+
+void ReferencesTool::smartLookup()
+{
+    KoTextEditor *ed = editor();
+    if (!ed)
+        return;
+    QString query = ed->selectedText().trimmed();
+    if (query.isEmpty()) {
+        QTextCursor cursor(ed->constCursor());
+        cursor.select(QTextCursor::WordUnderCursor);
+        query = cursor.selectedText().trimmed();
+    }
+    query.remove(QChar(0x2029)); // paragraph separator from QTextCursor selection
+    query = query.simplified();
+    if (query.isEmpty())
+        return;
+
+    // Prefer the in-app Words Research docker (Office-style pane).
+    QWidget *root = m_canvas ? m_canvas->canvasWidget() : nullptr;
+    for (; root && !root->isWindow(); root = root->parentWidget()) {
+    }
+    if (root) {
+        if (auto *docker = root->findChild<QDockWidget *>(QStringLiteral("Research"))) {
+            docker->show();
+            docker->raise();
+            QMetaObject::invokeMethod(docker, "lookup", Qt::QueuedConnection, Q_ARG(QString, query));
+            return;
+        }
+    }
+
+    // Fallback: open in external browser.
+    QUrl url(QStringLiteral("https://www.bing.com/search"));
+    QUrlQuery urlQuery;
+    urlQuery.addQueryItem(QStringLiteral("q"), query);
+    url.setQuery(urlQuery);
+    QDesktopServices::openUrl(url);
 }

@@ -1,30 +1,52 @@
 #!/bin/sh
-# Launch the locally built Calligra Words.
-#
-# The binary installed into ./build/install needs three paths that a plain
-# `./build/bin/calligrawords` or `./build/install/bin/calligrawords` run does not
-# have: the private libs, the calligra plugin tree (QT_PLUGIN_PATH -- without
-# it the "parts" plugin is not found and the app aborts with "Essential
-# application components could not be found"), and the installed data files
-# such as calligrawords.rc (XDG_DATA_DIRS).
-#
-# After rebuilding:  cmake --install build
+# Launch Calligra Words from this build-opt/bin directory.
+set -eu
 
-set -e
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+BIN="$ROOT/build-opt/bin"
 
-SRC="$(cd "$(dirname "$0")" && pwd)"
-D="$SRC/build/install"
-BUILD="$SRC/build/bin"
+DATA_ROOT=${CALLIGRA_DATA_ROOT:-}
+if [ -z "$DATA_ROOT" ]; then
+    for p in \
+        /opt/calligra \
+        /tmp/opencode/calligra-deb/root/opt/calligra \
+        "$ROOT/build-opt/local-install" \
+        "$ROOT/build/install" \
+        "$ROOT/build-opt/install" \
+        /usr/local \
+        /usr
+    do
+        if [ -d "$p/share/calligra" ] || [ -d "$p/share/calligrawords" ] || [ -f "$p/share/kxmlgui5/calligrawords/calligrawords.rc" ] || [ -d "$p/lib/x86_64-linux-gnu/calligra" ] || [ -d "$p/lib/calligra" ]; then
+            DATA_ROOT=$p
+            break
+        fi
+    done
+fi
+if [ -z "$DATA_ROOT" ]; then
+    # Last-resort fallback: run with system paths and warn.
+    DATA_ROOT=/usr
+    echo "Warning: Calligra data files not found; using DATA_ROOT=$DATA_ROOT. Set CALLIGRA_DATA_ROOT if needed." >&2
+fi
 
-if [ ! -x "$D/bin/calligrawords" ]; then
-    echo "No local install at $D/bin/calligrawords" >&2
-    echo "Build and install first:" >&2
-    echo "    cmake --install $SRC/build" >&2
+for d in "$DATA_ROOT/lib/x86_64-linux-gnu" "$DATA_ROOT/lib"; do
+    if [ -d "$d" ]; then
+        LIBDIR=$d
+        break
+    fi
+done
+LIBDIR=${LIBDIR:-"$DATA_ROOT/lib/x86_64-linux-gnu"}
+APP="$BIN/calligrawords"
+
+if [ ! -x "$APP" ]; then
+    echo "Missing executable: $APP" >&2
     exit 1
 fi
 
 exec env \
-    LD_LIBRARY_PATH="$BUILD:$D/lib/x86_64-linux-gnu:$D/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
-    QT_PLUGIN_PATH="$D/lib/x86_64-linux-gnu/qt6/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}" \
-    XDG_DATA_DIRS="$D/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" \
-    "$BUILD/calligrawords" "$@"
+    LD_LIBRARY_PATH="$BIN:$LIBDIR:$DATA_ROOT/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
+    QT_PLUGIN_PATH="$BIN:$LIBDIR/qt6/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}" \
+    XDG_DATA_DIRS="$DATA_ROOT/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" \
+    XDG_CONFIG_DIRS="$DATA_ROOT/etc/xdg:${XDG_CONFIG_DIRS:-/etc/xdg}" \
+    QML2_IMPORT_PATH="$LIBDIR/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}" \
+    QT_QUICK_CONTROLS_STYLE_PATH="$LIBDIR/qml/QtQuick/Controls.2${QT_QUICK_CONTROLS_STYLE_PATH:+:$QT_QUICK_CONTROLS_STYLE_PATH}" \
+    "$APP" "$@"

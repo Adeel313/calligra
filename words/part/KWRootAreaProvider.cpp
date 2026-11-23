@@ -75,24 +75,19 @@ void KWRootAreaProvider::clearPages(int pageNumber)
 
     KoTextDocumentLayout *lay = qobject_cast<KoTextDocumentLayout *>(frameSet()->document()->documentLayout());
     Q_ASSERT(lay);
-    int prevPageIndex = pageNumber - 2;
-    do {
-        KWRootAreaPage *prevPage = prevPageIndex >= 0 && prevPageIndex < pages().count() ? pages()[prevPageIndex] : 0;
-        if (prevPage) {
-            if (prevPage->rootAreas.isEmpty()) {
-                --prevPageIndex;
-                continue; // this page doesn't have any root-areas so try the next previous page
-            }
-            QList<KoTextLayoutRootArea *> rootAreas = prevPage->rootAreas;
-            foreach (KoTextLayoutRootArea *area, rootAreas) {
-                releaseAllAfter(area);
-                lay->removeRootArea(area);
-            }
-        } else {
-            releaseAllAfter(nullptr);
-            lay->removeRootArea(nullptr);
+    for (int index = pageNumber - 2; index >= 0; --index) {
+        const auto rootAreas = pages().at(index)->rootAreas;
+        if (rootAreas.isEmpty()) {
+            continue;
         }
-    } while (false);
+        for (KoTextLayoutRootArea *area : rootAreas) {
+            releaseAllAfter(area);
+            lay->removeRootArea(area);
+        }
+        return;
+    }
+    releaseAllAfter(nullptr);
+    lay->removeRootArea(nullptr);
 }
 
 void KWRootAreaProvider::addDependentProvider(KWRootAreaProviderBase *provider, int pageNumber)
@@ -184,12 +179,33 @@ KoTextLayoutRootArea *KWRootAreaProvider::provideNext(KoTextDocumentLayout *docu
             requiredRootAreaCount = 1;
         }
     }
-    if (rootAreaPage && rootAreaPage->rootAreas.count() < requiredRootAreaCount) {
+    if (rootAreaPage && frameSet()->textFrameSetType() == Words::MainTextFrameSet
+        && rootAreaPage->rootAreas.count() < requiredRootAreaCount) {
         pageNumber = m_pages.count(); // the root-area is still on the same page
     } else {
         pageNumber = m_pages.count() + 1; // the root-area is the first on a new page
 
         if (frameSet()->textFrameSetType() == Words::MainTextFrameSet) {
+            if (rootAreaPage && constraints.newPageForced) {
+                const KWPageStyle sectionStyle = pageManager->pageStyle(constraints.masterPageName);
+                const auto usage = sectionStyle.isValid() ? sectionStyle.pageUsage() : KWPageStyle::AllPages;
+                // Explicit section side takes precedence over a numbering restart.
+                const int parity = usage == KWPageStyle::RightPages ? 1
+                    : usage == KWPageStyle::LeftPages ? 0
+                    : constraints.visiblePageNumber > 0 ? constraints.visiblePageNumber % 2 : -1;
+                if (parity >= 0 && pageNumber % 2 != parity) {
+                    auto blankStyle = rootAreaPage->page.pageStyle();
+                    blankStyle.setHeaderPolicy(Words::HFTypeNone);
+                    blankStyle.setFooterPolicy(Words::HFTypeNone);
+                    KWPage blank = pageNumber <= pageManager->pageCount()
+                        ? pageManager->page(pageNumber) : kwdoc->appendPage(blankStyle.name());
+                    blank.setPageStyle(blankStyle);
+                    blank.setVisiblePageNumber(0);
+                    kwdoc->frameLayout()->createNewFramesForPage(pageNumber);
+                    m_pages.append(new KWRootAreaPage(blank));
+                    ++pageNumber;
+                }
+            }
             // Create missing KWPage's (they will also create a KWFrame and TextShape per page)
             for (int i = pageManager->pageCount(); i < pageNumber; ++i) {
                 KWPage page = kwdoc->appendPage(constraints.masterPageName);
@@ -209,6 +225,11 @@ KoTextLayoutRootArea *KWRootAreaProvider::provideNext(KoTextDocumentLayout *docu
         KWPage page = pageManager->page(pageNumber);
         Q_ASSERT(page.isValid());
         if (frameSet()->textFrameSetType() == Words::MainTextFrameSet) {
+            const auto sectionStyle = pageManager->pageStyle(constraints.masterPageName);
+            if (!constraints.masterPageName.isEmpty() && sectionStyle.isValid() && page.pageStyle() != sectionStyle) {
+                page.setPageStyle(sectionStyle);
+                kwdoc->frameLayout()->createNewFramesForPage(pageNumber);
+            }
             if (constraints.visiblePageNumber >= 0)
                 page.setVisiblePageNumber(constraints.visiblePageNumber);
             else
@@ -270,6 +291,9 @@ KoTextLayoutRootArea *KWRootAreaProvider::provideNext(KoTextDocumentLayout *docu
     }
 
     KoShape *shape = rootAreaPage->rootAreas.count() < shapes.count() ? shapes[rootAreaPage->rootAreas.count()] : 0;
+    if (!shape && Words::isHeaderFooter(frameSet())) {
+        return nullptr;
+    }
 
     KWTextLayoutRootArea *area = new KWTextLayoutRootArea(documentLayout, frameSet(), pageNumber);
     if (frameSet()->textFrameSetType() == Words::MainTextFrameSet) {
@@ -372,16 +396,17 @@ KWRootAreaProvider::provide(KoTextDocumentLayout *documentLayout, const RootArea
     realConstraints.visiblePageNumber = visiblePageNumber;
     realConstraints.newPageForced = newPageForced;
     KoTextLayoutRootArea *area = nullptr;
+    qsizetype previousPageCount;
     do {
+        previousPageCount = m_pages.count();
         area = provideNext(documentLayout, realConstraints);
-        if (m_rootAreaCache.size() <= requestedPosition)
-            m_rootAreaCache.append(area);
-    } while (Words::isHeaderFooter(frameSet()) && area && !area->associatedShape());
+    } while (Words::isHeaderFooter(frameSet()) && !area && m_pages.count() > previousPageCount);
+    // A skipped header/footer page has no root area. If the body has not
+    // created the next page yet, leave the position uncached so it can retry.
+    if (area && m_rootAreaCache.size() <= requestedPosition) {
+        m_rootAreaCache.append(area);
+    }
 
-    Q_ASSERT(m_rootAreaCache.size() > requestedPosition);
-
-    if (area == nullptr && (frameSet()->textFrameSetType() != Words::MainTextFrameSet) && requestedPosition == 0)
-        m_rootAreaCache.clear();
     *isNewArea = true;
 
     return area;

@@ -83,7 +83,9 @@ void KoVariable::resize(const QTextDocument *document, QTextInlineObject &object
     Q_ASSERT(format.isCharFormat());
     QFontMetricsF fm(format.font(), pd);
 
-    qreal width = qMax(qreal(0.0), fm.boundingRect(d->value).width());
+    // Inline objects reserve the text advance, not just its ink bounds. The
+    // latter can be narrower and clip the last digit of a slide/page number.
+    qreal width = qMax(fm.horizontalAdvance(d->value), fm.boundingRect(d->value).width());
     qreal ascent = fm.ascent();
     qreal descent = fm.descent();
     if (object.width() != width) {
@@ -122,12 +124,16 @@ void KoVariable::paint(QPainter &painter,
     layout.setFormats(layouts);
 
     QTextOption option(Qt::AlignLeft | Qt::AlignAbsolute);
+    option.setWrapMode(QTextOption::NoWrap);
     if (object.isValid()) {
         option.setTextDirection(object.textDirection());
     }
     layout.setTextOption(option);
     layout.beginLayout();
-    layout.createLine();
+    QTextLine line = layout.createLine();
+    if (line.isValid()) {
+        line.setLineWidth(rect.width());
+    }
     layout.endLayout();
     layout.draw(&painter, rect.topLeft());
 }

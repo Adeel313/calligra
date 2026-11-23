@@ -25,9 +25,14 @@ set(xlsx2ods_PART_SRCS
 
     XlsxChartOdfWriter.cpp
     FormulaParser.cpp
+    ${CMAKE_SOURCE_DIR}/filters/words/docx/import/DocxMathMLWriter.cpp
 )
 
 add_library(calligra_filter_xlsx2ods MODULE ${xlsx2ods_PART_SRCS})
+
+target_include_directories(calligra_filter_xlsx2ods PRIVATE
+    ${CMAKE_SOURCE_DIR}/filters/words/docx/import
+)
 
 target_link_libraries(
     calligra_filter_xlsx2ods
@@ -57,7 +62,13 @@ ecm_add_test( ${TestFormulaParser_SRCS}
 endif()
 
 if(SHOULD_BUILD_FILTER_ODS_TO_XLSX)
-    add_library(calligra_filter_ods2xlsx MODULE XlsxExport.cpp)
-    target_link_libraries(calligra_filter_ods2xlsx calligrasheetscore komain chartshapecore)
+    add_library(calligra_filter_ods2xlsx MODULE
+        XlsxExport.cpp
+        ${CMAKE_SOURCE_DIR}/filters/words/docx/export/DocxMathWriter.cpp
+    )
+    target_include_directories(calligra_filter_ods2xlsx PRIVATE
+        ${CMAKE_SOURCE_DIR}/filters/words/docx/export
+    )
+    target_link_libraries(calligra_filter_ods2xlsx calligrasheetscore komain chartshapecore koodf)
     install(TARGETS calligra_filter_ods2xlsx DESTINATION ${KDE_INSTALL_PLUGINDIR}/calligra/formatfilters)
 endif()

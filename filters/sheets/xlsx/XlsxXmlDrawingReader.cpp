@@ -17,6 +17,7 @@
 #include "XlsxXmlChartReader.h"
 #include "XlsxXmlWorksheetReader.h"
 #include "XlsxXmlWorksheetReader_p.h"
+#include "DocxMathMLWriter.h"
 
 #include <MsooXmlDiagramReader.h>
 #include <MsooXmlRelationships.h>
@@ -27,7 +28,9 @@
 #include <KoGenStyles.h>
 #include <KoOdfGraphicStyles.h>
 #include <KoXmlWriter.h>
+#include <QDomDocument>
 #include <QFontMetricsF>
+#include <QTextStream>
 
 #define MSOOXML_CURRENT_NS "xdr"
 #define MSOOXML_CURRENT_CLASS XlsxXmlDrawingReader
@@ -113,6 +116,35 @@ void XlsxDrawingObject::save(KoXmlWriter *xmlWriter)
         xmlWriter->addCompleteElement(data);
         delete m_shapeBody;
         m_shapeBody = nullptr;
+    } break;
+    case Formula: {
+        if (m_formulaMathML.isEmpty())
+            break;
+        xmlWriter->startElement("draw:frame");
+        const QString fromAddr = fromCellAddress();
+        const QString toAddr = toCellAddress();
+        if (!toAddr.isEmpty())
+            xmlWriter->addAttribute("table:end-cell-address", toAddr);
+        else if (!fromAddr.isEmpty())
+            xmlWriter->addAttribute("table:end-cell-address", fromAddr);
+        xmlWriter->addAttribute("draw:z-index", "0");
+        xmlWriter->startElement("draw:object");
+        QDomDocument mathDoc;
+        if (mathDoc.setContent(m_formulaMathML, QDomDocument::ParseOption::UseNamespaceProcessing)) {
+            QDomElement math = mathDoc.documentElement();
+            if (math.localName() == QLatin1String("math") || math.tagName().endsWith(QLatin1String(":math"))) {
+                QString mathXml;
+                QTextStream out(&mathXml);
+                math.save(out, -1, QDomNode::EncodingFromDocument);
+                xmlWriter->addCompleteElement(mathXml.toUtf8().constData());
+            } else {
+                xmlWriter->addCompleteElement(m_formulaMathML.constData());
+            }
+        } else {
+            xmlWriter->addCompleteElement(m_formulaMathML.constData());
+        }
+        xmlWriter->endElement(); // draw:object
+        xmlWriter->endElement(); // draw:frame
     } break;
     }
 }
@@ -351,6 +383,7 @@ KoFilter::ConversionStatus XlsxXmlDrawingReader::read_anchor(const QString &refe
             ELSE_TRY_READ_IF(graphicFrame)
             ELSE_TRY_READ_IF(cxnSp)
             ELSE_TRY_READ_IF(grpSp)
+            else if (qualifiedName() == QLatin1StringView("mc:AlternateContent")) { TRY_READ(mathAlternateContent) }
             SKIP_UNKNOWN
         }
     }
@@ -361,11 +394,13 @@ KoFilter::ConversionStatus XlsxXmlDrawingReader::read_anchor(const QString &refe
             Cell *cell = m_context->sheet->cell(pos.m_col, pos.m_row, true);
             cell->appendDrawing(m_currentDrawingObject);
             m_currentDrawingObject = nullptr;
-        } else if (absolute && m_currentDrawingObject->m_type == XlsxDrawingObject::Chart) {
-            auto *chartWriter = m_currentDrawingObject->m_chart->m_chartWriter;
-            if (const auto &position = m_currentDrawingObject->m_absolutePosition) {
-                chartWriter->m_x = EMU_TO_POINT(position->first);
-                chartWriter->m_y = EMU_TO_POINT(position->second);
+        } else if (absolute && (m_currentDrawingObject->m_type == XlsxDrawingObject::Chart || m_currentDrawingObject->m_type == XlsxDrawingObject::Formula)) {
+            if (m_currentDrawingObject->m_type == XlsxDrawingObject::Chart) {
+                auto *chartWriter = m_currentDrawingObject->m_chart->m_chartWriter;
+                if (const auto &position = m_currentDrawingObject->m_absolutePosition) {
+                    chartWriter->m_x = EMU_TO_POINT(position->first);
+                    chartWriter->m_y = EMU_TO_POINT(position->second);
+                }
             }
             m_currentDrawingObject->save(body);
         }
@@ -500,6 +535,64 @@ KoFilter::ConversionStatus XlsxXmlDrawingReader::read_graphicFrame()
     }
 
     READ_EPILOGUE
+}
+
+KoFilter::ConversionStatus XlsxXmlDrawingReader::read_mathAlternateContent()
+{
+    QByteArray mathml;
+    bool inA14Choice = false;
+    int depth = 0;
+    while (!atEnd()) {
+        readNext();
+        if (isEndElement() && qualifiedName() == QLatin1StringView("mc:AlternateContent") && depth == 0)
+            break;
+        if (isStartElement()) {
+            if (qualifiedName() == QLatin1StringView("mc:Choice")) {
+                const QString choiceRequires = attributes().value(QLatin1StringView("Requires")).toString();
+                inA14Choice = choiceRequires.contains(QLatin1StringView("a14"));
+                ++depth;
+                continue;
+            }
+            if (qualifiedName() == QLatin1StringView("mc:Fallback")) {
+                inA14Choice = false;
+                ++depth;
+                continue;
+            }
+            if (inA14Choice) {
+                const QString local = name().toString();
+                const QString ns = namespaceUri().toString();
+                const bool isMath = (local == QLatin1StringView("oMath") || local == QLatin1StringView("oMathPara"))
+                    && (ns == QLatin1StringView("http://schemas.openxmlformats.org/officeDocument/2006/math")
+                        || ns == QLatin1StringView("http://schemas.microsoft.com/office/drawing/2010/main")
+                        || ns.endsWith(QLatin1StringView("/math")));
+                if (isMath) {
+                mathml = DocxMathMLWriter::readMathML(*this, 12.0);
+                // DocxMathMLWriter produces a full content.xml-style <math>...</math>; store as-is.
+                inA14Choice = false;
+                continue;
+            }
+                // a14:m wrapper - look inside for oMath
+                if (local == QLatin1StringView("m")
+                    && ns == QLatin1StringView("http://schemas.microsoft.com/office/drawing/2010/main")) {
+                    ++depth;
+                    continue;
+                }
+            }
+            if (depth > 0) {
+                ++depth;
+            } else {
+                skipCurrentElement();
+            }
+        } else if (isEndElement()) {
+            if (depth > 0)
+                --depth;
+        }
+    }
+    if (!mathml.isEmpty() && m_currentDrawingObject) {
+        m_currentDrawingObject->m_type = XlsxDrawingObject::Formula;
+        m_currentDrawingObject->m_formulaMathML = mathml;
+    }
+    return KoFilter::OK;
 }
 
 XlsxXmlEmbeddedPicture::XlsxXmlEmbeddedPicture()

@@ -80,6 +80,10 @@ set(wordsprivate_LIB_SRCS
     dockers/KWNavigationDockerFactory.cpp
     dockers/KWNavigationWidget.cpp
 
+    dockers/KWResearchDocker.cpp
+    dockers/KWResearchDockerFactory.cpp
+    dockers/KWResearchWidget.cpp
+
     commands/KWPageStylePropertiesCommand.cpp
     commands/KWNewPageStyleCommand.cpp
     commands/KWChangePageStyleCommand.cpp
@@ -134,6 +138,7 @@ target_link_libraries(wordsprivate
         kotextlayout
         KF6::IconThemes
         KF6::Completion
+        Qt6::Network
 )
 if( SHOULD_BUILD_FEATURE_RDF )
     target_link_libraries(wordsprivate

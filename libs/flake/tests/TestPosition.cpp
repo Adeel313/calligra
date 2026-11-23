@@ -8,6 +8,9 @@
 #include "TestPosition.h"
 
 #include <MockShapes.h>
+#include <KoOdfLoadingContext.h>
+#include <KoOdfStylesReader.h>
+#include <KoShapeLoadingContext.h>
 #include <QPointF>
 #include <QTest>
 
@@ -150,6 +153,26 @@ void TestPosition::testSetAndGetRotation()
     QCOMPARE(shape1->rotation(), 186.0);
     shape1->rotate(358);
     QCOMPARE(shape1->rotation(), 184.0);
+}
+
+void TestPosition::testOdfRotationDirection()
+{
+    class OdfShape : public MockShape {
+    public:
+        using KoShape::parseOdfTransform;
+    } shape;
+    KoOdfStylesReader styles;
+    KoOdfLoadingContext odfContext(styles, nullptr);
+    KoShapeLoadingContext context(odfContext, nullptr);
+    for (const QString &angle : {QStringLiteral("-1.5707963267949"), QStringLiteral("-90deg")}) {
+        const QTransform matrix = shape.parseOdfTransform(QStringLiteral("rotate(%1) translate(20pt 30pt)").arg(angle), context);
+        const QPointF origin = matrix.map(QPointF(0, 0));
+        const QPointF axis = matrix.map(QPointF(1, 0));
+        QVERIFY(qAbs(origin.x() - 20) < 0.001);
+        QVERIFY(qAbs(origin.y() - 30) < 0.001);
+        QVERIFY(qAbs(axis.x() - origin.x()) < 0.001);
+        QVERIFY(qAbs(axis.y() - origin.y() - 1) < 0.001);
+    }
 }
 
 QTEST_GUILESS_MAIN(TestPosition)

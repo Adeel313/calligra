@@ -19,6 +19,7 @@
 #include <KoShapeController.h>
 #include <KoShapeFactoryBase.h>
 #include <KoShapeManager.h>
+#include <commands/KoShapeSizeCommand.h>
 #include <KoShapeRegistry.h>
 #include <KoToolManager.h>
 #include <KoToolBase.h>
@@ -32,6 +33,7 @@
 #include <QDialog>
 #include <QCheckBox>
 #include <QDialogButtonBox>
+#include <QDoubleSpinBox>
 #include <QFileDialog>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -48,6 +50,7 @@
 #include <QPixmap>
 #include <QPointer>
 #include <QSet>
+#include <QSignalBlocker>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QToolBar>
@@ -1152,7 +1155,8 @@ void populate(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages, QWid
     if (spreadsheet) {
         if (auto *box = window->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
             for (const QString &tool : {QStringLiteral("KSpreadCellToolId"), QStringLiteral("InteractionTool"),
-                                        QStringLiteral("ConnectionTool"), QStringLiteral("CreatePathTool")})
+                                        QStringLiteral("ConnectionTool"), QStringLiteral("CreatePathTool"),
+                                        QStringLiteral("KoFormulaToolFactoryId")})
                 QMetaObject::invokeMethod(box, "primeToolOptions", Qt::DirectConnection, Q_ARG(QString, tool));
             const QString startPage = qEnvironmentVariable("CALLIGRA_RIBBON_PAGE", QStringLiteral("sheetsHomePage"));
             QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection, Q_ARG(QString, startPage));
@@ -1260,6 +1264,9 @@ void applyCommandIcons(KoView *view)
 
 void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBase *canvas, bool spreadsheet)
 {
+    if (qApp->property("headlessPdfExport").toBool()) {
+        return;
+    }
     auto *imageAction = new QAction(QIcon::fromTheme(QStringLiteral("insert-image")), i18n("Insert Image"), view);
     view->actionCollection()->addAction(QStringLiteral("insert_picture"), imageAction);
     imageAction->setEnabled(view->koDocument()->isReadWrite());
@@ -1442,30 +1449,132 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
         auto *chartDesign = addPage(i18n("Chart Design"), {}, false, true);
         chartDesign->setObjectName(QStringLiteral("sheetsChartDesignPage"));
         chartDesign->setProperty("ribbonContextActive", false);
-        // Draw and Shape Format share one contextual page. It is titled
-        // "Chart Format" while a chart is selected and hides the drawing-tool
-        // groups in that state, so only chart-relevant formatting remains.
-        const auto updateContext = [view, canvas, shapeFormat, chartDesign] {
-            bool chartSelected = false;
+        // Equations get their own exclusive contextual tab. The formula tool
+        // supplies Symbols/Structures/LaTeX; a small Size group keeps equations
+        // resizable even when they are inserted at a tiny default size.
+        auto *equation = addPage(i18n("Equation"), {}, false, true);
+        equation->setObjectName(QStringLiteral("sheetsEquationPage"));
+        equation->setProperty("ribbonContextActive", false);
+        auto *equationGroup = new QWidget(equation);
+        equationGroup->setObjectName(QStringLiteral("equationSizeGroup"));
+        equationGroup->setProperty("ribbonGroupOrder", -100);
+        auto *equationGroupLayout = new QVBoxLayout(equationGroup);
+        equationGroupLayout->setContentsMargins(8, 0, 8, 0);
+        auto *equationSizeGrid = new QGridLayout;
+        equationSizeGrid->setContentsMargins(0, 0, 0, 0);
+        equationSizeGrid->setHorizontalSpacing(4);
+        equationSizeGrid->setVerticalSpacing(2);
+        auto *widthSpin = new QDoubleSpinBox(equationGroup);
+        auto *heightSpin = new QDoubleSpinBox(equationGroup);
+        for (QDoubleSpinBox *spin : {widthSpin, heightSpin}) {
+            spin->setRange(1, 2000);
+            spin->setSingleStep(10);
+            spin->setDecimals(1);
+            spin->setSuffix(i18n(" pt"));
+        }
+        equationSizeGrid->addWidget(new QLabel(i18n("Width:"), equationGroup), 0, 0);
+        equationSizeGrid->addWidget(widthSpin, 0, 1);
+        equationSizeGrid->addWidget(new QLabel(i18n("Height:"), equationGroup), 1, 0);
+        equationSizeGrid->addWidget(heightSpin, 1, 1);
+        equationGroupLayout->addLayout(equationSizeGrid);
+        auto *equationCaption = new QLabel(i18n("Size"), equationGroup);
+        equationCaption->setProperty("ribbonGroupTitle", true);
+        equationCaption->setAlignment(Qt::AlignCenter);
+        equationCaption->setMinimumHeight(18);
+        equationGroupLayout->addWidget(equationCaption);
+        auto *equationPageLayout = new QHBoxLayout(equation);
+        equationPageLayout->setContentsMargins(4, 4, 4, 2);
+        equationPageLayout->addWidget(equationGroup);
+        equationPageLayout->addStretch();
+
+        const auto selectedEquationShape = [canvas]() -> KoShape * {
             const QList<KoShape *> shapes = canvas->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
             for (KoShape *shape : shapes) {
-                for (KoShape *candidate = shape; candidate && !chartSelected; candidate = candidate->parent()) {
-                    chartSelected = candidate->shapeId() == QLatin1String(ChartShapeId);
+                for (KoShape *candidate = shape; candidate; candidate = candidate->parent()) {
+                    if (candidate->shapeId() == QLatin1String("FormulaShapeID")) {
+                        return candidate;
+                    }
                 }
-                if (chartSelected) {
+            }
+            return nullptr;
+        };
+        const auto applyEquationSize = [canvas, widthSpin, heightSpin, selectedEquationShape](QDoubleSpinBox *source) {
+            KoShape *shape = selectedEquationShape();
+            if (!shape) {
+                return;
+            }
+            const QSizeF previous = shape->size();
+            qreal factor = 1.0;
+            if (source == widthSpin && previous.width() > 0) {
+                factor = widthSpin->value() / previous.width();
+            } else if (source == heightSpin && previous.height() > 0) {
+                factor = heightSpin->value() / previous.height();
+            } else {
+                return;
+            }
+            if (!qIsFinite(factor) || factor <= 0 || qFuzzyCompare(factor, 1.0)) {
+                return;
+            }
+            const QSizeF updated = previous * factor;
+            canvas->addCommand(new KoShapeSizeCommand({shape}, QVector<QSizeF>{previous}, QVector<QSizeF>{updated}));
+            const QSignalBlocker blockWidth(widthSpin);
+            const QSignalBlocker blockHeight(heightSpin);
+            widthSpin->setValue(updated.width());
+            heightSpin->setValue(updated.height());
+        };
+        QObject::connect(widthSpin, &QDoubleSpinBox::editingFinished, equation, [widthSpin, applyEquationSize] { applyEquationSize(widthSpin); });
+        QObject::connect(heightSpin, &QDoubleSpinBox::editingFinished, equation, [heightSpin, applyEquationSize] { applyEquationSize(heightSpin); });
+
+        const auto updateContext = [view, canvas, shapeFormat, chartDesign, equation,
+                                    widthSpin, heightSpin, selectedEquationShape] {
+            bool chartSelected = false;
+            bool equationSelected = false;
+            const QList<KoShape *> shapes = canvas->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
+            for (KoShape *shape : shapes) {
+                for (KoShape *candidate = shape; candidate && (!chartSelected || !equationSelected); candidate = candidate->parent()) {
+                    chartSelected = chartSelected || candidate->shapeId() == QLatin1String(ChartShapeId);
+                    equationSelected = equationSelected || candidate->shapeId() == QLatin1String("FormulaShapeID");
+                }
+                if (chartSelected && equationSelected) {
                     break;
                 }
             }
             // Clicking a chart on the sheet enters its editing tool without
             // putting the chart into the shape selection.
-            if (!chartSelected && KoToolManager::instance()->activeToolId() == QLatin1String("ChartToolFactory_ID")) {
+            if (!chartSelected && !equationSelected
+                && KoToolManager::instance()->activeToolId() == QLatin1String("ChartToolFactory_ID")) {
                 chartSelected = true;
             }
 
+            const bool wasEquation = equation->property("ribbonContextActive").toBool();
+            equation->setProperty("ribbonContextActive", equationSelected);
+            if (equationSelected) {
+                shapeFormat->setProperty("sheetsEquationContextActive", true);
+                shapeFormat->setProperty("sheetsChartFormatActive", false);
+                shapeFormat->setProperty("ribbonContextActive", false);
+                chartDesign->setProperty("ribbonContextActive", false);
+                if (KoShape *shape = selectedEquationShape()) {
+                    const QSignalBlocker blockWidth(widthSpin);
+                    const QSignalBlocker blockHeight(heightSpin);
+                    widthSpin->setValue(shape->size().width());
+                    heightSpin->setValue(shape->size().height());
+                }
+                if (!wasEquation) {
+                    QTimer::singleShot(0, equation, [view] {
+                        if (auto *box = view->mainWindow()->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
+                            QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection,
+                                                      Q_ARG(QString, QStringLiteral("sheetsEquationPage")));
+                        }
+                    });
+                }
+                return;
+            }
+
+            const bool returningFromEquation = shapeFormat->property("sheetsEquationContextActive").toBool();
+            const bool shapeSelected = !shapes.isEmpty();
             const bool wasChartFormat = shapeFormat->property("sheetsChartFormatActive").toBool();
             shapeFormat->setProperty("sheetsChartFormatActive", chartSelected);
-            shapeFormat->setProperty("ribbonContextActive",
-                                     chartSelected || !canvas->shapeManager()->selection()->selectedShapes().isEmpty());
+            shapeFormat->setProperty("ribbonContextActive", chartSelected || shapeSelected);
 
             const QString title = chartSelected ? i18n("Chart Format") : i18n("Shape Format");
             if (shapeFormat->property("ribbonPageTitle").toString() != title) {
@@ -1493,12 +1602,26 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
             if (chartDesign->property("ribbonContextActive").toBool() != chartSelected) {
                 chartDesign->setProperty("ribbonContextActive", chartSelected);
             }
-            if (wasChartFormat != chartSelected) {
-                const QString page = chartSelected ? QStringLiteral("sheetsChartDesignPage")
-                                                   : QStringLiteral("sheetsShapeFormatPage");
-                QTimer::singleShot(0, shapeFormat, [view, page] {
+            if (chartSelected || shapeSelected) {
+                if (returningFromEquation || wasChartFormat != chartSelected) {
+                    const QString page = chartSelected ? QStringLiteral("sheetsChartDesignPage")
+                                                       : QStringLiteral("sheetsShapeFormatPage");
+                    QTimer::singleShot(0, shapeFormat, [view, page] {
+                        if (auto *box = view->mainWindow()->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
+                            QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection, Q_ARG(QString, page));
+                        }
+                    });
+                    if (returningFromEquation) {
+                        shapeFormat->setProperty("sheetsEquationContextActive", false);
+                    }
+                }
+            } else if (returningFromEquation) {
+                // Equation was the last active contextual page; return to the
+                // normal ribbon until another shape or chart is selected.
+                QTimer::singleShot(0, shapeFormat, [view] {
                     if (auto *box = view->mainWindow()->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
-                        QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection, Q_ARG(QString, page));
+                        QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection,
+                                                  Q_ARG(QString, QStringLiteral("sheetsHomePage")));
                     }
                 });
             }

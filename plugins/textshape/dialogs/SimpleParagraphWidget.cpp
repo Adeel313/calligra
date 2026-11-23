@@ -52,6 +52,7 @@
 #include <QLocale>
 #include <QScrollBar>
 #include <QTextLayout>
+#include <QTimer>
 #include <QWidgetAction>
 #include <QListView>
 #include <QPainter>
@@ -152,7 +153,8 @@ public:
 
     QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &) const override
     {
-        return QSize(qMax(112, option.fontMetrics.horizontalAdvance(QStringLiteral("AaBbCcDd")) + 24),
+        const bool words = QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive);
+        return QSize(qMax(words ? 160 : 112, option.fontMetrics.horizontalAdvance(QStringLiteral("AaBbCcDd")) + 24),
                      qMax(68, option.fontMetrics.lineSpacing() * 3 + 16));
     }
 
@@ -258,6 +260,30 @@ QWidget *SimpleParagraphWidget::configureRibbon(bool includeStyles)
     widget.moreOptions->setText(QStringLiteral("↘"));
     widget.moreOptions->setAccessibleName(i18n("Paragraph dialog"));
     widget.gridLayout->addWidget(widget.moreOptions, 1, 5);
+    if (QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        for (QToolButton *button : topRow + bottomRow + QList<QToolButton *>{lineSpacing}) {
+            KoRibbonLayout::configureHomeButton(button);
+        }
+        // The view owns this action; wait until the option panel is attached
+        // to its window so the Home and View controls share the same state.
+        QTimer::singleShot(0, this, [this] {
+            for (QAction *action : window()->findChildren<QAction *>()) {
+                if (action->objectName() != QLatin1String("view_formattingchars")) {
+                    continue;
+                }
+                auto *marks = new QToolButton(this);
+                marks->setObjectName(QStringLiteral("ribbonFormattingMarks"));
+                marks->setDefaultAction(action);
+                marks->setText(QStringLiteral("¶"));
+                connect(action, &QAction::changed, marks, [marks] { marks->setText(QStringLiteral("¶")); });
+                marks->setToolButtonStyle(Qt::ToolButtonTextOnly);
+                marks->setAutoRaise(true);
+                marks->setFixedSize(28, 28);
+                widget.gridLayout->addWidget(marks, 0, 5);
+                break;
+            }
+        });
+    }
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
     widget.paragraphStyleCombo->hide();
@@ -287,7 +313,8 @@ QWidget *SimpleParagraphWidget::configureRibbon(bool includeStyles)
     QStyleOptionViewItem galleryOption;
     galleryOption.initFrom(m_ribbonGallery);
     const QSize card = m_ribbonGallery->itemDelegate()->sizeHint(galleryOption, QModelIndex());
-    m_ribbonGallery->setFixedSize(card.width() * 3 + 4, card.height() + 4);
+    const bool words = QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive);
+    m_ribbonGallery->setFixedSize(card.width() * (words ? 1 : 3) + 4, card.height() + 4);
     connect(m_ribbonGallery, &QListView::clicked, this, QOverload<const QModelIndex &>::of(&SimpleParagraphWidget::styleSelected));
     connect(m_ribbonGallery, &QListView::activated, this, QOverload<const QModelIndex &>::of(&SimpleParagraphWidget::styleSelected));
     layout->addWidget(m_ribbonGallery);
@@ -295,6 +322,9 @@ QWidget *SimpleParagraphWidget::configureRibbon(bool includeStyles)
     auto *controls = new QVBoxLayout;
     controls->setSpacing(0);
     for (bool forward : {false, true}) {
+        if (words) {
+            continue;
+        }
         auto *scroll = new QToolButton(styles);
         scroll->setArrowType(forward ? Qt::DownArrow : Qt::UpArrow);
         scroll->setAccessibleName(forward ? i18n("Next styles") : i18n("Previous styles"));

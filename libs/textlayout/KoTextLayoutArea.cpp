@@ -1503,6 +1503,13 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
             }
         }
 
+        // Empty paragraphs (including the ODF loader's zero-width space)
+        // have no ink to clip. Fit their actual line box, since Qt's rounded
+        // glyph height can push the last blank line onto a page of its own.
+        if (bottomOfText > maximumAllowedBottom() && labelBoxWidth <= 0.0 && blockData.counterText().isEmpty()
+            && (block.length() == 1 || (block.length() == 2 && block.text().at(0) == QChar(0x200b)))) {
+            bottomOfText = line.y() + addLine(line, cursor, block, pStyle, blockData, true);
+        }
         findFootNotes(block, line, bottomOfText);
         if (bottomOfText > maximumAllowedBottom()) {
             // We can not fit line within our allowed space
@@ -1710,9 +1717,9 @@ qreal KoTextLayoutArea::verticalAlignOffset() const
     return d->verticalAlignOffset;
 }
 
-qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QTextBlock &block, const KoParagraphStyle &style, KoTextBlockData &blockData)
+qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QTextBlock &block, const KoParagraphStyle &style, KoTextBlockData &blockData, bool measureOnly)
 {
-    if (block.textList() && block.layout()->lineCount() == 1) {
+    if (!measureOnly && block.textList() && block.layout()->lineCount() == 1) {
         Qt::Alignment alignment = style.alignment();
         if (d->isRtl && (alignment & Qt::AlignAbsolute) == 0) {
             if (alignment & Qt::AlignLeft) {
@@ -1775,7 +1782,8 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
         return format.hasProperty(property) ? format.property(property).toDouble() : 1.0;
     };
 
-    if (cursor->fragmentIterator.atEnd()) { // no text in parag.
+    auto fragmentIterator = cursor->fragmentIterator;
+    if (fragmentIterator.atEnd()) { // no text in parag.
         qreal fontStretch = 1;
         QTextCharFormat charFormat = block.charFormat();
         if (style.hasProperty(KoParagraphStyle::EndCharStyle)) {
@@ -1804,7 +1812,7 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
         height = charFormat.fontPointSize() * fontStretch;
     } else {
         qreal fontStretch = 1;
-        QTextFragment fragment = cursor->fragmentIterator.fragment();
+        QTextFragment fragment = fragmentIterator.fragment();
         if (useFontProperties) {
             // stretch line height to powerpoint size
             fontStretch = PresenterFontStretch;
@@ -1834,11 +1842,11 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
             lineBreak = true;
         }
         while (!(fragment.contains(lastCharPos))) {
-            cursor->fragmentIterator++;
-            if (cursor->fragmentIterator.atEnd()) {
+            fragmentIterator++;
+            if (fragmentIterator.atEnd()) {
                 break;
             }
-            fragment = cursor->fragmentIterator.fragment();
+            fragment = fragmentIterator.fragment();
             if (!d->documentLayout->changeTracker() || !d->documentLayout->changeTracker()->displayChanges()
                 || !d->documentLayout->changeTracker()->containsInlineChanges(fragment.charFormat())
                 || !d->documentLayout->changeTracker()->elementById(fragment.charFormat().property(KoCharacterStyle::ChangeTrackerId).toInt())
@@ -1867,9 +1875,9 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
         if (lineBreak) {
             // Was a line with line-break - the format of the line-break should not be
             // considered for the next line either. So we may have to advance the fragmentIterator.
-            while (!cursor->fragmentIterator.atEnd() && lastCharPos > fragment.position() + fragment.length() - 1) {
-                cursor->fragmentIterator++;
-                fragment = cursor->fragmentIterator.fragment();
+            while (!fragmentIterator.atEnd() && lastCharPos > fragment.position() + fragment.length() - 1) {
+                fragmentIterator++;
+                fragment = fragmentIterator.fragment();
             }
 
             qreal breakAscent = ascent;
@@ -1880,10 +1888,10 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
 
             // Was a line with line-break - the format of the line-break should not be
             // considered for the next line either. So we may have to advance the fragmentIterator.
-            while (!cursor->fragmentIterator.atEnd() && firstPos > fragment.position() + fragment.length() - 1) {
-                cursor->fragmentIterator++;
-                if (!cursor->fragmentIterator.atEnd()) {
-                    fragment = cursor->fragmentIterator.fragment();
+            while (!fragmentIterator.atEnd() && firstPos > fragment.position() + fragment.length() - 1) {
+                fragmentIterator++;
+                if (!fragmentIterator.atEnd()) {
+                    fragment = fragmentIterator.fragment();
 
                     // read max font height
                     breakHeight = qMax(breakHeight, fragment.charFormat().fontPointSize() * fontStretch);
@@ -1966,7 +1974,7 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
                 // that default would wrongly cancel the proportional spacing.
                 const qreal baseFont = isOversizedTitleLine ? lineBaseFont : paragraphFont;
                 if (tallestFont > 0.0
-                        && (hasMathFont || (baseFont > 0.0 && tallestFont > baseFont * 1.15))) {
+                        && (hasMathFont || (!useFontProperties && baseFont > 0.0 && tallestFont > baseFont * 1.15))) {
                     height = qMax(height, tallestFont * 1.2);
                 }
             }
@@ -2002,6 +2010,11 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
             lineAdjust += (height - naturalHeight) / 2;
         }
     }
+
+    if (measureOnly) {
+        return height;
+    }
+    cursor->fragmentIterator = fragmentIterator;
 
     // rounding problems due to Qt-scribe internally using ints.
     // also used when line was moved down because of intersections with other shapes

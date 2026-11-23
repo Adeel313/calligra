@@ -81,6 +81,7 @@
 #include <QSpinBox>
 #include <QBitmap>
 #include <QDesktopServices>
+#include <QDockWidget>
 #include <QDrag>
 #include <QDragLeaveEvent>
 #include <QDragMoveEvent>
@@ -92,6 +93,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMimeData>
+#include <QUrlQuery>
 #include <QTabWidget>
 #include <QTextDocumentFragment>
 #include <QTextList>
@@ -592,6 +594,8 @@ TextTool::TextTool(KoCanvasBase *canvas)
 
     // setup the context list.
     QList<QAction *> list;
+    if (QAction *smartLookup = this->action("smart_lookup"))
+        list.append(smartLookup);
     list.append(this->action("format_font"));
     foreach (const QString &key, KoTextEditingRegistry::instance()->keys()) {
         KoTextEditingFactory *factory = KoTextEditingRegistry::instance()->value(key);
@@ -638,6 +642,11 @@ void TextTool::createActions()
 
     m_actionFormatPainter = new QAction(QIcon::fromTheme(QStringLiteral("draw-brush")), i18n("Format Painter"), this);
     m_actionFormatPainter->setCheckable(true);
+
+    QAction *smartLookupAction = new QAction(koIcon("search"), i18n("Smart Lookup"), this);
+    smartLookupAction->setToolTip(i18n("Look up the selected text in the Research pane."));
+    addAction("smart_lookup", smartLookupAction);
+    connect(smartLookupAction, &QAction::triggered, this, &TextTool::smartLookup);
     m_actionFormatPainter->setToolTip(i18n("Copy text formatting, then select the text to format. Press Escape to cancel."));
     addAction("format_painter", m_actionFormatPainter);
     connect(m_actionFormatPainter, &QAction::toggled, this, [this](bool active) {
@@ -3127,6 +3136,9 @@ QList<QPointer<QWidget>> TextTool::createOptionWidgets()
     spw->setProperty("ribbonGroupOrder", 30);
     widgets.append(spw);
     const bool wordsRibbon = qApp->applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive);
+    if (wordsRibbon) {
+        scw->setWindowTitle(i18n("Character"));
+    }
     const bool stageRibbon = qApp->applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive);
     if (stageRibbon) {
         scw->setWindowTitle(i18n("Font"));
@@ -4528,4 +4540,39 @@ void TextTool::insertAnnotation()
     }
     // Set Annotation creation date.
     shape->setDate(QDate::currentDate().toString(Qt::ISODate));
+}
+
+void TextTool::smartLookup()
+{
+    KoTextEditor *ed = m_textEditor.data();
+    if (!ed)
+        return;
+    QString query = ed->selectedText().trimmed();
+    if (query.isEmpty()) {
+        QTextCursor cursor(ed->constCursor());
+        cursor.select(QTextCursor::WordUnderCursor);
+        query = cursor.selectedText().trimmed();
+    }
+    query.remove(QChar(0x2029));
+    query = query.simplified();
+    if (query.isEmpty())
+        return;
+
+    QWidget *root = canvas() ? canvas()->canvasWidget() : nullptr;
+    for (; root && !root->isWindow(); root = root->parentWidget()) {
+    }
+    if (root) {
+        if (auto *docker = root->findChild<QDockWidget *>(QStringLiteral("Research"))) {
+            docker->show();
+            docker->raise();
+            QMetaObject::invokeMethod(docker, "lookup", Qt::QueuedConnection, Q_ARG(QString, query));
+            return;
+        }
+    }
+
+    QUrl url(QStringLiteral("https://www.bing.com/search"));
+    QUrlQuery urlQuery;
+    urlQuery.addQueryItem(QStringLiteral("q"), query);
+    url.setQuery(urlQuery);
+    QDesktopServices::openUrl(url);
 }

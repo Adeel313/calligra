@@ -13,6 +13,18 @@
 // in the Words ribbon. Connections and action state stay with the controls.
 namespace KoRibbonLayout
 {
+// Dense two-row formatting controls used by Words' Home tab.
+inline void configureHomeButton(QToolButton *button)
+{
+    button->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    button->setIconSize(QSize(20, 20));
+    button->setAutoRaise(true);
+    button->setMinimumSize(0, 0);
+    button->ensurePolished();
+    button->setMinimumSize(button->sizeHint().expandedTo(QSize(28, 28)));
+    button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+}
+
 // Use logical pixels and the active style's size hint, which also reserves
 // space for split-menu arrows and themed button margins.
 inline void configureButton(QToolButton *button, Qt::ToolButtonStyle presentation, bool compactHeight = false)

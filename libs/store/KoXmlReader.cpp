@@ -100,6 +100,8 @@ class KoQName
 public:
     QString nsURI;
     QString name;
+    QString localName;
+    QString prefix;
 
     explicit KoQName(const QString &nsURI_, const QString &name_)
         : nsURI(nsURI_)
@@ -273,9 +275,11 @@ static QDataStream &operator>>(QDataStream &s, KoXmlPackedItem &item)
 // when number of buffered items reach this, compression will start
 // small value will give better memory usage at the cost of speed
 // bigger value will be better in term of speed, but use more memory
-#define ITEMS_FULL (1 * 256)
+#define ITEMS_FULL 2048
 
-typedef KoXmlVector<KoXmlPackedItem, ITEMS_FULL> KoXmlPackedGroup;
+// Keep a bounded working set per XML depth in memory. Larger groups spill
+// into the compressed block store instead of retaining the entire document.
+typedef KoXmlVector<KoXmlPackedItem, ITEMS_FULL, 1024 * 1024, 32 * 1024 * 1024> KoXmlPackedGroup;
 #else
 typedef QVector<KoXmlPackedItem> KoXmlPackedGroup;
 #endif
@@ -312,6 +316,11 @@ private:
 
         // not yet declared, so we add it
         unsigned i = qnameList.count();
+        const auto colon = name.indexOf(QLatin1Char(':'));
+        qname.localName = colon < 0 ? name : name.mid(colon + 1);
+        if (colon >= 0) {
+            qname.prefix = name.left(colon);
+        }
         qnameList.append(qname);
         qnameHash.insert(qname, i);
 
@@ -745,7 +754,7 @@ void parseElement(QXmlStreamReader &xml, KoXmlPackedDocument &doc, bool stripSpa
     // Unfortunately MSVC fails using QXmlStreamReader::const_iterator
     // so we apply a for loop instead. https://bugreports.qt.io/browse/QTBUG-45368
     doc.addElement(xml.qualifiedName().toString(), fixNamespace(xml.namespaceUri().toString()));
-    QXmlStreamAttributes attr = xml.attributes();
+    const QXmlStreamAttributes attr = xml.attributes();
     for (int a = 0; a < attr.count(); a++) {
         doc.addAttribute(attr[a].qualifiedName().toString(), attr[a].namespaceUri().toString(), attr[a].value().toString());
     }
@@ -1056,55 +1065,30 @@ void KoXmlNodeData::loadChildren(int depth)
         bool textItem = (item.type == KoXmlNode::TextNode);
         textItem |= (item.type == KoXmlNode::CDATASectionNode);
 
-        // attribute belongs to this node
+        const KoQName &qname = packedDoc->qnameList.at(item.qnameIndex);
         if (item.attr) {
-            KoQName qname = packedDoc->qnameList[item.qnameIndex];
-            QString value = item.value;
-
-            QString prefix;
-
-            QString qName; // with prefix
-            QString localName; // without prefix, i.e. local name
-
-            localName = qName = qname.name;
-            int i = qName.indexOf(':');
-            if (i != -1)
-                prefix = qName.left(i);
-            if (i != -1)
-                localName = qName.mid(i + 1);
-
+            // Attribute names were split once when interned, not for every
+            // instance of a row or cell that uses them.
             if (packedDoc->processNamespace) {
-                setAttributeNS(qname.nsURI, qName, value);
-                setAttribute(localName, value);
-            } else
-                setAttribute(qName, value);
-        } else {
-            KoQName qname = packedDoc->qnameList[item.qnameIndex];
-            QString value = item.value;
-
-            QString nodeName = qname.name;
-            QString localName;
-            QString prefix;
-
-            if (packedDoc->processNamespace) {
-                localName = qname.name;
-                int di = qname.name.indexOf(':');
-                if (di != -1) {
-                    localName = qname.name.mid(di + 1);
-                    prefix = qname.name.left(di);
+                if (!qname.prefix.isEmpty()) {
+                    attrNS.insert({qname.nsURI, qname.localName}, item.value);
                 }
-                nodeName = localName;
+                setAttribute(qname.localName, item.value);
+            } else {
+                setAttribute(qname.name, item.value);
             }
-
+        } else {
             // make a node out of this item
             KoXmlNodeData *dat = new KoXmlNodeData;
             dat->nodeIndex = i;
             dat->packedDoc = packedDoc;
             dat->nodeDepth = nodeDepth + 1;
             dat->nodeType = item.type;
-            dat->tagName = nodeName;
-            dat->localName = localName;
-            dat->prefix = prefix;
+            dat->tagName = packedDoc->processNamespace ? qname.localName : qname.name;
+            if (packedDoc->processNamespace) {
+                dat->localName = qname.localName;
+                dat->prefix = qname.prefix;
+            }
             dat->namespaceURI = qname.nsURI;
             dat->parent = this;
             dat->prev = lastDat;
@@ -1112,7 +1096,7 @@ void KoXmlNodeData::loadChildren(int depth)
             dat->first = nullptr;
             dat->last = nullptr;
             dat->loaded = false;
-            dat->textData = (textItem) ? value : QString();
+            dat->textData = textItem ? item.value : QString();
 
             // adjust our linked-list
             first = (first) ? first : dat;
@@ -1716,6 +1700,19 @@ int KoXmlNode::childNodesCount() const
 {
     if (isText())
         return 0;
+
+    // Counting children does not require allocating their DOM wrappers.
+    // Spreadsheet loaders use this for progress before visiting any rows.
+    if (!d->loaded && d->packedDoc) {
+        const unsigned stop = d->nodeIndex + 1 == d->packedDoc->itemCount(d->nodeDepth)
+            ? d->packedDoc->itemCount(d->nodeDepth + 1)
+            : d->packedDoc->itemAt(d->nodeDepth, d->nodeIndex + 1).childStart;
+        unsigned start = d->packedDoc->itemAt(d->nodeDepth, d->nodeIndex).childStart;
+        // Packed attributes precede the child nodes but are not DOM children.
+        while (start < stop && d->packedDoc->itemAt(d->nodeDepth + 1, start).attr)
+            ++start;
+        return stop - start;
+    }
 
     if (!d->loaded)
         d->loadChildren();

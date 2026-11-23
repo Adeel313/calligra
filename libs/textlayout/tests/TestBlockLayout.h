@@ -58,6 +58,7 @@ private Q_SLOTS:
     void testPercentageLineSpacing();
     /// Tests advanced linespacing options provided in our style.
     void testAdvancedLineSpacing();
+    void testPresentationCompressedLineSpacing();
     /// Tests that empty lines are given the correct height like in LibreOffice
     void testEmptyLineHeights();
 

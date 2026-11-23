@@ -10,6 +10,7 @@
 #include <KoShape.h>
 #define KoFormulaShapeId "FormulaShapeID"
 #include <KoFrameShape.h>
+#include <QSizeF>
 #include <memory>
 
 class KoStore;
@@ -56,6 +57,8 @@ public:
     bool isEditing() const;
     /// @return the factor the formula is drawn with (1.0 outside of editing)
     qreal editingScale() const;
+    /// @return the factor the formula is enlarged by after resizing its frame
+    qreal displayScale() const;
 
     /// @return The element at the point @p p
     BasicElement *elementAt(const QPointF &p);
@@ -107,6 +110,9 @@ private:
 
     /// True while the formula tool is editing this formula
     bool m_isEditing = false;
+
+    /// Natural size produced by the last formula layout, before display scaling
+    QSizeF m_layoutSize;
 
     std::unique_ptr<FormulaDocument> m_document;
     KoDocumentResourceManager *m_resourceManager;

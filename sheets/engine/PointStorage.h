@@ -108,10 +108,16 @@ public:
             // append the column index
             m_cols.append(col);
         }
+        // Row-ordered imports usually extend the final row. Append directly
+        // instead of searching and inserting into the middle of the vectors.
+        else if (row == m_rows.count() && (m_cols.isEmpty() || col > m_cols.constLast())) {
+            m_data.append(data);
+            m_cols.append(col);
+        }
         // the row exists
         else {
-            const QVector<int>::const_iterator cstart(m_cols.begin() + m_rows.value(row - 1));
-            const QVector<int>::const_iterator cend((row < m_rows.count()) ? (m_cols.begin() + m_rows.value(row)) : m_cols.end());
+            const QVector<int>::const_iterator cstart(m_cols.cbegin() + m_rows.value(row - 1));
+            const QVector<int>::const_iterator cend((row < m_rows.count()) ? (m_cols.cbegin() + m_rows.value(row)) : m_cols.cend());
             const QVector<int>::const_iterator cit = std::lower_bound(cstart, cend, col);
             // column's missing?
             if (cit == cend || *cit != col) {
@@ -176,17 +182,17 @@ public:
                 m_undoData << qMakePair(QPoint(col, row), defaultVal);
             return defaultVal;
         }
-        const int rowStart = (row - 1 < m_rows.count()) ? m_rows.value(row - 1) : m_data.count();
-        const int rowLength = (row < m_rows.count()) ? m_rows.value(row) - rowStart : -1;
-        const QVector<int> cols = m_cols.mid(rowStart, rowLength);
-        QVector<int>::const_iterator cit = std::lower_bound(cols.begin(), cols.end(), col);
+        const int rowStart = m_rows.value(row - 1);
+        const auto begin = m_cols.cbegin() + rowStart;
+        const auto end = row < m_rows.count() ? m_cols.cbegin() + m_rows.value(row) : m_cols.cend();
+        const auto cit = std::lower_bound(begin, end, col);
         // column's missing?
-        if (cit == cols.constEnd() || col != *cit) {
+        if (cit == end || col != *cit) {
             if (m_storingUndo)
                 m_undoData << qMakePair(QPoint(col, row), defaultVal);
             return defaultVal;
         }
-        const int index = rowStart + (cit - cols.constBegin());
+        const int index = cit - m_cols.cbegin();
         // save the old data
         const T oldData = m_data[index];
         // remove the actual data

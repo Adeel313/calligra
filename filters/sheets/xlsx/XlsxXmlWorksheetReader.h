@@ -226,7 +226,18 @@ public:
 
     QList<QMap<QString, QString>> conditionalStyleForPosition(const QString &positionLetter, int positionNumber);
 
-    QList<QPair<QString, QMap<QString, QString>>> conditionalStyles;
+    struct ConditionalRange {
+        QString range;
+        QMap<QString, QString> style;
+        int startCol = 0;
+        int startRow = 0;
+        int endCol = 0;
+        int endRow = 0;
+        bool wholeCol = false;
+        bool wholeRow = false;
+    };
+    QList<ConditionalRange> conditionalStyles;
+    QList<QMap<QString, QString>> conditionalStyleForPosition(int column, int row);
 };
 
 #endif

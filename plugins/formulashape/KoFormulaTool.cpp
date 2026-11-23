@@ -163,9 +163,9 @@ void KoFormulaTool::paint(QPainter &painter, const KoViewConverter &converter)
     // has to come last
     painter.setTransform(m_formulaShape->absoluteTransformation(&converter) * painter.transform());
     KoShape::applyConversion(painter, converter);
-    // While the formula is edited it is shown enlarged; the cursor positions are
-    // in the (unscaled) element coordinates, so the same scale applies to them.
-    const qreal scale = m_formulaShape->editingScale();
+    // Cursor positions are in unscaled element coordinates; the painter is
+    // scaled by displayScale() (frame/user resize) * editingScale().
+    const qreal scale = m_formulaShape->displayScale();
     if (scale != 1.0) {
         painter.scale(scale, scale);
     }
@@ -188,7 +188,7 @@ void KoFormulaTool::mousePressEvent(KoPointerEvent *event)
     // transform the global coordinates into shape coordinates
     QPointF p = m_formulaShape->absoluteTransformation(nullptr).inverted().map(event->point);
     // the elements are laid out unscaled, the shape is only drawn magnified
-    p /= m_formulaShape->editingScale();
+    p /= m_formulaShape->displayScale() * m_formulaShape->editingScale();
     if (event->modifiers() & Qt::ShiftModifier) {
         m_formulaEditor->cursor().setSelecting(true);
     } else {
@@ -209,7 +209,7 @@ void KoFormulaTool::mouseDoubleClickEvent(KoPointerEvent *event)
     // transform the global coordinates into shape coordinates
     QPointF p = m_formulaShape->absoluteTransformation(nullptr).inverted().map(event->point);
     // the elements are laid out unscaled, the shape is only drawn magnified
-    p /= m_formulaShape->editingScale();
+    p /= m_formulaShape->displayScale() * m_formulaShape->editingScale();
 
     // clear the current selection
     m_formulaEditor->cursor().setSelecting(false);
@@ -233,7 +233,7 @@ void KoFormulaTool::mouseMoveEvent(KoPointerEvent *event)
     // transform the global coordinates into shape coordinates
     QPointF p = m_formulaShape->absoluteTransformation(nullptr).inverted().map(event->point);
     // the elements are laid out unscaled, the shape is only drawn magnified
-    p /= m_formulaShape->editingScale();
+    p /= m_formulaShape->displayScale() * m_formulaShape->editingScale();
     // TODO Implement drag and drop of elements
     m_formulaEditor->cursor().setSelecting(true);
     m_formulaEditor->cursor().setCursorTo(p);

@@ -893,6 +893,7 @@ void TestMathFunctions::testSUMIF()
         ";B4)",
         Value::errorNUM()); // Constant values are not allowed for the range.
     CHECK_EVAL("SUMIF(B3:B4;\"7\";B4:B5)", Value(2)); // B3 is the string "7", but its match is mapped to B4 for the summation.
+    QCOMPARE(evaluate("SUMIF(B3:B4;\"7\";42)"), Value::errorVALUE());
     CHECK_EVAL("SUMIF(B3:B10;1+1)", Value(2)); // The criteria can be an expression.
     CHECK_EVAL("SUMIF(B3:B4;\"7\")", Value(0)); // TODO B3 is the string "7", but only numbers are summed.
 }

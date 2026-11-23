@@ -251,7 +251,7 @@ qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily
     FcPattern *font = FcPatternBuild(nullptr,
                                      FC_FAMILY, FcTypeString, fontName.data(),
                                      FC_SIZE, FcTypeDouble, (qreal)11,
-                                     FC_WEIGHT, FcTypeInteger, fontInfo.weight(),
+                                     FC_WEIGHT, FcTypeInteger, FcWeightFromOpenType(fontInfo.weight()),
                                      FC_SLANT, FcTypeInteger, italic ? FC_SLANT_ITALIC : FC_SLANT_ROMAN,
                                      nullptr);
     if (font == nullptr) {
@@ -554,6 +554,26 @@ void KoCharacterStyle::applyStyle(QTextCharFormat &format, bool emitSignal) cons
         fontFeatures.insert(tag, 0);
     }
     format.setFontFeatures(fontFeatures);
+
+    // When a family has only a light italic face, Qt can select that face for
+    // a normal-weight italic run. Prefer synthesizing the slant on the face
+    // with the requested weight, as Word does when the real italic is absent.
+    const QFont requestedFont = format.font();
+    if (requestedFont.italic() && requestedFont.styleName().isEmpty()) {
+        const QString family = requestedFont.family();
+        const QString matchedStyle = QFontInfo(requestedFont).styleName();
+        const QStringList familyStyles = QFontDatabase::styles(family);
+        if (familyStyles.contains(matchedStyle)
+            && QFontDatabase::weight(family, matchedStyle) != requestedFont.weight()) {
+            for (const QString &style : familyStyles) {
+                if (!QFontDatabase::italic(family, style)
+                    && QFontDatabase::weight(family, style) == requestedFont.weight()) {
+                    format.setFontStyleName(style);
+                    break;
+                }
+            }
+        }
+    }
 
     if (emitSignal) {
         Q_EMIT styleApplied(this);

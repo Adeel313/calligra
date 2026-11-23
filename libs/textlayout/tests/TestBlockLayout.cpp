@@ -392,6 +392,26 @@ void TestBlockLayout::testAdvancedLineSpacing()
     QVERIFY2(qAbs(blockLayout->lineAt(0).y() - line7_y) < ROUNDING, QString("Actual: %1 Expected: %2").arg(blockLayout->lineAt(0).y()).arg(line7_y).toLatin1());
 }
 
+void TestBlockLayout::testPresentationCompressedLineSpacing()
+{
+    setupTest(QStringLiteral("First") + QChar::LineSeparator + QStringLiteral("Second"));
+    // A presentation body can have a 12pt paragraph default but 28pt runs.
+    // The default must not cancel the explicitly requested 90% line spacing.
+    m_paragraphStyle->setLineSpacingFromFont(true);
+    m_paragraphStyle->setLineHeightPercent(90);
+    m_paragraphStyle->applyStyle(m_block);
+    QTextCursor cursor(m_doc);
+    cursor.select(QTextCursor::Document);
+    QTextCharFormat format;
+    format.setFontPointSize(28);
+    cursor.mergeCharFormat(format);
+    m_layout->layout();
+    const QTextLayout *layout = m_block.layout();
+    QCOMPARE(layout->lineCount(), 2);
+    const qreal advance = layout->lineAt(1).y() - layout->lineAt(0).y();
+    QVERIFY2(qAbs(advance - 28.0 * 1.2 * 0.9) < ROUNDING, qPrintable(QString::number(advance)));
+}
+
 void TestBlockLayout::testContextualSpacing()
 {
     for (bool sameStyle : {false, true}) {

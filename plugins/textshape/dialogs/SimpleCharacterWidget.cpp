@@ -113,6 +113,15 @@ void SimpleCharacterWidget::configureRibbon()
         widget.characterStyleCombo->hide();
     }
     widget.SpecialSpacer->hide();
+    widget.gridLayout->setContentsMargins(0, 0, 0, 0);
+    widget.gridLayout->setSpacing(2);
+    if (QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        // Match Paragraph's regular icon cells; color dropdowns retain their
+        // larger size hints to leave room for the menu arrows.
+        for (int column = 0; column < 10; ++column) {
+            widget.gridLayout->setColumnMinimumWidth(column, 28);
+        }
+    }
     // Keep font family and size on top; grow/shrink follow the lower icon row.
     int growColumn = 8;
     for (const auto &entry : {qMakePair(QStringLiteral("fontsizeup"), QStringLiteral("A+")),
@@ -132,10 +141,13 @@ void SimpleCharacterWidget::configureRibbon()
     if (auto *family = qobject_cast<QComboBox *>(widget.fontsFrame->itemAtPosition(0, 0)->widget())) {
         const bool words = QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive);
         family->setMinimumWidth(words ? 160 : 220);
-        family->setMaximumWidth(words ? 260 : 320);
+        family->setMaximumWidth(words ? QWIDGETSIZE_MAX : 320);
     }
     if (auto *size = qobject_cast<QComboBox *>(widget.fontsFrame->itemAtPosition(0, 1)->widget())) {
         size->setMinimumWidth(qMax(64, size->minimumSizeHint().width()));
+        if (QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+            size->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        }
     }
     // Word's second row: emphasis, script, highlighting, then font color.
     const QList<QToolButton *> buttons = {widget.bold, widget.italic, widget.underline, widget.strikeOut,
@@ -149,6 +161,15 @@ void SimpleCharacterWidget::configureRibbon()
     }
     widget.moreOptions->setText(QStringLiteral("↘"));
     widget.moreOptions->setAccessibleName(i18n("Font dialog"));
+    if (QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        for (QToolButton *button : findChildren<QToolButton *>(QString(), Qt::FindDirectChildrenOnly)) {
+            if (button != widget.moreOptions && !buttons.contains(button)) {
+                button->setMinimumSize(28, 28);
+            } else if (buttons.contains(button)) {
+                KoRibbonLayout::configureHomeButton(button);
+            }
+        }
+    }
     setMinimumWidth(260);
     if (QCoreApplication::applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)
         || QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
@@ -161,6 +182,11 @@ void SimpleCharacterWidget::configureRibbon()
         widget.fontsFrame->setContentsMargins(0, 0, 0, 0);
         fields->setMinimumSize(widget.fontsFrame->minimumSize());
         widget.gridLayout->addWidget(fields, 0, 0, 1, 11);
+    }
+    // An explicit minimum smaller than the layout's minimum lets the parent
+    // compress this group and overlap its buttons, even with wider columns.
+    if (QCoreApplication::applicationName().contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        setMinimumWidth(layout()->minimumSize().width());
     }
 }
 

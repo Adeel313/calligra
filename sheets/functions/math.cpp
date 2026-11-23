@@ -579,7 +579,14 @@ Value func_sumif(valVector args, ValueCalc *calc, FuncExtra *e)
     }
 
     if (args.count() == 3) {
-        CellBase sumRangeStart(e->regions[2].firstSheet(), e->regions[2].firstRange().topLeft());
+        if (args[2].isError()) {
+            return args[2];
+        }
+        const Region &sumRange = e->regions[2];
+        if (!sumRange.isValid() || !sumRange.firstSheet()) {
+            return Value::errorVALUE();
+        }
+        CellBase sumRangeStart(sumRange.firstSheet(), sumRange.firstRange().topLeft());
         return calc->sumIf(sumRangeStart, checkRange, cond);
     } else {
         return calc->sumIf(checkRange, cond);

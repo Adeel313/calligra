@@ -10,8 +10,11 @@
 
 #include <KoBorder.h>
 #include <KoInsets.h>
+#include <KoParagraphStyle.h>
 #include <KoTextLayoutObstruction.h>
 #include <KoTextLayoutRootArea.h>
+#include <QTextBlock>
+#include <QTextLayout>
 
 SimpleRootAreaProvider::SimpleRootAreaProvider(KoTextShapeData *data, TextShape *textshape)
     : m_textShape(textshape)
@@ -101,17 +104,30 @@ void SimpleRootAreaProvider::doPostLayout(KoTextLayoutRootArea *rootArea, bool i
     // or bottom offset instead of keeping text above the frame.
     rootArea->setVerticalAlignOffset(0);
     qreal newBottom = rootArea->top() + newSize.height();
+    qreal alignmentBottom = rootArea->bottom();
+    const QTextBlock lastBlock = m_textShapeData->document()->lastBlock();
+    if (lastBlock.blockFormat().boolProperty(KoParagraphStyle::LineSpacingFromFont)
+        && lastBlock.blockFormat().doubleProperty(KoParagraphStyle::FixedLineHeight) == 0.0) {
+        const QTextLayout *layout = lastBlock.layout();
+        if (layout && layout->lineCount() > 0) {
+            const QTextLine lastLine = layout->lineAt(layout->lineCount() - 1);
+            // Presentation line spacing includes leading after the final
+            // baseline. Bottom/centre alignment ends at the final text line,
+            // while explicit paragraph space-after remains part of the box.
+            alignmentBottom = qMin(alignmentBottom, lastLine.y() + lastLine.height() + lastBlock.blockFormat().bottomMargin());
+        }
+    }
     KoFlake::Position sizeAnchor = KoFlake::TopLeftCorner;
 
     if (m_textShapeData->verticalAlignment() & Qt::AlignBottom) {
         if (true /*FIXME test no page based shapes interfering*/) {
-            rootArea->setVerticalAlignOffset(newBottom - rootArea->bottom());
+            rootArea->setVerticalAlignOffset(newBottom - alignmentBottom);
             sizeAnchor = KoFlake::BottomLeftCorner;
         }
     }
     if (m_textShapeData->verticalAlignment() & Qt::AlignVCenter) {
         if (true /*FIXME test no page based shapes interfering*/) {
-            rootArea->setVerticalAlignOffset((newBottom - rootArea->bottom()) / 2);
+            rootArea->setVerticalAlignOffset((newBottom - alignmentBottom) / 2);
             sizeAnchor = KoFlake::CenteredPosition;
         }
     }

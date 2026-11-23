@@ -178,9 +178,6 @@ bool Odf::loadMap(Map *map, const KoXmlElement &body, KoOdfLoadingContext &odfCo
             // debugSheets<<"  Odf::loadMap tableElement is not null";
             // debugSheets<<"tableElement.nodeName() :"<<sheetElement.nodeName();
 
-            // make it slightly faster
-            KoXml::load(sheetElement);
-
             if (sheetElement.namespaceURI() == KoXmlNS::table && sheetElement.localName() == "table") {
                 if (!sheetElement.attributeNS(KoXmlNS::table, "name", QString()).isEmpty()) {
                     const QString sheetName = sheetElement.attributeNS(KoXmlNS::table, "name", QString());

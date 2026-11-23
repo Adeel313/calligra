@@ -14,13 +14,13 @@ const QLoggingCategory &SHEETS_LOG()
 
 const QLoggingCategory &SHEETSFORMULA_LOG()
 {
-    static const QLoggingCategory category("calligra.sheets.formula");
+    static const QLoggingCategory category("calligra.sheets.formula", QtWarningMsg);
     return category;
 }
 
 const QLoggingCategory &SHEETSODF_LOG()
 {
-    static const QLoggingCategory category("calligra.sheets.odf");
+    static const QLoggingCategory category("calligra.sheets.odf", QtWarningMsg);
     return category;
 }
 

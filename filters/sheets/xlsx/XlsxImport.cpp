@@ -49,7 +49,7 @@
 
 K_PLUGIN_FACTORY_WITH_JSON(XlsxImportFactory, "calligra_filter_xlsx2ods.json", registerPlugin<XlsxImport>();)
 
-Q_LOGGING_CATEGORY(lcXlsxImport, "calligra.filter.xlsx2ods")
+Q_LOGGING_CATEGORY(lcXlsxImport, "calligra.filter.xlsx2ods", QtWarningMsg)
 Q_LOGGING_CATEGORY(lcXlsxTiming, "calligra.filter.xlsx.timing")
 
 enum XlsxDocumentType {

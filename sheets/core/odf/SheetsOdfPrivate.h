@@ -124,7 +124,7 @@ void loadConditions(Conditions *conditions, const KoXmlElement &element, const S
 void saveConditions(const Conditions *conditions, KoGenStyle &currentCellStyle, CalculationSettings *cs);
 
 // SheetsOdfValidity
-void loadValidation(Validity *validity, CellBase *const cell, const QString &validationName, OdfLoadingContext &tableContext);
+void loadValidation(Validity *validity, CalculationSettings *cs, const QString &validationName, OdfLoadingContext &tableContext);
 
 }
 

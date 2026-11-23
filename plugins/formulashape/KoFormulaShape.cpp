@@ -62,12 +62,16 @@ void KoFormulaShape::paint(QPainter &painter, const KoViewConverter &converter, 
     painter.save();
     applyConversion(painter, converter); // apply zooming and coordinate translation
     m_formulaRenderer->layoutElement(m_formulaData->formulaElement());
-    const qreal scale = editingScale();
-    if (scale != 1.0) {
-        // Editing magnification: the element layout stays in its own
-        // coordinates, everything drawn is scaled up instead.
-        painter.scale(scale, scale);
-    }
+    const QSizeF naturalSize = m_formulaData->formulaElement()->boundingRect().size();
+    const QSizeF layoutSize = naturalSize.isEmpty() ? m_layoutSize : naturalSize;
+    const qreal editorScale = editingScale();
+    const QSizeF scaledLayout = layoutSize * editorScale;
+    const qreal sx = scaledLayout.width() > 0 ? size().width() / scaledLayout.width() : 1.0;
+    const qreal sy = scaledLayout.height() > 0 ? size().height() / scaledLayout.height() : 1.0;
+    // A formula is laid out at its natural size. Scaling the painter makes the
+    // frame size control the visible glyph size, so resizing a small equation
+    // enlarges its font instead of leaving it unchanged.
+    painter.scale(sx, sy);
     if (m_formulaData->formulaElement()->childElements().isEmpty()) {
         // An empty formula draws nothing at all, which makes a freshly inserted
         // one almost impossible to find on the page. Show where it is until it
@@ -77,7 +81,7 @@ void KoFormulaShape::paint(QPainter &painter, const KoViewConverter &converter, 
         pen.setCosmetic(true);
         painter.setPen(pen);
         painter.setBrush(Qt::NoBrush);
-        painter.drawRect(QRectF(QPointF(), size() / scale));
+        painter.drawRect(QRectF(QPointF(), layoutSize));
         if (m_isEditing) {
             // Tell the user that this box is waiting for an equation, the way
             // the Office equation editor does while the placeholder is empty.
@@ -86,7 +90,7 @@ void KoFormulaShape::paint(QPainter &painter, const KoViewConverter &converter, 
             hintFont.setItalic(true);
             painter.setFont(hintFont);
             painter.setPen(QColor(150, 150, 150));
-            const QRectF hintRect = QRectF(QPointF(), size() / scale).adjusted(6, 0, -6, 0);
+            const QRectF hintRect = QRectF(QPointF(), layoutSize).adjusted(6, 0, -6, 0);
             const QFontMetricsF metrics(hintFont);
             painter.drawText(hintRect,
                              Qt::AlignLeft | Qt::AlignVCenter,
@@ -102,7 +106,7 @@ void KoFormulaShape::updateLayout()
 {
     m_formulaRenderer->layoutElement(m_formulaData->formulaElement());
 
-    QSizeF size = m_formulaData->formulaElement()->boundingRect().size();
+    QSizeF layoutSize = m_formulaData->formulaElement()->boundingRect().size();
     // An empty formula has no extent of its own. Keep a frame that is large
     // enough to show the "Type equation here." placeholder the way Office does.
     qreal minimumWidth = MinimumWidth;
@@ -113,9 +117,19 @@ void KoFormulaShape::updateLayout()
         minimumWidth = QFontMetricsF(hintFont).horizontalAdvance(i18n("Type equation here.")) + 16.0;
     }
     if (m_formulaData->formulaElement()->childElements().isEmpty()) {
-        size.setWidth(qMax(size.width(), minimumWidth));
-        size.setHeight(qMax(size.height(), MinimumHeight));
+        layoutSize.setWidth(qMax(layoutSize.width(), minimumWidth));
+        layoutSize.setHeight(qMax(layoutSize.height(), MinimumHeight));
     }
+
+    // Editing a formula must not throw away a size the user chose by resizing
+    // its frame. Remember the natural layout and reapply the same scale.
+    QSizeF size = layoutSize;
+    const QSizeF currentSize = KoShape::size();
+    if (!m_layoutSize.isEmpty() && !currentSize.isEmpty() && !layoutSize.isEmpty()) {
+        size.setWidth(size.width() * currentSize.width() / m_layoutSize.width());
+        size.setHeight(size.height() * currentSize.height() / m_layoutSize.height());
+    }
+    m_layoutSize = layoutSize;
     // While the formula is edited the frame covers the enlarged drawing, so the
     // surrounding text makes room for it; it shrinks back when editing ends.
     size *= editingScale();
@@ -142,6 +156,12 @@ bool KoFormulaShape::isEditing() const
 qreal KoFormulaShape::editingScale() const
 {
     return m_isEditing ? EditScale : 1.0;
+}
+
+qreal KoFormulaShape::displayScale() const
+{
+    const QSizeF scaledLayout = m_layoutSize * editingScale();
+    return scaledLayout.width() > 0 ? size().width() / scaledLayout.width() : 1.0;
 }
 
 BasicElement *KoFormulaShape::elementAt(const QPointF &p)
@@ -172,17 +192,12 @@ bool KoFormulaShape::loadOdf(const KoXmlElement &element, KoShapeLoadingContext 
     }
     const QSizeF importedFrame = size();
     updateLayout();
-    if (hasAdditionalAttribute(QStringLiteral("calligra:ppt-embedded-object")) && !importedFrame.isEmpty() && !size().isEmpty()) {
-        // Legacy PowerPoint stored the equation's display size separately
-        // from the equation payload. Keep its scale when converting to MathML.
-        const qreal factor = qMin(importedFrame.width() / size().width(), importedFrame.height() / size().height());
-        if (qIsFinite(factor) && factor > 0 && !qFuzzyCompare(factor, qreal(1.0))) {
-            const QSizeF offset = (importedFrame - size() * factor) / 2;
-            QTransform fit;
-            fit.translate(offset.width(), offset.height());
-            fit.scale(factor, factor);
-            applyTransformation(fit);
-        }
+    // Keep the frame size stored in the document. updateLayout() only computes
+    // the formula's natural extent; the surrounding office document decides how
+    // large the equation should appear. paint() scales the glyphs to this frame.
+    if (!importedFrame.isEmpty() && !size().isEmpty()
+        && (!qFuzzyCompare(importedFrame.width(), size().width()) || !qFuzzyCompare(importedFrame.height(), size().height()))) {
+        KoShape::setSize(importedFrame);
     }
     return true;
 }

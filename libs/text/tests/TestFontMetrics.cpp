@@ -2,12 +2,38 @@
 #include <KoCharacterStyle.h>
 #include <KoTextDocument.h>
 #include <QFontDatabase>
+#include <QRawFont>
+#include <QFontInfo>
 #include <QTest>
 
 class TestFontMetrics : public QObject
 {
     Q_OBJECT
 private Q_SLOTS:
+    void missingItalicPreservesWeight()
+    {
+        const QString family = QStringLiteral("Calibri");
+        if (!QFontDatabase::families().contains(family))
+            QSKIP("Calibri is not installed");
+        bool regular = false;
+        for (const QString &name : QFontDatabase::styles(family)) {
+            regular |= !QFontDatabase::italic(family, name)
+                && QFontDatabase::weight(family, name) == QFont::Normal;
+        }
+        if (!regular)
+            QSKIP("Calibri's regular face is not installed");
+        KoCharacterStyle style;
+        style.setFontFamily(family);
+        style.setFontWeight(QFont::Normal);
+        style.setFontItalic(true);
+        QTextCharFormat format;
+        style.applyStyle(format);
+        const QRawFont actual = QRawFont::fromFont(format.font());
+        QVERIFY(actual.isValid());
+        QCOMPARE(actual.weight(), QFont::Normal);
+        QCOMPARE(QFontDatabase::weight(family, QFontInfo(format.font()).styleName()), QFont::Normal);
+        QVERIFY(format.fontItalic());
+    }
     void externalLeadingIsOptional()
     {
         if (!QFontDatabase::families().contains(QStringLiteral("Times New Roman")))

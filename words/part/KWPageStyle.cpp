@@ -31,6 +31,7 @@ void KWPageStylePrivate::clear()
     footerDistance = 10;
     headerMinimumHeight = 10; // includes spacing
     footerMinimumHeight = 10; // includes spacing
+    docxBodyBottomMargin.reset();
     headers = Words::HFTypeNone;
     footers = Words::HFTypeNone;
     pageUsage = KWPageStyle::AllPages;
@@ -154,6 +155,11 @@ qreal KWPageStyle::footerMinimumHeight() const
     return d->footerMinimumHeight;
 }
 
+std::optional<qreal> KWPageStyle::docxBodyBottomMargin() const
+{
+    return d->docxBodyBottomMargin;
+}
+
 void KWPageStyle::setFooterMinimumHeight(qreal height)
 {
     d->footerMinimumHeight = height;
@@ -229,6 +235,9 @@ KoGenStyle KWPageStyle::saveOdf(KoShapeSavingContext *context) const
     KoGenStyle pageLayout = d->pageLayout.saveOdf();
     pageLayout.setAutoStyleInStylesDotXml(true);
     pageLayout.addProperty("style:num-format", d->numberFormat);
+    if (d->docxBodyBottomMargin) {
+        pageLayout.addPropertyPt("calligra:docx-body-bottom-margin", *d->docxBodyBottomMargin);
+    }
 
     switch (d->pageUsage) {
     case LeftPages:
@@ -325,10 +334,15 @@ KoGenStyle KWPageStyle::saveOdf(KoShapeSavingContext *context) const
 
 void KWPageStyle::loadOdf(KoOdfLoadingContext &context, const KoXmlElement &masterNode, const KoXmlElement &style, KoDocumentResourceManager *documentResources)
 {
+    d->docxBodyBottomMargin.reset();
     d->pageLayout.loadOdf(style);
     KoXmlElement props = KoXml::namedItemNS(style, KoXmlNS::style, "page-layout-properties");
     if (props.isNull())
         return;
+    const QString bodyBottomMargin = props.attributeNS(KoXmlNS::calligra, "docx-body-bottom-margin");
+    if (!bodyBottomMargin.isEmpty()) {
+        d->docxBodyBottomMargin = KoUnit::parseValue(bodyBottomMargin);
+    }
     d->numberFormat = props.attributeNS(KoXmlNS::style, "num-format", "1");
     QString direction = props.attributeNS(KoXmlNS::style, "writing-mode", "lr-tb");
     d->direction = KoText::directionFromString(direction);

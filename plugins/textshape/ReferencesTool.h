@@ -81,6 +81,8 @@ private Q_SLOTS:
     void insertBookmark(QString bookmarkName);
     /// validate a bookmark
     bool validateBookmark(QString bookmarkName);
+    /// Open web lookup for the current selection or word at cursor.
+    void smartLookup();
 
 private:
     TableOfContentsConfigure *m_configure;

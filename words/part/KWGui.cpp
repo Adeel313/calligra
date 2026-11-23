@@ -150,7 +150,7 @@ namespace
 {
 /// A ribbon group: a title plus the actions to show in it (action name, button label).
 struct RibbonGroup {
-    enum Layout { LargeButtons, LargeAndStacked, Stacked, SingleColumn, CheckBoxes, PreviewNavigation, ZoomButtons };
+    enum Layout { LargeButtons, LargeAndStacked, Stacked, SingleColumn, CheckBoxes, PreviewNavigation, ZoomButtons, HomeEdit, HomeSearch };
     QString title;
     QList<QPair<QString, QString>> actions;
     Layout layout = LargeButtons;
@@ -374,7 +374,11 @@ private:
     {
         QAction *action = defaultAction();
         setText(m_label);
-        if (action && action->icon().isNull()) {
+        const QIcon ribbonIcon = property("ribbonCommandIcon").value<QIcon>();
+        if (!ribbonIcon.isNull()) {
+            setIcon(ribbonIcon);
+        }
+        if (action && action->icon().isNull() && ribbonIcon.isNull()) {
             const QIcon fallback = property("ribbonFallbackIcon").value<QIcon>();
             if (!fallback.isNull()) {
                 setIcon(fallback);
@@ -556,6 +560,7 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
     }
     pageLayout->setContentsMargins(4, 4, 4, 2);
     pageLayout->setSpacing(0);
+    const bool fillWidth = page->property("ribbonFillWidth").toBool();
     bool firstGroup = true;
     bool hasExpandingGroup = false;
     int groupPosition = 0;
@@ -593,10 +598,17 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
                 ++buttonIndex;
                 continue;
             }
-            const QString displayLabel = actionName == QLatin1String("edit_select_all") ? i18n("Select") : label;
+            const QString displayLabel = actionName == QLatin1String("edit_select_all") ? i18n("Select all") : label;
             auto *button = new RibbonActionButton(actionName, displayLabel, findAction, buttons);
             button->setObjectName(actionName + QStringLiteral("RibbonButton"));
-            if (action->icon().isNull()) {
+            if (page->objectName() == QLatin1String("insertRibbonPage")) {
+                const QIcon icon = KoRibbonIcons::forCommand(actionName);
+                if (!icon.isNull()) {
+                    button->setProperty("ribbonCommandIcon", icon);
+                    button->setIcon(icon);
+                }
+            }
+            if (action->icon().isNull() && button->property("ribbonCommandIcon").value<QIcon>().isNull()) {
                 static const QMap<QString, QString> commandIcons = {
                     {QStringLiteral("format_stylist"), QStringLiteral("preferences-desktop-theme")},
                     {QStringLiteral("format_textcolor"), QStringLiteral("format-text-color")},
@@ -614,7 +626,8 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
             // A single prominent command beside compact stacks of three
             // mirrors Office's groups without making every action oversized.
             const int largeCount = groupInfo.layout == RibbonGroup::ZoomButtons ? 3
-                : ((groupInfo.layout == RibbonGroup::LargeAndStacked || groupInfo.layout == RibbonGroup::PreviewNavigation) ? 1 : 0);
+                : ((groupInfo.layout == RibbonGroup::LargeAndStacked || groupInfo.layout == RibbonGroup::PreviewNavigation
+                    || groupInfo.layout == RibbonGroup::HomeEdit || groupInfo.layout == RibbonGroup::HomeSearch) ? 1 : 0);
             const bool large = groupInfo.layout == RibbonGroup::LargeButtons || buttonIndex < largeCount;
             if (action->menu()) {
                 button->setPopupMode(actionName == QLatin1String("add_shape") || action->property("ribbonMenuOnly").toBool()
@@ -623,7 +636,7 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
             KoRibbonLayout::configureButton(button, large ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonTextBesideIcon);
             // The format painter is a brush, which reads better as one larger
             // picture than as a picture beside its name.
-            const bool iconOnly = actionName == QLatin1String("format_painter");
+            const bool iconOnly = actionName == QLatin1String("format_painter") && groupInfo.layout != RibbonGroup::HomeEdit;
             if (iconOnly) {
                 KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly);
                 button->setIconSize(QSize(28, 28));
@@ -632,7 +645,16 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
                 button->setAccessibleName(label);
             }
             const int compactIndex = buttonIndex - largeCount;
-            if (large) {
+            if (groupInfo.layout == RibbonGroup::HomeEdit || groupInfo.layout == RibbonGroup::HomeSearch) {
+                button->setIconSize(large ? QSize(36, 36) : QSize(20, 20));
+                button->setMinimumSize(0, 0);
+                button->setMinimumSize(button->sizeHint().expandedTo(QSize(large ? 60 : 28, large ? 72 : 24)));
+                if (large) {
+                    buttonLayout->addWidget(button, 0, 0, 3, 1, Qt::AlignTop);
+                } else {
+                    buttonLayout->addWidget(button, compactIndex, 1, Qt::AlignLeft);
+                }
+            } else if (large) {
                 buttonLayout->addWidget(button, 0, buttonIndex, 2, 1, Qt::AlignTop);
             } else if (groupInfo.layout == RibbonGroup::SingleColumn) {
                 // A narrow band like Word's Editing group: one compact command
@@ -686,9 +708,9 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
         if (expandingGallery) {
             hasExpandingGroup = true;
         }
-        pageLayout->insertWidget(groupPosition++, group, expandingGallery ? 1 : 0);
+        pageLayout->insertWidget(groupPosition++, group, (expandingGallery || fillWidth) ? 1 : 0);
     }
-    if (!hasExpandingGroup
+    if (!hasExpandingGroup && !fillWidth
         && (pageLayout->count() == 0 || !pageLayout->itemAt(pageLayout->count() - 1)->spacerItem())) {
         pageLayout->addStretch(1);
     }
@@ -1204,23 +1226,53 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
             modeBoxFactory.addWidgetToToolTab(QStringLiteral("TextToolFactory_ID"), groupWidget);
             populateRibbonGroupsLater(groupWidget, {{title, actions, layout}}, findRibbonAction, false, 20);
         };
-        addHomeGroup(i18n("Clipboard"),
+        addHomeGroup(i18n("Edit"),
                      {{QStringLiteral("edit_paste"), i18n("Paste")},
                       {QStringLiteral("edit_cut"), i18n("Cut")},
                       {QStringLiteral("edit_copy"), i18n("Copy")},
                       {QStringLiteral("format_painter"), i18n("Format painter")}},
-                     10, RibbonGroup::LargeAndStacked);
-        addHomeGroup(i18n("Editing"),
-                     {{QStringLiteral("ribbon_edit_find"), i18n("Find")},
+                     10, RibbonGroup::HomeEdit);
+        addHomeGroup(i18n("Search"),
+                     {{QStringLiteral("edit_find"), i18n("Search")},
                       {QStringLiteral("edit_replace"), i18n("Replace")},
-                      {QStringLiteral("ribbon_edit_select"), i18n("Select")}},
-                     50, RibbonGroup::SingleColumn);
+                      {QStringLiteral("edit_findnext"), i18n("Search again")},
+                      {QStringLiteral("ribbon_go_to_page"), i18n("Go to")}},
+                     50, RibbonGroup::HomeSearch);
+        addHomeGroup(i18n("Selection"),
+                     {{QStringLiteral("edit_select_all"), i18n("Select all")}},
+                     60, RibbonGroup::LargeButtons);
 
+        // Research tools at the end of Home.
+        auto *smartLookupAction = new QAction(QIcon::fromTheme(QStringLiteral("search")), i18n("Smart Lookup"), this);
+        smartLookupAction->setObjectName(QStringLiteral("ribbon_smart_lookup"));
+        smartLookupAction->setToolTip(i18n("Look up the selected text in the Research pane."));
+        connect(smartLookupAction, &QAction::triggered, this, [this] {
+            if (QAction *action = findFileAction(m_view->mainWindow(), m_view->actionCollection(), QStringLiteral("smart_lookup"))) {
+                action->trigger();
+                return;
+            }
+            if (KoToolBase *tool = KoToolManager::instance()->toolById(m_canvas, QStringLiteral("TextToolFactory_ID"))) {
+                if (QAction *action = tool->action(QStringLiteral("smart_lookup"))) {
+                    action->trigger();
+                }
+            }
+        });
+        m_view->actionCollection()->addAction(QStringLiteral("ribbon_smart_lookup"), smartLookupAction);
+        auto *researcherAction = new QAction(QIcon::fromTheme(QStringLiteral("help-about")), i18n("Researcher"), this);
+        researcherAction->setObjectName(QStringLiteral("ribbon_researcher"));
+        researcherAction->setEnabled(false);
+        m_view->actionCollection()->addAction(QStringLiteral("ribbon_researcher"), researcherAction);
+        addHomeGroup(i18n("Research"),
+                     {{QStringLiteral("ribbon_smart_lookup"), i18n("Smart Lookup")},
+                      {QStringLiteral("ribbon_researcher"), i18n("Researcher")}},
+                     90, RibbonGroup::LargeAndStacked);
 
         // Microsoft Office 2026 style ribbon pages: Insert, Draw and Design
         // after Home, Mailings after References, and View and Help at the end.
         auto *insertPage = new QWidget;
         insertPage->setObjectName(QStringLiteral("insertRibbonPage"));
+        insertPage->setProperty("ribbonFillWidth", true);
+        insertPage->setProperty("ribbonKeepLabels", true);
         insertPage->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         modeBoxFactory.addCustomPage(i18n("Insert"),
                                     QIcon::fromTheme("insert-image"),

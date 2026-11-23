@@ -349,6 +349,14 @@ void KWFrameLayout::layoutFramesOnPage(KWPage page, int pageNumber)
         }
     }
 
+    // DOCX measures the body margin from the page edge, including the
+    // footer's space. Keep the footer anchored at its own bottom distance
+    // and reserve only the part of the body margin still unaccounted for.
+    if (const auto bodyBottomMargin = pageStyle.docxBodyBottomMargin()) {
+        const qreal footerHeight = qMax(minimumHeight[5], requestedHeight[5]);
+        minimumHeight[4] = qMax(qreal(0), *bodyBottomMargin - minimumHeight[6] - footerHeight);
+    }
+
     pageBackground = sequencedShapeOn(m_backgroundFrameSet, page);
 
     --minZIndex;

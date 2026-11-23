@@ -210,6 +210,11 @@ void TextShape::paintComponent(QPainter &painter, const KoViewConverter &convert
             m_paintRegion = painter.clipRegion();
             if (!m_textShapeData->rootArea()->page() || page->pageNumber() != m_textShapeData->rootArea()->page()->pageNumber()) {
                 m_textShapeData->rootArea()->setPage(page); // takes over ownership of the page
+                // Page fields can change width (9 -> 10). Resolve them before
+                // painting so right-aligned text reserves the new advance
+                // instead of drawing the number beyond the frame's clip.
+                doc->markContentsDirty(0, doc->characterCount());
+                lay->layout();
             } else {
                 delete page;
             }

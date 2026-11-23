@@ -489,7 +489,7 @@ void KoModeBox::updateRibbonCompactness(QWidget *page)
         page->setProperty("ribbonLabelledWidth", page->minimumSizeHint().width());
     }
     const int labelledWidth = page->property("ribbonLabelledWidth").toInt();
-    const bool compact = labelledWidth > available;
+    const bool compact = !page->property("ribbonKeepLabels").toBool() && labelledWidth > available;
     if (qEnvironmentVariableIsSet("CALLIGRA_RIBBON_DEBUG")) {
         qWarning("RIBBON %s available=%d labelled=%d compact=%d",
                  qPrintable(page->objectName()), available, labelledWidth, compact);
@@ -1421,6 +1421,7 @@ void KoModeBox::routeOfficeOptions(const QString &toolId, const QList<QPointer<Q
 {
     const bool spreadsheet = applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive);
     const QString prefix = spreadsheet ? QStringLiteral("sheets") : QStringLiteral("stage");
+    const bool equationTool = toolId == QLatin1String("KoFormulaToolFactoryId");
     const bool drawingTool = toolId == QLatin1String("ConnectionTool") || toolId == QLatin1String("CreatePathTool")
         || toolId == QLatin1String("KoPencilTool") || toolId == QLatin1String("PathToolFactoryId");
     QString defaultPage = prefix + QStringLiteral("ShapeFormatPage");
@@ -1429,6 +1430,10 @@ void KoModeBox::routeOfficeOptions(const QString &toolId, const QList<QPointer<Q
         defaultPage = prefix + QStringLiteral("HomePage");
     else if (toolId == QLatin1String("KoPABackgroundTool"))
         defaultPage = prefix + QStringLiteral("DesignPage");
+    else if (spreadsheet && equationTool)
+        // Equations have an exclusive contextual tab in Sheets; Words already
+        // maps this tool to its Equation tool tab.
+        defaultPage = QStringLiteral("sheetsEquationPage");
     else if (drawingTool)
         // Sheets merges the drawing tools into the one contextual Shape Format
         // tab; Stage keeps its separate Draw tab.
@@ -1746,8 +1751,12 @@ void KoModeBox::setOptionWidgets(const QList<QPointer<QWidget>> &optionWidgetLis
                 sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
                 widget->setSizePolicy(sizePolicy);
             }
-            groupLayout->addStretch(1);
-            groupLayout->addWidget(widget, 0, expandingGroup ? Qt::Alignment() : Qt::AlignVCenter);
+            const bool compactHome = applicationName.contains(QLatin1String("words"), Qt::CaseInsensitive)
+                && activeToolId == QLatin1String("TextToolFactory_ID");
+            if (!compactHome) {
+                groupLayout->addStretch(1);
+            }
+            groupLayout->addWidget(widget, 0, expandingGroup ? Qt::Alignment() : (compactHome ? Qt::AlignTop : Qt::AlignVCenter));
             groupLayout->addStretch(1);
             widget->show();
 

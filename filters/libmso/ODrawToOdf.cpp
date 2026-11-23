@@ -244,6 +244,9 @@ void ODrawToOdf::defineGraphicProperties(KoGenStyle &style, const DrawStyle &ds,
             break;
         }
         case msofillBackground:
+            style.addProperty("draw:fill", "none", gt);
+            style.addProperty("loext:fill-use-slide-background", "true", gt);
+            break;
         default:
             break;
         }

@@ -431,6 +431,7 @@ bool KoApplication::start()
     } else {
         const bool print = parser.isSet("print");
         const bool exportAsPdf = parser.isSet("export-pdf");
+        setProperty("headlessPdfExport", exportAsPdf);
         d->pdfFileName = parser.value("export-filename");
         d->roundtripFileName = parser.value("roundtrip-filename");
         const bool doTemplate = parser.isSet("template");
@@ -442,7 +443,7 @@ bool KoApplication::start()
         // Only show a window when explicitly requested or in normal editing
         // mode.
         const bool showmainWindow = parser.isSet("benchmark-loading-show-window")
-            || (!parser.isSet("benchmark-loading") && !parser.isSet("roundtrip-filename") && d->roundtripFileName.isEmpty());
+            || (!exportAsPdf && !parser.isSet("benchmark-loading") && !parser.isSet("roundtrip-filename") && d->roundtripFileName.isEmpty());
         const QString profileFileName = parser.value("profile-filename");
 
         QTextStream profileoutput;

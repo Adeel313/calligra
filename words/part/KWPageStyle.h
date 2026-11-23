@@ -17,6 +17,8 @@
 
 #include <QSharedDataPointer>
 
+#include <optional>
+
 class KWPageStylePrivate;
 class KoShapeBackground;
 class KoShapeSavingContext;
@@ -135,6 +137,7 @@ public:
 
     /// return the minimum footer height.
     qreal footerMinimumHeight() const;
+    std::optional<qreal> docxBodyBottomMargin() const;
     /**
      * Set the minimum footer height.
      * @param height the height

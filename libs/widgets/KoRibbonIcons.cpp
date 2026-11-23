@@ -69,7 +69,7 @@ QColor iconTint(const QString &name)
         || name == QLatin1String("functions") || name == QLatin1String("function") || name == QLatin1String("calculate")
         || name == QLatin1String("manage_search") || name == QLatin1String("format_list_numbered")
         || name == QLatin1String("format_list_bulleted") || name == QLatin1String("bookmark")
-        || name == QLatin1String("rule")) {
+        || name == QLatin1String("rule") || name == QLatin1String("special_character")) {
         return QColor(0x7b, 0x1f, 0xa2); // data and formulas: purple
     }
     if (name == QLatin1String("spellcheck") || name == QLatin1String("lock") || name == QLatin1String("lock_open")
@@ -77,7 +77,8 @@ QColor iconTint(const QString &name)
         return QColor(0xd9, 0x30, 0x25); // review and protection: red
     }
     if (name == QLatin1String("bar_chart") || name == QLatin1String("image") || name == QLatin1String("category")
-        || name == QLatin1String("insert_page_break") || name == QLatin1String("arrow_selector_tool")) {
+        || name == QLatin1String("insert_page_break") || name == QLatin1String("arrow_selector_tool")
+        || name == QLatin1String("text_fields")) {
         return QColor(0x1a, 0x73, 0xe8); // illustrations: blue
     }
     if (name == QLatin1String("draw") || name == QLatin1String("polyline") || name == QLatin1String("route")) {
@@ -91,7 +92,8 @@ QColor iconTint(const QString &name)
         return QColor(0x1a, 0x73, 0xe8); // files, links and help: blue
     }
     if (name == QLatin1String("comment") || name == QLatin1String("view_column")
-        || name == QLatin1String("table_rows") || name == QLatin1String("tab")) {
+        || name == QLatin1String("table_rows") || name == QLatin1String("tab")
+        || name == QLatin1String("vertical_align_top") || name == QLatin1String("vertical_align_bottom")) {
         return QColor(0x00, 0x89, 0x7b); // comments and headings: teal
     }
     if (name == QLatin1String("search") || name == QLatin1String("find_replace")
@@ -282,6 +284,12 @@ const CommandIcon commandIcons[] = {
     {"insertMathExpr", "functions"}, {"insertFormula", "function"},
     {"insertSeries", "format_list_numbered"}, {"insertSpecialChar", "special_character"},
     {"insert_textbox", "text_fields"}, {"insert_equation", "functions"},
+    {"insert_framebreak", "insert_page_break"}, {"insert_table", "table_chart"},
+    {"ribbon_insert_link", "link"}, {"ribbon_insert_bookmark", "bookmark"},
+    {"insert_annotation", "comment"}, {"insert_header", "vertical_align_top"},
+    {"insert_footer", "vertical_align_bottom"}, {"insert_page_number", "numbers"},
+    {"insert_variable", "library_add"}, {"insert_object", "category"},
+    {"insert_specialchar", "special_character"},
     {"insertHyperlink", "link"}, {"comment", "comment"},
     {"insertFromClipboard", "content_paste"}, {"insertFromTextfile", "description"},
     {"insertFromDatabase", "database"},

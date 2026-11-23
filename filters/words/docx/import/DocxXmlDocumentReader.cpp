@@ -580,8 +580,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     // Footer references precede pgNumType in OOXML. Apply the section's
     // display format only after all its properties have been read.
     if (!m_sectionPageNumberFormat.isEmpty()) {
-        const QRegularExpression pageField(QStringLiteral("<text:page-number(?![^>]*style:num-format)"));
-        const QString formatted = QStringLiteral("<text:page-number style:num-format=\"%1\"").arg(m_sectionPageNumberFormat);
+        const QRegularExpression pageField(QStringLiteral("<text:page-number(?:([^>]*?) style:num-format=\"[^\"]*\")?"));
+        const QString formatted = QStringLiteral("<text:page-number style:num-format=\"%1\"\\1").arg(m_sectionPageNumberFormat);
         for (auto it = m_headers.begin(); it != m_headers.end(); ++it) it.value().replace(pageField, formatted);
         for (auto it = m_footers.begin(); it != m_footers.end(); ++it) it.value().replace(pageField, formatted);
     }
@@ -618,6 +618,40 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     //    masterStyle->addAttribute("style:display-name", masterStyleName);
     m_masterPageStyle.addAttribute("style:page-layout-name", pageLayoutStyleName);
     QString currentMasterPageName = mainStyles->insert(m_masterPageStyle, masterStyleName, KoGenStyles::AllowDuplicates);
+
+    // Words has uniform/even-odd header frame sets, but no frame set for an
+    // ODF header-first. Give a nonempty first header its own master page and
+    // continue with the ordinary master on subsequent pages. This also lets
+    // inline header pictures reserve their actual height in the body layout.
+    const auto hasHeaderContent = [](const QString &xml) {
+        QXmlStreamReader reader(xml);
+        reader.setNamespaceProcessing(false);
+        while (!reader.atEnd()) {
+            reader.readNext();
+            if (reader.isCharacters() && !reader.isWhitespace()) {
+                return true;
+            }
+            if (reader.isStartElement() && reader.qualifiedName() == QLatin1StringView("draw:frame")) {
+                return true;
+            }
+        }
+        return false;
+    };
+    if (m_differentFirstPage
+        && (hasHeaderContent(m_headers.value(QStringLiteral("first"))) || hasHeaderContent(m_footers.value(QStringLiteral("first"))))) {
+        KoGenStyle firstMaster(KoGenStyle::MasterPageStyle);
+        firstMaster.addAttribute("style:page-layout-name", pageLayoutStyleName);
+        firstMaster.addAttribute("style:next-style-name", currentMasterPageName);
+        QString header = m_headers.value(QStringLiteral("first"));
+        header.replace(QLatin1String("style:header-first"), QLatin1String("style:header"));
+        firstMaster.addChildElement("1 style:header", header);
+        if (m_footers.contains(QStringLiteral("first"))) {
+            QString footer = m_footers.value(QStringLiteral("first"));
+            footer.replace(QLatin1String("style:footer-first"), QLatin1String("style:footer"));
+            firstMaster.addChildElement("4 style:footer", footer);
+        }
+        currentMasterPageName = mainStyles->insert(firstMaster, QStringLiteral("FirstPage"), KoGenStyles::AllowDuplicates);
+    }
 
     // Because sectPr is always in the last bit of a section, it means that next paragraph/whatever
     // Needs to have a style which is modified by next sectPr
@@ -729,7 +763,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pgNumType()
 
     const QString format(attrs.value(QStringLiteral("w:fmt")).toString());
     QString odfFormat;
-    if (format == QLatin1String("decimal")) {
+    if (format.isEmpty() || format == QLatin1String("decimal")) {
         odfFormat = QStringLiteral("1");
     } else if (format == QLatin1String("lowerRoman")) {
         odfFormat = QStringLiteral("i");
@@ -3482,12 +3516,39 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_r()
     // Noto Sans while the rest of the document used Calibri, making table
     // cells wider than in Word/LibreOffice and changing pagination. Carry the
     // effective family down explicitly, as Word's style inheritance implies.
-    if (!m_currentTextStyle.isEmpty() && m_currentTextStyle.property("style:font-name", KoGenStyle::TextType).isEmpty()) {
-        QString family;
-        if (!m_currentTextStyle.parentName().isEmpty()) {
-            if (const KoGenStyle *parent = mainStyles->style(m_currentTextStyle.parentName(), "text")) {
-                family = parent->property("style:font-name", KoGenStyle::TextType);
+    if ((!m_currentTextStyle.isEmpty() || !m_currentTextStyle.parentName().isEmpty())
+        && m_currentTextStyle.property("style:font-name", KoGenStyle::TextType).isEmpty()) {
+        const auto inheritedFamily = [this](const KoGenStyle *style, const QByteArray &styleFamily) {
+            for (int depth = 0; style && depth < 20; ++depth) {
+                const QString family = style->property("style:font-name", KoGenStyle::TextType);
+                if (!family.isEmpty()) {
+                    return family;
+                }
+                style = mainStyles->style(style->parentName(), styleFamily);
             }
+            return QString();
+        };
+        QString family;
+        const bool cachedTocEntry = m_startToc || m_tocBodyWriter;
+        const QString defaultTextStyle = m_context->m_namedDefaultStyles.value("text");
+        if (!m_currentTextStyle.parentName().isEmpty()
+            && !(cachedTocEntry && m_currentTextStyle.parentName() == defaultTextStyle)) {
+            family = inheritedFamily(mainStyles->style(m_currentTextStyle.parentName(), "text"), "text");
+        }
+        // Run formatting inherits the paragraph's effective face before the
+        // document default. Falling straight back to docDefaults overrides
+        // Normal/custom paragraph styles whenever a run changes only colour
+        // or size, and gives cached TOC hyperlinks the application font.
+        if (family.isEmpty()) {
+            // The paragraph mark's theme font can differ from the cached
+            // TOC entry's font. Inherit the entry's named paragraph style.
+            const KoGenStyle *paragraphStyle = cachedTocEntry
+                ? mainStyles->style(m_currentParagraphStyle.parentName(), "paragraph")
+                : &m_currentParagraphStyle;
+            family = inheritedFamily(paragraphStyle, "paragraph");
+        }
+        if (family.isEmpty() && m_currentParagraphStyle.parentName().isEmpty()) {
+            family = inheritedFamily(mainStyles->style(m_context->m_namedDefaultStyles.value("paragraph"), "paragraph"), "paragraph");
         }
         if (family.isEmpty()) {
             family = m_context->m_defaultFontFamily;

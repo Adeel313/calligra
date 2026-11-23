@@ -29,6 +29,7 @@ private Q_SLOTS:
     void testSetAbsolutePosition();
     void testSetAbsolutePosition2();
     void testSetAndGetRotation();
+    void testOdfRotationDirection();
 
 private:
     void resetValues();
