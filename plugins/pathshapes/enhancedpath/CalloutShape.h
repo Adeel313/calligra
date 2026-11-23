@@ -41,6 +41,7 @@ public:
     KoTextShapeDataBase *textData() const;
 
     QRectF boundingRect() const override;
+    bool hitTest(const QPointF &position) const override;
 
     void paintComponent(QPainter &painter, const KoViewConverter &converter, KoShapePaintingContext &paintcontext) override;
 
@@ -95,6 +96,14 @@ public:
     QList<qreal> parseModifiers(const QString &m) const;
     void setParameters(const KoProperties &params);
     KoProperties parameters() const;
+
+    /**
+     * Discards the preset path, formulae, modifiers and handles installed by
+     * the factory, leaving the shape empty. Needed before loading geometry
+     * from a document, so preset data never mixes with the document's data.
+     */
+    void clearGeometry();
+    void layoutText(const QSizeF &bubbleSize);
 
 protected:
     //     virtual void shapeChanged(ChangeType type, KoShape *shape = 0);

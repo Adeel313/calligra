@@ -61,7 +61,7 @@ void CalloutPathTool::activate(ToolActivation toolActivation, const QSet<KoShape
     foreach (KoShape *shape, shapes) {
         PathShape *pathShape = dynamic_cast<PathShape *>(shape);
         debugCalloutF << shape->shapeId();
-        if (shape->isSelectable() && pathShape) {
+        if (pathShape) {
             // as the tool is just in activation repaintDecorations does not yet get called
             // so we need to use repaint of the tool and it is only needed to repaint the
             // current canvas

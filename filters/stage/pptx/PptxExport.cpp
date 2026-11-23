@@ -8,6 +8,8 @@
 #include <KoPAPage.h>
 #include <KoPAMasterPage.h>
 #include <KoPADocument.h>
+#include <KoInlineTextObjectManager.h>
+#include <KoTextDocument.h>
 #include <KoColorBackground.h>
 #include <KoGradientBackground.h>
 #include <KoPatternBackground.h>
@@ -64,6 +66,7 @@
 #include <KoTableColumnAndRowStyleManager.h>
 #include <KoTableColumnStyle.h>
 #include <QTextDocumentFragment>
+#include <QUuid>
 #include <QXmlStreamWriter>
 
 #include <algorithm>
@@ -114,6 +117,7 @@ void startShapeTree(QXmlStreamWriter &xml)
 
 struct SlideObject {
     KoShape *shape = nullptr;
+    KoShape *textShape = nullptr;
     KoTextShapeDataBase *textData = nullptr;
     QTextTable *table = nullptr;
     QByteArray imageData;
@@ -132,6 +136,7 @@ struct SlideObject {
     int chartId = 0;
     int relationshipId = 0;
     int objectId = 0;
+    int slideNumber = 0;
     bool connector = false;
     bool groupStart = false;
     bool groupEnd = false;
@@ -384,7 +389,10 @@ void collectShape(KoShape *shape, QList<SlideObject> &objects, int &nextObjectId
         if (auto *container = dynamic_cast<KoTosContainer *>(shape)) {
             for (KoShape *child : container->shapes()) {
                 object.textData = qobject_cast<KoTextShapeDataBase *>(child->userData());
-                if (object.textData) break;
+                if (object.textData) {
+                    object.textShape = child;
+                    break;
+                }
             }
         }
     }
@@ -578,6 +586,15 @@ void writeTextBody(QXmlStreamWriter &xml, const SlideObject &object, QTextDocume
             insets.right += textData->rightPadding();
             insets.bottom += textData->bottomPadding();
         }
+        if (object.textShape && dynamic_cast<KoPathShape *>(object.shape)) {
+            // DrawingML lays out text inside the full shape bounds. A Stage
+            // callout's text child occupies the box within the leader path.
+            const QRectF textRect = object.textShape->transformation().mapRect(QRectF(QPointF(), object.textShape->size()));
+            insets.left += textRect.left();
+            insets.top += textRect.top();
+            insets.right += object.shape->size().width() - textRect.right();
+            insets.bottom += object.shape->size().height() - textRect.bottom();
+        }
     }
     xml.writeAttribute(QStringLiteral("lIns"), QString::number(qRound64(insets.left * 12700)));
     xml.writeAttribute(QStringLiteral("tIns"), QString::number(qRound64(insets.top * 12700)));
@@ -595,6 +612,7 @@ void writeTextBody(QXmlStreamWriter &xml, const SlideObject &object, QTextDocume
     }
     xml.writeEndElement();
     xml.writeEmptyElement(QStringLiteral("a:lstStyle"));
+    auto *inlineObjects = KoTextDocument(document).inlineTextObjectManager();
     for (QTextBlock block = document->begin(); block.isValid(); block = block.next()) {
         xml.writeStartElement(QStringLiteral("a:p"));
         xml.writeStartElement(QStringLiteral("a:pPr"));
@@ -681,12 +699,25 @@ void writeTextBody(QXmlStreamWriter &xml, const SlideObject &object, QTextDocume
             QTextCharFormat fmt = block.charFormat();
             fmt.merge(fragment.charFormat());
             QString runText = fragment.text();
+            bool slideNumberField = false;
+            if (inlineObjects && runText == QString(QChar::ObjectReplacementCharacter)) {
+                if (auto *inlineObject = inlineObjects->inlineTextObject(fragment.charFormat())) {
+                    slideNumberField = object.slideNumber > 0 && inlineObject->property("isCurrentPageNumber").toBool();
+                    if (slideNumberField)
+                        runText = QString::number(object.slideNumber);
+                }
+            }
             runText.replace(QChar::LineSeparator, QLatin1Char('\n'));
             const QStringList lines = runText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
             for (int line = 0; line < lines.size(); ++line) {
                 if (line > 0)
                     xml.writeEmptyElement(QStringLiteral("a:br"));
-            xml.writeStartElement(QStringLiteral("a:r")); xml.writeStartElement(QStringLiteral("a:rPr"));
+            xml.writeStartElement(slideNumberField ? QStringLiteral("a:fld") : QStringLiteral("a:r"));
+            if (slideNumberField) {
+                xml.writeAttribute(QStringLiteral("id"), QUuid::createUuid().toString().toUpper());
+                xml.writeAttribute(QStringLiteral("type"), QStringLiteral("slidenum"));
+            }
+            xml.writeStartElement(QStringLiteral("a:rPr"));
             xml.writeAttribute(QStringLiteral("lang"), QStringLiteral("en-US"));
             const qreal points = fmt.fontPointSize() > 0 ? fmt.fontPointSize() : document->defaultFont().pointSizeF() > 0 ? document->defaultFont().pointSizeF() : 18.0;
             xml.writeAttribute(QStringLiteral("sz"), QString::number(qRound(points * 100.0)));
@@ -1343,7 +1374,8 @@ KoFilter::ConversionStatus PptxExport::convert(const QByteArray &from, const QBy
     QList<SlideObject> slideNotes;
     QList<int> notesRelationshipIds;
     int chartCount = 0;
-    for (KoPAPageBase *page : pages) {
+    for (int pageIndex = 0; pageIndex < pages.size(); ++pageIndex) {
+        KoPAPageBase *page = pages.at(pageIndex);
         QList<SlideObject> objects;
         int nextObjectId = 2;
         for (KoShape *shape : page->shapes()) collectShape(shape, objects, nextObjectId);
@@ -1351,6 +1383,7 @@ KoFilter::ConversionStatus PptxExport::convert(const QByteArray &from, const QBy
         int nextRelationshipId = 2;
         QHash<QString, int> slideHyperlinkIds;
         for (SlideObject &object : objects) {
+            object.slideNumber = pageIndex + 1;
             if (!object.imageData.isEmpty()) object.imageId = ++nextImageId;
             if (!object.chartData.isEmpty()) object.chartId = ++chartCount;
             if (object.imageId || object.chartId) object.relationshipId = nextRelationshipId++;

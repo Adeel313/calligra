@@ -477,12 +477,17 @@ KoDocument *KoFilterChain::createDocument(const QString &file)
     QUrl url;
     url.setPath(file);
     QMimeType t = QMimeDatabase().mimeTypeForUrl(url);
-    if (t.isDefault()) {
+    QByteArray mimeType = t.isDefault() ? QByteArray() : t.name().toLatin1();
+    if (mimeType.isEmpty() && !(m_state & Beginning)) {
+        // A previous filter can produce an extensionless temporary file.
+        mimeType = m_chainLinks.current()->from();
+    }
+    if (mimeType.isEmpty()) {
         errorFilter << "No mimetype found for " << file << Qt::endl;
         return nullptr;
     }
 
-    KoDocument *doc = createDocument(t.name().toLatin1());
+    KoDocument *doc = createDocument(mimeType);
 
     if (!doc || !doc->loadNativeFormat(file)) {
         errorFilter << "Couldn't load from the file" << Qt::endl;

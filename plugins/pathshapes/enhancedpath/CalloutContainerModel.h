@@ -36,6 +36,26 @@ public:
 
     void resizePath(PathShape *path, const QPointF &newPos, const QSizeF &newSize);
 
+    /**
+     * Forgets the previous size and position before the shape is filled from
+     * a document. The size change that arrives next comes from the document,
+     * not from a user resize, so the pointer must be taken from the document
+     * as-is instead of being derived from the previous size.
+     */
+    void beginLoad();
+
+    /**
+     * Fits the path to the container's current size and position while
+     * keeping the callout pointer (the modifiers) exactly where the document
+     * put it.
+     *
+     * resizePath() normally derives the pointer from the previous size, which
+     * would be wrong while loading: the size change it sees is the one from
+     * the document, not one the user made. This therefore pretends there is
+     * no previous size, so only the plain layout part of resizePath() runs.
+     */
+    void layoutPath(KoShapeContainer *container);
+
 private:
     QTransform m_prevTrans;
     QSizeF m_prevSize;

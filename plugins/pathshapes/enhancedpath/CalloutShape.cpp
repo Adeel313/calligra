@@ -31,11 +31,10 @@
 PathShape::PathShape(const QRect &viewBox)
     : EnhancedPathShape(viewBox)
 {
-    qInfo() << Q_FUNC_INFO << this;
     setShapeId(CalloutPathShapeId);
-    // FIXME: shapes needs more fine-grained control of interactions:
-    // The tool just checks isEditable() (KoShape::ResizeAllowed|KoShape::MoveAllowed)
-    setAllowedInteractions(KoShape::SelectionAllowed);
+    // The container owns selection and movement. Tools edit this child
+    // through the container's delegates.
+    setAllowedInteractions(KoShape::AllowedInteractions());
 }
 
 // void PathShape::shapeChanged(ChangeType type, KoShape *shape)
@@ -118,6 +117,27 @@ void PathShape::setViewBox(const QRect &box)
     m_viewBox = box;
 }
 
+void PathShape::clearGeometry()
+{
+    // Drop the preset path, formulae, modifiers and handles that the factory
+    // installed, so that only the geometry from the document is left.
+    reset();
+    m_viewBox = QRect();
+    m_viewBound = QRectF();
+}
+
+void PathShape::layoutText(const QSizeF &bubbleSize)
+{
+    setResizeBehavior(TextFollowsPreferredTextRect);
+    if (m_textArea.size() >= 4) {
+        updateTextArea();
+    } else {
+        // The path is positioned relative to the bubble and may start at the
+        // leader tip. Express the bubble's text rectangle in path coordinates.
+        setPreferredTextRect(QRectF(-position(), bubbleSize));
+    }
+}
+
 QList<qreal> PathShape::parseModifiers(const QString &m) const
 {
     QList<qreal> lst;
@@ -198,6 +218,7 @@ CalloutShape::CalloutShape(const KoProperties *params)
     addShape(m_path);
     setClipped(m_path, false);
     setInheritsTransform(m_path, true);
+    setToolDelegates({m_path});
 }
 
 CalloutShape::~CalloutShape() = default;
@@ -217,29 +238,50 @@ void CalloutShape::saveOdf(KoShapeSavingContext &context) const
     // This is imo (danders) not according to odf spec,
     // but is the way LO/OO does it.
 
-    saveOdfAttributes(context, OdfTransformation | OdfSize);
-
-    m_path->saveOdfAttributes(context, OdfAllAttributes & ~OdfTransformation & ~OdfSize & ~OdfViewbox);
+    m_path->saveOdfAttributes(context, OdfStyle);
+    saveOdfAttributes(context, OdfAllAttributes & ~OdfStyle);
     m_path->saveText(context);
     m_path->saveEnhancedGeometry(context);
 }
 
 bool CalloutShape::loadOdf(const KoXmlElement &element, KoShapeLoadingContext &context)
 {
+    // The factory pre-loads a preset path into m_path. Loading the document's
+    // geometry on top of it would append the document's commands, formulae and
+    // modifiers to the preset ones, producing one giant bogus outline. Throw
+    // the preset away first.
+
+    // The size change the model sees below comes from the document, not from a
+    // user resize, so it must not be used to derive the pointer position.
+    if (auto *containerModel = dynamic_cast<CalloutContainerModel *>(model())) {
+        containerModel->beginLoad();
+    }
+
     const KoXmlElement enhancedGeometry(KoXml::namedItemNS(element, KoXmlNS::draw, "enhanced-geometry"));
     if (!enhancedGeometry.isNull()) {
         m_type = enhancedGeometry.attributeNS(KoXmlNS::draw, "type", "callout");
 
+        m_path->clearGeometry();
         m_path->loadEnhancedGeometry(enhancedGeometry, context);
     }
 
     loadOdfAttributes(element, context, OdfAllAttributes);
+
+    // Lay the path out explicitly as well: a size that does not change while
+    // loading does not reach the container model, and the path would then keep
+    // the size it got from the preset.
+    if (auto *containerModel = dynamic_cast<CalloutContainerModel *>(model())) {
+        containerModel->layoutPath(this);
+    }
 
     // The label is stored as plain text children of the custom-shape element.
     // EnhancedPathShape::loadOdf() loads them into its text-on-shape child;
     // callouts use a wrapper container, so do the same for the path here.
     // Without this the text is silently dropped when an ODP is reopened.
     m_path->loadText(element, context);
+    if (KoShape *textShape = m_path->text()) {
+        setToolDelegates({m_path, textShape});
+    }
 
     return true;
 }
@@ -258,6 +300,11 @@ void CalloutShape::setTextArea(const QRectF &rect)
 QRectF CalloutShape::boundingRect() const
 {
     return KoShapeContainer::boundingRect() | m_path->boundingRect();
+}
+
+bool CalloutShape::hitTest(const QPointF &position) const
+{
+    return KoShapeContainer::hitTest(position) || m_path->hitTest(position);
 }
 
 void CalloutShape::paintComponent(QPainter & /*painter*/, const KoViewConverter & /*converter*/, KoShapePaintingContext & /*paintcontext*/)

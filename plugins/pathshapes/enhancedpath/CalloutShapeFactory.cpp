@@ -56,6 +56,7 @@ KoShape *CalloutShapeFactory::createShape(const KoProperties *params, KoDocument
 
     KoShape *textShape = shape->pathShape()->createTextShape(resourceManager);
     if (textShape) {
+        shape->setToolDelegates({shape->pathShape(), textShape});
         textShape->setSize(shape->size());
         KoTextShapeDataBase *shapeData = qobject_cast<KoTextShapeDataBase *>(textShape->userData());
         shapeData->setResizeMethod(KoTextShapeDataBase::AutoGrowWidthAndHeight);

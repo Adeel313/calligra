@@ -78,6 +78,55 @@ QPointF position(const KoShapeContainer *container)
     return m.map(center) - center;
 }
 
+namespace
+{
+/**
+ * Sizes and places the callout path inside a container of newSize.
+ *
+ * The path covers the viewbox plus, when the pointer sticks out of it, the
+ * pointer as well, so it is scaled by how much larger than the viewbox it is.
+ * The pointer itself stays where it is in viewbox coordinates; only the part
+ * of it outside the viewbox is pushed outwards with the container.
+ */
+void applyLayout(PathShape *path, const QSizeF &newSize, const QList<qreal> &modifiers, const QRect &viewBox)
+{
+    if (viewBox.isEmpty()) {
+        return;
+    }
+
+    QRectF pathRect(viewBox);
+    if (modifiers.count() >= 2) {
+        if (modifiers.at(0) < pathRect.left()) {
+            pathRect.setLeft(modifiers.at(0));
+        } else if (modifiers.at(0) > pathRect.right()) {
+            pathRect.setRight(modifiers.at(0));
+        }
+        if (modifiers.at(1) < pathRect.top()) {
+            pathRect.setTop(modifiers.at(1));
+        } else if (modifiers.at(1) > pathRect.bottom()) {
+            pathRect.setBottom(modifiers.at(1));
+        }
+    }
+
+    const qreal sizeRatioX = pathRect.width() / viewBox.width();
+    const qreal sizeRatioY = pathRect.height() / viewBox.height();
+    const QSizeF pathSize(newSize.width() * sizeRatioX, newSize.height() * sizeRatioY);
+    path->setSize(pathSize);
+
+    qreal x = 0.0;
+    qreal y = 0.0;
+    if (pathRect.left() < 0.0) {
+        x = newSize.width() - pathSize.width();
+    }
+    if (pathRect.top() < 0.0) {
+        y = newSize.height() - pathSize.height();
+    }
+    path->setPosition(QPointF(x, y));
+
+    path->layoutText(newSize);
+}
+}
+
 CalloutContainerModel::CalloutContainerModel()
     : KoShapeContainerDefaultModel()
     , m_resizing(false)
@@ -92,6 +141,27 @@ void CalloutContainerModel::setIgnore(KoShape *shape, bool state)
 bool CalloutContainerModel::ignore(KoShape *shape) const
 {
     return m_ignore.contains(shape) && m_ignore[shape];
+}
+
+void CalloutContainerModel::beginLoad()
+{
+    // Forget the size and position the factory gave the shape: what arrives
+    // next comes from the document, not from a user resize.
+    m_prevSize = QSizeF();
+    m_prevPosition = QPointF();
+}
+
+void CalloutContainerModel::layoutPath(KoShapeContainer *container)
+{
+    CalloutShape *callout = dynamic_cast<CalloutShape *>(container);
+    if (!callout || !callout->pathShape()) {
+        return;
+    }
+    PathShape *path = callout->pathShape();
+    applyLayout(path, container->size(), path->modifiers(), path->viewBox());
+
+    m_prevPosition = position(container);
+    m_prevSize = container->size();
 }
 
 void CalloutContainerModel::containerChanged(KoShapeContainer *container, KoShape::ChangeType type)
@@ -200,13 +270,15 @@ void CalloutContainerModel::resizePath(PathShape *path, const QPointF &newPos, c
     QSizeF newPathSize;
     debugCallout << '\t' << "prev:" << m_prevPosition << m_prevSize << "new:" << newPos << newSize << "diff:" << (newSize - m_prevSize);
     QList<qreal> modifiers = path->modifiers();
-    Q_ASSERT(modifiers.count() >= 2);
 
     QVariant viewboxData;
     params.property("viewBox", viewboxData);
     QRect viewBox = path->viewBox();
 
-    if (m_prevSize.isValid()) {
+    // Without a previous size (the very first layout, or a document being
+    // loaded) or without a pointer there is nothing to derive from, so only
+    // the plain layout at the end of this function runs.
+    if (m_prevSize.isValid() && modifiers.count() >= 2) {
         bool pointerLeft = modifiers[0] < viewBox.left();
         bool pointerRight = modifiers[0] > viewBox.right();
         bool pointerTop = modifiers[1] < viewBox.top();
@@ -325,39 +397,7 @@ void CalloutContainerModel::resizePath(PathShape *path, const QPointF &newPos, c
         path->setParameters(params); // set new parameters to get everything updated
     }
 
-    QRectF pathRect(viewBox);
-    if (modifiers[0] < pathRect.left()) {
-        pathRect.setLeft(modifiers[0]);
-    } else if (modifiers[0] > pathRect.right()) {
-        pathRect.setRight(modifiers[0]);
-    }
-    if (modifiers[1] < pathRect.top()) {
-        pathRect.setTop(modifiers[1]);
-    } else if (modifiers[1] > pathRect.bottom()) {
-        pathRect.setBottom(modifiers[1]);
-    }
-    // debugCallout<<'\t'<<"pathrect:"<<pathRect<<"viewbox:"<<viewBox;
-    qreal size_ratioX = pathRect.width() / viewBox.width();
-    qreal size_ratioY = pathRect.height() / viewBox.height();
-    qreal pw = newSize.width() * size_ratioX;
-    qreal ph = newSize.height() * size_ratioY;
-    QSizeF pathSize = QSizeF(pw, ph);
-    // debugCallout<<'\t'<<newSize<<"size ratio:"<<size_ratioX<<size_ratioY<<"path size:"<<pathSize;
-    path->setSize(pathSize);
+    applyLayout(path, newSize, modifiers, viewBox);
 
-    qreal x = 0.0;
-    qreal y = 0.0;
-    if (pathRect.left() < 0.0) {
-        x = newSize.width() - pathSize.width();
-    }
-    if (pathRect.top() < 0.0) {
-        y = newSize.height() - pathSize.height();
-    }
-    path->setPosition(QPointF(x, y));
-
-    KoShape *textShape = path->text();
-    if (textShape) {
-        textShape->setSize(newSize);
-    }
     debugCalloutF << "<<<<";
 }

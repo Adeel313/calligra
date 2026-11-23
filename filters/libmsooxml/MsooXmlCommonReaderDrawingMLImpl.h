@@ -1199,9 +1199,10 @@ void MSOOXML_CURRENT_CLASS::generateFrameSp()
         m_currentDrawStyle->setAutoStyleInStylesDotXml(true);
     }
 
-    // NOTE: Workaround: Set padding to ZERO until the fo:wrap-option support
-    // arrives and other text on shape related issues get fixed.
-    if (isCustomShape()) {
+    // Preset shapes still use the legacy zero-padding workaround. Custom
+    // paths can use their explicit body insets to place text away from the
+    // rest of the outline (for example, a callout's leader line).
+    if (isCustomShape() && m_contentType != "custom") {
         m_currentDrawStyle->removeProperty("fo:padding-left");
         m_currentDrawStyle->removeProperty("fo:padding-right");
         m_currentDrawStyle->removeProperty("fo:padding-top");
