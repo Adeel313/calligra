@@ -78,3 +78,26 @@ sheet relationships rather than a hardcoded `xl/comments1.xml` name. It fails on
 any element-not-found error in the converter log. This covers producers that omit
 the conventional prefixes; prefixed input such as LibreOffice's is not generated
 here.
+
+# Dashboard formulas and chart caches
+
+```sh
+python3 filters/sheets/xlsx/tests/dashboard_import.py --output /tmp/dashboard-import-check
+```
+
+Checks named table-column references before the table's sheet, header and totals
+exclusion, escaped sheet names, formula string literals, chart ranges without
+absolute markers, inline series names, and automatic titles. Uses the native
+filter in `build-opt/local-install`; requires openpyxl.
+
+# Color scales, traffic lights and sparklines
+
+```sh
+python3 filters/sheets/xlsx/tests/visual_features.py --output /tmp/xlsx-visual-check --roundtrip
+python3 filters/sheets/xlsx/tests/visual_features.py --source tests/excel_feature_stress.xlsx --output /tmp/xlsx-stress-visual-check
+```
+
+The native `CellVisuals` test covers live percentile scales, interpolation, icon
+thresholds and reversal, sparkline source edits and painting, and ODS persistence.
+Visual rules are stored in a Calligra ODS extension and restored to native XLSX
+color-scale, icon-set and x14 sparkline elements on export.

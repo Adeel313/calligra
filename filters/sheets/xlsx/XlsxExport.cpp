@@ -14,6 +14,7 @@
 #include <KoStore.h>
 
 #include <sheets/core/Cell.h>
+#include <sheets/core/CellVisuals.h>
 #include <sheets/core/CellStorage.h>
 #include <sheets/core/Condition.h>
 #include <sheets/core/ConditionsStorage.h>
@@ -1208,6 +1209,8 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
             }
         }
 
+        sheet->cellVisuals()->saveXlsxRules(xml);
+
         // Data validations. The model stores one Validity per cell; cells that
         // share the same rule are merged into a single sqref again.
         const ValidityStorage *validities = sheet->validityStorage();
@@ -1363,6 +1366,7 @@ QByteArray worksheetXml(const Sheet *sheet, const QHash<Style, int> &styleIds, c
             }
             xml.writeEndElement();
         }
+        sheet->cellVisuals()->saveXlsxSparklines(xml);
         xml.writeEndElement(); // worksheet
     });
 }

@@ -13,6 +13,7 @@
 #ifndef XLSXXMLWORKSHEETREADER_H
 #define XLSXXMLWORKSHEETREADER_H
 
+#include <sheets/core/CellVisuals.h>
 #include <KoBorder.h> // needed by DrawingMLMethods
 
 // #include <MsooXmlThemesReader.h>
@@ -60,6 +61,11 @@ protected:
     KoFilter::ConversionStatus read_sheetData();
     KoFilter::ConversionStatus read_conditionalFormatting();
     KoFilter::ConversionStatus read_cfRule();
+    KoFilter::ConversionStatus read_visualRule();
+    KoFilter::ConversionStatus read_sparklineExtensions();
+    QColor visualColor(const QXmlStreamAttributes &attrs) const;
+    Calligra::Sheets::CellVisuals m_cellVisuals;
+    QString m_visualRange;
     KoFilter::ConversionStatus read_formula();
     KoFilter::ConversionStatus read_row();
     KoFilter::ConversionStatus read_c();

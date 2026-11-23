@@ -22,6 +22,7 @@ public:
     QString referenceArea;
     //! table:name attribute of the table definition.
     QString name;
+    QStringList columns;
     int headerStyleIndex;
     int dataStyleIndex;
     int totalsRowIndex;

@@ -17,6 +17,8 @@
 #include <MsooXmlImport.h>
 #include <QVariantList>
 
+class XlsxXmlTableReaderContext;
+
 //! XLSX to ODS import filter
 class XlsxImport : public MSOOXML::MsooXmlImport
 {
@@ -44,6 +46,9 @@ public:
     //! Excel tables as (name, OpenDocument range) pairs.
     QList<QPair<QString, QString>> tables() const;
     void appendTable(const QString &name, const QString &range);
+
+    void registerTableColumns(const XlsxXmlTableReaderContext &table, const QString &sheetName);
+    QString resolveTableReferences(const QString &formula) const;
 
 protected:
     bool acceptsSourceMimeType(const QByteArray &mime) const override;

@@ -9,6 +9,7 @@
 
 // Local
 #include "Sheet.h"
+#include "CellVisuals.h"
 
 #include <QApplication>
 
@@ -88,6 +89,7 @@ public:
     RowFormatStorage rows;
     ColFormatStorage columns;
     QList<KoShape *> shapes;
+    CellVisuals visuals;
 
     HeaderFooter *headerFooter;
     PrintSettings *printSettings;
@@ -159,6 +161,7 @@ Sheet::Sheet(const Sheet &other)
     , d(new Private(this))
 {
     d->workbook = other.d->workbook;
+    d->visuals = other.d->visuals;
 
     // Set a valid object name, so that we can offer scripting.
     setObjectName(createObjectName(sheetName()));
@@ -696,6 +699,9 @@ bool Sheet::onValidationFailed(Validity::Action action, const CellBase *cell, co
     return false;
 }
 
+CellVisuals *Sheet::cellVisuals() { return &d->visuals; }
+const CellVisuals *Sheet::cellVisuals() const { return &d->visuals; }
+
 QRect Sheet::usedArea(bool onlyContent) const
 {
     int maxCols = d->cellStorage->columns(!onlyContent);
@@ -714,6 +720,9 @@ QRect Sheet::usedArea(bool onlyContent) const
     maxCols = qMax(maxCols, shapesCellRange.right());
     maxRows = qMax(maxRows, shapesCellRange.bottom());
 
+    const QRect visualArea = d->visuals.usedArea(const_cast<Sheet *>(this));
+    maxCols = qMax(maxCols, visualArea.right());
+    maxRows = qMax(maxRows, visualArea.bottom());
     return QRect(1, 1, maxCols, maxRows);
 }
 

@@ -326,3 +326,8 @@ target_compile_definitions(FodsSpreadsheetText PRIVATE FODS_TEST_DATA_DIR="${CMA
     APPEND PROPERTY ENVIRONMENT "QT_LOGGING_RULES=*.debug=false")
  set_tests_properties(sheets-FodsStatistical PROPERTIES DISABLED TRUE)
 endif()
+
+sheets_add_unit_test(CellVisuals
+    TestCellVisuals.cpp
+    LINK_LIBRARIES calligrasheetscore calligrasheetsui kowidgets kostore KF6::I18n Qt6::Test
+)

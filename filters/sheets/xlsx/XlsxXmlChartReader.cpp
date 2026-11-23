@@ -112,6 +112,8 @@ public:
 
 QString Tx::writeRefToInternalTable(XlsxXmlChartReader *chartReader)
 {
+    if (m_strRef.m_f.isEmpty())
+        return QString();
     chartReader->WriteIntoInternalTable(m_strRef.m_f, m_strRef.m_strCache.m_cache, KoGenStyle::NumericTextStyle);
     return m_strRef.m_f;
 }
@@ -348,6 +350,7 @@ class XlsxXmlChartReader::Private
 public:
     Private();
     QList<Ser *> m_seriesData;
+    QMap<KoChart::Series *, QVector<QString>> inlineSeriesNames;
     QMetaType::Type m_currentType;
     int *m_currentIdx;
     int *m_currentOrder;
@@ -429,7 +432,7 @@ XlsxXmlChartReader::XlsxXmlChartReader(KoOdfWriters *writers)
     , m_readTxContext(None)
     , m_areaContext(ChartArea)
     , m_serMarkerDefined(false)
-    , m_autoTitleDeleted(true)
+    , m_autoTitleDeleted(false)
     , d(new Private())
 {
 }
@@ -498,6 +501,11 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read(MSOOXML::MsooXmlReaderContex
             }
         }
     }
+
+    // Allocate inline names after all referenced caches, so category/value
+    // ranges starting at A1 cannot overwrite the generated label cells.
+    for (auto it = d->inlineSeriesNames.begin(); it != d->inlineSeriesNames.end(); ++it)
+        it.key()->m_labelCell = AlocateAndWriteIntoInternalTable(it.value(), KoGenStyle::NumericTextStyle);
 
     if (!m_autoTitleDeleted && m_context->m_chart->m_title.isEmpty())
         m_context->m_chart->m_title = "Chart Title";
@@ -1061,6 +1069,11 @@ KoFilter::ConversionStatus XlsxXmlChartReader::read_seriesText_Tx()
         BREAK_IF_END_OF(CURRENT_EL)
         if (isStartElement()) {
             TRY_READ_IF(strRef)
+            else if (name() == QLatin1StringView("v")) {
+                const QString value = readElementText();
+                d->m_currentTx->m_strRef.m_strCache.m_cache.append(value);
+                d->inlineSeriesNames[m_currentSeries] = {value};
+            }
         }
     }
     READ_EPILOGUE
@@ -3510,9 +3523,10 @@ void XlsxXmlChartReader::WriteIntoInternalTable(QString &range, QVector<QString>
     }
     //    const QString sheet = range.section( '!', 0, 0 );
     const QString cellRange = range.section('!', 1, -1);
-    const QStringList &res = cellRange.split(QRegularExpression("[$:]"), Qt::SkipEmptyParts);
+    static const QRegularExpression cellRangePattern(QStringLiteral("^\\$?([A-Za-z]+)\\$?([1-9][0-9]*)(?::\\$?([A-Za-z]+)\\$?([1-9][0-9]*))?$"));
+    const auto match = cellRangePattern.match(cellRange);
 
-    if (res.size() <= 1) {
+    if (!match.hasMatch()) {
         // Some producers (notably Word's chart exporter) write symbolic
         // formulas such as "categories" or "label 0" together with a cache.
         // There is no cell reference to write into, so allocate a local column
@@ -3529,13 +3543,13 @@ void XlsxXmlChartReader::WriteIntoInternalTable(QString &range, QVector<QString>
         return;
     }
 
-    int startColumn = charToInt(res[0]);
-    int startRow = res[1].toInt();
+    int startColumn = charToInt(match.captured(1));
+    int startRow = match.captured(2).toInt();
     int endColumn = 0;
     int endRow = 0;
-    if (res.size() >= 4) {
-        endColumn = charToInt(res[2]);
-        endRow = res[3].toInt();
+    if (!match.captured(3).isEmpty()) {
+        endColumn = charToInt(match.captured(3));
+        endRow = match.captured(4).toInt();
     } else {
         endColumn = startColumn;
         endRow = startRow;

@@ -27,6 +27,7 @@ namespace Calligra
 namespace Sheets
 {
 class Cell;
+class CellVisuals;
 class CellStorage;
 class ColFormat;
 class ColFormatStorage;
@@ -95,6 +96,8 @@ public:
     DocBase *doc() const;
 
     SheetModel *model() const;
+    CellVisuals *cellVisuals();
+    const CellVisuals *cellVisuals() const;
 
     // KoShapeBasedDocumentBase interface
     void addShape(KoShape *shape) override;

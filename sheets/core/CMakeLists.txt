@@ -25,6 +25,7 @@ set (ksp_DIR_SRCS
 
 
 set (calligrasheetscore_LIB_SRCS
+    CellVisuals.cpp
     Currency.cpp
     ValueFormatter.cpp
     Cell.cpp
@@ -84,6 +85,7 @@ install( FILES
     Cell.h
     Map.h
     Sheet.h
+    CellVisuals.h
     Style.h
     CellStorage.h
     RowFormatStorage.h

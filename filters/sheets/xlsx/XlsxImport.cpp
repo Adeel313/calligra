@@ -17,6 +17,10 @@
 #include "XlsxXmlDocumentReader.h"
 #include "XlsxXmlSharedStringsReader.h"
 #include "XlsxXmlStylesReader.h"
+#include "XlsxXmlTableReader.h"
+#include <sheets/engine/CellBase.h>
+#include <sheets/engine/Util.h>
+#include <QRegularExpression>
 
 #include "MsooXmlThemesReader.h"
 #include <MsooXmlContentTypes.h>
@@ -78,6 +82,7 @@ public:
     QString dataValidationXml;
     QString namedExpressionsXml;
     QList<QPair<QString, QString>> tables;
+    QMap<QString, QString> tableColumnReferences;
     int dataValidationCount = 0;
 };
 
@@ -144,6 +149,56 @@ QList<QPair<QString, QString>> XlsxImport::tables() const
 void XlsxImport::appendTable(const QString &name, const QString &range)
 {
     d->tables.append(qMakePair(name, range));
+}
+
+void XlsxImport::registerTableColumns(const XlsxXmlTableReaderContext &table, const QString &sheetName)
+{
+    static const QRegularExpression cellPattern(QStringLiteral("^([A-Za-z]+)([0-9]+)$"));
+    const QStringList corners = table.referenceArea.split(QLatin1Char(':'));
+    const auto first = cellPattern.match(corners.first());
+    const auto last = cellPattern.match(corners.last());
+    if (first.hasMatch() && last.hasMatch()) {
+        const int startColumn = Calligra::Sheets::Util::decodeColumnLabelText(first.captured(1));
+        const int startRow = first.captured(2).toInt() + table.headerRowCount;
+        const int endRow = last.captured(2).toInt() - table.totalsRowCount;
+        QString quotedSheet = sheetName;
+        quotedSheet.replace(QLatin1Char('\''), QStringLiteral("''"));
+        for (int i = 0; i < table.columns.size(); ++i) {
+            const QString column = Calligra::Sheets::CellBase::columnName(startColumn + i);
+            const QString range = QStringLiteral("'%1'!$%2$%3:$%2$%4").arg(quotedSheet, column).arg(startRow).arg(endRow);
+            const QString reference = table.name + QLatin1Char('[') + table.columns.at(i) + QLatin1Char(']');
+            d->tableColumnReferences.insert(reference.toCaseFolded(), range);
+        }
+    }
+}
+
+QString XlsxImport::resolveTableReferences(const QString &formula) const
+{
+    if (!formula.contains(QLatin1Char('[')))
+        return formula;
+    QString result;
+    bool inString = false;
+    for (int i = 0; i < formula.size();) {
+        if (formula.at(i) == QLatin1Char('"')) {
+            inString = !inString;
+            result += formula.at(i++);
+            continue;
+        }
+        bool replaced = false;
+        if (!inString && (i == 0 || (!formula.at(i - 1).isLetterOrNumber() && formula.at(i - 1) != QLatin1Char('_')))) {
+            for (auto it = d->tableColumnReferences.cbegin(); it != d->tableColumnReferences.cend(); ++it) {
+                if (formula.mid(i, it.key().size()).compare(it.key(), Qt::CaseInsensitive) == 0) {
+                    result += it.value();
+                    i += it.key().size();
+                    replaced = true;
+                    break;
+                }
+            }
+        }
+        if (!replaced)
+            result += formula.at(i++);
+    }
+    return result;
 }
 
 XlsxImport::~XlsxImport()
@@ -214,6 +269,14 @@ public:
             }
             if (name() == QLatin1StringView("definedNames")) {
                 readDefinedNames();
+            } else if (name() == QLatin1StringView("sheets")) {
+                while (readNextStartElement()) {
+                    if (name() == QLatin1StringView("sheet")) {
+                        sheets.append(qMakePair(attributes().value(QLatin1StringView("name")).toString(),
+                            attributes().value(QLatin1StringView(MSOOXML::Schemas::officeDocument::relationships), QLatin1StringView("id")).toString()));
+                    }
+                    skipCurrentElement();
+                }
             } else {
                 skipCurrentElement();
             }
@@ -223,6 +286,7 @@ public:
 
     //! Print areas in OpenDocument notation, keyed by the zero-based sheet index.
     QMap<int, QString> printAreas;
+    QList<QPair<QString, QString>> sheets;
     //! Workbook level names, converted to OpenDocument notation.
     QList<QPair<QString, QString>> definedNames;
 
@@ -310,6 +374,31 @@ private:
             result << odfArea;
         }
         return result.join(QLatin1Char(' '));
+    }
+};
+// Read table relationships without materializing worksheet cells. This prepass
+// makes table references independent of the workbook's sheet order.
+class TablePartsReader : public MSOOXML::MsooXmlReader
+{
+public:
+    explicit TablePartsReader(KoOdfWriters *writers) : MsooXmlReader(writers) {}
+    QStringList ids;
+    KoFilter::ConversionStatus read(MSOOXML::MsooXmlReaderContext * = nullptr) override
+    {
+        if (!readNextStartElement())
+            return KoFilter::WrongFormat;
+        while (readNextStartElement()) {
+            if (name() == QLatin1StringView("tableParts")) {
+                while (readNextStartElement()) {
+                    if (name() == QLatin1StringView("tablePart"))
+                        ids.append(attributes().value(QLatin1StringView(MSOOXML::Schemas::officeDocument::relationships), QLatin1StringView("id")).toString());
+                    skipCurrentElement();
+                }
+            } else {
+                skipCurrentElement();
+            }
+        }
+        return hasError() ? KoFilter::WrongFormat : KoFilter::OK;
     }
 };
 } // namespace
@@ -826,6 +915,23 @@ KoFilter::ConversionStatus XlsxImport::parseParts(KoOdfWriters *writers, MSOOXML
         PrintAreaReader printAreaReader(writers);
         RETURN_IF_ERROR(loadAndParseDocument(d->mainDocumentContentType(), &printAreaReader, writers, errorMessage, nullptr))
         setPrintAreas(printAreaReader.printAreas);
+        d->tableColumnReferences.clear();
+        for (const auto &sheet : printAreaReader.sheets) {
+            const QString worksheetFile = relationships->target(spreadPath, spreadFile, sheet.second);
+            if (worksheetFile.isEmpty())
+                continue;
+            QString path, file;
+            MSOOXML::Utils::splitPathAndFile(worksheetFile, &path, &file);
+            TablePartsReader partsReader(writers);
+            RETURN_IF_ERROR(loadAndParseDocument(&partsReader, worksheetFile, errorMessage, nullptr))
+            for (const QString &id : std::as_const(partsReader.ids)) {
+                XlsxXmlTableReader tableReader(writers);
+                XlsxXmlTableReaderContext table;
+                RETURN_IF_ERROR(loadAndParseDocument(&tableReader, relationships->target(path, file, id), errorMessage, &table))
+                registerTableColumns(table, sheet.first);
+            }
+        }
+
         if (!printAreaReader.definedNames.isEmpty()) {
             QBuffer buffer;
             buffer.open(QIODevice::WriteOnly);

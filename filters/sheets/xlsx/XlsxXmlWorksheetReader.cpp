@@ -534,6 +534,9 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
             TRY_READ_IF(conditionalFormatting)
             ELSE_TRY_READ_IF(dataValidations)
             ELSE_TRY_READ_IF(tableParts)
+            else if (name() == QLatin1StringView("extLst")) {
+                TRY_READ(sparklineExtensions)
+            }
             SKIP_UNKNOWN
         }
     }
@@ -793,7 +796,7 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
                                 formula = static_cast<FormulaImpl *>(cell->formula)->m_formula;
                             }
                             if (!formula.isEmpty()) {
-                                body->addAttribute("table:formula", formula);
+                                body->addAttribute("table:formula", m_context->import->resolveTableReferences(formula));
                             }
                         }
                         if (cell->rowsMerged > 1) body->addAttribute("table:number-rows-spanned", cell->rowsMerged);
@@ -875,6 +878,7 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sheetHelper(const QStrin
         body->endElement(); // table:table-row
     }
 
+    m_cellVisuals.saveOdf(*body);
     body->endElement(); // table:table
     }
 
@@ -902,6 +906,8 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_conditionalFormatting()
 
     const QXmlStreamAttributes attrs(attributes());
     TRY_READ_ATTR_WITHOUT_NS(sqref)
+
+    m_visualRange = sqref;
 
     // Getting rid of previously handled conditions
     m_conditionalIndices.clear();
@@ -996,6 +1002,10 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_conditionalFormatting()
 */
 KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_cfRule()
 {
+    if (attributes().value(QLatin1StringView("type")) == QLatin1StringView("colorScale")
+        || attributes().value(QLatin1StringView("type")) == QLatin1StringView("iconSet"))
+        return read_visualRule();
+
     READ_PROLOGUE
 
     const QXmlStreamAttributes attrs(attributes());
@@ -2920,4 +2930,81 @@ KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_oleObject()
         BREAK_IF_END_OF(CURRENT_EL)
     }
     READ_EPILOGUE
+}
+
+QColor XlsxXmlWorksheetReader::visualColor(const QXmlStreamAttributes &attrs) const
+{
+    QColor color;
+    const QString rgb = attrs.value(QLatin1StringView("rgb")).toString();
+    if (!rgb.isEmpty()) color = QColor(QLatin1Char('#') + rgb.right(6));
+    if (attrs.hasAttribute(QLatin1StringView("theme")) && m_context->themes) {
+        int index = attrs.value(QLatin1StringView("theme")).toInt();
+        if (index < 4) index ^= 1;
+        const auto item = m_context->themes->colorScheme.value(QString::number(index));
+        if (item) color = item->value();
+    }
+    if (color.isValid() && attrs.hasAttribute(QLatin1StringView("tint"))) {
+        const double tint = attrs.value(QLatin1StringView("tint")).toDouble();
+        const auto channel = [tint](int c) { return qBound(0, qRound(tint < 0 ? c * (1 + tint) : c + (255 - c) * tint), 255); };
+        color = QColor(channel(color.red()), channel(color.green()), channel(color.blue()));
+    }
+    return color;
+}
+
+KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_visualRule()
+{
+    Calligra::Sheets::CellVisuals::Rule rule;
+    rule.range = m_visualRange;
+    rule.type = attributes().value(QLatin1StringView("type")).toString();
+    rule.priority = attributes().value(QLatin1StringView("priority")).toInt();
+    while (!atEnd()) {
+        readNext();
+        if (isEndElement() && name() == QLatin1StringView("cfRule")) break;
+        if (!isStartElement()) continue;
+        const auto attrs = attributes();
+        if (name() == QLatin1StringView("iconSet")) {
+            if (attrs.hasAttribute(QLatin1StringView("iconSet"))) rule.iconSet = attrs.value(QLatin1StringView("iconSet")).toString();
+            rule.reverse = attrs.value(QLatin1StringView("reverse")) == QLatin1StringView("1") || attrs.value(QLatin1StringView("reverse")) == QLatin1StringView("true");
+            rule.showValue = attrs.value(QLatin1StringView("showValue")) != QLatin1StringView("0") && attrs.value(QLatin1StringView("showValue")) != QLatin1StringView("false");
+        } else if (name() == QLatin1StringView("cfvo")) {
+            Calligra::Sheets::CellVisuals::Threshold threshold;
+            threshold.type = attrs.value(QLatin1StringView("type")).toString(); threshold.value = attrs.value(QLatin1StringView("val")).toString();
+            threshold.inclusive = attrs.value(QLatin1StringView("gte")) != QLatin1StringView("0") && attrs.value(QLatin1StringView("gte")) != QLatin1StringView("false");
+            rule.thresholds.append(threshold);
+        } else if (name() == QLatin1StringView("color")) rule.colors.append(visualColor(attrs));
+    }
+    m_cellVisuals.rules.append(rule);
+    return hasError() ? KoFilter::WrongFormat : KoFilter::OK;
+}
+
+KoFilter::ConversionStatus XlsxXmlWorksheetReader::read_sparklineExtensions()
+{
+    const QString x14 = QStringLiteral("http://schemas.microsoft.com/office/spreadsheetml/2009/9/main");
+    while (!atEnd()) {
+        readNext();
+        if (isEndElement() && name() == QLatin1StringView("extLst")) break;
+        if (!isStartElement() || name() != QLatin1StringView("sparklineGroup") || namespaceUri() != x14) continue;
+        Calligra::Sheets::CellVisuals::Sparkline group;
+        for (const auto &attr : attributes()) group.options.insert(attr.name().toString(), attr.value().toString());
+        QList<Calligra::Sheets::CellVisuals::Sparkline> lines;
+        while (!atEnd()) {
+            readNext();
+            if (isEndElement() && name() == QLatin1StringView("sparklineGroup")) break;
+            if (!isStartElement()) continue;
+            if (name().startsWith(QLatin1StringView("color"))) group.colors.insert(name().toString(), visualColor(attributes()));
+            else if (name() == QLatin1StringView("sparkline")) {
+                Calligra::Sheets::CellVisuals::Sparkline line;
+                while (!atEnd()) {
+                    readNext();
+                    if (isEndElement() && name() == QLatin1StringView("sparkline")) break;
+                    if (!isStartElement()) continue;
+                    if (name() == QLatin1StringView("f")) line.source = readElementText();
+                    else if (name() == QLatin1StringView("sqref")) line.target = readElementText();
+                }
+                lines.append(line);
+            }
+        }
+        for (auto &line : lines) { line.options = group.options; line.colors = group.colors; m_cellVisuals.sparklines.append(line); }
+    }
+    return hasError() ? KoFilter::WrongFormat : KoFilter::OK;
 }

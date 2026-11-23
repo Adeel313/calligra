@@ -24,7 +24,7 @@ XlsxXmlTableReaderContext::XlsxXmlTableReaderContext()
     , dataStyleIndex(-1)
     , totalsRowIndex(-1)
     , headerRowCount(1)
-    , totalsRowCount(1)
+    , totalsRowCount(0)
 {
 }
 
@@ -114,13 +114,14 @@ KoFilter::ConversionStatus XlsxXmlTableReader::read_table()
         m_context->headerRowCount = headerRowCount.toInt();
     }
 
-    // TODO: Read all, it should be possible to reference the table with formulas from
-    // worksheets maybe through the context
+    // Column names are needed to resolve structured formula references.
 
     while (!atEnd()) {
         readNext();
         BREAK_IF_END_OF(CURRENT_EL)
-        if (isStartElement()) { }
+        if (isStartElement() && this->name() == QLatin1StringView("tableColumn")) {
+            m_context->columns.append(attributes().value(QLatin1StringView("name")).toString());
+        }
     }
     READ_EPILOGUE
 }

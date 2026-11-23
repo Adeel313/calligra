@@ -18,6 +18,7 @@
    SPDX-License-Identifier: LGPL-2.0-or-later
 */
 
+#include "../CellVisuals.h"
 #include "SheetsOdf.h"
 #include "SheetsOdfPrivate.h"
 
@@ -314,6 +315,9 @@ bool Odf::loadSheet(Sheet *sheet,
 
     int rowIndex = 1;
     int indexCol = 1;
+    const KoXmlElement visualsElement = KoXml::namedItemNS(sheetElement, QStringLiteral("http://www.calligra.org/2002/sheets"), QStringLiteral("cell-visuals"));
+    if (!visualsElement.isNull()) sheet->cellVisuals()->loadOdf(visualsElement);
+
     int maxColumn = 1;
     KoXmlNode rowNode = sheetElement.firstChild();
     // Some spreadsheet programs may support more rows than
@@ -1150,6 +1154,7 @@ bool Odf::saveSheet(Sheet *sheet, OdfSavingContext &tableContext)
     // should determine how many cells are serialized here.
     const QRect usedArea = sheet->usedArea(true);
     saveColRowCell(sheet, usedArea.width(), usedArea.height(), tableContext);
+    sheet->cellVisuals()->saveOdf(xmlWriter);
 
     xmlWriter.endElement();
     return true;

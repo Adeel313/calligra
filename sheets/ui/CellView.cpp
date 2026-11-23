@@ -25,6 +25,7 @@
 // SPDX-License-Identifier: LGPL-2.0-only
 
 // Local
+#include "core/CellVisuals.h"
 #include "CellView.h"
 
 // Qt
@@ -99,6 +100,8 @@ public:
     }
     ~Private() = default;
 
+    Sheet *visualSheet = nullptr;
+    QPoint visualCell;
     Style style;
     qreal width;
     qreal height;
@@ -175,6 +178,8 @@ CellView::CellView(SheetView *sheetView, int col, int row)
 
     Sheet *sheet = sheetView->sheet();
     Cell cell(sheet, col, row);
+    d->visualSheet = sheet;
+    d->visualCell = QPoint(col, row);
 
     // create the effective style
     if (cell.isPartOfMerged()) {
@@ -417,8 +422,24 @@ void CellView::paintCellContents(const QRectF & /*paintRect*/,
     //  c) the sheet is protected and the cell is hidden.
     if (!d->displayText.isEmpty() && (!dynamic_cast<QPrinter *>(painter.device()) || style().printText())
         && !(cell.fullSheet()->isProtected() && style().hideAll())) {
-        paintText(painter, coordinate, cell);
+        bool showValue = true;
+        const int light = cell.fullSheet()->cellVisuals()->trafficLight(cell, &showValue);
+        if (showValue) {
+            painter.save();
+            QPointF textCoordinate = coordinate;
+            if (light >= 0) {
+                const qreal space = qMin<qreal>(10, cellRect.height() - 2) + 2;
+                QRectF textRect = cellRect;
+                if (cell.fullSheet()->layoutDirection() == Qt::RightToLeft) textRect.adjust(0, 0, -space, 0);
+                else textRect.adjust(space, 0, 0, 0);
+                painter.setClipRect(textRect, Qt::IntersectClip);
+                if (style().halign() == Style::Left) textCoordinate.rx() += space;
+            }
+            paintText(painter, textCoordinate, cell);
+            painter.restore();
+        }
     }
+    cell.fullSheet()->cellVisuals()->paint(painter, cellRect, cell);
 }
 
 void CellView::Private::calculateCellBorders(const Cell &cell, SheetView *sheetView)
@@ -563,6 +584,11 @@ void CellView::paintCellBackground(QPainter &painter, const QRegion &clipRegion,
         // Check if we actually need to paint.
         if ((!bgcolor.isValid()) || (bgcolor == QApplication::palette().base().color()))
             paintBG = false;
+    }
+
+    if (d->visualSheet) {
+        const QColor visualColor = d->visualSheet->cellVisuals()->background(Cell(d->visualSheet, d->visualCell.x(), d->visualCell.y()));
+        if (visualColor.isValid()) { bgcolor = visualColor; paintBG = true; }
     }
 
     // Background brush

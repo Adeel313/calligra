@@ -15,6 +15,7 @@
 */
 
 // Local
+#include "core/CellVisuals.h"
 #include "View.h"
 
 #include "Canvas.h"
@@ -2692,6 +2693,8 @@ void View::handleDamages(const QList<Damage *> &damages)
         if (damage->type() == Damage::Cell) {
             CellDamage *cellDamage = static_cast<CellDamage *>(damage);
             debugSheetsDamage << "Processing\t" << *cellDamage;
+            if (d->activeSheet && !d->activeSheet->cellVisuals()->isEmpty())
+                paintMode = Everything;
             Sheet *damagedSheet = dynamic_cast<Sheet *>(cellDamage->sheet());
 
             if (cellDamage->changes() & CellDamage::Appearance) {
