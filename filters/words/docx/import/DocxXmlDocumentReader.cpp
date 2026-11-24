@@ -1073,6 +1073,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_footerReference()
     context.m_tableStyles = m_context->m_tableStyles;
     context.m_bulletStyles = m_context->m_bulletStyles;
     context.m_namedDefaultStyles = m_context->m_namedDefaultStyles;
+    context.m_defaultFontFamily = m_context->m_defaultFontFamily;
+    context.m_defaultFontSizePt = m_context->m_defaultFontSizePt;
 
     const KoFilter::ConversionStatus status = m_context->import->loadAndParseDocument(&reader, link_target, errorMessage, &context);
     if (status != KoFilter::OK) {
@@ -1151,6 +1153,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_headerReference()
     context.m_tableStyles = m_context->m_tableStyles;
     context.m_bulletStyles = m_context->m_bulletStyles;
     context.m_namedDefaultStyles = m_context->m_namedDefaultStyles;
+    context.m_defaultFontFamily = m_context->m_defaultFontFamily;
+    context.m_defaultFontSizePt = m_context->m_defaultFontSizePt;
 
     const KoFilter::ConversionStatus status = m_context->import->loadAndParseDocument(&reader, link_target, errorMessage, &context);
     if (status != KoFilter::OK) {

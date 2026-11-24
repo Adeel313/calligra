@@ -225,7 +225,19 @@ qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily
     query.setStyleHint(hint);
     const QFontInfo fontInfo(query);
     const QString resolvedFamily = fontInfo.family();
-    const bool substituted = resolvedFamily.compare(fontFamily, Qt::CaseInsensitive) != 0;
+    // Qt disambiguates installed families as "Arial [Mono]" when several
+    // foundries provide Arial. Fontconfig stores the family and foundry as
+    // separate fields; looking up the decorated name falls back to another
+    // font and loses the real line metrics.
+    QString resolvedBaseFamily = resolvedFamily;
+    QByteArray foundry;
+    const int foundryStart = resolvedFamily.lastIndexOf(QStringLiteral(" ["));
+    if (foundryStart >= 0 && resolvedFamily.endsWith(QLatin1Char(']'))) {
+        resolvedBaseFamily = resolvedFamily.left(foundryStart);
+        foundry = resolvedFamily.mid(foundryStart + 2, resolvedFamily.size() - foundryStart - 3).toUtf8();
+    }
+    const bool substituted = resolvedFamily.compare(fontFamily, Qt::CaseInsensitive) != 0
+        && resolvedBaseFamily.compare(fontFamily, Qt::CaseInsensitive) != 0;
     setProperty(FontYStretchIsFallback, substituted);
 
     // A family can contain several faces with different line gaps (for
@@ -246,7 +258,7 @@ qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily
     FT_Face face;
     int id = 0;
     int error = 0;
-    QByteArray fontName = resolvedFamily.toLatin1();
+    QByteArray fontName = resolvedBaseFamily.toUtf8();
 
     FcPattern *font = FcPatternBuild(nullptr,
                                      FC_FAMILY, FcTypeString, fontName.data(),
@@ -256,6 +268,9 @@ qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily
                                      nullptr);
     if (font == nullptr) {
         return 1;
+    }
+    if (!foundry.isEmpty()) {
+        FcPatternAddString(font, FC_FOUNDRY, reinterpret_cast<const FcChar8 *>(foundry.constData()));
     }
 
     // find font
@@ -276,8 +291,7 @@ qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily
     }
 
     // check if right font was found
-    QByteArray foundFontFamily = QByteArray::fromRawData(str, strlen(str));
-    if (foundFontFamily != fontName) {
+    if (QString::fromUtf8(str).compare(resolvedBaseFamily, Qt::CaseInsensitive) != 0) {
         FcPatternDestroy(font);
         FcPatternDestroy(matched);
         return 1;

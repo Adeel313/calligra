@@ -56,6 +56,8 @@ private Q_SLOTS:
     void testFixedLineSpacing();
     /// Tests percentage linespacing.
     void testPercentageLineSpacing();
+    void testListLabelLineSpacing_data();
+    void testListLabelLineSpacing();
     /// Tests advanced linespacing options provided in our style.
     void testAdvancedLineSpacing();
     void testPresentationCompressedLineSpacing();

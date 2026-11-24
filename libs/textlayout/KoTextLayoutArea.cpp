@@ -1905,17 +1905,18 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
         }
     }
 
-    // Word includes the list label's font in the first line's height. The
-    // label is not part of the text fragments, so without this a 12pt bullet
-    // leaves a 10pt paragraph's first line too short and the whole document
-    // reflows several lines per page. Scaling the label size by its ascent
-    // share of the line box makes a 12pt marker reserve the extra height Word
-    // gives the first line of a list paragraph.
-    if (block.textList() && line.textStart() == 0) {
+    // The label is not part of the text fragments, but contributes to the
+    // first line's height. Measure it on the same basis as the text: a fixed
+    // multiplier makes even a label with the same font and size enlarge the
+    // line, accumulating extra space in long lists.
+    // Outline headings can belong to a list without displaying a label.
+    // Their unused label format must not enlarge the visible heading text.
+    if (block.textList() && line.textStart() == 0 && !blockData.counterText().isEmpty()) {
         const QTextCharFormat labelFormat = blockData.labelFormat();
         const qreal labelSize = labelFormat.fontPointSize();
         if (labelSize > 0.0) {
-            height = qMax(height, labelSize * 1.06);
+            const qreal labelStretch = useFontProperties ? PresenterFontStretch : fontHeightStretch(labelFormat);
+            height = qMax(height, labelSize * labelStretch);
         }
     }
 

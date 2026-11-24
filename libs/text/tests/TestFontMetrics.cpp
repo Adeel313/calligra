@@ -5,11 +5,45 @@
 #include <QRawFont>
 #include <QFontInfo>
 #include <QTest>
+#include <QtEndian>
 
 class TestFontMetrics : public QObject
 {
     Q_OBJECT
 private Q_SLOTS:
+    void foundryQualifiedFontMetrics_data()
+    {
+        QTest::addColumn<QString>("family");
+        QTest::newRow("unqualified-family") << QStringLiteral("Arial");
+        QTest::newRow("qt-qualified-family") << QFontInfo(QFont(QStringLiteral("Arial"))).family();
+    }
+
+    void foundryQualifiedFontMetrics()
+    {
+        QFETCH(QString, family);
+        const QRawFont font = QRawFont::fromFont(QFont(family));
+        if (!font.isValid() || font.familyName().section(QStringLiteral(" ["), 0, 0).compare(QStringLiteral("Arial"), Qt::CaseInsensitive) != 0)
+            QSKIP("Arial is not installed");
+        const QByteArray os2 = font.fontTable("OS/2");
+        const QByteArray head = font.fontTable("head");
+        const QByteArray hhea = font.fontTable("hhea");
+        QVERIFY(os2.size() >= 78 && head.size() >= 20 && hhea.size() >= 10);
+        const auto u16 = [](const QByteArray &table, int offset) {
+            return qFromBigEndian<quint16>(reinterpret_cast<const uchar *>(table.constData() + offset));
+        };
+        const qreal units = u16(head, 18);
+        const qreal windowsHeight = u16(os2, 74) + u16(os2, 76);
+        const qreal leading = qMax(0, int(qFromBigEndian<qint16>(reinterpret_cast<const uchar *>(hhea.constData() + 8))));
+        KoCharacterStyle style;
+        style.setFontFamily(family);
+        QVERIFY(!style.value(KoCharacterStyle::FontYStretchIsFallback).toBool());
+        // Use the face Qt actually selected, including the foundry, rather
+        // than the generic 1.16 line-height fallback.
+        QVERIFY(qAbs(style.fontYStretch() * 1.16 - (windowsHeight + leading) / units) < 0.001);
+        const qreal withoutLeading = style.value(KoCharacterStyle::FontYStretchWithoutLeading).toDouble();
+        QVERIFY(qAbs(withoutLeading * 1.16 - windowsHeight / units) < 0.001);
+    }
+
     void missingItalicPreservesWeight()
     {
         const QString family = QStringLiteral("Calibri");

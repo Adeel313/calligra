@@ -22,6 +22,7 @@
 #include <QSharedPointer>
 #include <QTest>
 #include <QTextTable>
+#include <QTextList>
 #include <QVariant>
 
 #include <TextLayoutDebug.h>
@@ -179,6 +180,54 @@ void TestBlockLayout::testBasicLineSpacing()
         line = blockLayout->lineAt(i);
         // qDebug() << "i: " << i << " gives: " << line.y() << (lineSpacing12 + lineSpacing18 + (i - 2) * lineSpacing12);
         QVERIFY(qAbs(line.y() - (lineSpacing12 + lineSpacing18 + (i - 2) * lineSpacing12 + 100.0)) < ROUNDING);
+    }
+}
+
+void TestBlockLayout::testListLabelLineSpacing_data()
+{
+    QTest::addColumn<qreal>("labelSize");
+    QTest::addColumn<bool>("visibleLabel");
+    QTest::newRow("same-size-label") << qreal(11) << true;
+    QTest::newRow("smaller-label") << qreal(8) << true;
+    QTest::newRow("larger-label") << qreal(22) << true;
+    QTest::newRow("hidden-outline-label") << qreal(22) << false;
+}
+
+void TestBlockLayout::testListLabelLineSpacing()
+{
+    QFETCH(qreal, labelSize);
+    QFETCH(bool, visibleLabel);
+    setupTest(QStringLiteral("First item\nSecond item\nFollowing paragraph"));
+    m_paragraphStyle->setFontPointSize(11);
+    m_paragraphStyle->setFontYStretch(1);
+    m_paragraphStyle->setLineHeightPercent(115);
+    for (auto block = m_doc->begin(); block.isValid(); block = block.next()) {
+        m_paragraphStyle->applyStyle(block);
+    }
+    m_layout->layout();
+    const qreal plainSpacing = m_block.next().layout()->lineAt(0).y() - m_block.layout()->lineAt(0).y();
+
+    auto labelStyle = QSharedPointer<KoCharacterStyle>::create();
+    labelStyle->setFontPointSize(labelSize);
+    labelStyle->setFontYStretch(1);
+    QTextListFormat listFormat;
+    listFormat.setStyle(static_cast<QTextListFormat::Style>(visibleLabel ? KoListStyle::BulletCharLabelType : KoListStyle::None));
+    listFormat.setProperty(KoListStyle::BulletCharacter, int(0x2022));
+    listFormat.setProperty(KoListStyle::CharacterProperties, QVariant::fromValue(labelStyle));
+    QTextCursor cursor(m_doc);
+    cursor.setPosition(m_block.next().position() + m_block.next().length() - 1, QTextCursor::KeepAnchor);
+    cursor.createList(listFormat);
+    m_layout->layout();
+
+    QCOMPARE(!KoTextBlockData(m_block).counterText().isEmpty(), visibleLabel);
+    const qreal listSpacing = m_block.next().layout()->lineAt(0).y() - m_block.layout()->lineAt(0).y();
+    if (!visibleLabel || labelSize <= 11) {
+        // Adding a marker no larger than the text must not expand the lines.
+        QVERIFY2(qAbs(listSpacing - plainSpacing) < ROUNDING,
+                 qPrintable(QStringLiteral("List spacing %1, plain spacing %2").arg(listSpacing).arg(plainSpacing)));
+    } else {
+        // Large markers still need room even though they are outside the text.
+        QVERIFY(listSpacing > plainSpacing * 1.5);
     }
 }
 
