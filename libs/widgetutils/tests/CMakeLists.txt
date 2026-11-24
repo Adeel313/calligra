@@ -12,6 +12,7 @@ endmacro()
 ########### next target ###############
 
 kowidgetutils_add_unit_test(KoPropertiesTest KoPropertiesTest.cpp  LINK_LIBRARIES kowidgetutils Qt6::Test)
+kowidgetutils_add_unit_test(KoFileDialogTest KoFileDialogTest.cpp LINK_LIBRARIES kowidgetutils Qt6::Test)
 
 ########### next target ###############
 

@@ -159,7 +159,10 @@ void KoFileDialog::setNameFilters(const QStringList &filterList, QString default
 
 void KoFileDialog::setMimeTypeFilters(const QStringList &filterList, QString defaultFilter)
 {
-    d->filterList = getFilterStringListFromMime(filterList, true);
+    // A combined filter is useful for opening files, but has no unambiguous
+    // output format. KDE's native save dialog can clear the suggested filename
+    // while initializing this filter with Sheets' export formats.
+    d->filterList = getFilterStringListFromMime(filterList, d->type != SaveFile);
 
     if (!defaultFilter.isEmpty()) {
         QStringList defaultFilters = getFilterStringListFromMime(QStringList() << defaultFilter, false);
