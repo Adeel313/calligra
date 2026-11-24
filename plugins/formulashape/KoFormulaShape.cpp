@@ -195,7 +195,8 @@ bool KoFormulaShape::loadOdf(const KoXmlElement &element, KoShapeLoadingContext 
     // Keep the frame size stored in the document. updateLayout() only computes
     // the formula's natural extent; the surrounding office document decides how
     // large the equation should appear. paint() scales the glyphs to this frame.
-    if (!importedFrame.isEmpty() && !size().isEmpty()
+    if (element.hasAttributeNS(KoXmlNS::svg, "width") && element.hasAttributeNS(KoXmlNS::svg, "height")
+        && !importedFrame.isEmpty() && !size().isEmpty()
         && (!qFuzzyCompare(importedFrame.width(), size().width()) || !qFuzzyCompare(importedFrame.height(), size().height()))) {
         KoShape::setSize(importedFrame);
     }

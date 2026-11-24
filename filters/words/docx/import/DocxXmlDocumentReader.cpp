@@ -235,9 +235,8 @@ void DocxXmlDocumentReader::init()
     m_createSectionStyle = false;
     m_currentTableHasHideMark = false;
     m_currentTableHasVisibleContent = false;
-    m_bodyParagraphCount = 0;
     m_createSectionToNext = false;
-    m_bodySectionProperties = false;
+    m_hasPreviousSection = false;
     m_sectionBreakPending = false;
     m_sectionPageNumberStart = 0;
     m_differentFirstPage = false;
@@ -380,7 +379,6 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_body()
                 counter = 0;
             }
             ++counter;
-            if (QUALIFIED_NAME_IS(sectPr)) m_bodySectionProperties = true;
             TRY_READ_IF(p)
             ELSE_TRY_READ_IF(del)
             ELSE_TRY_READ_IF(ins)
@@ -460,11 +458,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     const QMap<QString, QString> inheritedHeaders = m_headers;
     const QMap<QString, QString> inheritedFooters = m_footers;
 
-    m_footerActive = false;
-    // A section inheriting the previous section's header still needs the
-    // header-distance top margin that read_pgMar() only emits when a header
-    // reference has already been seen.  Any section following one with a
-    // header has a header (explicit or inherited), so mark it active now.
+    // Inherited parts use the same edge distances as explicit references.
+    m_footerActive = !inheritedFooters.isEmpty();
     m_headerActive = !inheritedHeaders.isEmpty();
 
     m_currentPageStyle = KoGenStyle(KoGenStyle::PageLayoutStyle);
@@ -549,8 +544,6 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
         m_pendingPageAnchoredTables.clear();
     }
 
-    applyPageBorders(m_currentPageStyle, m_pageMargins, m_pageBorderStyles, m_pageBorderPaddings, m_pageBorderOffsetFrom);
-
     // A section that declares no header/footer references is linked to the
     // previous section: reuse its parts.  An explicit reference (even to an
     // empty part) still takes precedence because in that case the map is not
@@ -561,6 +554,13 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     }
     if (m_footers.isEmpty()) {
         m_footers = inheritedFooters;
+    }
+    const QString firstPage = QStringLiteral("first");
+    if (!m_headers.contains(firstPage) && inheritedHeaders.contains(firstPage)) {
+        m_headers.insert(firstPage, inheritedHeaders.value(firstPage));
+    }
+    if (!m_footers.contains(firstPage) && inheritedFooters.contains(firstPage)) {
+        m_footers.insert(firstPage, inheritedFooters.value(firstPage));
     }
 
     // A continuous section's properties describe the section ending at its
@@ -610,8 +610,17 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
         }
     }
 
+    if (m_sectionPageNumberStart > 0) {
+        // A DOCX numbering restart does not choose the physical page side.
+        m_currentPageStyle.addProperty("calligra:restart-numbering-on-any-page", "true");
+    }
+    auto regularMargins = m_pageMargins;
+    auto regularBorders = m_pageBorderStyles;
+    auto regularPadding = m_pageBorderPaddings;
+    KoGenStyle regularLayout = m_currentPageStyle;
+    applyPageBorders(regularLayout, regularMargins, regularBorders, regularPadding, m_pageBorderOffsetFrom);
     QString pageLayoutStyleName("Mpm");
-    pageLayoutStyleName = mainStyles->insert(m_currentPageStyle, pageLayoutStyleName);
+    pageLayoutStyleName = mainStyles->insert(regularLayout, pageLayoutStyleName);
 
     QString masterStyleName("Standard");
     //! @todo style:display-name
@@ -619,10 +628,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
     m_masterPageStyle.addAttribute("style:page-layout-name", pageLayoutStyleName);
     QString currentMasterPageName = mainStyles->insert(m_masterPageStyle, masterStyleName, KoGenStyles::AllowDuplicates);
 
-    // Words has uniform/even-odd header frame sets, but no frame set for an
-    // ODF header-first. Give a nonempty first header its own master page and
-    // continue with the ordinary master on subsequent pages. This also lets
-    // inline header pictures reserve their actual height in the body layout.
+    // Use a separate master for the first page so absent first-page parts
+    // do not reserve space or fall back to the section's regular parts.
     const auto hasHeaderContent = [](const QString &xml) {
         QXmlStreamReader reader(xml);
         reader.setNamespaceProcessing(false);
@@ -631,22 +638,40 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
             if (reader.isCharacters() && !reader.isWhitespace()) {
                 return true;
             }
-            if (reader.isStartElement() && reader.qualifiedName() == QLatin1StringView("draw:frame")) {
-                return true;
+            if (reader.isStartElement()) {
+                const auto name = reader.qualifiedName();
+                if (name == QLatin1StringView("draw:frame") || name == QLatin1StringView("table:table")
+                    || name == QLatin1StringView("text:page-number") || name == QLatin1StringView("text:page-count")) {
+                    return true;
+                }
             }
         }
         return false;
     };
-    if (m_differentFirstPage
-        && (hasHeaderContent(m_headers.value(QStringLiteral("first"))) || hasHeaderContent(m_footers.value(QStringLiteral("first"))))) {
+    const QString firstHeader = m_headers.value(firstPage);
+    const QString firstFooter = m_footers.value(firstPage);
+    const bool hasRegularParts = !m_headers.value("default").isEmpty() || !m_footers.value("default").isEmpty()
+        || (useEvenAndOddHeaders && (!m_headers.value("even").isEmpty() || !m_footers.value("even").isEmpty()));
+    if (m_differentFirstPage && (hasRegularParts || !firstHeader.isEmpty() || !firstFooter.isEmpty())) {
+        const bool firstHasHeader = hasHeaderContent(firstHeader);
+        const bool firstHasFooter = hasHeaderContent(firstFooter);
+        if (!firstHasHeader && m_pageMargins.contains(MarginTop)) {
+            m_pageMargins[MarginTop] = m_bodyTopMargin;
+        }
+        if (!firstHasFooter && m_pageMargins.contains(MarginBottom)) {
+            m_pageMargins[MarginBottom] = m_bodyBottomMargin;
+        }
+        applyPageBorders(m_currentPageStyle, m_pageMargins, m_pageBorderStyles, m_pageBorderPaddings, m_pageBorderOffsetFrom);
         KoGenStyle firstMaster(KoGenStyle::MasterPageStyle);
-        firstMaster.addAttribute("style:page-layout-name", pageLayoutStyleName);
+        firstMaster.addAttribute("style:page-layout-name", mainStyles->insert(m_currentPageStyle, QStringLiteral("Mpm")));
         firstMaster.addAttribute("style:next-style-name", currentMasterPageName);
-        QString header = m_headers.value(QStringLiteral("first"));
-        header.replace(QLatin1String("style:header-first"), QLatin1String("style:header"));
-        firstMaster.addChildElement("1 style:header", header);
-        if (m_footers.contains(QStringLiteral("first"))) {
-            QString footer = m_footers.value(QStringLiteral("first"));
+        if (firstHasHeader) {
+            QString header = firstHeader;
+            header.replace(QLatin1String("style:header-first"), QLatin1String("style:header"));
+            firstMaster.addChildElement("1 style:header", header);
+        }
+        if (firstHasFooter) {
+            QString footer = firstFooter;
             footer.replace(QLatin1String("style:footer-first"), QLatin1String("style:footer"));
             firstMaster.addChildElement("4 style:footer", footer);
         }
@@ -673,10 +698,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
         // properties of a body that begins with a table would otherwise move
         // that table one page down.
         const bool startsSectionWithTable = m_currentSectionStyleFamily == QLatin1String("table");
-        const QString sectionBreakBefore = (sectionContinuous || startsSectionWithTable) ? QStringLiteral("auto") : QStringLiteral("page");
+        const bool startsOnNewPage = m_hasPreviousSection && !sectionContinuous && !startsSectionWithTable;
         if (m_currentSectionHasContent) {
             sectionStyle->addAttribute("style:master-page-name", currentMasterPageName);
-            if (sectionBreakBefore == QLatin1String("page") && !m_bodySectionProperties) sectionStyle->addProperty("fo:break-before", sectionBreakBefore);
+            if (startsOnNewPage) sectionStyle->addProperty("fo:break-before", "page");
             if (m_sectionPageNumberStart > 0) {
                 sectionStyle->addProperty("style:page-number", QString::number(m_sectionPageNumberStart));
             }
@@ -684,15 +709,16 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_sectPr()
             // The section can end with several empty marker paragraphs. Defer
             // its page and master style until the first paragraph with content.
             m_pendingMasterPageName = currentMasterPageName;
-            if (sectionBreakBefore == QLatin1String("page") && !m_bodySectionProperties) m_pendingSectionBreakBefore = sectionBreakBefore;
+            if (startsOnNewPage) m_pendingSectionBreakBefore = QStringLiteral("page");
             m_pendingSectionPageNumberStart = m_sectionPageNumberStart;
         }
     } else if (!m_currentSectionHasContent) {
         const bool startsSectionWithTable = m_currentSectionStyleFamily == QLatin1String("table");
-        if (!sectionContinuous && !startsSectionWithTable && !m_bodySectionProperties) m_pendingSectionBreakBefore = QStringLiteral("page");
+        if (m_hasPreviousSection && !sectionContinuous && !startsSectionWithTable) m_pendingSectionBreakBefore = QStringLiteral("page");
         m_pendingSectionPageNumberStart = m_sectionPageNumberStart;
     }
     m_currentSectionHasContent = false;
+    m_hasPreviousSection = true;
 
     // The header/footer flags only describe this section: while its
     // references and margins are read they map positions into the header
@@ -886,6 +912,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_pgMar()
     const qreal bottomNum = pgMarToPoints(bottom, QString("w:bottom"));
     const qreal headerNum = pgMarToPoints(header, QString("w:header"));
     const qreal footerNum = pgMarToPoints(footer, QString("w:footer"));
+    m_bodyTopMargin = topNum;
+    m_bodyBottomMargin = bottomNum;
     if (!m_headerActive) {
         m_pageMargins.insert(MarginTop, topNum);
     } else {
@@ -2013,6 +2041,13 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_fldChar()
             m_complexCharStatus = InstrAllowed;
         } else if (fldCharType == "separate") {
             m_complexCharStatus = InstrExecute;
+            // Caption lists use the TOC command with a \c switch. Preserve
+            // their cached entries without generating a heading index.
+            static const QRegularExpression captionSwitch(QStringLiteral("\\\\c(?:\\s|$)"), QRegularExpression::CaseInsensitiveOption);
+            if (m_startToc && m_fieldDepth == m_tocDepth && captionSwitch.match(m_tocInstruction).hasMatch()) {
+                m_startToc = false;
+                m_tocDepth = -1;
+            }
             const QString command = m_complexCharValue.trimmed().section(QLatin1Char(' '), 0, 0);
             if (command == QLatin1String("PAGE") || command == QLatin1String("NUMPAGES")) {
                 m_pageFieldElement = command == QLatin1String("PAGE") ? QByteArray("text:page-number") : QByteArray("text:page-count");
@@ -2870,14 +2905,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
     }
 
     // Whether section starts from this paragraph
-    bool sectionAdded = false;
-    bool sectionStyleCandidate = false;
-
-    if (m_createSectionStyle) {
+    const bool sectionAdded = m_createSectionStyle;
+    if (sectionAdded) {
         // To avoid the style to become a duplicate or being duplicated.
         m_currentParagraphStyle.addAttribute("style:master-page-name", "placeholder");
-        sectionStyleCandidate = true;
-        sectionAdded = true;
     }
 
     while (!atEnd()) {
@@ -3057,24 +3088,6 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
             if (m_insideTableCell && hasParagraphContent) {
                 m_currentTableHasVisibleContent = true;
             }
-            // The document's first paragraph is the carrier for the section's
-            // page style. When it is empty it still occupies a line in Word, so
-            // keep its placeholder master page and let the final sectPr update
-            // this very style; moving the page style to the next paragraph
-            // would force an unwanted page break after the blank line.
-            const bool firstBodyParagraph = m_bodyParagraphCount == 0
-                && !m_insideTableCell && !m_headerActive && !m_footerActive;
-            if (sectionStyleCandidate) {
-                if (hasParagraphContent || firstBodyParagraph) {
-                    // The carrier style is now fixed: do not let a later
-                    // paragraph replace it as the section-style owner.
-                    m_createSectionStyle = false;
-                } else {
-                    m_currentParagraphStyle.removeAttribute("style:master-page-name");
-                    sectionAdded = false;
-                    sectionStyleCandidate = false;
-                }
-            }
             if (hasParagraphContent) {
                 if (!m_pendingMasterPageName.isEmpty()) {
                     m_currentParagraphStyle.removeAttribute("style:master-page-name");
@@ -3129,8 +3142,13 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
             // section, but it may also contain visible text (for example a
             // cover-page line followed by the section break). Keep that text
             // and only skip truly empty section markers.
-            if (standaloneBreak.isEmpty() && (!sectionStyleCandidate || hasParagraphContent || firstBodyParagraph) && (!m_createSectionToNext || hasParagraphContent)
+            if (standaloneBreak.isEmpty() && (!m_createSectionToNext || hasParagraphContent)
                 && (!m_startToc || hasParagraphContent || m_endToc)) {
+                // Leading blank paragraphs belong to the new section too.
+                // Attach its page style to the first paragraph we emit.
+                if (sectionAdded) {
+                    m_createSectionStyle = false;
+                }
                 if (!m_pendingParagraphBreak.isEmpty()) {
                     m_currentParagraphStyle.addProperty("fo:break-before", m_pendingParagraphBreak);
                     m_pendingParagraphBreak.clear();
@@ -3255,8 +3273,6 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
                     }
                 }
                 body->endElement(); // text:p or text:h
-                if (!m_insideTableCell && !m_headerActive && !m_footerActive)
-                    ++m_bodyParagraphCount;
                 if (m_endToc) {
                     finishToc();
                 }
@@ -8424,35 +8440,6 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_oMath()
     READ_EPILOGUE
 }
 
-namespace
-{
-// Estimates a frame size for a formula from the amount of text and the number
-// of stacked constructs in its MathML.  The formula shape recomputes its own
-// layout when it is loaded; the frame size only decides how much room the
-// inline object takes in the surrounding text.
-QSizeF estimateFormulaSize(const QByteArray &mathml)
-{
-    int textCharacters = 0;
-    int stacked = 0;
-    bool inTag = false;
-    for (const char character : mathml) {
-        if (character == '<') {
-            inTag = true;
-        } else if (character == '>') {
-            inTag = false;
-        } else if (!inTag) {
-            ++textCharacters;
-        }
-    }
-    for (const char *tag : {"<mfrac", "<munder", "<mover", "<mroot", "<msqrt", "<mtable"}) {
-        stacked += mathml.count(QByteArray(tag));
-    }
-    const qreal width = qBound<qreal>(0.4, 0.23 * qMax(1, textCharacters), 40.0);
-    const qreal height = 0.55 + 0.3 * qMin(3, stacked);
-    return QSizeF(width, height);
-}
-}
-
 void DocxXmlDocumentReader::writeInlineFormula(const QByteArray &mathml)
 {
     KoStore *store = m_context->import->outputStore();
@@ -8478,11 +8465,9 @@ void DocxXmlDocumentReader::writeInlineFormula(const QByteArray &mathml)
         manifest->addManifestEntry(contentName, QStringLiteral("text/xml"));
     }
 
-    const QSizeF size = estimateFormulaSize(mathml);
+    // Let the formula shape determine the frame size from its math layout.
     body->startElement("draw:frame");
     body->addAttribute("text:anchor-type", "as-char");
-    body->addAttribute("svg:width", QString::number(size.width(), 'f', 3) + QStringLiteral("cm"));
-    body->addAttribute("svg:height", QString::number(size.height(), 'f', 3) + QStringLiteral("cm"));
     body->startElement("draw:object");
     body->addAttribute("xlink:href", QStringLiteral("./") + objectName);
     body->addAttribute("xlink:type", "simple");

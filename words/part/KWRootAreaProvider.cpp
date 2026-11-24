@@ -189,10 +189,10 @@ KoTextLayoutRootArea *KWRootAreaProvider::provideNext(KoTextDocumentLayout *docu
             if (rootAreaPage && constraints.newPageForced) {
                 const KWPageStyle sectionStyle = pageManager->pageStyle(constraints.masterPageName);
                 const auto usage = sectionStyle.isValid() ? sectionStyle.pageUsage() : KWPageStyle::AllPages;
-                // Explicit section side takes precedence over a numbering restart.
+                const bool numberSetsSide = constraints.visiblePageNumber > 0 && !sectionStyle.restartNumberingOnAnyPage();
                 const int parity = usage == KWPageStyle::RightPages ? 1
                     : usage == KWPageStyle::LeftPages ? 0
-                    : constraints.visiblePageNumber > 0 ? constraints.visiblePageNumber % 2 : -1;
+                    : numberSetsSide ? constraints.visiblePageNumber % 2 : -1;
                 if (parity >= 0 && pageNumber % 2 != parity) {
                     auto blankStyle = rootAreaPage->page.pageStyle();
                     blankStyle.setHeaderPolicy(Words::HFTypeNone);

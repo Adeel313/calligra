@@ -23,6 +23,7 @@ public:
     void clear();
 
     KWPageStyle::PageUsageType pageUsage;
+    bool restartNumberingOnAnyPage = false;
     KoColumns columns;
     KoPageLayout pageLayout;
     QString name;
@@ -53,6 +54,7 @@ public:
     void copyProperties(KWPageStylePrivate *other)
     {
         pageUsage = other->pageUsage;
+        restartNumberingOnAnyPage = other->restartNumberingOnAnyPage;
         columns = other->columns;
         pageLayout = other->pageLayout;
         // name = other->name;

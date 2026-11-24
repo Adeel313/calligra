@@ -35,6 +35,7 @@ void KWPageStylePrivate::clear()
     headers = Words::HFTypeNone;
     footers = Words::HFTypeNone;
     pageUsage = KWPageStyle::AllPages;
+    restartNumberingOnAnyPage = false;
     columns.reset();
     direction = KoText::AutoDirection;
     headerDynamicSpacing = false;
@@ -73,6 +74,11 @@ KWPageStyle::~KWPageStyle() = default;
 KWPageStyle::PageUsageType KWPageStyle::pageUsage() const
 {
     return d ? d->pageUsage : KWPageStyle::AllPages;
+}
+
+bool KWPageStyle::restartNumberingOnAnyPage() const
+{
+    return d && d->restartNumberingOnAnyPage;
 }
 
 void KWPageStyle::setPageUsage(KWPageStyle::PageUsageType pageusage) const
@@ -238,6 +244,9 @@ KoGenStyle KWPageStyle::saveOdf(KoShapeSavingContext *context) const
     if (d->docxBodyBottomMargin) {
         pageLayout.addPropertyPt("calligra:docx-body-bottom-margin", *d->docxBodyBottomMargin);
     }
+    if (d->restartNumberingOnAnyPage) {
+        pageLayout.addProperty("calligra:restart-numbering-on-any-page", "true");
+    }
 
     switch (d->pageUsage) {
     case LeftPages:
@@ -335,6 +344,7 @@ KoGenStyle KWPageStyle::saveOdf(KoShapeSavingContext *context) const
 void KWPageStyle::loadOdf(KoOdfLoadingContext &context, const KoXmlElement &masterNode, const KoXmlElement &style, KoDocumentResourceManager *documentResources)
 {
     d->docxBodyBottomMargin.reset();
+    d->restartNumberingOnAnyPage = false;
     d->pageLayout.loadOdf(style);
     KoXmlElement props = KoXml::namedItemNS(style, KoXmlNS::style, "page-layout-properties");
     if (props.isNull())
@@ -343,6 +353,7 @@ void KWPageStyle::loadOdf(KoOdfLoadingContext &context, const KoXmlElement &mast
     if (!bodyBottomMargin.isEmpty()) {
         d->docxBodyBottomMargin = KoUnit::parseValue(bodyBottomMargin);
     }
+    d->restartNumberingOnAnyPage = props.attributeNS(KoXmlNS::calligra, "restart-numbering-on-any-page") == QLatin1String("true");
     d->numberFormat = props.attributeNS(KoXmlNS::style, "num-format", "1");
     QString direction = props.attributeNS(KoXmlNS::style, "writing-mode", "lr-tb");
     d->direction = KoText::directionFromString(direction);

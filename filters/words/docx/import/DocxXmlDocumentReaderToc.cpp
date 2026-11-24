@@ -168,7 +168,10 @@ void DocxXmlDocumentReader::finishToc()
         } else {
             entry.setParentName(m_context->m_namedDefaultStyles.value("paragraph"));
             entry.addPropertyPt("fo:margin-left", (level - 1) * 21.6, KoGenStyle::ParagraphType);
+            entry.addPropertyPt("fo:margin-top", 0, KoGenStyle::ParagraphType);
             entry.addPropertyPt("fo:margin-bottom", 0, KoGenStyle::ParagraphType);
+            entry.addProperty("fo:line-height", "100%", KoGenStyle::ParagraphType);
+            entry.addPropertyPt("fo:font-size", 10, KoGenStyle::TextType);
         }
         const QString name = mainStyles->insert(entry, QStringLiteral("Contents%1").arg(level));
         body->startElement("text:table-of-content-entry-template");

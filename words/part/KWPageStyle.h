@@ -88,6 +88,7 @@ public:
      * Returns the type of pages that should be generated.
      */
     PageUsageType pageUsage() const;
+    bool restartNumberingOnAnyPage() const;
 
     /**
      * Sets the type of pages that should be generated.

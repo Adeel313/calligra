@@ -541,52 +541,32 @@ void KoTextLoader::loadHeading(const KoXmlElement &element, QTextCursor &cursor)
         cursor.mergeBlockFormat(blockFormat);
     }
 
-    // MS Word-like numbering policy for headings:
-    // Case 1: a heading inside an explicit <text:list> keeps the numbering of
-    //         that list;
-    // Case 2: a heading outside a list is never auto-numbered, no matter which
-    //         outline (chapter) style the document defines.
-    KoListStyle *outlineStyle = d->styleManager->outlineStyle();
-    if (!outlineStyle) {
-        outlineStyle = d->styleManager->defaultOutlineStyle()->clone();
-        d->styleManager->setOutlineStyle(outlineStyle);
-    }
+    // The outline level describes the heading hierarchy. An explicit list
+    // supplies its own numbering level, label format, and continuation.
+    const bool inExplicitList = d->currentListLevel > 1
+        || element.parentNode().toElement().localName() == QLatin1String("numbered-paragraph");
+    QTextBlockFormat headingFormat = cursor.blockFormat();
+    if (inExplicitList) {
+        headingFormat.clearProperty(KoParagraphStyle::UnnumberedListItem);
+        cursor.setBlockFormat(headingFormat);
+    } else {
+        headingFormat.setProperty(KoParagraphStyle::UnnumberedListItem, true);
+        cursor.setBlockFormat(headingFormat);
 
-    if (d->currentListLevel <= 1) {
-        QTextBlockFormat blockFormat;
-        blockFormat.setProperty(KoParagraphStyle::UnnumberedListItem, true);
-        cursor.mergeBlockFormat(blockFormat);
-    } else { // inside a list then take the numbering from the list style
-        if (outlineStyle->styleId() == d->styleManager->defaultOutlineStyle()->styleId()) {
-            int level = d->currentListLevel - 1;
-            KoListLevelProperties llp;
-            if (!d->currentListStyle->hasLevelProperties(level)) {
-                // Look if one of the lower levels are defined to we can copy over that level.
-                for (int i = level - 1; i >= 0; --i) {
-                    if (d->currentLists[level - 1]->style()->hasLevelProperties(i)) {
-                        llp = d->currentLists[level - 1]->style()->levelProperties(i);
-                        break;
-                    }
-                }
-            } else {
-                llp = d->currentListStyle->levelProperties(level);
-            }
-            llp.setLevel(level);
-            outlineStyle->setLevelProperties(llp);
+        KoListStyle *outlineStyle = d->styleManager->outlineStyle();
+        if (!outlineStyle) {
+            outlineStyle = d->styleManager->defaultOutlineStyle()->clone();
+            d->styleManager->setOutlineStyle(outlineStyle);
         }
-        // A heading inside an explicit list keeps the numbering of that list.
-        QTextBlockFormat blockFormat = cursor.blockFormat();
-        blockFormat.clearProperty(KoParagraphStyle::UnnumberedListItem);
-        cursor.setBlockFormat(blockFormat);
-    }
 
-    KoList *list = KoTextDocument(block.document()).headingList();
-    if (!list) {
-        list = d->list(block.document(), outlineStyle, false);
-        KoTextDocument(block.document()).setHeadingList(list);
+        KoList *list = KoTextDocument(block.document()).headingList();
+        if (!list) {
+            list = d->list(block.document(), outlineStyle, false);
+            KoTextDocument(block.document()).setHeadingList(list);
+        }
+        list->setStyle(outlineStyle);
+        list->add(block, level);
     }
-    list->setStyle(outlineStyle);
-    list->add(block, level);
 
     // attach Rdf to cursor.block()
     // remember inline Rdf metadata
@@ -1499,7 +1479,8 @@ void KoTextLoader::loadTableOfContents(const KoXmlElement &element, QTextCursor 
             // info.tableOfContentData()->dump();
             tocFormat.setProperty(KoParagraphStyle::TableOfContentsData, QVariant::fromValue<KoTableOfContentsGeneratorInfo *>(info));
             tocFormat.setProperty(KoParagraphStyle::GeneratedDocument, QVariant::fromValue<QTextDocument *>(tocDocument));
-            cursor.insertBlock(tocFormat);
+            // loadBody already positioned the cursor in the block for this index.
+            cursor.mergeBlockFormat(tocFormat);
 
             // We'll just try to find displayable elements and add them as paragraphs
         } else if (e.localName() == "index-body") {
