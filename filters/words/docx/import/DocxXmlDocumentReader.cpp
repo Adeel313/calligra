@@ -2114,6 +2114,11 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_instrText()
             QString instruction = text().toString().trimmed();
 
             if (instruction.startsWith(QLatin1String("TOC"))) {
+                // Table cells serialize each paragraph with a separate writer.
+                // Keep the cached field result in the cell's normal paragraph flow.
+                if (m_insideTableCell || m_tocBodyWriter) {
+                    continue;
+                }
                 m_startToc = true;
                 m_tocInstruction = instruction;
                 m_tocDepth = m_fieldDepth;
