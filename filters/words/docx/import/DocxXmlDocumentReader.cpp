@@ -4848,8 +4848,6 @@ void DocxXmlDocumentReader::collapseParagraphSpacing()
 
 KoFilter::ConversionStatus DocxXmlDocumentReader::read_spacing()
 {
-    // TODO: afterLines, beforeLines are critical.
-
     READ_PROLOGUE
     const QXmlStreamAttributes attrs(attributes());
 
@@ -4859,6 +4857,13 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_spacing()
     if (!afterAutospacing) {
         TRY_READ_ATTR(after)
         marginBottom = TWIP_TO_POINT(after.toDouble(&ok));
+        // Line-based spacing takes precedence over the twip fallback. Use
+        // the 240-twip spacing unit, matching ONLYOFFICE independently of
+        // the sizes of runs in the paragraph.
+        TRY_READ_ATTR(afterLines)
+        if (!afterLines.isEmpty()) {
+            marginBottom = afterLines.toDouble(&ok) * 12.0 / 100.0;
+        }
     }
     if (ok) {
         m_currentParagraphStyle.addPropertyPt("fo:margin-bottom", marginBottom);
@@ -4870,6 +4875,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_spacing()
     if (!beforeAutospacing) {
         TRY_READ_ATTR(before)
         marginTop = TWIP_TO_POINT(before.toDouble(&ok));
+        TRY_READ_ATTR(beforeLines)
+        if (!beforeLines.isEmpty()) {
+            marginTop = beforeLines.toDouble(&ok) * 12.0 / 100.0;
+        }
     }
     if (ok) {
         m_currentParagraphStyle.addPropertyPt("fo:margin-top", marginTop);
@@ -5021,9 +5030,6 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
             mainStyles->insertFontFace(face);
         }
     };
-    // Word fonts that are not installed on this system have to be substituted.
-    // Declare the generic family LibreOffice uses for them so that the
-    // substitute (and its line metrics) agree between the two applications.
     const auto isFontAvailable = [](const QString &family) {
         return QFontInfo(QFont(family)).family().compare(family, Qt::CaseInsensitive) == 0;
     };
@@ -5045,6 +5051,22 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
         if (family.compare(QLatin1String("Consolas"), Qt::CaseInsensitive) == 0) {
             return QStringLiteral("Arial");
         }
+        // Segoe UI is normally absent on Linux. Use a text face for its
+        // Latin UI variants, including Emoji: selecting a color-emoji-only
+        // substitute for ordinary text can give every letter a full em box.
+        // Qt still supplies emoji glyph fallback when Arial lacks a glyph.
+        if (family.compare(QLatin1String("Segoe UI Emoji"), Qt::CaseInsensitive) == 0) {
+            return QStringLiteral("Arial");
+        }
+        if (family.compare(QLatin1String("Segoe UI Semibold"), Qt::CaseInsensitive) == 0) {
+            // Match the available substitute selected by ONLYOFFICE. Dubai
+            // has taller line metrics than Calibri, which matters even for
+            // empty paragraphs used to separate floating illustrations.
+            return isFontAvailable(QStringLiteral("Dubai")) ? QStringLiteral("Dubai") : QStringLiteral("Calibri");
+        }
+        if (family.compare(QLatin1String("Segoe UI"), Qt::CaseInsensitive) == 0) {
+            return QStringLiteral("Calibri");
+        }
         return family;
     };
     // CASE #1153
@@ -5053,8 +5075,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_rFonts()
         const QString asciiFont = wordFontFallback(ascii);
         ensureFontFace(asciiFont);
         m_currentTextStyle.addProperty("style:font-name", asciiFont, KoGenStyle::TextType);
-        if (!isFontAvailable(asciiFont)) {
-            m_currentTextStyle.addProperty("style:font-family-generic", "roman", KoGenStyle::TextType);
+        const QString generic = mainStyles->fontFace(asciiFont).familyGeneric();
+        if (!generic.isEmpty()) {
+            m_currentTextStyle.addProperty("style:font-family-generic", generic, KoGenStyle::TextType);
         }
     }
     // CASE #1152

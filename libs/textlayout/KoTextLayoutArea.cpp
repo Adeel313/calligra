@@ -1137,7 +1137,12 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
 
     qreal labelBoxWidth = 0;
     qreal labelBoxIndent = 0;
-    if (textList) {
+    // Unnumbered outline headings use a list for document structure only.
+    // Its default zero margin must not replace the named heading's indent.
+    const bool unnumberedHeading = block.blockFormat().intProperty(KoParagraphStyle::OutlineLevel) > 0
+        && block.blockFormat().boolProperty(KoParagraphStyle::UnnumberedListItem)
+        && blockData.counterText().isEmpty();
+    if (textList && !unnumberedHeading) {
         if (listFormat.boolProperty(KoListStyle::AlignmentMode)) {
             // according to odf 1.2 17.20 list margin should be used when paragraph margin is
             // not specified by the auto style (additionally LO/OO uses 0 as condition so we do too)
@@ -1360,7 +1365,7 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
         d->indent = d->extraTextIndent;
     }
 
-    if (block.blockFormat().boolProperty(KoParagraphStyle::UnnumberedListItem)) {
+    if (block.blockFormat().boolProperty(KoParagraphStyle::UnnumberedListItem) && !unnumberedHeading) {
         // Unnumbered list items act like "following lines" in a numbered block
         d->indent = 0;
     }
@@ -1627,7 +1632,9 @@ qreal KoTextLayoutArea::textIndent(const QTextBlock &block, QTextList *textList,
 
     qreal blockTextIndent = block.blockFormat().textIndent();
 
-    if (textList && textList->format().boolProperty(KoListStyle::AlignmentMode)) {
+    const bool unnumberedHeading = block.blockFormat().intProperty(KoParagraphStyle::OutlineLevel) > 0
+        && block.blockFormat().boolProperty(KoParagraphStyle::UnnumberedListItem);
+    if (textList && !unnumberedHeading && textList->format().boolProperty(KoListStyle::AlignmentMode)) {
         // according to odf 1.2 17.20 list text indent should be used when paragraph text indent is
         // not specified (additionally LO/OO uses 0 as condition so we do too)
         int id = pStyle.styleId();

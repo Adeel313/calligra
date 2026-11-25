@@ -1,5 +1,5 @@
 #!/bin/sh
-# Launch Calligra Sheets from this build-opt/bin directory.
+# Launch Calligra-NG Sheets from this build-opt/bin directory.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -8,8 +8,8 @@ BIN="$ROOT/build-opt/bin"
 DATA_ROOT=${CALLIGRA_DATA_ROOT:-}
 if [ -z "$DATA_ROOT" ]; then
     for p in \
-        /opt/calligra \
-        /tmp/opencode/calligra-deb/root/opt/calligra \
+        /opt/calligra-ng \
+        /tmp/opencode/calligra-ng-deb/root/opt/calligra-ng \
         "$ROOT/build-opt/local-install" \
         "$ROOT/build/install" \
         "$ROOT/build-opt/install" \
@@ -25,7 +25,7 @@ fi
 if [ -z "$DATA_ROOT" ]; then
     # Last-resort fallback: run with system paths and warn.
     DATA_ROOT=/usr
-    echo "Warning: Calligra data files not found; using DATA_ROOT=$DATA_ROOT. Set CALLIGRA_DATA_ROOT if needed." >&2
+    echo "Warning: Calligra-NG data files not found; using DATA_ROOT=$DATA_ROOT. Set CALLIGRA_DATA_ROOT if needed." >&2
 fi
 
 for d in "$DATA_ROOT/lib/x86_64-linux-gnu" "$DATA_ROOT/lib"; do

@@ -250,7 +250,7 @@ def check(output):
         for name, data in entries.items():
             package.writestr(name, data)
 
-    install = ROOT / 'build/install'
+    install = Path(os.environ.get('CALLIGRA_DATA_ROOT', ROOT / 'build/install'))
     env = dict(os.environ, QT_QPA_PLATFORM='offscreen', QT_LOGGING_RULES='*.debug=false',
                LD_LIBRARY_PATH=str(ROOT / 'build/bin'),
                QT_PLUGIN_PATH=str(install / 'lib/x86_64-linux-gnu/qt6/plugins'),
@@ -374,12 +374,12 @@ def check(output):
     # otherwise Calligra substitutes Noto Sans and pagination changes.
     sized_style = paragraph('Sized only').find(qn_odf('text:span')).get(qn_odf('text:style-name'))
     assert properties(sized_style).get(qn_odf('style:font-name')) == 'Cambria'
-    # An uninstalled font must declare the generic family so that the
-    # substitute (and therefore its line height) matches other applications.
+    # An uninstalled font without a declared generic family must not be
+    # forced to serif: the font matcher should choose its substitute.
     missing_style = paragraph('Missing face').find(qn_odf('text:span')).get(qn_odf('text:style-name'))
     missing_props = properties(missing_style)
     assert missing_props.get(qn_odf('style:font-name')) == 'ZZZUninstalledTestFont'
-    assert missing_props.get(qn_odf('style:font-family-generic')) == 'roman'
+    assert missing_props.get(qn_odf('style:font-family-generic')) is None
     # Word's monospace UI face is absent on Linux; Word-compatible renderers
     # substitute Arial.  Keeping the name would let Qt pick a local monospace
     # face with different run widths and shift line breaks.
