@@ -15,8 +15,14 @@
 
 #include <MsooXmlSchemas.h>
 #include <MsooXmlUtils.h>
+#include <MsooXmlRelationships.h>
 
 #include <KoGenStyles.h>
+#include <KoStore.h>
+#include <KoXmlWriter.h>
+#include <KZip>
+#include <KArchiveFile>
+#include <QFileInfo>
 #include <QFontDatabase>
 
 #define MSOOXML_CURRENT_NS "w"
@@ -182,6 +188,42 @@ KoFilter::ConversionStatus DocxXmlFontTableReader::read_font()
                 // unrelated default for an unavailable family.
                 if (!alternate.isEmpty() && !QFontDatabase::families().contains(currentFontFaceName, Qt::CaseInsensitive)) {
                     m_currentFontFace.setFamily(alternate);
+                }
+                skipCurrentElement();
+            }
+            else if (name() == QLatin1StringView("embedRegular") || name() == QLatin1StringView("embedBold")
+                     || name() == QLatin1StringView("embedItalic") || name() == QLatin1StringView("embedBoldItalic")) {
+                if (m_context->archive && m_context->outputStore && m_context->relationships) {
+                    const QString id = attributes().value(QLatin1StringView("r:id")).toString();
+                    QString key = attributes().value(QLatin1StringView("w:fontKey")).toString();
+                    key.remove(QLatin1Char('{')); key.remove(QLatin1Char('}')); key.remove(QLatin1Char('-'));
+                    const QByteArray keyBytes = QByteArray::fromHex(key.toLatin1());
+                    const QFileInfo part(m_context->partPath);
+                    QString source = m_context->relationships->target(part.path(), part.fileName(), id);
+                    if (source.startsWith(QLatin1Char('/'))) source.remove(0, 1);
+                    const auto *file = dynamic_cast<const KArchiveFile *>(m_context->archive->directory()->entry(source));
+                    if (file && keyBytes.size() == 16) {
+                        QByteArray data = file->data();
+                        // OOXML obfuscates only the first 32 bytes, using the
+                        // fontKey GUID bytes in reverse order, repeated twice.
+                        if (data.size() >= 32) {
+                            for (int i = 0; i < 32; ++i) data[i] = data.at(i) ^ keyBytes.at(15 - i % 16);
+                            const QByteArray signature = data.left(4);
+                            if (signature == QByteArray::fromHex("00010000") || signature == "OTTO" || signature == "ttcf") {
+                                const QString destination = QStringLiteral("Fonts/") + QFileInfo(source).completeBaseName() + QStringLiteral(".ttf");
+                                if (m_context->outputStore->open(destination)) {
+                                    const bool written = m_context->outputStore->write(data) == data.size();
+                                    m_context->outputStore->close();
+                                    if (written) {
+                                        manifest->addManifestEntry(destination, QStringLiteral("application/x-font-ttf"));
+                                        auto files = m_currentFontFace.embeddedFontFiles();
+                                        files.append(destination);
+                                        m_currentFontFace.setEmbeddedFontFiles(files);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 skipCurrentElement();
             }

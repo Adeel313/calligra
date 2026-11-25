@@ -14,6 +14,7 @@
 
 #include <QRect> // also provides QSize
 #include <QString>
+#include <QPainterPath>
 
 /**
    \file
@@ -71,7 +72,7 @@ public:
 
 private:
     // read a single EMF record
-    bool readRecord(QDataStream &stream);
+    bool readRecord(QDataStream &stream, QPainterPath &plusDashPath, QPen &plusDashPen);
 
     // temporary function to soak up unneeded bytes
     void soakBytes(QDataStream &stream, int numBytes);

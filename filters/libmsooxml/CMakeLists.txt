@@ -53,6 +53,10 @@ endif()
 set_target_properties(komsooxml PROPERTIES VERSION ${CALLIGRA_VERSION} SOVERSION ${CALLIGRA_SOVERSION} )
 install(TARGETS komsooxml ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
+
 if (FALSE) # these headers are private for now
 install( FILES
     ${CMAKE_CURRENT_BINARY_DIR}/komsooxml_export.h

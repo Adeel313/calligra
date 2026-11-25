@@ -11,6 +11,7 @@ class TestCursor : public QObject
 {
     Q_OBJECT
 private Q_SLOTS:
+    void defaultFormulaSize();
     // General Layout Elements
     void moveCursor();
     void nestedRowBoundaries();

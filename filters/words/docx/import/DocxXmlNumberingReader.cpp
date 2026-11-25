@@ -16,6 +16,7 @@
 #include <MsooXmlSchemas.h>
 #include <MsooXmlUnits.h>
 #include <MsooXmlUtils.h>
+#include <KoUnit.h>
 
 #include <QRegularExpression>
 
@@ -305,6 +306,10 @@ KoFilter::ConversionStatus DocxXmlNumberingReader::read_numPicBullet()
     }
 
     m_picBulletPaths[numPicBulletId] = m_currentVMLProperties.imagedataPath;
+    const qreal size = KoUnit::parseValue(m_currentVMLProperties.vmlStyle.value("width"));
+    if (size > 0) {
+        m_picBulletSizes[numPicBulletId] = size;
+    }
 
     READ_EPILOGUE
 }
@@ -629,6 +634,9 @@ KoFilter::ConversionStatus DocxXmlNumberingReader::read_lvlPicBulletId()
     TRY_READ_ATTR(val)
     if (!val.isEmpty()) {
         m_currentBulletProperties.setPicturePath(m_picBulletPaths.value(val));
+        if (m_picBulletSizes.contains(val)) {
+            m_currentBulletProperties.setBulletSizePt(m_picBulletSizes.value(val));
+        }
     }
 
     readNext();

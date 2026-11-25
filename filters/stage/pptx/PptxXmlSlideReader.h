@@ -188,6 +188,7 @@ protected:
     KoFilter::ConversionStatus read_nvPr();
     KoFilter::ConversionStatus read_ph();
     KoFilter::ConversionStatus read_txBody();
+    bool m_compatLineSpacing = false;
     KoFilter::ConversionStatus read_graphicFrame();
     KoFilter::ConversionStatus read_nvGraphicFramePr();
     KoFilter::ConversionStatus read_controls();

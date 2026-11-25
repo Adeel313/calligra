@@ -10,6 +10,7 @@
 #include <KoPageFormat.h>
 
 #include <QMarginsF>
+#include <QPointer>
 #include <QSizeF>
 #include <QWidget>
 
@@ -50,7 +51,9 @@ class KWPageSetupGallery : public QWidget
 public:
     explicit KWPageSetupGallery(QWidget *parent = nullptr);
 
-    /// Reflect @p state in the four pictures.
+    QWidget *columnsTile() const;
+
+    /// Set the page properties used by the preset previews.
     void setState(const PageSetupState &state);
     PageSetupState state() const;
 
@@ -90,7 +93,7 @@ private:
     void chooseVariant(PageSetupKind kind, const Variant &variant);
 
     PageSetupState m_state;
-    QList<GalleryTile *> m_tiles;
+    QList<QPointer<GalleryTile>> m_tiles;
     QList<PageSetupKind> m_tileKinds;
     QList<QList<Variant>> m_tileVariants;
 };

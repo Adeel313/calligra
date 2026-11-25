@@ -16,6 +16,13 @@
 #include "TableElement.h"
 #include "TableRowElement.h"
 #include "TokenElement.h"
+#include "AttributeManager.h"
+#include "KoFormulaShapeFactory.h"
+#include <QFontMetricsF>
+#include <KoXmlReader.h>
+#include <KoProperties.h>
+#include <KoXmlWriter.h>
+#include <QBuffer>
 #include <FormulaEditor.h>
 #include <KoCanvasBase.h>
 #include <KoDocument.h>
@@ -25,6 +32,52 @@
 #include <QTest>
 
 using namespace Qt::StringLiterals;
+
+void TestCursor::defaultFormulaSize()
+{
+    KoFormulaShapeFactory factory;
+    std::unique_ptr<KoShape> shape(factory.createDefaultShape());
+    auto *formula = dynamic_cast<KoFormulaShape *>(shape.get());
+    QVERIFY(formula);
+    QCOMPARE(formula->displayScale(), 1.0);
+
+    KoXmlDocument document;
+    QVERIFY(document.setContent(QStringLiteral("<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>x</mi></math>")));
+    auto *root = formula->formulaData()->formulaElement();
+    QVERIFY(root->readMathML(document.documentElement()));
+    formula->updateLayout();
+    QCOMPARE(formula->displayScale(), 1.0);
+    AttributeManager attributes;
+    const QFont font = attributes.font(root->childElements().first());
+    const qreal displayedSize = font.pointSizeF() * QFontMetricsF(font).fontDpi() / 72.0 * formula->displayScale();
+    QVERIFY(qAbs(displayedSize - 12.0) < 0.01);
+
+    KoProperties properties;
+    properties.setProperty("standalone", true);
+    std::unique_ptr<KoShape> displayShape(factory.createShape(&properties));
+    auto *displayFormula = dynamic_cast<KoFormulaShape *>(displayShape.get());
+    QVERIFY(displayFormula);
+    QCOMPARE(displayFormula->displayScale(), 1.0);
+    auto *displayRoot = displayFormula->formulaData()->formulaElement();
+    const QFont displayFont = attributes.font(displayRoot);
+    QVERIFY(qAbs(displayFont.pointSizeF() * QFontMetricsF(displayFont).fontDpi() / 72.0 - 14.0) < 0.01);
+    QCOMPARE(displayRoot->attribute(QStringLiteral("displaystyle")), QStringLiteral("true"));
+    QVERIFY(document.setContent(QStringLiteral("<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>")));
+    QVERIFY(displayRoot->readMathML(document.documentElement()));
+    displayFormula->updateLayout();
+    auto *numerator = displayRoot->childElements().first()->childElements().first();
+    QCOMPARE(numerator->scaleFactor(), 1.0);
+    const QFont numeratorFont = attributes.font(numerator);
+    QVERIFY(qAbs(numeratorFont.pointSizeF() * QFontMetricsF(numeratorFont).fontDpi() / 72.0 - 14.0) < 0.01);
+    QByteArray saved;
+    QBuffer buffer(&saved);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    KoXmlWriter writer(&buffer);
+    displayRoot->writeMathML(&writer);
+    QVERIFY(document.setContent(saved));
+    QCOMPARE(document.documentElement().attribute(QStringLiteral("fontsize")), QStringLiteral("14pt"));
+    QCOMPARE(document.documentElement().attribute(QStringLiteral("display")), QStringLiteral("block"));
+}
 
 class MockCanvas : public KoCanvasBase
 {

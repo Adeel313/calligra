@@ -157,6 +157,63 @@ void paintColumns(QPainter &painter, const QRectF &area, int count, const QColor
         paintTextLines(painter, columnRect, color);
     }
 }
+
+void paintCommandIcon(QPainter &painter, PageSetupKind kind, const QPalette &palette)
+{
+    painter.translate((PreviewSize.width() - 44) / 2.0, 1);
+    const QColor accent = palette.color(QPalette::Highlight);
+    QColor tint = accent;
+    tint.setAlpha(36);
+    const auto sheet = [&](const QRectF &rect) {
+        painter.setPen(QPen(accent, 1.5));
+        painter.setBrush(palette.color(QPalette::Base));
+        painter.drawRoundedRect(rect, 3, 3);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(tint);
+        painter.drawRoundedRect(rect, 3, 3);
+        painter.setBrush(Qt::NoBrush);
+    };
+
+    const QRectF page(9, 3, 26, 38);
+    if (kind == PageSetupKind::Orientation) {
+        sheet(QRectF(6, 3, 20, 30));
+        sheet(QRectF(12, 20, 29, 19));
+        paintTextLines(painter, QRectF(16, 23, 21, 13), accent);
+        return;
+    }
+    if (kind == PageSetupKind::Breaks) {
+        sheet(QRectF(9, 3, 26, 15));
+        sheet(QRectF(9, 26, 26, 15));
+        paintTextLines(painter, QRectF(13, 5, 18, 11), accent);
+        paintTextLines(painter, QRectF(13, 28, 18, 11), accent);
+        painter.setPen(QPen(accent, 1.5, Qt::DashLine));
+        painter.drawLine(QPointF(6, 22), QPointF(38, 22));
+        return;
+    }
+
+    sheet(page);
+    const QRectF content = page.adjusted(4, 5, -4, -5);
+    painter.setPen(QPen(accent, 1.25));
+    switch (kind) {
+    case PageSetupKind::Margins:
+        painter.setPen(QPen(accent, 1.25, Qt::DashLine));
+        painter.drawRoundedRect(content, 1, 1);
+        paintTextLines(painter, content.adjusted(1, 2, -1, -2), accent);
+        break;
+    case PageSetupKind::Size:
+        painter.drawLine(QPointF(14, 29), QPointF(30, 13));
+        painter.drawPolyline(QPolygonF{QPointF(14, 23), QPointF(14, 29), QPointF(20, 29)});
+        painter.drawPolyline(QPolygonF{QPointF(24, 13), QPointF(30, 13), QPointF(30, 19)});
+        break;
+    case PageSetupKind::Columns:
+        painter.drawLine(QPointF(22, 8), QPointF(22, 36));
+        paintColumns(painter, content, 2, accent);
+        break;
+    case PageSetupKind::Orientation:
+    case PageSetupKind::Breaks:
+        break;
+    }
+}
 }
 
 /**
@@ -168,10 +225,11 @@ void paintColumns(QPainter &painter, const QRectF &area, int count, const QColor
 class KWPageSetupGallery::GalleryTile : public QWidget
 {
 public:
-    GalleryTile(const QPixmap &preview, const QString &caption, QWidget *parent)
+    GalleryTile(const QPixmap &preview, const QString &caption, QWidget *parent, bool ribbon = false)
         : QWidget(parent)
         , m_preview(preview)
         , m_caption(caption)
+        , m_ribbon(ribbon)
     {
         setAttribute(Qt::WA_Hover, true);
         setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -189,7 +247,7 @@ public:
 
     QSize sizeHint() const override
     {
-        return QSize(TileWidth, PreviewSize.height() + 4 + 2 * LineHeight + ArrowStripHeight + 5);
+        return m_ribbon ? QSize(72, 76) : QSize(TileWidth, PreviewSize.height() + 4 + 2 * LineHeight + ArrowStripHeight + 5);
     }
 
 protected:
@@ -208,10 +266,12 @@ protected:
         painter.drawPixmap((width() - PreviewSize.width()) / 2, 4, m_preview);
 
         QFont captionFont = font();
-        captionFont.setPointSizeF(7.5);
+        if (!m_ribbon) {
+            captionFont.setPointSizeF(7.5);
+        }
         painter.setFont(captionFont);
         painter.setPen(palette().color(QPalette::WindowText));
-        painter.drawText(QRect(2, 4 + PreviewSize.height() + 2, width() - 4, LineHeight),
+        painter.drawText(QRect(2, 4 + PreviewSize.height() + 2, width() - 4, qMax(LineHeight, painter.fontMetrics().height())),
                          Qt::AlignHCenter | Qt::AlignTop,
                          m_caption);
 
@@ -268,6 +328,7 @@ protected:
 private:
     QPixmap m_preview;
     QString m_caption;
+    bool m_ribbon;
     bool m_hovered = false;
     bool m_pressed = false;
 };
@@ -311,12 +372,17 @@ KWPageSetupGallery::KWPageSetupGallery(QWidget *parent)
 
 void KWPageSetupGallery::addTile(PageSetupKind kind, const QString &caption, const QList<Variant> &variants)
 {
-    auto *tile = new GalleryTile(preview(kind, QVariant(), palette()), caption, this);
+    auto *tile = new GalleryTile(preview(kind, QVariant(), palette()), caption, this, true);
     tile->activated = [this, kind, variants, tile] { openVariants(kind, variants, tile); };
     m_tiles.append(tile);
     m_tileKinds.append(kind);
     m_tileVariants.append(variants);
     layout()->addWidget(tile);
+}
+
+QWidget *KWPageSetupGallery::columnsTile() const
+{
+    return m_tiles.at(m_tileKinds.indexOf(PageSetupKind::Columns));
 }
 
 void KWPageSetupGallery::setState(const PageSetupState &state)
@@ -340,7 +406,9 @@ void KWPageSetupGallery::showEvent(QShowEvent *event)
 void KWPageSetupGallery::updatePreviews()
 {
     for (int i = 0; i < m_tiles.count(); ++i) {
-        m_tiles.at(i)->setPreview(preview(m_tileKinds.at(i), QVariant(), palette()));
+        if (m_tiles.at(i)) {
+            m_tiles.at(i)->setPreview(preview(m_tileKinds.at(i), QVariant(), palette()));
+        }
     }
 }
 
@@ -353,6 +421,11 @@ QPixmap KWPageSetupGallery::preview(PageSetupKind kind, const QVariant &value, c
 
     QPainter painter(&pixmap);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+    if (!value.isValid() && !custom) {
+        paintCommandIcon(painter, kind, palette);
+        return pixmap;
+    }
 
     const QColor accent = palette.color(QPalette::Highlight);
     const QColor text = palette.color(QPalette::WindowText);

@@ -114,6 +114,9 @@ void KoColumnStyle::prepareStyle(KoGenStyle &style) const
     case ExactWidth:
         style.addPropertyPt("style:column-width", m_width);
         break;
+    case RelativeWidth:
+        style.addProperty("style:rel-column-width", QString::number(m_width) + QLatin1Char('*'));
+        break;
     case OptimalWidth:
         style.addProperty("style:use-optimal-column-width", "true");
         break;

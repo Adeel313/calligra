@@ -579,6 +579,11 @@ void KoModeBox::fitRibbonBand()
     if (band <= 0) {
         return;
     }
+    if (activePageBand && currentWrapper) {
+        // A tool page can retain a larger minimum height from when it had a
+        // horizontal scrollbar. Keep its viewport within the measured band.
+        currentWrapper->setFixedHeight(band);
+    }
     if (d->stack->minimumHeight() != band || d->stack->maximumHeight() != band) {
         for (const Private::CustomPage &customPage : std::as_const(d->customPages)) {
             auto *wrapper = qobject_cast<QScrollArea *>(customPage.wrapper);
@@ -706,7 +711,7 @@ void KoModeBox::setActiveTool(KoCanvasController *canvas, int id)
         d->activeId = id;
         d->tabBar->blockSignals(true);
         for (int i = 0; i < d->tabBar->count(); ++i) {
-            if (d->tabBar->tabData(i).toInt() == pageId) {
+            if (d->tabBar->tabData(i).toInt() == pageId && d->tabBar->isTabVisible(i)) {
                 d->tabBar->setCurrentIndex(i);
                 d->stack->setCurrentIndex(i);
                 break;
@@ -883,6 +888,9 @@ void KoModeBox::addWidgetToToolTab(const QString &toolId, QWidget *widget)
 
 void KoModeBox::setToolTabVisible(const QString &toolId, bool visible)
 {
+    // Hiding a contextual tab must not activate a fallback tab's tool and
+    // replace the selection that caused the visibility change.
+    const QSignalBlocker blocker(d->tabBar);
     QList<QString> ids{toolId};
     if (isCombinedShapeTool(toolId)) {
         ids.clear();
@@ -950,7 +958,13 @@ void KoModeBox::showToolTab(const QString &toolId)
         const int groupId = ribbonGroupId(toolAction, d->toolActions, combineShapeTools);
         for (int i = 0; i < d->tabBar->count(); ++i) {
             if (d->tabBar->tabData(i).toInt() == groupId && d->tabBar->isTabVisible(i)) {
-                d->tabBar->setCurrentIndex(i);
+                if (d->tabBar->currentIndex() == i) {
+                    // A visibility change can already have displayed this
+                    // page without activating its tool.
+                    toolSelected(i);
+                } else {
+                    d->tabBar->setCurrentIndex(i);
+                }
                 return;
             }
         }
@@ -1175,8 +1189,6 @@ void KoModeBox::addItem(KoToolAction *toolAction)
                 tabTitle = i18n("Layout");
             } else if (toolAction->id() == QLatin1String("PictureToolFactoryId")) {
                 tabTitle = i18n("Picture Format");
-            } else if (toolAction->id() == QLatin1String("VectorToolFactoryId")) {
-                tabTitle = i18n("Graphics Format");
             } else if (toolAction->id() == QLatin1String("ArtisticTextToolFactoryID")) {
                 tabTitle = i18n("WordArt Format");
             } else if (toolAction->id() == QLatin1String("KoFormulaToolFactoryId")) {
@@ -1308,6 +1320,9 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
         if (officeWordRibbon && toolAction->id() == QLatin1String("PathToolFactoryId")) {
             // The Words ribbon hides the path editing tab completely; its
             // useful "Convert to Path" action lives in the Draw tab instead.
+            continue;
+        }
+        if (officeWordRibbon && toolAction->id() == QLatin1String("VectorToolFactoryId")) {
             continue;
         }
         if (toolAction->section().contains(applicationName)) {
@@ -2001,6 +2016,9 @@ void KoModeBox::toolSelected(int index)
                         break;
                     }
                 }
+            }
+            if (layoutToolTab) {
+                fitRibbonBand();
             }
             return;
         }

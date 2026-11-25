@@ -547,7 +547,7 @@ void appendElement(QXmlStreamReader &reader, QDomDocument &document, QDomElement
 
 namespace DocxMathMLWriter
 {
-QByteArray readMathML(QXmlStreamReader &reader, qreal fontSize)
+QByteArray readMathML(QXmlStreamReader &reader, qreal fontSize, bool displayStyle)
 {
     if (!reader.isStartElement()) {
         return QByteArray();
@@ -557,6 +557,7 @@ QByteArray readMathML(QXmlStreamReader &reader, qreal fontSize)
     QDomElement root = document.createElementNS(OmmlNs, reader.qualifiedName().toString());
     document.appendChild(root);
     appendElement(reader, document, root);
+    displayStyle = displayStyle || localName(root) == QLatin1String("oMathPara");
 
     QByteArray result;
     QBuffer buffer(&result);
@@ -567,7 +568,9 @@ QByteArray readMathML(QXmlStreamReader &reader, qreal fontSize)
     writer.startDocument("math");
     writer.startElement("math");
     writer.addAttribute("xmlns", MathNs);
+    writer.addAttribute("display", displayStyle ? "block" : "inline");
     writer.startElement("mstyle");
+    writer.addAttribute("displaystyle", displayStyle ? "true" : "false");
     writer.addAttribute("fontsize", QString::number(fontSize) + QStringLiteral("pt"));
     writer.addAttribute("mathsize", QString::number(fontSize) + QStringLiteral("pt"));
     writeRowContents(writer, root);

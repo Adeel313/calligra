@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: LGPL-2.0-or-later
-"""Ensure DOCX equations inherit paragraph sizes and retain run overrides."""
+"""Readable equation defaults must retain larger and explicit sizes."""
 import os
 from pathlib import Path
 import subprocess
@@ -23,7 +23,7 @@ derived = doc.styles.add_style('MathDerived', WD_STYLE_TYPE.PARAGRAPH)
 derived.base_style = base
 W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
 M = 'http://schemas.openxmlformats.org/officeDocument/2006/math'
-for style, size, override in [('Normal', None, None), ('MathDerived', None, None), ('Normal', 9, 18)]:
+for style, size, override in [('Normal', None, None), ('MathDerived', None, None), ('Normal', 9, 18), ('Normal', None, 8)]:
     p = doc.add_paragraph(style=style)
     if size:
         p._p.get_or_add_pPr().append(parse_xml(f'<w:rPr xmlns:w="{W}"><w:sz w:val="{size*2}"/></w:rPr>'))
@@ -35,16 +35,19 @@ source = output / 'input.docx'
 target = output / 'imported.odt'
 doc.save(source)
 install = ROOT / 'build/install'
+if (ROOT / 'build-opt/local-install').exists():
+    install = ROOT / 'build-opt/local-install'
 env = dict(os.environ, QT_QPA_PLATFORM='offscreen', QT_LOGGING_RULES='*.debug=false',
            LD_LIBRARY_PATH=str(ROOT / 'build/bin'),
            QT_PLUGIN_PATH=str(install / 'lib/x86_64-linux-gnu/qt6/plugins'),
            XDG_DATA_DIRS=str(install / 'share') + ':/usr/local/share:/usr/share')
 subprocess.run([ROOT / 'build/bin/calligraconverter', '--batch', source, target], env=env, check=True, timeout=60)
 with zipfile.ZipFile(target) as package:
-    formulas = [E.fromstring(package.read(f'Object {i}/content.xml')) for i in range(1, 4)]
+    formulas = [E.fromstring(package.read(f'Object {i}/content.xml')) for i in range(1, 5)]
 ns = {'m': 'http://www.w3.org/1998/Math/MathML'}
-assert [f.find('m:mstyle', ns).get('fontsize') for f in formulas] == ['11pt', '13pt', '9pt']
+assert [f.find('m:mstyle', ns).get('fontsize') for f in formulas] == ['12pt', '13pt', '9pt', '12pt']
 assert formulas[2].find('.//m:mi', ns).get('fontsize') == '18pt'
+assert formulas[3].find('.//m:mi', ns).get('fontsize') == '8pt'
 assert all(f.find('.//m:msub', ns) is not None for f in formulas)
 print('Equation size inheritance, direct formatting and run overrides passed.')
 
@@ -53,7 +56,10 @@ assert all(f.find('.//m:mn', ns).text == '1.5' for f in formulas)
 print('Math punctuation and decimal number classification passed.')
 
 with zipfile.ZipFile(target) as package:
-    formula = E.fromstring(package.read('Object 4/content.xml'))
+    formula = E.fromstring(package.read('Object 5/content.xml'))
+    assert formula.find('m:mstyle', ns).get('fontsize') == '14pt'
+    assert formula.find('m:mstyle', ns).get('displaystyle') == 'true'
+    assert formula.get('display') == 'block'
     assert formula.find('.//m:munderover', ns) is not None
     assert formula.find('.//m:mfenced', ns).get('separators') == ''
     content = E.fromstring(package.read('content.xml'))
@@ -64,3 +70,13 @@ with zipfile.ZipFile(target) as package:
     style = next(s for s in styles if s.get('{'+odf['s']+'}name') == style_name)
     assert style.find('s:paragraph-properties', odf).get('{'+odf['f']+'}text-align') == 'center'
 print('Display alignment, visible sum limits and empty separators passed.')
+
+saved = output / 'saved.docx'
+subprocess.run([ROOT / 'build/bin/calligraconverter', '--batch', target, saved], env=env, check=True, timeout=60)
+with zipfile.ZipFile(saved) as package:
+    document = E.fromstring(package.read('word/document.xml'))
+    word_ns = {'w': W, 'm': M}
+    sizes = set(document.xpath('//m:r/w:rPr/w:sz/@w:val', namespaces=word_ns))
+    assert {'16', '18', '24', '26', '28', '36'} <= sizes, sizes
+    assert document.find('.//m:oMathPara', word_ns) is not None
+print('12pt inline, 14pt display, and explicit 8/9/13/18pt sizes survive DOCX export.')

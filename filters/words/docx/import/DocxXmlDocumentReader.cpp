@@ -394,6 +394,20 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_body()
 
     if (m_tocBodyWriter) finishToc();
     closeOpenList();
+    if (!m_pendingFloatingTables.isEmpty()) {
+        body->startElement("text:p");
+        if (m_createSectionStyle) {
+            KoGenStyle anchor(KoGenStyle::ParagraphAutoStyle, "paragraph");
+            anchor.addAttribute("style:master-page-name", "placeholder");
+            m_currentSectionStyleName = mainStyles->insert(anchor);
+            m_currentSectionStyleFamily = "paragraph";
+            body->addAttribute("text:style-name", m_currentSectionStyleName);
+            m_createSectionStyle = false;
+        }
+        body->addCompleteElement(m_pendingFloatingTables);
+        body->endElement();
+        m_pendingFloatingTables.clear();
+    }
     if (!m_pendingParagraphBreak.isEmpty()) {
         KoGenStyle trailingPage(KoGenStyle::ParagraphAutoStyle, "paragraph");
         trailingPage.addProperty("fo:break-before", m_pendingParagraphBreak);
@@ -3022,7 +3036,9 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
     // Word-compatible renderer's.  Reserve a couple of points on the right so
     // the same words break onto the same lines; the body still starts at the
     // DOCX left margin.
-    m_currentParagraphStyle.addPropertyPt("fo:margin-right", paragraphMargin(QStringLiteral("fo:margin-right")) + 2.0);
+    if (!m_insideTableCell) {
+        m_currentParagraphStyle.addPropertyPt("fo:margin-right", paragraphMargin(QStringLiteral("fo:margin-right")) + 2.0);
+    }
 
     collapseParagraphSpacing();
     // Word defaults to widow/orphan control; ODF does not inherit a minimum
@@ -3223,6 +3239,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_p()
                 // insert the bookmark-start/bookmark-end XML snippet
                 if (!m_bookmarkSnippet.isEmpty()) {
                     body->addCompleteElement(m_bookmarkSnippet.toUtf8());
+                }
+                if (!m_insideTableCell && !m_pendingFloatingTables.isEmpty()) {
+                    body->addCompleteElement(m_pendingFloatingTables);
+                    m_pendingFloatingTables.clear();
                 }
 
                 if (!paragraphXml.contains(QLatin1String("calligra:hard-break"))) {
@@ -3457,6 +3477,15 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_r()
     READ_PROLOGUE
 
     m_currentTextStyle = KoGenStyle(KoGenStyle::TextAutoStyle, "text");
+    if (m_insideTableCell) {
+        // The table's run defaults apply before direct run formatting. A
+        // paragraph's Normal style must not replace the table's font size.
+        KoGenStyle::copyPropertiesFromStyle(m_tableTextStyle, m_currentTextStyle, KoGenStyle::TextType);
+        if (m_currentTextStyle.property("fo:font-size", KoGenStyle::TextType).isEmpty()
+            && m_currentParagraphStyle.parentName().isEmpty() && !m_context->m_defaultFontSizePt.isEmpty()) {
+            m_currentTextStyle.addProperty("fo:font-size", m_context->m_defaultFontSizePt, KoGenStyle::TextType);
+        }
+    }
     if (m_moveToStylesXml) {
         m_currentTextStyle.setAutoStyleInStylesDotXml(true);
     }
@@ -3529,6 +3558,14 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_r()
         READ_EPILOGUE
     }
 
+    // Word displays TOC hyperlinks with the entry formatting, rather than
+    // the blue underline of ordinary Hyperlink runs. Keep the link itself.
+    if ((m_startToc || m_tocBodyWriter) && m_currentTextStyle.parentName() == QLatin1String("Hyperlink")) {
+        m_currentTextStyle.setParentName(QString());
+    }
+    if (m_startToc || m_tocBodyWriter) {
+        m_currentTextStyle.addProperty("style:text-underline-style", "none");
+    }
     if (m_currentTextStyle.parentName().isEmpty()) {
         if (m_context->m_namedDefaultStyles.contains("text")) {
             m_currentTextStyle.setParentName(m_context->m_namedDefaultStyles.value("text"));
@@ -5361,6 +5398,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tblpPr()
     m_tableOffset = QPointF();
     m_tableRawPosition = QPointF();
     m_tablePositionIsPageAnchored = false;
+    m_tableWrapsText = horzAnchor.isEmpty() && vertAnchor == QLatin1String("text") && !m_insideTableCell;
+    if (m_tableWrapsText) {
+        m_tableRawPosition = QPointF(TWIP_TO_POINT(m_svgX) - 5.4, TWIP_TO_POINT(m_svgY));
+    }
     if (horzAnchor == "margin" && vertAnchor == "text" && tblpXSpec.isEmpty() && tblpYSpec.isEmpty()) {
         m_tableOffset = QPointF(TWIP_TO_POINT(m_svgX), TWIP_TO_POINT(m_svgY));
     } else if (horzAnchor == "margin" && vertAnchor == "page" && tblpXSpec.isEmpty() && tblpYSpec.isEmpty()) {
@@ -5390,7 +5431,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tblpPr()
     m_currentDrawStyle->addPropertyPt("fo:margin-top", TWIP_TO_POINT(top));
     // style:horizontal-rel
     if (horzAnchor.isEmpty()) {
-        m_currentDrawStyle->addProperty("style:horizontal-rel", "page");
+        m_currentDrawStyle->addProperty("style:horizontal-rel", "page-content");
     } else if (horzAnchor == "margin") {
         m_currentDrawStyle->addProperty("style:horizontal-rel", "page-content");
     } else if (horzAnchor == "page") {
@@ -6427,6 +6468,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_background()
 //! @todo support all child elements
 KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
 {
+    QScopedValueRollback<bool> wrappedTableScope(m_tableWrapsText, false);
+    QScopedValueRollback<qreal> tablePercentScope(m_tablePreferredPercent, 0);
     m_table = KoTable::create();
     // Paragraph spacing does not collapse across a table boundary.
     m_previousParagraphBottomMargin = 0;
@@ -6459,6 +6502,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     m_tablePositionIsPageAnchored = false;
 
     m_tableMainStyle = KoTblStyle::create();
+    m_tableWrapsText = false;
+    m_tablePreferredPercent = 0;
     if (!m_pendingParagraphBreak.isEmpty()) {
         m_tableMainStyle->setBreakBefore(m_pendingParagraphBreak == QLatin1String("column") ? KoTblStyle::ColumnBreak : KoTblStyle::PageBreak);
         m_pendingParagraphBreak.clear();
@@ -6536,11 +6581,8 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
         }
     }
 
-    // A floating table (w:tblpPr) is still a table, and a table in a text box
-    // cannot grow past the box, so it would have to be clipped when read back.
-    // Keep it a table in the text flow: the width, alignment and borders of
-    // the table style are preserved and the rows paginate normally.  Only the
-    // floating offset of the table is dropped.
+    // Page-positioned tables stay in the flow so their rows can paginate.
+    // Text-relative floats are attached to the following paragraph below.
 
     // Keep the position of a table that was moved away from the text flow.
     m_tableMainStyle->setTableOffset(m_tableOffset);
@@ -6593,7 +6635,33 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
         }
     }
 
+    if (m_tablePreferredPercent > 0) {
+        // Word aligns the first cell's text edge with the surrounding text.
+        // ODF aligns the table border, so move it by the cell's padding while
+        // keeping the available percentage width unchanged.
+        if (!m_insideTableCell && m_currentDrawStyleName.isEmpty()) {
+            qreal padding = 5.4;
+            if (m_currentDefaultCellStyle && (m_currentDefaultCellStyle->setProperties & MSOOXML::TableStyleProperties::LeftMargin)) {
+                padding = m_currentDefaultCellStyle->leftMargin;
+            }
+            m_tableMainStyle->setLeftMargin(m_tableMainStyle->leftMargin() - padding);
+            m_tableMainStyle->setRightMargin(m_tableMainStyle->rightMargin() + padding);
+        }
+        m_tableWrapsText = false;
+        m_tableMainStyle->setWidth(m_tablePreferredPercent, KoTblStyle::PercentageUnit);
+        for (int i = 0; i < m_table->columnCount(); ++i) {
+            if (auto style = m_table->columnAt(i)->style()) {
+                style->setWidthType(KoColumnStyle::RelativeWidth);
+            }
+        }
+    }
     defineTableStyles();
+    if (m_tableWrapsText && sectionAdded) {
+        // A table inside a floating frame cannot select the body's page
+        // layout. Let the paragraph receiving its anchor carry that layout.
+        m_tableMainStyle->setMasterPageName(QString());
+        m_createSectionStyle = true;
+    }
 
 #ifdef DOCXXML_DEBUG_TABLES
     debugDocx << "----------------------------------------";
@@ -6603,13 +6671,32 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tbl()
     // height in Word. Writing it as an empty ODF table adds an unwanted blank
     // line and shifts everything below it down.
     if (!m_currentTableHasHideMark || m_currentTableHasVisibleContent) {
-        m_table->saveOdf(*body, *mainStyles);
+        if (m_tableWrapsText) {
+            QBuffer floating;
+            floating.open(QIODevice::WriteOnly);
+            KoXmlWriter writer(&floating);
+            writer.startElement("draw:frame");
+            writer.addAttribute("draw:style-name", m_currentDrawStyleName);
+            writer.addAttribute("draw:name", m_table->name());
+            writer.addAttribute("text:anchor-type", "paragraph");
+            writer.addAttributePt("svg:x", m_tableRawPosition.x());
+            writer.addAttributePt("svg:y", m_tableRawPosition.y());
+            writer.addAttributePt("svg:width", m_tableMainStyle->width());
+            writer.addAttributePt("svg:height", 1.0);
+            writer.startElement("draw:text-box");
+            m_table->saveOdf(writer, *mainStyles);
+            writer.endElement();
+            writer.endElement();
+            m_pendingFloatingTables.append(floating.data());
+        } else {
+            m_table->saveOdf(*body, *mainStyles);
+        }
         if (m_tablePositionIsPageAnchored) {
             m_pendingPageAnchoredTables.append(qMakePair(m_tableMainStyle->name(), m_tableRawPosition.y()));
         }
     }
 
-    if (sectionAdded) {
+    if (sectionAdded && !m_tableWrapsText) {
         const QString tableName = m_table->tableStyle()->name();
         if (!tableName.isEmpty()) {
             m_currentSectionStyleName = tableName;
@@ -6723,6 +6810,12 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tblPr()
             ELSE_TRY_READ_IF(tblBorders)
             ELSE_TRY_READ_IF(tblCellMar)
             ELSE_TRY_READ_IF(tblInd)
+            else if (name() == QLatin1StringView("tblW")) {
+                if (attributes().value(QLatin1StringView("w:type")) == QLatin1StringView("pct")) {
+                    m_tablePreferredPercent = attributes().value(QLatin1StringView("w:w")).toDouble() / 50.0;
+                }
+                skipCurrentElement();
+            }
             ELSE_TRY_READ_IF_IN_CONTEXT(jc)
             SKIP_UNKNOWN
             //! @todo add ELSE_WRONG_FORMAT
@@ -7194,14 +7287,18 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_tc()
                 KoXmlWriter newBody(&buffer, oldBody->indentLevel() + 1);
                 body = &newBody;
                 const KoGenStyle savedTableParagraphStyle = m_tableParagraphStyle;
+                const KoGenStyle savedTableTextStyle = m_tableTextStyle;
                 m_tableParagraphStyle = KoGenStyle(KoGenStyle::ParagraphAutoStyle, "paragraph");
+                m_tableTextStyle = KoGenStyle(KoGenStyle::TextAutoStyle, "text");
                 if (auto *tableStyle = m_context->m_tableStyles.value(m_currentTableStyleName)) {
                     if (auto *properties = tableStyle->properties(MSOOXML::DrawingTableStyle::WholeTbl)) {
                         m_tableParagraphStyle = properties->paragraphStyle;
+                        m_tableTextStyle = properties->textStyle;
                     }
                 }
                 TRY_READ(p)
                 m_tableParagraphStyle = savedTableParagraphStyle;
+                m_tableTextStyle = savedTableTextStyle;
                 closeOpenList();
 
                 KoRawCellChild *textChild = new KoRawCellChild(buffer.data());
@@ -8374,6 +8471,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_align(alignCaller caller)
 KoFilter::ConversionStatus DocxXmlDocumentReader::read_oMathPara()
 {
     READ_PROLOGUE
+    QScopedValueRollback<bool> displayMath(m_readingDisplayMath, true);
 
     while (!atEnd()) {
         readNext();
@@ -8422,6 +8520,7 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_oMath()
 
     // Equations without explicit run properties inherit the paragraph font.
     QString fontSize = m_currentParagraphStyle.property("fo:font-size", KoGenStyle::TextType);
+    const bool explicitParagraphSize = !fontSize.isEmpty();
     QString parentName = m_currentParagraphStyle.parentName();
     if (parentName.isEmpty()) {
         parentName = m_context->m_namedDefaultStyles.value("paragraph");
@@ -8436,7 +8535,10 @@ KoFilter::ConversionStatus DocxXmlDocumentReader::read_oMath()
     }
     bool valid = false;
     const qreal points = QString(fontSize).remove(QStringLiteral("pt")).toDouble(&valid);
-    const QByteArray mathml = DocxMathMLWriter::readMathML(*this, valid && points > 0 ? points : 12.0);
+    const qreal defaultSize = m_readingDisplayMath ? 14.0 : 12.0;
+    const qreal inheritedSize = valid && points > 0 ? points : defaultSize;
+    const qreal equationSize = explicitParagraphSize ? inheritedSize : qMax(defaultSize, inheritedSize);
+    const QByteArray mathml = DocxMathMLWriter::readMathML(*this, equationSize, m_readingDisplayMath);
     if (!mathml.isEmpty()) {
         writeInlineFormula(mathml);
     }

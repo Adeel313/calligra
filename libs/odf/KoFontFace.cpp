@@ -31,6 +31,15 @@ public:
         if (!style.isEmpty())
             xmlWriter->addAttribute("svg:font-style", style);
         xmlWriter->addAttribute("style:font-pitch", pitch == KoFontFace::FixedPitch ? "fixed" : "variable");
+        if (!embeddedFontFiles.isEmpty()) {
+            xmlWriter->startElement("svg:font-face-src");
+            for (const QString &file : embeddedFontFiles) {
+                xmlWriter->startElement("svg:font-face-uri");
+                xmlWriter->addAttribute("xlink:href", file);
+                xmlWriter->endElement();
+            }
+            xmlWriter->endElement();
+        }
         xmlWriter->endElement(); // style:font-face
     }
 
@@ -39,6 +48,7 @@ public:
     QString familyGeneric; //!< for style:font-family-generic attribute
     QString style; //!< for svg:font-style attribute
     KoFontFace::Pitch pitch; //!< for style:font-pitch attribute
+    QStringList embeddedFontFiles;
 };
 
 KoFontFace::KoFontFace(const QString &_name)
@@ -117,6 +127,16 @@ KoFontFace::Pitch KoFontFace::pitch() const
 void KoFontFace::setPitch(KoFontFace::Pitch pitch)
 {
     d->pitch = pitch;
+}
+
+QStringList KoFontFace::embeddedFontFiles() const
+{
+    return d->embeddedFontFiles;
+}
+
+void KoFontFace::setEmbeddedFontFiles(const QStringList &files)
+{
+    d->embeddedFontFiles = files;
 }
 
 void KoFontFace::saveOdf(KoXmlWriter *xmlWriter) const

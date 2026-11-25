@@ -15,11 +15,13 @@ namespace DocxMathMLWriter
  *
  * The reader must point at a m:oMath or m:oMathPara start element. The whole
  * subtree is consumed; on return the reader is positioned at its end element.
+ * @p fontSize is the inherited size in points; explicit math run sizes win.
+ * @p displayStyle keeps standalone fractions and radicals at display size.
  *
  * @return the content.xml bytes, or an empty array if no formula could be
  *         built (the subtree is consumed either way).
  */
-QByteArray readMathML(QXmlStreamReader &reader, qreal fontSize = 12.0);
+QByteArray readMathML(QXmlStreamReader &reader, qreal fontSize = 12.0, bool displayStyle = false);
 }
 
 #endif // DOCXMATHMLWRITER_H

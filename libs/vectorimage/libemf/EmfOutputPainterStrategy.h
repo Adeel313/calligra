@@ -107,6 +107,7 @@ public:
     void polyBezierTo16(const QRect &bounds, const QList<QPoint> points) override;
     void fillPath(const QRect &bounds) override;
     void strokeAndFillPath(const QRect &bounds) override;
+    void strokeDevicePath(const QPainterPath &path, const QPen &pen);
     void strokePath(const QRect &bounds) override;
     void setClipPath(const quint32 regionMode) override;
     void bitBlt(BitBltRecord &bitBltRecord) override;

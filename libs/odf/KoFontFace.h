@@ -12,6 +12,7 @@
 #include "koodf_export.h"
 #include <QSharedData>
 #include <QString>
+#include <QStringList>
 
 class KoXmlWriter;
 class KoFontFacePrivate;
@@ -70,6 +71,8 @@ public:
     void setStyle(const QString &style);
     KoFontFace::Pitch pitch() const;
     void setPitch(KoFontFace::Pitch pitch);
+    QStringList embeddedFontFiles() const;
+    void setEmbeddedFontFiles(const QStringList &files);
 
     /** Saves font face definition into @a xmlWriter as a style:font-face element.
      */

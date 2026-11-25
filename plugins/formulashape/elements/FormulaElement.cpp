@@ -26,4 +26,16 @@ ElementType FormulaElement::elementType() const
 void FormulaElement::writeMathMLAttributes(KoXmlWriter *writer) const
 {
     writer->addAttribute("xmlns", "http://www.w3.org/1998/Math/MathML");
+    for (const QString &name : {QStringLiteral("fontsize"), QStringLiteral("mathsize"), QStringLiteral("fontfamily"),
+                               QStringLiteral("mathvariant"), QStringLiteral("displaystyle"), QStringLiteral("display"),
+                               QStringLiteral("scriptlevel")}) {
+        if (hasAttribute(name)) {
+            writer->addAttribute(name.toLatin1(), attribute(name));
+        }
+    }
+}
+
+QString FormulaElement::inheritsAttribute(const QString &name) const
+{
+    return attribute(name);
 }

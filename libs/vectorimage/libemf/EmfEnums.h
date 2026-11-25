@@ -51,14 +51,14 @@ typedef Libwmf::WmfMixMode EmfBackgroundMode; // This is exactly the same.
 enum TextOutOptions {
     // ETO_OPAQUE            = 0x000002,    // Already defined in WmfEnums.h
     // ETO_CLIPPED           = 0x000004,
-    // ETO_GLYPH_INDEX       = 0x000010,
+    TextOutGlyphIndex = 0x000010,
     // ETO_RTLREADING        = 0x000080,
     ETO_NO_RECT = 0x000100,
     ETO_SMALL_CHARS = 0x000200,
     // ETO_NUMERICSLOCAL     = 0x000400,
     // ETO_NUMERICSLATIN     = 0x000800,
     ETO_IGNORELANGUAGE = 0x001000,
-    // ETO_PDY               = 0x002000,
+    TextOutPairedAdvances = 0x002000,
     ETO_REVERSE_INDEX_MAP = 0x010000
 };
 

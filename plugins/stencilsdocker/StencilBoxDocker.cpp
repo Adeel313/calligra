@@ -33,6 +33,7 @@
 #include <klineedit.h>
 
 #include <QDesktopServices>
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QList>
@@ -103,6 +104,13 @@ StencilBoxDocker::StencilBoxDocker(QWidget *parent)
     connect(this, &StencilBoxDocker::startLoading, m_loader, &StencilBoxDockerLoader::loadShapeCollections);
     connect(&loaderThread, &QThread::finished, m_loader, &QObject::deleteLater);
     connect(m_loader, &StencilBoxDockerLoader::resultReady, this, &StencilBoxDocker::collectionsLoaded);
+    // Command-line exports can quit before the stencil thumbnails finish.
+    // Join the loader while GUI resources still exist, before QApplication
+    // teardown makes its QPixmap operations invalid.
+    connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, [this]() {
+        loaderThread.quit();
+        loaderThread.wait();
+    });
     loaderThread.start();
 }
 

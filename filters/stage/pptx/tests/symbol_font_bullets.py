@@ -40,6 +40,7 @@ def main():
         ('FILLED', 'l', 'Wingdings'),        # Wingdings 0x6C: filled circle
         ('PUA_HOLLOW', '\uf0a1', 'Wingdings'),
         ('PUA_FILLED', '\uf06c', 'Wingdings'),
+        ('PUA_DIAMOND', '\uf076', 'Wingdings'),
         ('UNICODE', '\u2022', None),
     ]
     for index, (label, char, font) in enumerate(markers):
@@ -59,15 +60,15 @@ def main():
         roots = [E.fromstring(package.read(name)) for name in ['styles.xml', 'content.xml']]
     levels = [node for root in roots for node in root.iter('{'+TEXT+'}list-level-style-bullet')]
     chars = {node.get('{'+TEXT+'}bullet-char') for node in levels}
-    assert {'○', '●', '•'} <= chars, chars
-    assert not {'¡', 'l', '\uf0a1', '\uf06c'} & chars, chars
+    assert {'○', '●', '•', '❖'} <= chars, chars
+    assert not {'¡', 'l', '\uf0a1', '\uf06c', '\uf076'} & chars, chars
     fonts = {text_props.get('{'+FO+'}font-family') for level in levels
              for text_props in level.iter('{'+STYLE+'}text-properties')}
     assert 'Wingdings' not in fonts, fonts
     document_text = ''.join(text for root in roots for text in root.itertext())
     assert all(label in document_text
-               for label in ['HOLLOW', 'FILLED', 'PUA_HOLLOW', 'PUA_FILLED', 'UNICODE'])
-    print('PASS: Wingdings bullet markers imported as round Unicode glyphs')
+               for label in ['HOLLOW', 'FILLED', 'PUA_HOLLOW', 'PUA_FILLED', 'PUA_DIAMOND', 'UNICODE'])
+    print('PASS: Wingdings bullet markers imported as Unicode glyphs')
 
 
 if __name__ == '__main__':

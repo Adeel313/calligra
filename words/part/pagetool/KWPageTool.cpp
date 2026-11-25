@@ -18,16 +18,20 @@
 // Qt includes
 #include <QList>
 #include <QGridLayout>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QDoubleSpinBox>
 #include <QIcon>
 #include <QLabel>
 #include <QToolButton>
-#include <QVBoxLayout>
 #include <QTextBlockFormat>
 #include <QTextCharFormat>
 #include <QMenu>
 #include <QTimer>
-#include <QPainter>
+#include <QSignalBlocker>
+#include <QWidgetAction>
+
+#include <algorithm>
 
 // calligra includes
 #include <KoCanvasBase.h>
@@ -37,8 +41,12 @@
 #include <KoPageLayout.h>
 #include <KoPointerEvent.h>
 #include <KoRibbonIcons.h>
+#include <KoSelection.h>
+#include <KoShapeManager.h>
+#include <KoText.h>
 #include <KoTextDocument.h>
 #include <KoTextEditor.h>
+#include <KoToolManager.h>
 #include <KoUnit.h>
 #include <KoViewConverter.h>
 #include <kundo2command.h>
@@ -225,20 +233,37 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
 {
     QList<QPointer<QWidget>> widgets;
 
-    // Microsoft Office style "Page Setup" group: margins, orientation, size,
-    // columns, breaks, line numbering and hyphenation.
-    auto *pageSetupGroup = new QWidget;
-    pageSetupGroup->setWindowTitle(i18n("Page Setup"));
-    pageSetupGroup->setProperty("ribbonGroupOrder", 10);
-    auto *pageSetupLayout = new QGridLayout(pageSetupGroup);
-    pageSetupLayout->setContentsMargins(2, 1, 2, 1);
-    pageSetupLayout->setHorizontalSpacing(4);
-    pageSetupLayout->setVerticalSpacing(1);
-    pageSetupLayout->setSizeConstraint(QLayout::SetFixedSize);
+    const auto addGroup = [&widgets](const QString &title, int order) {
+        auto *group = new QWidget;
+        group->setWindowTitle(title);
+        group->setProperty("ribbonGroupOrder", order);
+        auto *layout = new QHBoxLayout(group);
+        layout->setContentsMargins(3, 1, 3, 1);
+        layout->setSpacing(4);
+        layout->setAlignment(Qt::AlignTop);
+        widgets.append(group);
+        return layout;
+    };
+    const auto addButton = [](QHBoxLayout *layout, const QString &text, const QIcon &icon, bool iconOnly = false) {
+        auto *button = new QToolButton(layout->parentWidget());
+        button->setText(text);
+        button->setIcon(icon);
+        const int iconSize = iconOnly ? 22 : 28;
+        button->setProperty("ribbonPreferredIconSize", QSize(iconSize, iconSize));
+        KoRibbonLayout::configureButton(button, iconOnly ? Qt::ToolButtonIconOnly : Qt::ToolButtonTextUnderIcon);
+        if (iconOnly) {
+            button->setFixedSize(40, 34);
+        } else {
+            button->setMinimumWidth(qMax(60, button->sizeHint().width()));
+        }
+        layout->addWidget(button, 0, Qt::AlignTop);
+        return button;
+    };
+    auto *pageSetupLayout = addGroup(i18n("Page Setup"), 10);
+    auto *sectionLayout = addGroup(i18n("Section"), 20);
+    auto *paragraphButtons = addGroup(i18n("Paragraph"), 30);
 
-    // Margins, orientation, paper size and columns are a gallery of page
-    // pictures; each one opens its presets and applies them right away.
-    auto *gallery = new KWPageSetupGallery(pageSetupGroup);
+    auto *gallery = new KWPageSetupGallery(pageSetupLayout->parentWidget());
     m_gallery = gallery;
     connect(gallery, &KWPageSetupGallery::marginsSelected, this, &KWPageTool::applyMargins);
     connect(gallery, &KWPageSetupGallery::orientationSelected, this, &KWPageTool::applyOrientation);
@@ -253,30 +278,21 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
             }
         }
     });
-    connect(gallery, &KWPageSetupGallery::pageSetupRequested, this, [this] {
+    const auto showPageSetup = [this] {
         if (KWView *view = m_canvas ? m_canvas->view() : nullptr) {
             if (QAction *action = view->action(QStringLiteral("format_page"))) {
                 action->trigger();
             }
         }
-    });
+    };
+    connect(gallery, &KWPageSetupGallery::pageSetupRequested, this, showPageSetup);
     connect(gallery, &KWPageSetupGallery::refreshRequested, this, &KWPageTool::refreshPageSetupGallery);
     connect(m_document, &KWDocument::pageSetupChanged, this, &KWPageTool::refreshPageSetupGallery);
     QTimer::singleShot(0, gallery, [this] { refreshPageSetupGallery(); });
-    pageSetupLayout->addWidget(gallery, 0, 0, 3, 1, Qt::AlignTop);
+    pageSetupLayout->addWidget(gallery, 0, Qt::AlignTop);
+    sectionLayout->addWidget(gallery->columnsTile(), 0, Qt::AlignTop);
 
-    // Breaks, line numbering and hyphenation are the small buttons next to the
-    // gallery, like the ones under it in an office suite.
-    int smallIndex = 0;
-    const auto placeSmall = [pageSetupLayout, &smallIndex](QToolButton *button) {
-        KoRibbonLayout::configureButton(button, Qt::ToolButtonTextBesideIcon);
-        pageSetupLayout->addWidget(button, smallIndex % 3, 1 + smallIndex / 3, Qt::AlignLeft);
-        ++smallIndex;
-    };
-
-    auto *lineNumbers = new QToolButton(pageSetupGroup);
-    lineNumbers->setText(i18n("Line Numbering"));
-    lineNumbers->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("format-list-ordered")));
+    auto *lineNumbers = addButton(sectionLayout, i18n("Line Numbers"), KoRibbonIcons::forThemeIcon(QStringLiteral("format-list-ordered")));
     lineNumbers->setCheckable(true);
     if (m_document->mainFrameSet()) {
         KoTextDocument textDocument(m_document->mainFrameSet()->document());
@@ -301,11 +317,8 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
         m_document->relayout();
         m_canvas->update();
     });
-    placeSmall(lineNumbers);
-
-    auto *hyphenation = new QToolButton(pageSetupGroup);
-    hyphenation->setText(i18n("Hyphenation"));
-    hyphenation->setIcon(KoRibbonIcons::forThemeIcon(QStringLiteral("format-text-hyphenation")));
+    auto *hyphenation = addButton(paragraphButtons, i18n("Hyphenation"),
+                                  KoRibbonIcons::forThemeIcon(QStringLiteral("format-text-hyphenation")));
     hyphenation->setCheckable(true);
     hyphenation->setToolTip(i18n("Allow hyphenation for the current text selection"));
     if (KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(m_canvas)) {
@@ -318,13 +331,17 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
             editor->setCharFormat(format);
         }
     });
-    placeSmall(hyphenation);
+    auto *pageSetup = addButton(pageSetupLayout, i18n("Settings"), KoRibbonIcons::forThemeIcon(QStringLiteral("configure")));
+    pageSetup->setObjectName(QStringLiteral("layoutPageSetup"));
+    pageSetup->setToolTip(i18n("Open Page Setup"));
+    connect(pageSetup, &QToolButton::clicked, this, showPageSetup);
 
-    widgets.append(pageSetupGroup);
-
-    auto *paragraphGroup = new QWidget;
-    paragraphGroup->setWindowTitle(i18n("Paragraph"));
-    paragraphGroup->setProperty("ribbonGroupOrder", 20);
+    auto *indentSpacing = addButton(paragraphButtons, i18n("Spacing"),
+                                    KoRibbonIcons::forCommand(QStringLiteral("format_line_spacing")));
+    auto *indentMenu = new QMenu(indentSpacing);
+    indentSpacing->setMenu(indentMenu);
+    indentSpacing->setPopupMode(QToolButton::InstantPopup);
+    auto *paragraphGroup = new QWidget(indentMenu);
     auto *paragraphLayout = new QGridLayout(paragraphGroup);
     paragraphLayout->setContentsMargins(2, 1, 2, 1);
     paragraphLayout->setHorizontalSpacing(4);
@@ -345,25 +362,16 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
         field->setSuffix(QStringLiteral(" %1").arg(unit.symbol()));
         field->setToolTip(paragraphLabels.at(i));
         field->setAccessibleName(paragraphLabels.at(i));
-        if (KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(m_canvas)) {
-            const QTextBlockFormat currentFormat = editor->blockFormat();
-            qreal currentPoints = 0.0;
-            switch (i) {
-            case 0:
-                currentPoints = currentFormat.topMargin();
-                break;
-            case 1:
-                currentPoints = currentFormat.bottomMargin();
-                break;
-            case 2:
-                currentPoints = currentFormat.leftMargin();
-                break;
-            case 3:
-                currentPoints = currentFormat.rightMargin();
-                break;
+        connect(indentMenu, &QMenu::aboutToShow, field, [this, field, unit, i] {
+            KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(m_canvas);
+            field->setEnabled(editor != nullptr);
+            if (editor) {
+                const QTextBlockFormat format = editor->blockFormat();
+                const qreal values[] = {format.topMargin(), format.bottomMargin(), format.leftMargin(), format.rightMargin()};
+                const QSignalBlocker blocker(field);
+                field->setValue(unit.toUserValue(values[i]));
             }
-            field->setValue(unit.toUserValue(currentPoints));
-        }
+        });
         auto *label = new QLabel(paragraphLabels.at(i), paragraphGroup);
         label->setBuddy(field);
         // Indentation on the left, spacing on the right; each is a
@@ -398,7 +406,107 @@ QList<QPointer<QWidget>> KWPageTool::createOptionWidgets()
             editor->mergeBlockFormat(format);
         });
     }
-    widgets.append(paragraphGroup);
+    auto *indentAction = new QWidgetAction(indentMenu);
+    indentAction->setDefaultWidget(paragraphGroup);
+    indentMenu->addAction(indentAction);
+
+    auto *paragraphSettings = addButton(paragraphButtons, i18n("Paragraph…"),
+                                         KoRibbonIcons::forThemeIcon(QStringLiteral("configure")));
+    paragraphSettings->setObjectName(QStringLiteral("layoutParagraphSettings"));
+    const auto updateParagraphSettings = [this, paragraphSettings] {
+        paragraphSettings->setEnabled(KoTextEditor::getTextEditorFromCanvas(m_canvas) != nullptr);
+    };
+    connect(m_canvas->resourceManager(), &KoCanvasResourceManager::canvasResourceChanged, paragraphSettings,
+            [updateParagraphSettings](int key, const QVariant &) {
+                if (key == KoText::CurrentTextDocument) {
+                    updateParagraphSettings();
+                }
+            });
+    updateParagraphSettings();
+    connect(paragraphSettings, &QToolButton::clicked, this, [this] {
+        if (KoToolBase *tool = KoToolManager::instance()->toolById(m_canvas, QStringLiteral("TextToolFactory_ID"))) {
+            if (QAction *action = tool->action(QStringLiteral("format_paragraph"))) {
+                action->trigger();
+            }
+        }
+    });
+    KWView *view = m_canvas->view();
+    KoToolBase *interactionTool = KoToolManager::instance()->toolById(m_canvas, QStringLiteral("InteractionTool"));
+    if (view && interactionTool) {
+        auto *position = addGroup(i18n("Position"), 40);
+        auto *positionRows = new QVBoxLayout;
+        positionRows->setSpacing(3);
+        position->addLayout(positionRows);
+        auto *topRow = new QHBoxLayout;
+        auto *bottomRow = new QHBoxLayout;
+        for (auto *row : {topRow, bottomRow}) {
+            row->setSpacing(3);
+            positionRows->addLayout(row);
+        }
+        auto *objects = addGroup(i18n("Objects"), 50);
+        const auto addMenu = [addButton](QHBoxLayout *layout, const QString &text, const QIcon &icon,
+                                         QList<QAction *> actions, bool iconOnly = false) {
+            actions.removeAll(nullptr);
+            auto *button = addButton(layout, text, icon, iconOnly);
+            auto *menu = new QMenu(button);
+            menu->addActions(actions);
+            button->setMenu(menu);
+            button->setPopupMode(QToolButton::InstantPopup);
+            const auto update = [button, menu] {
+                const auto actions = menu->actions();
+                button->setEnabled(std::any_of(actions.cbegin(), actions.cend(), [](QAction *action) {
+                    return action->isEnabled() && action->isVisible();
+                }));
+            };
+            for (QAction *action : actions) {
+                QObject::connect(action, &QAction::changed, button, update);
+            }
+            update();
+            return button;
+        };
+        const auto objectAction = [interactionTool](const char *name) {
+            return interactionTool->action(QString::fromLatin1(name));
+        };
+        auto *shapeLayout = addButton(topRow, i18n("Shape Layout"), KoRibbonIcons::forCommand(QStringLiteral("anchor")), true);
+        shapeLayout->setToolTip(i18n("Position the selected shape and change how text wraps around it"));
+        shapeLayout->setEnabled(false);
+        // KWView registers its document actions after constructing the ribbon.
+        QTimer::singleShot(0, shapeLayout, [this, view, shapeLayout] {
+            if (QAction *action = view->action(QStringLiteral("format_frameset"))) {
+                const auto update = [this, shapeLayout, action] {
+                    shapeLayout->setEnabled(action->isEnabled() && action->isVisible()
+                                            && m_canvas->shapeManager()->selection()->count() > 0);
+                };
+                connect(action, &QAction::changed, shapeLayout, update);
+                connect(m_canvas->shapeManager(), &KoShapeManager::selectionChanged, shapeLayout, update);
+                connect(shapeLayout, &QToolButton::clicked, action, &QAction::trigger);
+                update();
+            }
+        });
+        addMenu(topRow, i18n("Forward"),
+                QIcon::fromTheme(QStringLiteral("object-order-front"), KoRibbonIcons::forCommand(QStringLiteral("content_copy"))),
+                {objectAction("object_order_front"), objectAction("object_order_raise")}, true);
+        addMenu(topRow, i18n("Backward"),
+                QIcon::fromTheme(QStringLiteral("object-order-back"), KoRibbonIcons::forCommand(QStringLiteral("content_copy"))),
+                {objectAction("object_order_back"), objectAction("object_order_lower")}, true);
+        addMenu(bottomRow, i18n("Rotate"),
+                QIcon::fromTheme(QStringLiteral("object-rotate-right"), KoRibbonIcons::forCommand(QStringLiteral("text_rotate_vertical"))),
+                {view->action(QStringLiteral("rotate-left")), view->action(QStringLiteral("rotate-right"))}, true);
+        addMenu(bottomRow, i18n("Align"),
+                QIcon::fromTheme(QStringLiteral("align-horizontal-left"), KoRibbonIcons::forCommand(QStringLiteral("format_align_left"))),
+                {objectAction("object_align_horizontal_left"), objectAction("object_align_horizontal_center"),
+                 objectAction("object_align_horizontal_right"), objectAction("object_align_vertical_top"),
+                 objectAction("object_align_vertical_center"), objectAction("object_align_vertical_bottom")}, true);
+        QTimer::singleShot(0, position, [addMenu, bottomRow, view] {
+            addMenu(bottomRow, i18n("Grid and Guides"),
+                    KoRibbonIcons::forCommand(QStringLiteral("border_all")),
+                    {view->action(QStringLiteral("view_grid")), view->action(QStringLiteral("view_snaptogrid")),
+                     view->action(QStringLiteral("view_show_guides"))}, true);
+        });
+        addMenu(objects, i18n("Group"),
+                QIcon::fromTheme(QStringLiteral("object-group"), KoRibbonIcons::forCommand(QStringLiteral("select_all"))),
+                {objectAction("object_group"), objectAction("object_ungroup")});
+    }
 
     return widgets;
 }

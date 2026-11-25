@@ -31,6 +31,7 @@ add_library(calligra_filter_docx2odt MODULE ${docx2odt_PART_SRCS})
 
 target_link_libraries(
     calligra_filter_docx2odt
+    KF6::Archive
     komsooxml
     mso
     koodf2

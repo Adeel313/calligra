@@ -91,6 +91,8 @@ private:
     //! Converted content of the <draw:text-box> of the frame being read.
     QByteArray m_frameTextBoxContent;
     QString m_frameName;
+    QString m_frameKey;
+    QHash<QString, QByteArray> m_inlineMath;
     QString m_frameFill;
     QString m_frameStroke;
     //! True once the current frame produced a drawing, so a text box is only

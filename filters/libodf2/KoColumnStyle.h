@@ -41,7 +41,8 @@ public:
     enum WidthType {
         MinimumWidth,
         ExactWidth,
-        OptimalWidth
+        OptimalWidth,
+        RelativeWidth
     };
     void setWidth(qreal width);
     qreal width() const;

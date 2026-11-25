@@ -945,14 +945,18 @@ void WordsTextHandler::paragraphEnd()
         }
 
         if (!m_currentPPs->pap().fInTable && (m_currentPPs->pap().dxaAbs != 0 || m_currentPPs->pap().dyaAbs != 0)) {
-            m_textBoxX = m_currentPPs->pap().dxaAbs;
-            m_textBoxY = m_currentPPs->pap().dyaAbs;
             openTextBox = true;
         }
     }
 
     // write paragraph content, reuse text/paragraph style name if applicable
     QString styleName = m_paragraph->writeToFile(writer, openTextBox, &m_fld->m_tabLeader);
+    // Drop-cap paragraphs are deferred by writeToFile() and emit no XML.
+    // Remember a text box only when its opening elements were actually written.
+    if (openTextBox && !styleName.isEmpty()) {
+        m_textBoxX = m_currentPPs->pap().dxaAbs;
+        m_textBoxY = m_currentPPs->pap().dyaAbs;
+    }
 
     // provide the styleName to the current field
     m_fld->m_styleName = styleName;

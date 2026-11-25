@@ -180,6 +180,11 @@ KoFilter::ConversionStatus DocxImport::parseParts(KoOdfWriters *writers, MSOOXML
     // 1. parse font table
     {
         DocxXmlFontTableReaderContext context(*writers->mainStyles);
+        context.archive = inputArchive();
+        context.outputStore = outputStore();
+        context.relationships = relationships;
+        const auto fontParts = partNames(MSOOXML::ContentTypes::wordFontTable);
+        if (!fontParts.isEmpty()) context.partPath = QString::fromUtf8(fontParts.first());
         DocxXmlFontTableReader fontTableReader(writers);
         RETURN_IF_ERROR(loadAndParseDocumentIfExists(MSOOXML::ContentTypes::wordFontTable, &fontTableReader, writers, errorMessage, &context))
     }

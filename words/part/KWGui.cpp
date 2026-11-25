@@ -552,7 +552,11 @@ private:
 // Lay out ribbon groups in the Microsoft Office style: large buttons with the
 // text under the icon, the group label centred underneath and thin separators
 // between the groups.
-static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups, const ActionFinder &findAction, bool showGroupTitles)
+static void populateRibbonGroups(QWidget *page,
+                                 const QList<RibbonGroup> &groups,
+                                 const ActionFinder &findAction,
+                                 bool showGroupTitles,
+                                 const QSize &iconSize = {})
 {
     auto *pageLayout = qobject_cast<QHBoxLayout *>(page->layout());
     if (!pageLayout) {
@@ -632,6 +636,9 @@ static void populateRibbonGroups(QWidget *page, const QList<RibbonGroup> &groups
             if (action->menu()) {
                 button->setPopupMode(actionName == QLatin1String("add_shape") || action->property("ribbonMenuOnly").toBool()
                                          ? QToolButton::InstantPopup : QToolButton::MenuButtonPopup);
+            }
+            if (iconSize.isValid()) {
+                button->setProperty("ribbonPreferredIconSize", iconSize);
             }
             KoRibbonLayout::configureButton(button, large ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonTextBesideIcon);
             // The format painter is a brush, which reads better as one larger
@@ -1038,15 +1045,15 @@ static void populateFilePage(QWidget *page, KoMainWindow *mainWindow, KActionCol
         {i18n("Save"),
          {{QStringLiteral("file_save"), i18n("Save")},
           {QStringLiteral("file_save_as"), i18n("Save As")},
-          {QStringLiteral("extra_template"), i18n("Save as Template")}}, RibbonGroup::LargeAndStacked},
-        {i18n("Print"), {{QStringLiteral("file_print"), i18n("Print")}, {QStringLiteral("file_print_preview"), i18n("Print Preview")}}, RibbonGroup::LargeAndStacked},
-        {i18n("Export"), {{QStringLiteral("file_export_pdf"), i18n("Export as PDF")}, {QStringLiteral("file_export_file"), i18n("Export")}}, RibbonGroup::LargeAndStacked},
-        {i18n("Info"), {{QStringLiteral("file_documentinfo"), i18n("Properties")}, {QStringLiteral("file_versions_file"), i18n("Versions")}}, RibbonGroup::Stacked},
+          {QStringLiteral("extra_template"), i18n("Save as Template")}}, RibbonGroup::LargeButtons},
+        {i18n("Print"), {{QStringLiteral("file_print"), i18n("Print")}, {QStringLiteral("file_print_preview"), i18n("Print Preview")}}, RibbonGroup::LargeButtons},
+        {i18n("Export"), {{QStringLiteral("file_export_pdf"), i18n("Export as PDF")}, {QStringLiteral("file_export_file"), i18n("Export")}}, RibbonGroup::LargeButtons},
+        {i18n("Info"), {{QStringLiteral("file_documentinfo"), i18n("Properties")}, {QStringLiteral("file_versions_file"), i18n("Versions")}}, RibbonGroup::LargeButtons},
     };
     const ActionFinder findAction = [mainWindow, viewActions](const QString &name) {
         return findFileAction(mainWindow, viewActions, name);
     };
-    populateRibbonGroups(page, groups, findAction, true);
+    populateRibbonGroups(page, groups, findAction, true, QSize(24, 24));
 
     if (QMenu *menu = findMenu(mainWindow, QStringLiteral("file"), i18n("File"))) {
         menu->menuAction()->setVisible(false);
@@ -1137,16 +1144,6 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
 
     if (m_view->mainWindow()) {
         KoModeBoxFactory modeBoxFactory(canvasController, qApp->applicationName(), i18n("Tools"), KoDockFactoryBase::DockTop);
-
-        // Layout is a passive ribbon tab, so create its controls up front and
-        // keep them on the tab without activating PageTool when the tab opens.
-        if (KoToolBase *pageTool = KoToolManager::instance()->toolById(m_canvas, QStringLiteral("PageToolFactory_ID"))) {
-            for (const QPointer<QWidget> &widget : pageTool->optionWidgets()) {
-                if (widget) {
-                    modeBoxFactory.addWidgetToToolTab(QStringLiteral("PageToolFactory_ID"), widget);
-                }
-            }
-        }
 
         auto *filePage = new QWidget;
         filePage->setObjectName(QStringLiteral("fileRibbonPage"));
@@ -1447,6 +1444,19 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
         localRibbonActions->insert(QStringLiteral("rotate-left"), rotateLeftAction);
         localRibbonActions->insert(QStringLiteral("rotate-right"), rotateRightAction);
 
+        m_view->actionCollection()->addAction(QStringLiteral("rotate-left"), rotateLeftAction);
+        m_view->actionCollection()->addAction(QStringLiteral("rotate-right"), rotateRightAction);
+
+        // Layout is a passive ribbon tab, so create its controls up front and
+        // keep them on the tab without activating PageTool when the tab opens.
+        if (KoToolBase *pageTool = KoToolManager::instance()->toolById(m_canvas, QStringLiteral("PageToolFactory_ID"))) {
+            for (const QPointer<QWidget> &widget : pageTool->optionWidgets()) {
+                if (widget) {
+                    modeBoxFactory.addWidgetToToolTab(QStringLiteral("PageToolFactory_ID"), widget);
+                }
+            }
+        }
+
         const ActionFinder findDrawAction = [findRibbonAction, localRibbonActions](const QString &name) {
             if (localRibbonActions->contains(name)) {
                 return localRibbonActions->value(name);
@@ -1597,11 +1607,11 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
         modeBox->setAllowedAreas(Qt::TopDockWidgetArea);
         m_view->mainWindow()->addDockWidget(Qt::TopDockWidgetArea, modeBox);
         modeBox->show();
-        // Draw is a contextual tab: it appears only while a document shape is
-        // selected, instead of occupying the ribbon for the whole session.
+        // Formulas use Equation instead of the generic shape-formatting tab.
         const auto updateDrawTabVisibility = [this, modeBox] {
             const QList<KoShape *> shapes = m_canvas->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
             bool shapeSelected = false;
+            bool formulaSelected = false;
             for (KoShape *shape : shapes) {
                 const KWFrame *frame = m_view->kwdocument()->frameOfShape(shape);
                 // An object anchored inside text resolves to the text frame;
@@ -1609,21 +1619,37 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
                 // and header/footer text frames.
                 if (!frame || frame->shape() != shape
                     || !Words::isAutoGenerated(KWFrameSet::from(frame->shape()))) {
-                    shapeSelected = true;
-                    break;
+                    if (shape->shapeId() == QLatin1String("FormulaShapeID")) {
+                        formulaSelected = true;
+                    } else {
+                        shapeSelected = true;
+                    }
                 }
             }
             if (QWidget *ribbonBox = modeBox->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
+                const bool equationSelected = formulaSelected && !shapeSelected;
                 QMetaObject::invokeMethod(ribbonBox, "setToolTabVisible", Qt::DirectConnection,
                                           Q_ARG(QString, QStringLiteral("ConnectionTool")),
                                           Q_ARG(bool, shapeSelected));
-                if (shapeSelected) {
+                QMetaObject::invokeMethod(ribbonBox, "setToolTabVisible", Qt::DirectConnection,
+                                          Q_ARG(QString, QStringLiteral("KoFormulaToolFactoryId")),
+                                          Q_ARG(bool, equationSelected));
+                if (shapeSelected || equationSelected) {
                     QMetaObject::invokeMethod(ribbonBox, "showToolTab", Qt::DirectConnection,
-                                              Q_ARG(QString, QStringLiteral("ConnectionTool")));
+                                              Q_ARG(QString, equationSelected ? QStringLiteral("KoFormulaToolFactoryId") : QStringLiteral("ConnectionTool")));
+                } else {
+                    const QString activeTool = KoToolManager::instance()->activeToolId();
+                    if (activeTool == QLatin1String("InteractionTool") || activeTool == QLatin1String("ConnectionTool")
+                        || activeTool == QLatin1String("CreatePathTool") || activeTool == QLatin1String("KoFormulaToolFactoryId")) {
+                        QMetaObject::invokeMethod(ribbonBox, "showToolTab", Qt::DirectConnection,
+                                                  Q_ARG(QString, QStringLiteral("TextToolFactory_ID")));
+                    }
                 }
             }
         };
-        connect(m_canvas->shapeManager()->selection(), &KoSelection::selectionChanged, this, updateDrawTabVisibility);
+        // Wait for the tool manager to add/remove the selection's tool tabs
+        // before choosing one, and avoid changing tools inside select().
+        connect(m_canvas->shapeManager()->selection(), &KoSelection::selectionChanged, this, updateDrawTabVisibility, Qt::QueuedConnection);
         QTimer::singleShot(0, this, updateDrawTabVisibility);
         QTimer::singleShot(0, modeBox, [this, modeBox] {
             m_view->mainWindow()->resizeDocks({modeBox}, {modeBox->sizeHint().height()}, Qt::Vertical);

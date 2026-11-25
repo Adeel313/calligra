@@ -1275,6 +1275,10 @@ void KWView::editDeleteSelection()
         }
     }
     if (!deletableShapes.isEmpty()) {
+        // Shape tools may keep a raw pointer to their active shape. Deactivate
+        // them before the delete command can destroy a shape (particularly on
+        // the last page, where removal also updates the page and frame sets).
+        KoToolManager::instance()->switchToolRequested(KoInteractionTool_ID);
         canvasBase()->addCommand(canvasBase()->shapeController()->removeShapes(deletableShapes));
 
         // Office-like behavior: deleting a selected object returns to text
@@ -1784,7 +1788,9 @@ void KWView::insertFormulaIntoTextFrame(KWTextFrameSet *textFrameSet)
         return;
     }
 
-    KoShape *shape = factory->createShape(nullptr, kwdocument()->resourceManager());
+    KoProperties formulaProperties;
+    formulaProperties.setProperty("standalone", editor->block().text().trimmed().isEmpty());
+    KoShape *shape = factory->createShape(&formulaProperties, kwdocument()->resourceManager());
     if (!shape) {
         warnWords << "Could not create a formula shape";
         return;

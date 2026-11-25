@@ -14,6 +14,7 @@
 #include <QUrl>
 #include <QSet>
 #include <QStringList>
+#include <QXmlStreamWriter>
 #include <QtMath>
 
 #include <KoOdfStyle.h>
@@ -91,6 +92,37 @@ QString normalizedOdfPath(QString href)
     }
     return href;
 }
+
+QByteArray readInlineMath(KoXmlStreamReader &reader)
+{
+    QByteArray xml;
+    QXmlStreamWriter writer(&xml);
+    int depth = 0;
+    do {
+        if (reader.isStartElement()) {
+            writer.writeStartElement(reader.namespaceUri().toString(), reader.name().toString());
+            const auto attributes = reader.attributes();
+            for (const auto &attribute : attributes) {
+                if (attribute.namespaceUri().isEmpty()) {
+                    writer.writeAttribute(attribute.name().toString(), attribute.value().toString());
+                } else {
+                    writer.writeAttribute(attribute.namespaceUri().toString(), attribute.name().toString(), attribute.value().toString());
+                }
+            }
+            ++depth;
+        } else if (reader.isEndElement()) {
+            writer.writeEndElement();
+            --depth;
+        } else if (reader.isCharacters()) {
+            writer.writeCharacters(reader.text().toString());
+        }
+        if (depth == 0) {
+            break;
+        }
+        reader.readNext();
+    } while (!reader.atEnd());
+    return reader.hasError() ? QByteArray() : xml;
+}
 }
 
 void DocxDrawReaderBackend::setContext(OdfReaderDocxContext *context)
@@ -115,10 +147,25 @@ void DocxDrawReaderBackend::setContext(OdfReaderDocxContext *context)
             continue;
         }
         KoXmlStreamReader reader(store->device());
+        QStack<QString> frameKeys;
         QString customShapeKey;
         bool inShapeText = false;
         while (!reader.atEnd()) {
             reader.readNext();
+            if (reader.namespaceUri() == KoXmlNS::draw && reader.name() == QLatin1StringView("frame")) {
+                if (reader.isStartElement()) {
+                    frameKeys.push(shapeKey(reader.attributes()));
+                } else if (reader.isEndElement() && !frameKeys.isEmpty()) {
+                    frameKeys.pop();
+                }
+            }
+            // Formula shapes can save MathML directly inside draw:object,
+            // without an xlink:href or a separate package member. Cache it
+            // during this pass, before the generic reader skips its children.
+            if (reader.isStartElement() && reader.namespaceUri() == QLatin1StringView("http://www.w3.org/1998/Math/MathML")
+                && reader.name() == QLatin1StringView("math") && !frameKeys.isEmpty()) {
+                m_inlineMath.insert(frameKeys.top(), readInlineMath(reader));
+            }
             if (reader.namespaceUri() == KoXmlNS::draw && reader.name() == QLatin1StringView("custom-shape")) {
                 if (reader.isStartElement()) {
                     customShapeKey = shapeKey(reader.attributes());
@@ -203,6 +250,7 @@ void DocxDrawReaderBackend::elementDrawFrame(KoXmlStreamReader &reader, OdfReade
         m_frameFill.clear();
         m_frameStroke.clear();
         const auto attributes = reader.attributes();
+        m_frameKey = shapeKey(attributes);
         m_frameName = attributes.value(QStringLiteral("draw:name")).toString();
         if (m_frameName.isEmpty()) {
             m_frameName = QStringLiteral("Text Box");
@@ -374,8 +422,9 @@ void DocxDrawReaderBackend::elementDrawObject(KoXmlStreamReader &reader, OdfRead
     // Embedded ODF formula objects are MathML documents. Word stores formulas
     // as OMML inside the paragraph, not as a drawing, so convert and emit the
     // equation inline instead of failing the whole export.
-    if (m_chartData.contains(path)) {
-        const QByteArray omml = mathmlToOmml(m_chartData.value(path));
+    const QByteArray math = path.isEmpty() ? m_inlineMath.value(m_frameKey) : m_chartData.value(path);
+    if (!math.isEmpty()) {
+        const QByteArray omml = mathmlToOmml(math);
         if (!omml.isEmpty()) {
             m_context->m_documentWriter->addCompleteElement(omml.constData());
             m_frameHasChart = true;

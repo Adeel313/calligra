@@ -189,6 +189,9 @@ void RenderThread::drawWmf(QPainter &painter, const QByteArray &contents, const 
 
 void RenderThread::drawEmf(QPainter &painter, const QByteArray &contents, const QSizeF &size)
 {
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::TextAntialiasing);
     // FIXME: Make emfOutput use QSizeF
     QSize shapeSizeInt(size.width(), size.height());
 
@@ -203,6 +206,7 @@ void RenderThread::drawEmf(QPainter &painter, const QByteArray &contents, const 
     emfParser.setOutput(&emfDebugOutput);
 #endif
     emfParser.load(contents);
+    painter.restore();
 }
 
 void RenderThread::drawSvm(QPainter &painter, const QByteArray &contents, const QSizeF &size)
@@ -236,7 +240,10 @@ void VectorShape::paint(QPainter &painter, const KoViewConverter &converter, KoS
         QMutexLocker locker(&m_mutex);
         const QByteArray contents = qUncompress(m_contents);
 
+        painter.save();
+        applyConversion(painter, converter);
         RenderThread::drawContents(painter, contents, m_type, size());
+        painter.restore();
         return;
     }
 

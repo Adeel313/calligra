@@ -1637,6 +1637,7 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_txBody()
     READ_PROLOGUE
     debugPptx << "m_context->type:" << m_context->type;
 
+    m_compatLineSpacing = false;
     m_textParagraphIndex = 0;
     m_prevListLevel = 0;
     m_currentListLevel = 0;

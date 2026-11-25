@@ -52,6 +52,11 @@ public:
         return m_outputStore;
     }
 
+    KZip *inputArchive() const
+    {
+        return m_zip;
+    }
+
     //! KoFilter::UsageError is returned if this method is called outside
     //! of the importing process, i.e. not from within parseParts().
     KoFilter::ConversionStatus loadAndParseDocument(MsooXmlReader *reader, const QString &path, MsooXmlReaderContext *context = nullptr);

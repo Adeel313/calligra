@@ -120,8 +120,11 @@ KoFilter::ConversionStatus MsooXmlImport::createDocumentFromFile(KoStore *output
             } else {
                 return KoFilter::PasswordProtected;
             }
-        } else
-            return KoFilter::FileNotFound;
+        } else {
+            // Failure to open a ZIP package does not mean the input is
+            // missing: it may be plain text or a damaged OOXML document.
+            return QFileInfo::exists(inputFile) ? KoFilter::InvalidFormat : KoFilter::FileNotFound;
+        }
     }
 
     if (!zip->directory()) {
@@ -129,7 +132,7 @@ KoFilter::ConversionStatus MsooXmlImport::createDocumentFromFile(KoStore *output
         //! @todo transmit the error to the GUI...
         debugMsooXml << errorMessage;
         delete zip;
-        return KoFilter::FileNotFound;
+        return KoFilter::InvalidFormat;
     }
 
     m_zip = zip; // set context

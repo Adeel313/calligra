@@ -832,6 +832,25 @@ bool KoTextDocumentLayout::doLayout()
                 delete tmpPosition;
                 tmpPosition = new FrameIterator(d->layoutPosition);
                 finished = rootArea->layoutRoot(tmpPosition);
+                // Floating anchors can reflow a paragraph after its inline
+                // objects were positioned. Inline objects do not obstruct
+                // text, so update them against the final line layout after
+                // the floating anchors have settled.
+                bool inlineAnchorMoved = false;
+                for (KoShapeAnchor *anchor : std::as_const(d->foundAnchors)) {
+                    if (anchor->anchorType() == KoShapeAnchor::AnchorAsCharacter && anchor->placementStrategy()) {
+                        const QPointF oldPosition = anchor->shape()->position();
+                        static_cast<AnchorStrategy *>(anchor->placementStrategy())->moveSubject();
+                        inlineAnchorMoved |= oldPosition != anchor->shape()->position();
+                    }
+                }
+                if (inlineAnchorMoved) {
+                    // Moving a child marks its text area dirty. Complete the
+                    // unchanged text layout so it is ready for painting too.
+                    delete tmpPosition;
+                    tmpPosition = new FrameIterator(d->layoutPosition);
+                    finished = rootArea->layoutRoot(tmpPosition);
+                }
             }
             delete d->layoutPosition;
             d->layoutPosition = tmpPosition;

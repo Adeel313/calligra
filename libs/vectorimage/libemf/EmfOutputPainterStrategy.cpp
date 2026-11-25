@@ -8,6 +8,8 @@
 #include "EmfOutputPainterStrategy.h"
 
 #include <math.h>
+#include <algorithm>
+#include <numeric>
 
 #include <QPainterPath>
 
@@ -916,6 +918,9 @@ void OutputPainterStrategy::extTextOut(const QRect &bounds, const EmrTextObject 
 {
     const QPoint &referencePoint = textObject.referencePoint();
     const QString &text = textObject.textString();
+    if (text.isEmpty()) {
+        return;
+    }
 
 #if DEBUG_EMFPAINT
     debugVectorImage << "Ref point: " << referencePoint << "options: " << hex << textObject.options() << dec << "rectangle: " << textObject.rectangle()
@@ -947,6 +952,31 @@ void OutputPainterStrategy::extTextOut(const QRect &bounds, const EmrTextObject 
     }
 
     QFontMetrics fm = m_painter->fontMetrics();
+    const auto &advances = textObject.advances();
+    // Keep shaping whole runs for scripts that need joining, reordering, or
+    // combining marks. Simple labels can use the metafile's character origins.
+    if (advances.size() == text.size() && !(textObject.options() & TextOutGlyphIndex)
+        && std::all_of(text.cbegin(), text.cend(), [](QChar c) { return c >= u' ' && c <= u'~'; })) {
+        const qreal advance = std::accumulate(advances.cbegin(), advances.cend(), qreal(0));
+        QPointF origin(x, y);
+        if ((m_textAlignMode & TA_HORZMASK) == TA_CENTER) {
+            origin.rx() -= advance / 2;
+        } else if ((m_textAlignMode & TA_HORZMASK) == TA_RIGHT) {
+            origin.rx() -= advance;
+        }
+        if ((m_textAlignMode & TA_VERTMASK) == TA_BOTTOM) {
+            origin.ry() -= fm.descent();
+        } else if ((m_textAlignMode & TA_VERTMASK) != TA_BASELINE) {
+            origin.ry() += fm.ascent();
+        }
+        m_painter->setPen(m_textPen);
+        for (qsizetype i = 0; i < text.size(); ++i) {
+            m_painter->drawText(origin, text.mid(i, 1));
+            origin.rx() += advances.at(i);
+        }
+        m_painter->restore();
+        return;
+    }
     int textWidth = fm.boundingRect(text).width() + fm.descent(); // fm.width(text) isn't right with Italic text
     int textHeight = fm.height();
 
@@ -1172,6 +1202,14 @@ void OutputPainterStrategy::strokeAndFillPath(const QRect &bounds)
 
     Q_UNUSED(bounds);
     m_painter->drawPath(*m_path);
+}
+
+void OutputPainterStrategy::strokeDevicePath(const QPainterPath &path, const QPen &pen)
+{
+    m_painter->save();
+    m_painter->setWorldTransform(m_outputTransform);
+    m_painter->strokePath(path, pen);
+    m_painter->restore();
 }
 
 void OutputPainterStrategy::strokePath(const QRect &bounds)

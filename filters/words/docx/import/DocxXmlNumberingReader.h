@@ -51,6 +51,7 @@ protected:
 
     QMap<QString, QList<MSOOXML::Utils::ParagraphBulletProperties>> m_abstractListStyles;
     QMap<QString, QString> m_picBulletPaths;
+    QMap<QString, qreal> m_picBulletSizes;
 
     QString m_bulletCharacter;
     QString m_currentAbstractId;

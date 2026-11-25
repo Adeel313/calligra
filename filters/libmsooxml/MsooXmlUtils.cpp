@@ -99,6 +99,7 @@ QChar unicodeBulletForSymbolFont(const QString &font, const QString &bulletChar)
         { 0x6e, 0x25a0 }, // square6    -> BLACK SQUARE
         { 0x6f, 0x25a1 }, // box3       -> WHITE SQUARE
         { 0x75, 0x25c6 }, // rhombus6   -> BLACK DIAMOND
+        { 0x76, 0x2756 }, //            -> BLACK DIAMOND MINUS WHITE X
         { 0x9f, 0x2022 }, // circle4    -> BULLET
         { 0xa0, 0x25aa }, // square2    -> BLACK SMALL SQUARE
         { 0xa1, 0x25cb }, // ring2      -> WHITE CIRCLE

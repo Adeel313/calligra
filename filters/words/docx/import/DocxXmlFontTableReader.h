@@ -16,6 +16,8 @@
 #include <MsooXmlReader.h>
 
 class KoGenStyles;
+class KZip;
+class KoStore;
 
 //! A context structure for DocxXmlFontTableReader
 class DocxXmlFontTableReaderContext : public MSOOXML::MsooXmlReaderContext
@@ -23,6 +25,9 @@ class DocxXmlFontTableReaderContext : public MSOOXML::MsooXmlReaderContext
 public:
     explicit DocxXmlFontTableReaderContext(KoGenStyles &_styles);
     KoGenStyles *styles;
+    KZip *archive = nullptr;
+    KoStore *outputStore = nullptr;
+    QString partPath;
 };
 
 //! A class reading MSOOXML DOCX markup - fontTable.xml part.

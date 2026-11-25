@@ -10,6 +10,8 @@
 #include "KoTextDocument.h"
 #include "KoTextRangeManager.h"
 #include <QTextCursor>
+#include <QTextBlock>
+#include <QTextLayout>
 
 #include "TextDebug.h"
 
@@ -52,6 +54,14 @@ void DeleteAnchorsCommand::redo()
     if (m_first) {
         m_first = false;
         foreach (KoAnchorInlineObject *anchorObject, m_anchorObjects) {
+            // Cursor positioning asks Qt to calculate the visual x position.
+            // The custom document layout may still contain lines from before
+            // the anchored shape changed. Do not let Qt justify those stale
+            // lines; the document layout will rebuild them after the edit.
+            const QTextBlock block = m_document->findBlock(anchorObject->position());
+            if (block.isValid() && block.layout()) {
+                block.layout()->clearLayout();
+            }
             QTextCursor cursor(m_document);
             cursor.setPosition(anchorObject->position());
             cursor.deleteChar();

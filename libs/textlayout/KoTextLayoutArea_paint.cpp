@@ -374,7 +374,10 @@ void KoTextLayoutArea::paint(QPainter *painter, const KoTextDocumentLayout::Pain
                     continue;
                 }
                 const QPointF pos = line.position();
-                if (pos.y() < br.top() - 2.0 || pos.y() > br.bottom() + 2.0) {
+                // A drop cap's line origin is above the ordinary lines, but
+                // its tall line box still overlaps this paragraph. Only hide
+                // lines whose entire box belongs outside the painted area.
+                if (line.rect().bottom() < br.top() - 2.0 || line.rect().top() > br.bottom() + 2.0) {
                     movedLines.append(qMakePair(i, pos));
                     line.setPosition(QPointF(pos.x(), -10000.0));
                 }

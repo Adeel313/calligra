@@ -173,6 +173,9 @@ protected:
     QPointF m_tableRawPosition;
     //! True when w:tblpPr anchors a table to the page rather than to the text.
     bool m_tablePositionIsPageAnchored = false;
+    bool m_tableWrapsText = false;
+    qreal m_tablePreferredPercent = 0;
+    QByteArray m_pendingFloatingTables;
     //! Automatic styles of page-anchored tables (style name, raw tblpY) whose
     //! y offsets are filled in once the section's page margins have been read.
     QVector<QPair<QString, qreal>> m_pendingPageAnchoredTables;
@@ -232,6 +235,7 @@ protected:
     int m_gridSpan;
 
     KoFilter::ConversionStatus read_oMath();
+    bool m_readingDisplayMath = false;
     KoFilter::ConversionStatus read_oMathPara();
     KoFilter::ConversionStatus read_oMathParaPr();
     KoFilter::ConversionStatus read_jc_m();
@@ -352,6 +356,7 @@ protected:
 
     KoTable::Ptr m_table;
     KoGenStyle m_tableParagraphStyle;
+    KoGenStyle m_tableTextStyle;
     bool m_insideTableCell = false;
     QString m_pendingParagraphBreak;
     QString m_currentTableStyleName;

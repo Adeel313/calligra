@@ -9,6 +9,7 @@
 #define EMFOBJECTS_H
 
 #include <QDataStream>
+#include <QList>
 #include <QRect> // also provides QSize
 #include <QString>
 
@@ -69,14 +70,14 @@ public:
     /// The text to be output
     [[nodiscard]] QString textString() const;
 
+    const QList<qint32> &advances() const { return m_advances; }
+
 private:
     QPoint m_referencePoint; // reference point used to position the string
-    quint32 m_charCount; // number of characters (internal use only)
-    quint32 m_offString; // offset to output string (internal use only)
-    quint32 m_options; // specifies how to use the rectangle
+    quint32 m_options = 0; // specifies how to use the rectangle
     QRect m_rectangle; // clipping and/or opaquing rectangle
-    quint32 m_offDx; // offset to intercharacter spacing array (internal use only)
     QString m_textString; // the text string to output
+    QList<qint32> m_advances;
 };
 
 }

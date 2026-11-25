@@ -6,6 +6,7 @@
 #include <QStringList>
 
 #include <KoXmlWriter.h>
+#include <KoUnit.h>
 
 namespace
 {
@@ -38,7 +39,7 @@ QDomElement firstMathChild(const QDomElement &parent)
     return children.isEmpty() ? QDomElement() : children.first();
 }
 
-void writeTextRun(KoXmlWriter &writer, const QString &text, bool upright)
+void writeTextRun(KoXmlWriter &writer, const QString &text, bool upright, const QDomElement &source)
 {
     if (text.isEmpty()) {
         return;
@@ -51,6 +52,27 @@ void writeTextRun(KoXmlWriter &writer, const QString &text, bool upright)
         writer.endElement(); // m:sty
         writer.endElement(); // m:rPr
     }
+    qreal points = 12.0;
+    for (QDomElement element = source; !element.isNull(); element = element.parentNode().toElement()) {
+        const QString size = element.attribute(QStringLiteral("mathsize"), element.attribute(QStringLiteral("fontsize")));
+        if (!size.isEmpty()) {
+            const qreal explicitSize = KoUnit::parseValue(size, 0.0);
+            if (explicitSize > 0) {
+                points = explicitSize;
+                break;
+            }
+        }
+    }
+    // Preserve the equation's size across DOCX saves instead of falling back
+    // to the surrounding paragraph's (often smaller) body font on reopening.
+    writer.startElement("w:rPr");
+    writer.startElement("w:sz");
+    writer.addAttribute("w:val", qRound(points * 2));
+    writer.endElement();
+    writer.startElement("w:szCs");
+    writer.addAttribute("w:val", qRound(points * 2));
+    writer.endElement();
+    writer.endElement(); // w:rPr
     writer.startElement("m:t");
     writer.addAttribute("xml:space", "preserve");
     writer.addTextNode(text);
@@ -68,21 +90,17 @@ void writeChildren(KoXmlWriter &writer, const QDomElement &parent)
     }
 }
 
-// Writes the content of an argument element (m:e, m:num, ...). MathML nests
-// the actual expression in an mrow, which has no OMML counterpart, so its
-// children are emitted directly.
-void writeArgument(KoXmlWriter &writer, const QString &name, const QDomElement &argument)
+// Preserve the argument itself, including a lone token or a nested fraction.
+// Containers such as msqrt use their children as the argument instead.
+void writeArgument(KoXmlWriter &writer, const QString &name, const QDomElement &argument, bool contentsOnly = false)
 {
     const QByteArray elementName = name.toUtf8();
     writer.startElement(elementName.constData());
     if (!argument.isNull()) {
-        const QList<QDomElement> children = childElements(argument);
-        if (children.size() == 1 && localName(children.first()) == QLatin1String("mrow")) {
-            writeChildren(writer, children.first());
+        if (contentsOnly) {
+            writeChildren(writer, argument);
         } else {
-            for (const QDomElement &child : children) {
-                writeNode(writer, child);
-            }
+            writeNode(writer, argument);
         }
     }
     writer.endElement(); // name
@@ -121,9 +139,9 @@ void writeNode(KoXmlWriter &writer, const QDomElement &element)
     } else if (name == QLatin1String("mi") || name == QLatin1String("mn") || name == QLatin1String("mo")
                || name == QLatin1String("mtext") || name == QLatin1String("ms")) {
         // Identifiers stay italic, numbers and operators are upright.
-        writeTextRun(writer, elementText(element), name != QLatin1String("mi"));
+        writeTextRun(writer, elementText(element), name != QLatin1String("mi"), element);
     } else if (name == QLatin1String("mspace")) {
-        writeTextRun(writer, QStringLiteral(" "), true);
+        writeTextRun(writer, QStringLiteral(" "), true, element);
     } else if (name == QLatin1String("mfrac")) {
         const QList<QDomElement> children = childElements(element);
         writer.startElement("m:f");
@@ -158,7 +176,7 @@ void writeNode(KoXmlWriter &writer, const QDomElement &element)
         writer.endElement(); // m:radPr
         writer.startElement("m:deg");
         writer.endElement(); // m:deg
-        writeArgument(writer, "m:e", element);
+        writeArgument(writer, "m:e", element, true);
         writer.endElement(); // m:rad
     } else if (name == QLatin1String("mroot")) {
         const QList<QDomElement> children = childElements(element);
@@ -188,7 +206,7 @@ void writeNode(KoXmlWriter &writer, const QDomElement &element)
             writer.endElement();
         }
         writer.endElement(); // m:dPr
-        writeArgument(writer, "m:e", element);
+        writeArgument(writer, "m:e", element, true);
         writer.endElement(); // m:d
     } else if (name == QLatin1String("mtable")) {
         writer.startElement("m:m");
@@ -201,7 +219,7 @@ void writeNode(KoXmlWriter &writer, const QDomElement &element)
                 if (localName(cell) != QLatin1String("mtd")) {
                     continue;
                 }
-                writeArgument(writer, "m:e", cell);
+                writeArgument(writer, "m:e", cell, true);
             }
             writer.endElement(); // m:mr
         }
@@ -215,7 +233,7 @@ void writeNode(KoXmlWriter &writer, const QDomElement &element)
         // Unknown construct: keep its text/children instead of dropping it.
         const QList<QDomElement> children = childElements(element);
         if (children.isEmpty()) {
-            writeTextRun(writer, elementText(element), true);
+            writeTextRun(writer, elementText(element), true, element);
         } else {
             for (const QDomElement &child : children) {
                 writeNode(writer, child);
@@ -245,9 +263,24 @@ QByteArray mathmlToOmml(const QByteArray &mathml)
         return {};
     }
     KoXmlWriter writer(&buffer);
+    QDomElement style = firstMathChild(root);
+    while (localName(style) == QLatin1String("semantics") || localName(style) == QLatin1String("mrow")) {
+        style = firstMathChild(style);
+    }
+    const bool display = root.attribute(QStringLiteral("display")) == QLatin1String("block")
+        || root.attribute(QStringLiteral("displaystyle")) == QLatin1String("true")
+        || (localName(style) == QLatin1String("mstyle") && style.attribute(QStringLiteral("displaystyle")) == QLatin1String("true"));
+    if (display) {
+        writer.startElement("m:oMathPara");
+        writer.addAttribute("xmlns:m", "http://schemas.openxmlformats.org/officeDocument/2006/math");
+    }
     writer.startElement("m:oMath");
     writer.addAttribute("xmlns:m", "http://schemas.openxmlformats.org/officeDocument/2006/math");
+    writer.addAttribute("xmlns:w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main");
     writeChildren(writer, root);
     writer.endElement(); // m:oMath
+    if (display) {
+        writer.endElement(); // m:oMathPara
+    }
     return result;
 }

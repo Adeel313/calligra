@@ -29,6 +29,7 @@ public:
 
     /// @return The element's ElementType
     ElementType elementType() const override;
+    QString inheritsAttribute(const QString &name) const override;
 
     void writeMathMLAttributes(KoXmlWriter *writer) const override;
 };

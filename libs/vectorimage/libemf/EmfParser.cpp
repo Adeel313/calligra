@@ -12,9 +12,11 @@
 #include <QBuffer>
 #include <QColor>
 #include <QFile>
+#include <cmath>
 
 // LibEmf
 #include "EmfObjects.h"
+#include "EmfOutputPainterStrategy.h"
 #include "EmfRecords.h"
 
 // lib
@@ -82,6 +84,8 @@ bool Parser::load(const QByteArray &contents)
 
 bool Parser::loadFromStream(QDataStream &stream)
 {
+    QPainterPath plusDashPath;
+    QPen plusDashPen;
     stream.setByteOrder(QDataStream::LittleEndian);
 
     Header *header = new Header(stream);
@@ -100,7 +104,7 @@ bool Parser::loadFromStream(QDataStream &stream)
     int numRecords = header->recordCount();
     for (int i = 1; i < numRecords; ++i) {
         // debugVectorImage << "Record" << i << "of" << numRecords;
-        if (!readRecord(stream)) {
+        if (!readRecord(stream, plusDashPath, plusDashPen)) {
             break;
         }
     }
@@ -336,7 +340,104 @@ static const struct {
                   {0x00000079, "EMR_COLORMATCHTOTARGETW"},
                   {0x0000007A, "EMR_CREATECOLORSPACEW"}};
 
-bool Parser::readRecord(QDataStream &stream)
+static void readPlusDashedPath(const QByteArray &data, QPainterPath &plusDashPath, QPen &plusDashPen)
+{
+    QDataStream records(data);
+    records.setByteOrder(QDataStream::LittleEndian);
+    QPen pen;
+    QPainterPath path;
+    int penId = -1;
+    int pathId = -1;
+    while (!records.atEnd()) {
+        quint16 type, flags;
+        quint32 size, dataSize;
+        records >> type >> flags >> size >> dataSize;
+        if (records.status() != QDataStream::Ok || size < 12 || dataSize > size - 12
+            || size - 12 > records.device()->bytesAvailable()) {
+            return;
+        }
+        const QByteArray payload = records.device()->read(dataSize);
+        records.device()->skip(size - 12 - dataSize);
+        QDataStream field(payload);
+        field.setByteOrder(QDataStream::LittleEndian);
+        field.setFloatingPointPrecision(QDataStream::SinglePrecision);
+        if (type == 0x4008 && (flags >> 8) == 2) { // Pen object
+            quint32 version, penType, penFlags, unit, startCap, endCap, join, dashCap, count;
+            float width, offset;
+            field >> version >> penType >> penFlags >> unit >> width;
+            constexpr quint32 customDashFields = 0x1ce;
+            if (penType != 0 || penFlags != customDashFields || unit != 0 || !std::isfinite(width) || width <= 0) {
+                return;
+            }
+            field >> startCap >> endCap >> join >> dashCap >> offset >> count;
+            if (field.status() != QDataStream::Ok || startCap != 2 || endCap != 2 || join != 2 || dashCap != 2
+                || !std::isfinite(offset) || count < 2 || count % 2 || quint64(count) * 4 + 12 != quint64(field.device()->bytesAvailable())) {
+                return;
+            }
+            QList<qreal> dashes;
+            for (quint32 i = 0; i < count; ++i) {
+                float length;
+                field >> length;
+                if (!std::isfinite(length) || length <= 0) {
+                    return;
+                }
+                dashes.append(length);
+            }
+            quint32 brushType, color;
+            field >> version >> brushType >> color;
+            if (brushType != 0) {
+                return;
+            }
+            pen = QPen(QColor::fromRgba(color), width, Qt::CustomDashLine, Qt::RoundCap, Qt::RoundJoin);
+            pen.setDashPattern(dashes);
+            pen.setDashOffset(offset);
+            penId = flags & 0xff;
+        } else if (type == 0x4008 && (flags >> 8) == 3) { // Path object
+            quint32 version, count, pointFlags;
+            field >> version >> count >> pointFlags;
+            if (field.status() != QDataStream::Ok || pointFlags != 0 || count < 2 || quint64(count) * 9 > quint64(field.device()->bytesAvailable())) {
+                return;
+            }
+            QList<QPointF> points;
+            for (quint32 i = 0; i < count; ++i) {
+                float x, y;
+                field >> x >> y;
+                if (!std::isfinite(x) || !std::isfinite(y)) {
+                    return;
+                }
+                points.append(QPointF(x, y));
+            }
+            path = QPainterPath();
+            for (quint32 i = 0; i < count; ++i) {
+                quint8 pointType;
+                field >> pointType;
+                if (pointType == 0) {
+                    path.moveTo(points[i]);
+                } else if (pointType == 1 || pointType == 0x81) {
+                    path.lineTo(points[i]);
+                    if (pointType == 0x81) {
+                        path.closeSubpath();
+                    }
+                } else {
+                    return;
+                }
+            }
+            pathId = flags & 0xff;
+        } else if (type == 0x4015) { // DrawPath
+            quint32 drawPen;
+            field >> drawPen;
+            if (field.status() == QDataStream::Ok && int(drawPen) == penId && (flags & 0xff) == pathId && !path.isEmpty()
+                && records.atEnd()) {
+                plusDashPath = path;
+                plusDashPen = pen;
+            }
+        } else {
+            return;
+        }
+    }
+}
+
+bool Parser::readRecord(QDataStream &stream, QPainterPath &plusDashPath, QPen &plusDashPen)
 {
     if (!mOutput) {
         warnVectorImage << "Output device not set";
@@ -635,7 +736,22 @@ bool Parser::readRecord(QDataStream &stream)
     case EMR_STROKEANDFILLPATH: {
         QRect bounds;
         stream >> bounds;
-        mOutput->strokeAndFillPath(bounds);
+        // Some dual metafiles expand a dashed stroke into a filled outline
+        // for GDI. Use the original stroke when its device bounds correspond.
+        const QRectF plusBounds = plusDashPath.boundingRect();
+        const QRectF emfBounds(bounds);
+        const qreal tolerance = 4 + plusDashPen.widthF() / 2;
+        const auto contains = [tolerance](const QRectF &outer, const QRectF &inner) {
+            return outer.adjusted(-tolerance, -tolerance, tolerance, tolerance).contains(inner.topLeft())
+                && outer.adjusted(-tolerance, -tolerance, tolerance, tolerance).contains(inner.bottomRight());
+        };
+        auto *painterOutput = dynamic_cast<OutputPainterStrategy *>(mOutput);
+        if (painterOutput && !plusDashPath.isEmpty() && contains(emfBounds, plusBounds) && contains(plusBounds, emfBounds)) {
+            painterOutput->strokeDevicePath(plusDashPath, plusDashPen);
+        } else {
+            mOutput->strokeAndFillPath(bounds);
+        }
+        plusDashPath = QPainterPath();
         // debugVectorImage << "xx EMR_STROKEANDFILLPATHPATH" << bounds;
     } break;
     case EMR_STROKEPATH: {
@@ -666,6 +782,7 @@ bool Parser::readRecord(QDataStream &stream)
         mOutput->arcTo(box, start, end);
     } break;
     case EMR_COMMENT: {
+        plusDashPath = QPainterPath();
         quint32 dataSize;
         quint32 commentIdentifier;
 
@@ -677,10 +794,16 @@ bool Parser::readRecord(QDataStream &stream)
             debugVectorImage << "EMR_COMMENT_EMFSPOOL";
             soakBytes(stream, size - 16); // because we already took 16.
             break;
-        case EMR_COMMENT_EMFPLUS:
-            debugVectorImage << "EMR_COMMENT_EMFPLUS";
-            soakBytes(stream, size - 16); // because we already took 16.
+        case EMR_COMMENT_EMFPLUS: {
+            const quint32 available = size >= 16 ? size - 16 : 0;
+            if (dataSize >= 4 && dataSize - 4 <= available && available <= stream.device()->bytesAvailable()) {
+                readPlusDashedPath(stream.device()->read(dataSize - 4), plusDashPath, plusDashPen);
+                stream.device()->skip(available - (dataSize - 4));
+            } else {
+                return false;
+            }
             break;
+        }
         case EMR_COMMENT_PUBLIC:
             quint32 commentType;
             stream >> commentType;
@@ -717,6 +840,9 @@ bool Parser::readRecord(QDataStream &stream)
     } break;
     case EMR_EXTTEXTOUTA:
     case EMR_EXTTEXTOUTW: {
+        if (size < 76 || qint64(size) - 8 > stream.device()->bytesAvailable()) {
+            return false;
+        }
         QRect bounds;
         quint32 iGraphicsMode;
         // FIXME: These should really be floats, but that crashes

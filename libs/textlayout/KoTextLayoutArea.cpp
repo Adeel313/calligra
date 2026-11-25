@@ -659,6 +659,9 @@ bool KoTextLayoutArea::layout(FrameIterator *cursor)
             if (block.blockFormat().hasProperty(KoParagraphStyle::GeneratedDocument)) {
                 QVariant data = block.blockFormat().property(KoParagraphStyle::GeneratedDocument);
                 QTextDocument *generatedDocument = data.value<QTextDocument *>();
+                // Generated indexes share the page's point-based paint device.
+                // The default screen DPI otherwise changes tab and font metrics.
+                generatedDocument->documentLayout()->setPaintDevice(documentLayout()->paintDevice());
 
                 // Let's create KoTextLayoutArea and let it handle the generated document
                 KoTextLayoutArea *area = new KoTextLayoutArea(this, documentLayout());
@@ -1774,6 +1777,19 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
             hasMathFont = true;
     };
     const bool useFontProperties = style.value(KoParagraphStyle::LineSpacingFromFont).toBool();
+    bool hasNonMathText = false;
+    const auto noteNonMathText = [&](const QTextFragment &fragment, int lastCharPos) {
+        if (!useFontProperties || hasNonMathText
+            || fragment.charFormat().font().family().contains(QLatin1String("Math"), Qt::CaseInsensitive)) {
+            return;
+        }
+
+        const int start = qMax(fragment.position(), block.position() + line.textStart());
+        const int end = qMin(fragment.position() + fragment.length(), lastCharPos + 1);
+        if (start < end) {
+            hasNonMathText = !fragment.text().mid(start - fragment.position(), end - start).trimmed().isEmpty();
+        }
+    };
 
     const bool externalLeading = KoTextDocument(d->documentLayout->document()).addExternalLeading();
     const auto fontHeightStretch = [externalLeading](const QTextCharFormat &format) {
@@ -1841,12 +1857,14 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
             }
             lineBreak = true;
         }
+        noteNonMathText(fragment, lastCharPos);
         while (!(fragment.contains(lastCharPos))) {
             fragmentIterator++;
             if (fragmentIterator.atEnd()) {
                 break;
             }
             fragment = fragmentIterator.fragment();
+            noteNonMathText(fragment, lastCharPos);
             if (!d->documentLayout->changeTracker() || !d->documentLayout->changeTracker()->displayChanges()
                 || !d->documentLayout->changeTracker()->containsInlineChanges(fragment.charFormat())
                 || !d->documentLayout->changeTracker()->elementById(fragment.charFormat().property(KoCharacterStyle::ChangeTrackerId).toInt())
@@ -1998,8 +2016,14 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
     if (const auto *area = dynamic_cast<const KoTextLayoutRootArea *>(root)) {
         const auto *shape = area->associatedShape();
         const auto *data = shape ? dynamic_cast<const KoTextShapeDataBase *>(shape->userData()) : nullptr;
-        if (data && data->autofitLineSpacingReduction() > 0)
+        if (data && data->autofitLineSpacingReduction() > 0) {
             height *= 1.0 - qBound(0, data->autofitLineSpacingReduction(), 80000) / 100000.0;
+            // Normal autofit also compresses line spacing. Keep the height
+            // required by presentation math after that reduction is applied.
+            if (useFontProperties && hasMathFont && style.value(KoParagraphStyle::FixedLineHeight).toDouble() == 0.0) {
+                height = qMax(height, tallestFont * PresenterFontStretch);
+            }
+        }
     }
     // A compressed presentation title keeps its glyph baseline at the top of
     // the line box in LibreOffice. Move only oversized title lines by the full
@@ -2009,6 +2033,38 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
             lineAdjust += height - naturalHeight;
         } else {
             lineAdjust += (height - naturalHeight) / 2;
+        }
+        if (hasMathFont && !hasNonMathText) {
+            // Give equations on their own line the same padding on both sides.
+            const qreal equationPadding = tallestFont * 0.2;
+            height += 2 * equationPadding;
+            lineAdjust += equationPadding;
+
+            const auto isEquationParagraph = [](const QTextBlock &paragraph) {
+                bool hasMath = false;
+                for (auto it = paragraph.begin(); !it.atEnd(); ++it) {
+                    const auto fragment = it.fragment();
+                    const QString text = fragment.text();
+                    if (text.contains(QChar::LineSeparator)) {
+                        return false;
+                    }
+                    if (text.trimmed().isEmpty()) {
+                        continue;
+                    }
+                    if (!fragment.charFormat().font().family().contains(QLatin1String("Math"), Qt::CaseInsensitive)) {
+                        return false;
+                    }
+                    hasMath = true;
+                }
+                return hasMath;
+            };
+            // Between consecutive equations the two pads accumulate. On the
+            // first line, move its trailing pad to the prose-to-equation gap.
+            if (line.textStart() == 0 && line.textLength() >= block.length() - 1
+                && block.next().isValid() && isEquationParagraph(block.next())
+                && (!block.previous().isValid() || !isEquationParagraph(block.previous()))) {
+                lineAdjust += equationPadding;
+            }
         }
     }
 
@@ -2287,13 +2343,14 @@ void KoTextLayoutArea::handleBordersAndSpacing(KoTextBlockData &blockData, QText
     if (paraTableSpacingAtStart || block->previous().isValid()) {
         topMargin = formatStyle.topMargin();
     }
-    // Word and LibreOffice do not show the space above a paragraph that starts
-    // a page or a column: the margin would otherwise push the first line down
-    // on every page whose first block is a heading.  This only applies to the
+    // Suppress space above a paragraph moved by automatic pagination. An
+    // explicit break-before retains the paragraph's requested space above it
+    // (for example a Word heading with pageBreakBefore). This only applies to the
     // top level text flow, and only to a continuation from an earlier block,
     // so a document's own first paragraph still follows
     // AddParaTableSpacingAtStart and a table cell keeps its own top spacing.
-    if (!d->parent && virginPage() && block->previous().isValid()) {
+    if (!d->parent && virginPage() && block->previous().isValid()
+        && formatStyle.breakBefore() != KoText::PageBreak && formatStyle.breakBefore() != KoText::ColumnBreak) {
         topMargin = 0;
     }
     const QTextBlock previousBlock = block->previous();

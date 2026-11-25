@@ -11,8 +11,12 @@
 
 #include "Styles_p.h"
 
+#include <QCryptographicHash>
 #include <QFontDatabase>
 #include <QFontInfo>
+#include <QRawFont>
+#include <QSet>
+#include <QtEndian>
 #include <QRegularExpression>
 #include <QTextBlock>
 #include <QTextCursor>
@@ -239,6 +243,32 @@ qreal KoCharacterStyle::Private::calculateFontYStretch(const QString &fontFamily
     const bool substituted = resolvedFamily.compare(fontFamily, Qt::CaseInsensitive) != 0
         && resolvedBaseFamily.compare(fontFamily, Qt::CaseInsensitive) != 0;
     setProperty(FontYStretchIsFallback, substituted);
+
+    // Fontconfig cannot see fonts registered from an ODF/DOCX package. Read
+    // the SFNT tables of Qt's selected face so embedded fonts use their own
+    // line metrics, even when an installed version has the same family name.
+    const QRawFont rawFont = QRawFont::fromFont(query);
+    const QByteArray head = rawFont.fontTable("head");
+    const QByteArray os2Table = rawFont.fontTable("OS/2");
+    const QByteArray hhea = rawFont.fontTable("hhea");
+    if (head.size() >= 20 && os2Table.size() >= 78) {
+        const auto unsignedValue = [](const QByteArray &table, int offset) {
+            return qFromBigEndian<quint16>(reinterpret_cast<const uchar *>(table.constData() + offset));
+        };
+        const auto signedValue = [](const QByteArray &table, int offset) {
+            return qFromBigEndian<qint16>(reinterpret_cast<const uchar *>(table.constData() + offset));
+        };
+        const quint16 units = unsignedValue(head, 18);
+        qreal height = unsignedValue(os2Table, 74) + unsignedValue(os2Table, 76);
+        if ((unsignedValue(os2Table, 62) & 0x0080) && signedValue(os2Table, 68) > signedValue(os2Table, 70)) {
+            height = signedValue(os2Table, 68) - signedValue(os2Table, 70) + qMax<int>(0, signedValue(os2Table, 72));
+        } else if (externalLeading && hhea.size() >= 10) {
+            height += qMax<int>(0, signedValue(hhea, 8));
+        }
+        if (units > 0 && height > 0) {
+            return height / (qreal(units) * 1.16);
+        }
+    }
 
     // A family can contain several faces with different line gaps (for
     // example regular Calibri and Calibri Light in one family). Match the
@@ -573,17 +603,39 @@ void KoCharacterStyle::applyStyle(QTextCharFormat &format, bool emitSignal) cons
     // a normal-weight italic run. Prefer synthesizing the slant on the face
     // with the requested weight, as Word does when the real italic is absent.
     const QFont requestedFont = format.font();
-    if (requestedFont.italic() && requestedFont.styleName().isEmpty()) {
+    if (requestedFont.italic()) {
         const QString family = requestedFont.family();
         const QString matchedStyle = QFontInfo(requestedFont).styleName();
         const QStringList familyStyles = QFontDatabase::styles(family);
+        const auto isSlantedStyle = [&family](const QString &style) {
+            return QFontDatabase::font(family, style, 12).style() != QFont::StyleNormal;
+        };
         if (familyStyles.contains(matchedStyle)
-            && QFontDatabase::weight(family, matchedStyle) != requestedFont.weight()) {
+            && (QFontDatabase::weight(family, matchedStyle) != requestedFont.weight()
+                || !isSlantedStyle(matchedStyle))) {
+            // Prefer a real italic at the requested weight before synthesizing
+            // one. Qt may otherwise select a light italic even when an
+            // embedded regular-weight italic has just become available.
+            QString italicStyle;
+            int closestWeight = QFont::Normal - QFont::Light;
             for (const QString &style : familyStyles) {
-                if (!QFontDatabase::italic(family, style)
-                    && QFontDatabase::weight(family, style) == requestedFont.weight()) {
-                    format.setFontStyleName(style);
-                    break;
+                const int weightDifference = qAbs(QFontDatabase::weight(family, style) - requestedFont.weight());
+                if (isSlantedStyle(style)
+                    && weightDifference < closestWeight
+                    && !style.contains(QLatin1String("Condensed"), Qt::CaseInsensitive)) {
+                    italicStyle = style;
+                    closestWeight = weightDifference;
+                }
+            }
+            if (!italicStyle.isEmpty()) {
+                format.setFontStyleName(italicStyle);
+            } else {
+                for (const QString &style : familyStyles) {
+                    if (!isSlantedStyle(style)
+                        && QFontDatabase::weight(family, style) == requestedFont.weight()) {
+                        format.setFontStyleName(style);
+                        break;
+                    }
                 }
             }
         }
@@ -1561,10 +1613,14 @@ void KoCharacterStyle::loadOdfProperties(KoShapeLoadingContext &scontext)
                             QString filename = fontUriElem.attributeNS(KoXmlNS::xlink, "href");
                             KoStore *store = scontext.odfLoadingContext().store();
                             if (store->open(filename)) {
-                                KoStoreDevice device(store);
-                                QByteArray data = device.readAll();
-                                if (device.open(QIODevice::ReadOnly)) {
-                                    QFontDatabase::addApplicationFontFromData(data);
+                                const QByteArray data = store->read(store->size());
+                                store->close();
+                                // Font faces are revisited for every style.
+                                // Register each embedded face just once.
+                                static QSet<QByteArray> registeredFonts;
+                                const QByteArray hash = QCryptographicHash::hash(data, QCryptographicHash::Sha256);
+                                if (!registeredFonts.contains(hash) && QFontDatabase::addApplicationFontFromData(data) >= 0) {
+                                    registeredFonts.insert(hash);
                                 }
                             }
                         }

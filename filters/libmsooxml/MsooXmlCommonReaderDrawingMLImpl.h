@@ -474,7 +474,13 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_nvPicPr()
                 TRY_READ_IF(cNvPicPr)
                 ELSE_TRY_READ_IF_IN_CONTEXT(cNvPr)
 #ifdef PPTXXMLSLIDEREADER_CPP
-                ELSE_TRY_READ_IF(nvPr) // only §19.3.1.33
+                ELSE_TRY_READ_IF(nvPr) // §19.3.1.33
+#elif defined(DOCXXMLDOCREADER_CPP)
+                else if (qualifiedName() == QLatin1StringView("pic:nvPr")) {
+                    // Word documents can carry non-visual application
+                    // properties in the picture namespace.
+                    skipCurrentElement();
+                }
 #endif
                 ELSE_WRONG_FORMAT
             }
@@ -2467,8 +2473,14 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_p()
         inheritParagraphStyle(m_currentParagraphStyle);
         m_currentBulletProperties = m_currentCombinedBulletProperties[m_currentListLevel];
     }
-    if (m_currentParagraphStyle.property("fo:line-height").endsWith('%')) {
+    const QString lineHeight = m_currentParagraphStyle.property("fo:line-height");
+    if (lineHeight.endsWith('%')) {
         m_currentParagraphStyle.addProperty("style:font-independent-line-spacing", "true");
+        if (m_compatLineSpacing && !m_insideTable) {
+            // Legacy PowerPoint text boxes use a taller base for proportional leading.
+            const qreal percent = lineHeight.chopped(1).toDouble();
+            m_currentParagraphStyle.addProperty("fo:line-height", QString::number(percent * 1.12) + QLatin1Char('%'));
+        }
     }
 #else
     Q_UNUSED(pprRead);
@@ -6246,6 +6258,11 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_bodyPr()
     READ_PROLOGUE
 
     const QXmlStreamAttributes attrs(attributes());
+
+#ifdef PPTXXMLSLIDEREADER_CPP
+    const auto compatLineSpacing = attrs.value(QLatin1StringView("compatLnSpc"));
+    m_compatLineSpacing = compatLineSpacing == QLatin1StringView("1") || compatLineSpacing == QLatin1StringView("true");
+#endif
 
     TRY_READ_ATTR_WITHOUT_NS(anchor)
     TRY_READ_ATTR_WITHOUT_NS(lIns)

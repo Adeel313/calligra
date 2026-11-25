@@ -8,6 +8,7 @@
 #include <KLocalizedString>
 
 #include <KoIcon.h>
+#include <KoProperties.h>
 #include <KoOdfLoadingContext.h>
 #include <KoShapeFactoryBase.h>
 #include <KoShapeLoadingContext.h>
@@ -16,6 +17,7 @@
 
 #include "FormulaDebug.h"
 #include "KoFormulaShape.h"
+#include "FormulaData.h"
 
 KoFormulaShapeFactory::KoFormulaShapeFactory()
     : KoShapeFactoryBase(KoFormulaShapeId, i18n("Formula"))
@@ -51,19 +53,23 @@ KoFormulaShapeFactory::~KoFormulaShapeFactory() = default;
 
 KoShape *KoFormulaShapeFactory::createDefaultShape(KoDocumentResourceManager *resourceManager) const
 {
+    return createShape(nullptr, resourceManager);
+}
+
+KoShape *KoFormulaShapeFactory::createShape(const KoProperties *params, KoDocumentResourceManager *resourceManager) const
+{
     KoFormulaShape *formula = new KoFormulaShape(resourceManager);
     formula->setShapeId(KoFormulaShapeId);
-    // Lay out at the formula's natural size, then scale to a medium default so a
-    // newly inserted equation appears at roughly 12-14pt text size. The frame
-    // can be resized afterwards; glyphs scale with the frame.
+    const bool standalone = params && params->boolProperty("standalone");
+    const QString size = standalone ? QStringLiteral("14pt") : QStringLiteral("12pt");
+    auto *root = formula->formulaData()->formulaElement();
+    root->setAttribute(QStringLiteral("fontsize"), size);
+    root->setAttribute(QStringLiteral("mathsize"), size);
+    root->setAttribute(QStringLiteral("display"), standalone ? QStringLiteral("block") : QStringLiteral("inline"));
+    root->setAttribute(QStringLiteral("displaystyle"), standalone ? QStringLiteral("true") : QStringLiteral("false"));
+    // Keep the natural formula size. Shrinking the empty placeholder's
+    // 30pt frame to 20pt also shrinks the text typed into the equation.
     formula->updateLayout();
-    const QSizeF natural = formula->size();
-    if (natural.height() > 0.0) {
-        const qreal targetHeight = 20.0;
-        const qreal scale = qMin(1.0, targetHeight / natural.height());
-        if (!qFuzzyCompare(scale, 1.0))
-            formula->setSize(natural * scale);
-    }
     return formula;
 }
 
