@@ -286,6 +286,50 @@ bool preparePptxMath(QDomDocument &document)
     Flattener flattener{&document, ans, mns, superscript, subscript, QDomElement(), false, 0};
 
     bool changed = false;
+    // Equation previews preserve stacked fractions and their typography.
+    const QString pns = QStringLiteral("http://schemas.openxmlformats.org/presentationml/2006/main");
+    const auto mathAlternatives = document.elementsByTagNameNS(mc, QStringLiteral("AlternateContent"));
+    for (int i = mathAlternatives.size() - 1; i >= 0; --i) {
+        const auto alternate = mathAlternatives.at(i).toElement();
+        const auto choice = alternate.firstChildElement(QStringLiteral("Choice"), mc);
+        const auto fallback = alternate.firstChildElement(QStringLiteral("Fallback"), mc);
+        const auto preview = fallback.firstChildElement(QStringLiteral("sp"), pns);
+        const auto properties = preview.firstChildElement(QStringLiteral("spPr"), pns);
+        const auto fill = properties.firstChildElement(QStringLiteral("blipFill"), ans);
+        const auto metadata = preview.firstChildElement(QStringLiteral("nvSpPr"), pns)
+                                  .firstChildElement(QStringLiteral("cNvPr"), pns);
+        if (choice.elementsByTagNameNS(a14, QStringLiteral("m")).isEmpty() || fill.isNull() || metadata.isNull())
+            continue;
+        // The compatibility branch is a text box whose artwork is its
+        // fill. Import it as a picture so even an empty text box retains
+        // that artwork when saved again.
+        bool containsText = false;
+        const auto texts = preview.elementsByTagNameNS(ans, QStringLiteral("t"));
+        for (int j = 0; j < texts.size(); ++j)
+            containsText |= !texts.at(j).toElement().text().trimmed().isEmpty();
+        if (containsText)
+            continue;
+
+        auto picture = document.createElementNS(pns, QStringLiteral("p:pic"));
+        auto nonVisual = document.createElementNS(pns, QStringLiteral("p:nvPicPr"));
+        nonVisual.appendChild(metadata.cloneNode(true));
+        nonVisual.appendChild(document.createElementNS(pns, QStringLiteral("p:cNvPicPr")));
+        nonVisual.appendChild(document.createElementNS(pns, QStringLiteral("p:nvPr")));
+        picture.appendChild(nonVisual);
+
+        auto pictureFill = document.createElementNS(pns, QStringLiteral("p:blipFill"));
+        for (auto child = fill.firstChild(); !child.isNull(); child = child.nextSibling())
+            pictureFill.appendChild(child.cloneNode(true));
+        picture.appendChild(pictureFill);
+
+        auto pictureProperties = properties.cloneNode(true).toElement();
+        pictureProperties.removeChild(pictureProperties.firstChildElement(QStringLiteral("blipFill"), ans));
+        picture.appendChild(pictureProperties);
+        auto parent = alternate.parentNode();
+        parent.replaceChild(picture, alternate);
+        changed = true;
+    }
+
     const auto expressions = document.elementsByTagNameNS(a14, QStringLiteral("m"));
     for (int i = expressions.size() - 1; i >= 0; --i) {
         const auto expression = expressions.at(i).toElement();
@@ -400,17 +444,40 @@ bool preparePptxMath(QDomDocument &document)
     }
     // Expose supported PresentationML shapes directly. Their alternatives
     // otherwise share reader state with nested choices and can lose text.
+    const QString presentationNs = QStringLiteral("http://schemas.openxmlformats.org/presentationml/2006/main");
     const auto alternatives = document.elementsByTagNameNS(mc, QStringLiteral("AlternateContent"));
     for (int i = alternatives.size() - 1; i >= 0; --i) {
         const auto alternate = alternatives.at(i).toElement();
         auto choice = alternate.firstChildElement();
         if (choice.localName() != QLatin1String("Choice") || choice.attribute(QStringLiteral("Requires")) == QLatin1String("v")) continue;
         const auto shape = choice.firstChildElement();
-        const bool presentationShape = shape.namespaceURI() == QLatin1String("http://schemas.openxmlformats.org/presentationml/2006/main")
+        if (shape.namespaceURI() == presentationNs && shape.localName() == QLatin1String("transition")
+            && alternate.parentNode() == document.documentElement()) {
+            // PowerPoint packages effects such as Morph with a standard
+            // transition for applications that cannot play the extension.
+            const auto fallback = alternate.firstChildElement(QStringLiteral("Fallback"), mc)
+                                      .firstChildElement(QStringLiteral("transition"), presentationNs);
+            if (!fallback.isNull()) {
+                auto parent = alternate.parentNode();
+                parent.replaceChild(fallback, alternate);
+                changed = true;
+            }
+            continue;
+        }
+        const bool presentationShape = shape.namespaceURI() == presentationNs
             && QStringList{QStringLiteral("sp"), QStringLiteral("grpSp"), QStringLiteral("pic"), QStringLiteral("graphicFrame")}.contains(shape.localName());
         const bool textRun = shape.namespaceURI() == ans
             && QStringList{QStringLiteral("r"), QStringLiteral("br"), QStringLiteral("fld")}.contains(shape.localName());
         if (!presentationShape && !textRun) continue;
+        if (presentationShape && shape.localName() == QLatin1String("graphicFrame")) {
+            const auto data = shape.firstChildElement(QStringLiteral("graphic"), ans)
+                                  .firstChildElement(QStringLiteral("graphicData"), ans);
+            if (data.attribute(QStringLiteral("uri")) == QLatin1String("http://schemas.microsoft.com/office/drawing/2017/model3d")) {
+                // Stage can display the packaged preview of a 3D model.
+                choice = alternate.firstChildElement(QStringLiteral("Fallback"), mc);
+                if (choice.isNull()) continue;
+            }
+        }
         auto parent = alternate.parentNode();
         while (!choice.firstChild().isNull()) parent.insertBefore(choice.firstChild(), alternate);
         parent.removeChild(alternate);

@@ -991,7 +991,7 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
     if (auto *box = view->mainWindow()->findChild<QWidget *>(QStringLiteral("wordsRibbon"))) {
         for (const QString &tool : {QStringLiteral("TextToolFactory_ID"), QStringLiteral("InteractionTool"),
                                     QStringLiteral("KoPABackgroundTool"), QStringLiteral("ConnectionTool"), QStringLiteral("CreatePathTool"),
-                                    QStringLiteral("PictureToolFactoryId")}) {
+                                    QStringLiteral("PictureToolFactoryId"), QStringLiteral("KoFormulaToolFactoryId")}) {
             QMetaObject::invokeMethod(box, "primeToolOptions", Qt::DirectConnection, Q_ARG(QString, tool));
         }
         QMetaObject::invokeMethod(box, "showRibbonPage", Qt::DirectConnection, Q_ARG(QString, QStringLiteral("stageHomePage")));
@@ -999,11 +999,21 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
     auto *shapePage = page("stageShapeFormatPage");
     auto *tablePage = page("stageTableFormatPage");
     auto *picturePage = page("stagePictureToolsPage");
+    auto *equationPage = page("stageEquationPage");
     const auto updateContext = [=] {
         bool pictureSelected = false;
         bool shapeSelected = false;
+        bool equationSelected = false;
         const QList<KoShape *> selected = canvas->shapeManager()->selection()->selectedShapes();
         for (KoShape *shape : selected) {
+            bool isEquation = false;
+            for (KoShape *candidate = shape; candidate; candidate = candidate->parent()) {
+                isEquation = isEquation || candidate->shapeId() == QLatin1String("FormulaShapeID");
+            }
+            if (isEquation) {
+                equationSelected = true;
+                continue;
+            }
             if (isPictureShape(shape)) {
                 pictureSelected = true;
             } else {
@@ -1012,10 +1022,12 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
         }
         // A picture is not a generic shape in Stage: it gets its own tab and
         // never activates Shape Format on its own.
-        shapePage->setProperty("ribbonContextActive", shapeSelected);
-        picturePage->setProperty("ribbonContextActive", pictureSelected && !shapeSelected);
+        const bool equationOnly = equationSelected && !shapeSelected && !pictureSelected;
+        shapePage->setProperty("ribbonContextActive", shapeSelected || (equationSelected && !equationOnly));
+        picturePage->setProperty("ribbonContextActive", pictureSelected && !shapeSelected && !equationSelected);
         KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(canvas);
-        tablePage->setProperty("ribbonContextActive", editor && editor->tableAtCursor());
+        tablePage->setProperty("ribbonContextActive", !equationSelected && editor && editor->tableAtCursor());
+        equationPage->setProperty("ribbonContextActive", equationOnly);
     };
     QObject::connect(canvas->shapeManager()->selection(), &KoSelection::selectionChanged, shapePage, updateContext);
     QObject::connect(canvas->resourceManager(), &KoCanvasResourceManager::canvasResourceChanged, tablePage, [=](int, const QVariant &) { updateContext(); });
@@ -1428,6 +1440,8 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
         // Picture tools, shown instead of Shape Format when only pictures are selected.
         auto *pictureTools = stagePage(i18n("Picture tools"), QStringLiteral("stagePictureToolsPage"));
         pictureTools->setProperty("ribbonContextActive", false);
+        auto *equation = stagePage(i18n("Equation"), QStringLiteral("stageEquationPage"));
+        equation->setProperty("ribbonContextActive", false);
         stagePage(i18n("Help"), QStringLiteral("stageHelpPage"), {QStringLiteral("help")});
     } else {
         auto *filePage = addPage(i18n("File"), {}, true);

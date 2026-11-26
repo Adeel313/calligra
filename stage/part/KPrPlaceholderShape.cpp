@@ -31,11 +31,14 @@
 KPrPlaceholderShape::KPrPlaceholderShape()
     : m_strategy(nullptr)
 {
+    setShapeId(KPrPlaceholderShapeId);
 }
 
 KPrPlaceholderShape::KPrPlaceholderShape(const QString &presentationClass)
     : m_strategy(nullptr)
 {
+    setShapeId(KPrPlaceholderShapeId);
+    setAdditionalAttribute("presentation:class", presentationClass);
     m_strategy = KPrPlaceholderStrategy::create(presentationClass);
 }
 

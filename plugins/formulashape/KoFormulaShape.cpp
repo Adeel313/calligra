@@ -19,6 +19,7 @@
 #include <KoOdfLoadingContext.h>
 #include <KoShapeLoadingContext.h>
 #include <KoShapeSavingContext.h>
+#include <KoShapeRegistry.h>
 #include <KoStore.h>
 #include <KoXmlNS.h>
 #include <KoXmlReader.h>
@@ -49,6 +50,7 @@ KoFormulaShape::KoFormulaShape(KoDocumentResourceManager *documentResourceManage
         if (command) {
             // A legacy OLE payload only describes the formula before editing.
             removeAdditionalAttribute(QStringLiteral("calligra:ppt-embedded-object"));
+            m_equationPreview.reset();
         }
     });
 }
@@ -57,8 +59,16 @@ KoFormulaShape::~KoFormulaShape()
 {
 }
 
-void KoFormulaShape::paint(QPainter &painter, const KoViewConverter &converter, KoShapePaintingContext &)
+void KoFormulaShape::paint(QPainter &painter, const KoViewConverter &converter, KoShapePaintingContext &context)
 {
+    if (m_equationPreview && !m_isEditing) {
+        m_equationPreview->setSize(size());
+        m_equationPreview->waitUntilReady(converter, false);
+        painter.save();
+        m_equationPreview->paint(painter, converter, context);
+        painter.restore();
+        return;
+    }
     painter.save();
     applyConversion(painter, converter); // apply zooming and coordinate translation
     m_formulaRenderer->layoutElement(m_formulaData->formulaElement());
@@ -68,10 +78,10 @@ void KoFormulaShape::paint(QPainter &painter, const KoViewConverter &converter, 
     const QSizeF scaledLayout = layoutSize * editorScale;
     const qreal sx = scaledLayout.width() > 0 ? size().width() / scaledLayout.width() : 1.0;
     const qreal sy = scaledLayout.height() > 0 ? size().height() / scaledLayout.height() : 1.0;
-    // A formula is laid out at its natural size. Scaling the painter makes the
-    // frame size control the visible glyph size, so resizing a small equation
-    // enlarges its font instead of leaving it unchanged.
-    painter.scale(sx, sy);
+    // Resize equations uniformly: stretching each axis independently distorts
+    // glyphs and disagrees with the formula tool's cursor coordinates.
+    const qreal scale = qMin(sx, sy);
+    painter.scale(scale, scale);
     if (m_formulaData->formulaElement()->childElements().isEmpty()) {
         // An empty formula draws nothing at all, which makes a freshly inserted
         // one almost impossible to find on the page. Show where it is until it
@@ -161,7 +171,8 @@ qreal KoFormulaShape::editingScale() const
 qreal KoFormulaShape::displayScale() const
 {
     const QSizeF scaledLayout = m_layoutSize * editingScale();
-    return scaledLayout.width() > 0 ? size().width() / scaledLayout.width() : 1.0;
+    return scaledLayout.width() > 0 && scaledLayout.height() > 0
+        ? qMin(size().width() / scaledLayout.width(), size().height() / scaledLayout.height()) : 1.0;
 }
 
 BasicElement *KoFormulaShape::elementAt(const QPointF &p)
@@ -185,6 +196,7 @@ FormulaRenderer *KoFormulaShape::formulaRenderer() const
 
 bool KoFormulaShape::loadOdf(const KoXmlElement &element, KoShapeLoadingContext &context)
 {
+    m_equationPreview.reset();
     debugFormula << "Loading ODF in Formula";
     loadOdfAttributes(element, context, OdfAllAttributes);
     if (!loadOdfFrame(element, context)) {
@@ -199,6 +211,14 @@ bool KoFormulaShape::loadOdf(const KoXmlElement &element, KoShapeLoadingContext 
         && !importedFrame.isEmpty() && !size().isEmpty()
         && (!qFuzzyCompare(importedFrame.width(), size().width()) || !qFuzzyCompare(importedFrame.height(), size().height()))) {
         KoShape::setSize(importedFrame);
+    }
+    const KoXmlElement preview = KoXml::namedItemNS(element, KoXmlNS::calligra, "equation-preview");
+    const KoXmlElement previewFrame = KoXml::namedItemNS(preview, KoXmlNS::draw, "frame");
+    if (!previewFrame.isNull()) {
+        m_equationPreview.reset(KoShapeRegistry::instance()->createShapeFromOdf(previewFrame, context));
+        if (m_equationPreview) {
+            m_equationPreview->setSize(size());
+        }
     }
     return true;
 }
@@ -381,6 +401,12 @@ void KoFormulaShape::saveOdf(KoShapeSavingContext &context) const
     // TODO add some namespace magic to avoid adding "math:" namespace everywhere
     formulaData()->formulaElement()->writeMathML(&context.xmlWriter());
     writer.endElement(); // draw:object
+    if (m_equationPreview) {
+        writer.startElement("calligra:equation-preview");
+        m_equationPreview->setSize(size());
+        m_equationPreview->saveOdf(context);
+        writer.endElement();
+    }
     writer.endElement(); // draw:frame
 }
 

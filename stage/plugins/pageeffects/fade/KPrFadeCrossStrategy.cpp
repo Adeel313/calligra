@@ -8,47 +8,31 @@
 #include "KPrFadeCrossStrategy.h"
 #include "KPrFadeEffectFactory.h"
 
-#include <QGraphicsPixmapItem>
-#include <QGraphicsView>
 #include <QPainter>
 #include <QWidget>
 
 KPrFadeCrossStrategy::KPrFadeCrossStrategy()
-    : KPrPageEffectStrategy(KPrFadeEffectFactory::CrossFade, "fade", "crossfade", false, true)
+    : KPrPageEffectStrategy(KPrFadeEffectFactory::CrossFade, "fade", "crossfade", false)
 {
 }
 
 KPrFadeCrossStrategy::~KPrFadeCrossStrategy() = default;
 
-void KPrFadeCrossStrategy::setup(const KPrPageEffect::Data &data, QTimeLine &timeLine)
+void KPrFadeCrossStrategy::setup(const KPrPageEffect::Data &, QTimeLine &timeLine)
 {
-    timeLine.setFrameRange(0, 1000); // TODO might not be needed
-    data.m_oldPageItem->setZValue(1);
-    data.m_newPageItem->setZValue(2);
-    data.m_newPageItem->setOpacity(0);
-    data.m_oldPageItem->show();
-    data.m_newPageItem->show();
+    timeLine.setFrameRange(0, 1000);
 }
 
-void KPrFadeCrossStrategy::paintStep(QPainter &p, int currPos, const KPrPageEffect::Data &data)
+void KPrFadeCrossStrategy::paintStep(QPainter &p, int, const KPrPageEffect::Data &data)
 {
-    Q_UNUSED(p);
-    Q_UNUSED(currPos);
-    Q_UNUSED(data);
+    p.drawPixmap(0, 0, data.m_oldPage);
+    p.save();
+    p.setOpacity(data.m_timeLine.valueForTime(data.m_currentTime));
+    p.drawPixmap(0, 0, data.m_newPage);
+    p.restore();
 }
 
 void KPrFadeCrossStrategy::next(const KPrPageEffect::Data &data)
 {
-    int frame = data.m_timeLine.frameForTime(data.m_currentTime);
-    if (frame >= data.m_timeLine.endFrame()) {
-        finish(data);
-    } else {
-        qreal value = data.m_timeLine.valueForTime(data.m_currentTime);
-        data.m_newPageItem->setOpacity(value);
-    }
-}
-
-void KPrFadeCrossStrategy::finish(const KPrPageEffect::Data &data)
-{
-    data.m_graphicsView->hide();
+    data.m_widget->update();
 }

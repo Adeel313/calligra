@@ -70,6 +70,7 @@ public:
     QString convertToListProperties(KoGenStyles &mainStyles, MSOOXMLFilter filter = XlsxFilter);
 
     bool isEmpty() const;
+    bool sameNumberingFormat(const ParagraphBulletProperties &other) const;
 
     void setBulletChar(const QString &bulletChar);
 

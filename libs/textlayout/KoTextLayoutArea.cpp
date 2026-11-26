@@ -769,7 +769,7 @@ bool KoTextLayoutArea::layout(FrameIterator *cursor)
         d->blockRects.last().setBottom(d->y);
     }
     if (d->maximumAllowedWidth > 0) {
-        d->right += d->neededWidth - d->width;
+        d->right = d->left + d->neededWidth;
         d->maximumAllowedWidth = 0;
         setVirginPage(true);
         KoTextLayoutArea::layout(new FrameIterator(d->startOfArea));
@@ -1553,7 +1553,9 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
         anyLineAdded = true;
         maxLineHeight = qMax(maxLineHeight, addLine(line, cursor, block, pStyle, blockData));
 
-        d->neededWidth = qMax(d->neededWidth, line.naturalTextWidth() + d->indent);
+        // Auto-width text must accommodate each line's own margins. A
+        // nested list item can start farther in than the final paragraph.
+        d->neededWidth = qMax(d->neededWidth, startMargin + endMargin + line.naturalTextWidth() + d->indent);
 
         if (!runAroundHelper.stayOnBaseline() && !(block.blockFormat().hasProperty(KoParagraphStyle::HiddenByTable) && block.length() <= 1)) {
             d->y += maxLineHeight;

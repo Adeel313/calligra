@@ -30,6 +30,7 @@
 
 #include <cmath>
 #include "MsooXmlUtils.h"
+#include "../../libs/vectorimage/SymbolEncoding.h"
 
 #include <QMap>
 #include <QSet>
@@ -91,33 +92,13 @@ QChar unicodeBulletForSymbolFont(const QString &font, const QString &bulletChar)
         return QChar();
     }
 
-    // Meaningful list markers from the Wingdings and Symbol character sets.
-    // The low byte is the value used by both the private-use and the Latin-1
-    // forms found in OOXML files.
-    static const QMap<ushort, ushort> wingdingsBullets = {
-        { 0x6c, 0x25cf }, // circle6    -> BLACK CIRCLE
-        { 0x6e, 0x25a0 }, // square6    -> BLACK SQUARE
-        { 0x6f, 0x25a1 }, // box3       -> WHITE SQUARE
-        { 0x75, 0x25c6 }, // rhombus6   -> BLACK DIAMOND
-        { 0x76, 0x2756 }, //            -> BLACK DIAMOND MINUS WHITE X
-        { 0x9f, 0x2022 }, // circle4    -> BULLET
-        { 0xa0, 0x25aa }, // square2    -> BLACK SMALL SQUARE
-        { 0xa1, 0x25cb }, // ring2      -> WHITE CIRCLE
-        { 0xa7, 0x25aa }, // square4    -> BLACK SMALL SQUARE
-        { 0xa8, 0x25a1 }, // box2       -> WHITE SQUARE
-        { 0xd8, 0x27a2 }, //            -> THREE-D TOP-LIGHTED RIGHTWARDS ARROWHEAD
-        { 0xe8, 0x2794 }, //            -> WIDE RIGHTWARDS ARROW
-        { 0xfb, 0x2717 }, //            -> BALLOT X
-        { 0xfc, 0x2714 }  //            -> CHECK MARK
-    };
-    static const QMap<ushort, ushort> symbolBullets = {
-        { 0x2d, 0x2013 }, //             -> EN DASH
-        { 0xb7, 0x2022 }  // bullet     -> BULLET
-    };
-
-    const QMap<ushort, ushort> &bullets = wingdings ? wingdingsBullets : symbolBullets;
-    const auto it = bullets.constFind(code);
-    return it == bullets.constEnd() ? QChar() : QChar(*it);
+    if (wingdings)
+        return QChar(Calligra::wingdingsByteToUnicode(code));
+    if (code == 0x2d)
+        return QChar(0x2013);
+    if (code == 0xb7)
+        return QChar(0x2022);
+    return QChar(Calligra::symbolByteToUnicode(code));
 }
 
 } // namespace
@@ -1196,6 +1177,11 @@ void Utils::ParagraphBulletProperties::clear()
     m_bulletRelativeSize = UNUSED;
     m_bulletSize = UNUSED;
     m_startOverride = false;
+}
+
+bool Utils::ParagraphBulletProperties::sameNumberingFormat(const ParagraphBulletProperties &other) const
+{
+    return m_numFormat == other.m_numFormat && m_prefix == other.m_prefix && m_suffix == other.m_suffix;
 }
 
 bool Utils::ParagraphBulletProperties::isEmpty() const

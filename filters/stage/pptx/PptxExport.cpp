@@ -11,6 +11,8 @@
 #include <KoInlineTextObjectManager.h>
 #include <KoTextDocument.h>
 #include <KoColorBackground.h>
+#include <KoHatchBackground.h>
+#include <KPrPlaceholderShape.h>
 #include <KoGradientBackground.h>
 #include <KoPatternBackground.h>
 #include <KoImageShape.h>
@@ -34,6 +36,7 @@
 #include <styles/KoListLevelProperties.h>
 #include <styles/KoParagraphStyle.h>
 #include <styles/KoCharacterStyle.h>
+#include <styles/KoStyleManager.h>
 #include <ChartShape.h>
 #include <ChartProxyModel.h>
 #include <PlotArea.h>
@@ -499,6 +502,27 @@ void writeFill(QXmlStreamWriter &xml, const QSharedPointer<KoShapeBackground> &b
     const auto *solid = background ? dynamic_cast<const KoColorBackground *>(background.data()) : nullptr;
     const auto *gradientBackground = background ? dynamic_cast<const KoGradientBackground *>(background.data()) : nullptr;
     const QGradient *gradient = gradientBackground ? gradientBackground->gradient() : nullptr;
+    if (const auto *hatch = dynamic_cast<const KoHatchBackground *>(solid)) {
+        const QString name = hatch->hatchName();
+        const QString marker = QStringLiteral("DrawingML ");
+        if (name.startsWith(marker)) {
+            const QString preset = name.mid(marker.size());
+            if (preset == QLatin1String("wdDnDiag") || preset == QLatin1String("ltHorz")) {
+                xml.writeStartElement(QStringLiteral("a:pattFill"));
+                xml.writeAttribute(QStringLiteral("prst"), preset);
+                const auto writeColor = [&](const QString &tag, const QColor &color) {
+                    xml.writeStartElement(tag);
+                    xml.writeEmptyElement(QStringLiteral("a:srgbClr"));
+                    xml.writeAttribute(QStringLiteral("val"), color.name().mid(1).toUpper());
+                    xml.writeEndElement();
+                };
+                writeColor(QStringLiteral("a:fgClr"), hatch->lineColor());
+                writeColor(QStringLiteral("a:bgClr"), hatch->color());
+                xml.writeEndElement();
+                return;
+            }
+        }
+    }
     if (fillImageRel) {
         xml.writeStartElement(QStringLiteral("a:blipFill"));
         xml.writeEmptyElement(QStringLiteral("a:blip"));
@@ -600,7 +624,10 @@ void writeTextBody(QXmlStreamWriter &xml, const SlideObject &object, QTextDocume
     xml.writeAttribute(QStringLiteral("tIns"), QString::number(qRound64(insets.top * 12700)));
     xml.writeAttribute(QStringLiteral("rIns"), QString::number(qRound64(insets.right * 12700)));
     xml.writeAttribute(QStringLiteral("bIns"), QString::number(qRound64(insets.bottom * 12700)));
-    xml.writeAttribute(QStringLiteral("wrap"), QStringLiteral("square"));
+    const auto resize = object.textData->resizeMethod();
+    const bool growWidth = resize == KoTextShapeDataBase::AutoResize || resize == KoTextShapeDataBase::AutoGrowWidth
+        || resize == KoTextShapeDataBase::AutoGrowWidthAndHeight;
+    xml.writeAttribute(QStringLiteral("wrap"), growWidth ? QStringLiteral("none") : QStringLiteral("square"));
     const Qt::Alignment vertical = object.textData->verticalAlignment();
     xml.writeAttribute(QStringLiteral("anchor"), vertical.testFlag(Qt::AlignBottom) ? QStringLiteral("b") : vertical.testFlag(Qt::AlignVCenter) ? QStringLiteral("ctr") : QStringLiteral("t"));
     if (object.textData->resizeMethod() == KoTextShapeDataBase::ShrinkToFitResize) {
@@ -609,6 +636,10 @@ void writeTextBody(QXmlStreamWriter &xml, const SlideObject &object, QTextDocume
             xml.writeAttribute(QStringLiteral("fontScale"), QString::number(object.textData->autofitFontScale()));
         if (object.textData->autofitLineSpacingReduction() > 0)
             xml.writeAttribute(QStringLiteral("lnSpcReduction"), QString::number(object.textData->autofitLineSpacingReduction()));
+    }
+    if (resize == KoTextShapeDataBase::AutoGrowHeight || resize == KoTextShapeDataBase::AutoGrowWidthAndHeight
+        || resize == KoTextShapeDataBase::AutoResize) {
+        xml.writeEmptyElement(QStringLiteral("a:spAutoFit"));
     }
     xml.writeEndElement();
     xml.writeEmptyElement(QStringLiteral("a:lstStyle"));
@@ -624,19 +655,30 @@ void writeTextBody(QXmlStreamWriter &xml, const SlideObject &object, QTextDocume
         QTextList *list = block.textList();
         const KoListLevelProperties properties = list ? KoListLevelProperties::fromTextList(list) : KoListLevelProperties();
         qreal margin = paragraphStyle.leftMargin();
+        qreal rightMargin = paragraphStyle.rightMargin();
         qreal indent = paragraphStyle.textIndent();
+        const bool rtl = blockFormat.layoutDirection() == Qt::RightToLeft;
         if (list && properties.alignmentMode()) {
-            if (qFuzzyIsNull(margin)) margin = properties.margin();
-            if (qFuzzyIsNull(indent)) indent = properties.textIndent();
+            const auto *styles = KoTextDocument(document).styleManager();
+            const auto *namedStyle = styles && paragraphStyle.styleId() ? styles->paragraphStyle(paragraphStyle.styleId()) : nullptr;
+            qreal &startMargin = rtl ? rightMargin : margin;
+            // Stage renders inherited paragraph values using the list level's
+            // geometry. Writing those inherited values as explicit DrawingML
+            // overrides would move a nested level back to the parent indent.
+            if (qFuzzyIsNull(startMargin)
+                || (namedStyle && startMargin == (rtl ? namedStyle->rightMargin() : namedStyle->leftMargin())))
+                startMargin = properties.margin();
+            if (qFuzzyIsNull(indent) || (namedStyle && indent == namedStyle->textIndent()))
+                indent = properties.textIndent();
         } else if (list) {
             // Legacy ODF lists reserve a label box after text:space-before.
             if (qFuzzyIsNull(margin)) margin = properties.indent() + properties.minimumWidth();
             if (qFuzzyIsNull(indent)) indent = -properties.minimumWidth();
         }
         xml.writeAttribute(QStringLiteral("marL"), QString::number(qRound64(margin * 12700)));
-        xml.writeAttribute(QStringLiteral("marR"), QString::number(qRound64(paragraphStyle.rightMargin() * 12700)));
+        xml.writeAttribute(QStringLiteral("marR"), QString::number(qRound64(rightMargin * 12700)));
         xml.writeAttribute(QStringLiteral("indent"), QString::number(qRound64(indent * 12700)));
-        if (blockFormat.layoutDirection() == Qt::RightToLeft)
+        if (rtl)
             xml.writeAttribute(QStringLiteral("rtl"), QStringLiteral("1"));
         if (list) xml.writeAttribute(QStringLiteral("lvl"), QString::number(qBound(0, properties.level() - 1, 8)));
         const auto spacing = [&](const QString &tag, const QString &unit, qreal value) {
@@ -658,6 +700,21 @@ void writeTextBody(QXmlStreamWriter &xml, const SlideObject &object, QTextDocume
         if (list) {
             if (properties.labelType() == KoListStyle::BulletCharLabelType) {
                 const auto bulletStyle = properties.characterProperties();
+                if (bulletStyle && bulletStyle->foreground().style() == Qt::SolidPattern) {
+                    xml.writeStartElement(QStringLiteral("a:buClr"));
+                    xml.writeEmptyElement(QStringLiteral("a:srgbClr"));
+                    xml.writeAttribute(QStringLiteral("val"), bulletStyle->foreground().color().name().mid(1).toUpper());
+                    xml.writeEndElement();
+                }
+                const qreal percent = bulletStyle && bulletStyle->percentageFontSize() > 0
+                    ? bulletStyle->percentageFontSize() : properties.relativeBulletSize();
+                if (percent > 0 && percent != 100) {
+                    xml.writeEmptyElement(QStringLiteral("a:buSzPct"));
+                    xml.writeAttribute(QStringLiteral("val"), QString::number(qBound(25000, qRound(percent * 1000), 400000)));
+                } else if (bulletStyle && bulletStyle->fontPointSize() > 0) {
+                    xml.writeEmptyElement(QStringLiteral("a:buSzPts"));
+                    xml.writeAttribute(QStringLiteral("val"), QString::number(qRound(bulletStyle->fontPointSize() * 100)));
+                }
                 if (bulletStyle && !bulletStyle->fontFamily().isEmpty()) {
                     xml.writeEmptyElement(QStringLiteral("a:buFont"));
                     xml.writeAttribute(QStringLiteral("typeface"), bulletStyle->fontFamily());
@@ -1378,6 +1435,20 @@ KoFilter::ConversionStatus PptxExport::convert(const QByteArray &from, const QBy
         KoPAPageBase *page = pages.at(pageIndex);
         QList<SlideObject> objects;
         int nextObjectId = 2;
+        // The package currently writes a shared master. Put visible artwork
+        // from each slide's own master behind its regular objects.
+        if (auto *slide = dynamic_cast<KoPAPage *>(page); slide && slide->masterPage() && slide->displayMasterShapes()) {
+            const auto collectMaster = [&](const auto &self, KoShape *shape) -> void {
+                if (auto *layer = dynamic_cast<KoShapeLayer *>(shape)) {
+                    for (auto *child : layer->shapes())
+                        self(self, child);
+                } else if (shape->shapeId() != QLatin1String(KPrPlaceholderShapeId) && slide->displayShape(shape)) {
+                    collectShape(shape, objects, nextObjectId);
+                }
+            };
+            for (auto *shape : slide->masterPage()->shapes())
+                collectMaster(collectMaster, shape);
+        }
         for (KoShape *shape : page->shapes()) collectShape(shape, objects, nextObjectId);
         int nextImageId = 0;
         int nextRelationshipId = 2;

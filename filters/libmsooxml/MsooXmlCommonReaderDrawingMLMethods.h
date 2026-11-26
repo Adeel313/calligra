@@ -127,6 +127,7 @@ KoFilter::ConversionStatus read_cNvSpPr(); // done
 KoFilter::ConversionStatus read_cxnSp(); // done
 KoFilter::ConversionStatus read_sp(); // done
 KoFilter::ConversionStatus read_spPr(); // done
+KoFilter::ConversionStatus read_pattFill();
 KoFilter::ConversionStatus read_style(); // done
 
 // ----------------------------------------
@@ -264,6 +265,7 @@ QString m_shapeTextRightOff;
 
 bool m_listStylePropertiesAltered;
 bool m_explicitBulletProperties;
+bool m_explicitNumberingStart = false;
 QString m_prevListStyleName;
 
 int m_prevListLevel; //! set by drawingML_ppr
@@ -274,7 +276,7 @@ int m_currentListLevel; //! set by drawingML_ppr
 QMap<quint16, QString> m_lvlXmlIdMap;
 
 // true - continue numbered list, false - restart numbering
-QMap<quint16, bool> m_continueListNumbering;
+QMap<quint16, MSOOXML::Utils::ParagraphBulletProperties> m_numberingByLevel;
 
 //! set by read_drawing() to indicate if we have encountered
 //! drawing/anchor, used by read_pic()

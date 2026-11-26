@@ -61,6 +61,7 @@ KPrAnimationDirector::KPrAnimationDirector(KoPAView *view, KoPACanvas *canvas, c
     , m_canvas(canvas)
     , m_pages(pages)
     , m_pageEffectRunner(nullptr)
+    , m_pageIndex(0)
     , m_stepIndex(0)
     , m_maxShapeDuration(0)
     , m_hasAnimation(false)
@@ -69,12 +70,9 @@ KPrAnimationDirector::KPrAnimationDirector(KoPAView *view, KoPACanvas *canvas, c
 {
     Q_ASSERT(!m_pages.empty());
     m_animationCache = new KPrAnimationCache();
-    if (!currentPage || !pages.contains(currentPage))
-        updateActivePage(m_pages[0]);
-    else
-        updateActivePage(currentPage);
-
-    m_pageIndex = m_pages.indexOf(m_view->activePage());
+    if (currentPage && pages.contains(currentPage))
+        m_pageIndex = m_pages.indexOf(currentPage);
+    updateActivePage(m_pages[m_pageIndex]);
 
     // updatePageAnimation was called from updateZoom() [updateActivePage()]
 
@@ -93,7 +91,7 @@ KPrAnimationDirector::KPrAnimationDirector(KoPAView *view, KoPACanvas *canvas, c
     connect(&m_autoTransitionTimer, &QTimer::timeout, this, &KPrAnimationDirector::nextPage);
     connect(&m_timeLine, &QTimeLine::finished, this, &KPrAnimationDirector::slotTimelineFinished);
     if (hasAutoSlideTransition()) {
-        if (hasPageEffect() || hasAnimation()) {
+        if (hasAnimation()) {
             nextStep();
         } else {
             startAutoSlideTransition();
@@ -378,6 +376,18 @@ void KPrAnimationDirector::paintStep(QPainter &painter)
     m_canvas->shapeManager()->paint(painter, m_zoomHandler, true);
 }
 
+QPixmap KPrAnimationDirector::captureSlide()
+{
+    QPixmap slide(m_canvas->size());
+    slide.fill(Qt::black);
+    QPainter painter(&slide);
+    painter.setClipRect(m_pageRect);
+    painter.setRenderHint(QPainter::Antialiasing);
+    paintStep(painter);
+    painter.end();
+    return slide;
+}
+
 bool KPrAnimationDirector::nextStep()
 {
     if (m_stepIndex < numStepsInPage() - 1) {
@@ -401,21 +411,16 @@ bool KPrAnimationDirector::nextStep()
 
         // run page effect if there is one
         if (effect) {
-            QPixmap oldPage(m_canvas->size());
-            m_canvas->render(&oldPage);
+            const QPixmap oldPage = captureSlide();
 
             updateActivePage(m_pages[m_pageIndex]);
             updatePageAnimation();
             updateStepAnimation();
-            QPixmap newPage(m_canvas->size());
-            newPage.fill(Qt::white); // TODO
-            QPainter newPainter(&newPage);
-            newPainter.setClipRect(m_pageRect);
-            newPainter.setRenderHint(QPainter::Antialiasing);
-            paintStep(newPainter);
+            const QPixmap newPage = captureSlide();
 
             m_state = EntryEffectState;
             m_pageEffectRunner = new KPrPageEffectRunner(oldPage, newPage, m_canvas, effect);
+            m_canvas->update();
             startTimeLine(effect->duration());
         } else {
             updateActivePage(m_pages[m_pageIndex]);
@@ -479,11 +484,6 @@ void KPrAnimationDirector::startAutoSlideTransition()
 bool KPrAnimationDirector::pageEffectRunning() const
 {
     return m_pageEffectRunner;
-}
-
-bool KPrAnimationDirector::hasPageEffect() const
-{
-    return KPrPage::pageData(m_pages[m_pageIndex])->pageEffect() != nullptr;
 }
 
 bool KPrAnimationDirector::animationRunning() const

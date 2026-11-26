@@ -2,6 +2,7 @@
 #include "KPrDocument.h"
 #include "KPrPage.h"
 #include "KPrView.h"
+#include "KPrMasterPage.h"
 
 #include <KoDocumentEntry.h>
 #include <KoColorBackground.h>
@@ -11,6 +12,13 @@
 #include <KoMainWindow.h>
 #include <KoPart.h>
 #include <KoShapeContainer.h>
+#include <KoShapeFactoryBase.h>
+#include <KoShapeRegistry.h>
+#include <KoShapeController.h>
+#include <KoShapeManager.h>
+#include <KoSelection.h>
+#include <KoPACanvasBase.h>
+#include <KoToolManager.h>
 #include <KoPageLayout.h>
 #include <kundo2stack.h>
 #include <KAboutData>
@@ -21,6 +29,13 @@
 #include <QDebug>
 #include <QStandardPaths>
 #include <QTemporaryDir>
+#include <QElapsedTimer>
+#include <QTabBar>
+#include <QClipboard>
+#include <QMimeData>
+#include <QToolButton>
+#include <QMenu>
+#include <QWidgetAction>
 #include <cstdlib>
 
 static void require(bool condition, const char *message)
@@ -61,6 +76,10 @@ static KoShape *findPlaceholder(KoShapeContainer *container, const QString &pres
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
+    // KDE color controls inspect the clipboard while building ribbon options.
+    // The offscreen platform starts without any MIME data.
+    if (!app.clipboard()->mimeData())
+        app.clipboard()->setMimeData(new QMimeData);
     app.setApplicationName(QStringLiteral("calligrastage"));
     KAboutData::setApplicationData(KAboutData(QStringLiteral("calligrastage"), QStringLiteral("Stage Layout Test"), QStringLiteral("1")));
     KLocalizedString::setApplicationDomain("calligrastage");
@@ -154,6 +173,149 @@ int main(int argc, char **argv)
         document->setModified(false);
         require(document->openUrl(QUrl::fromLocalFile(saved)), "blank slide reload failed");
         require(placeholderClasses(document->pages().first()).isEmpty(), "loading must preserve existing blank slides");
+
+        // Selecting math exposes only equation controls, even before entering
+        // its editing tool. The controls must stay on that page while editing.
+        auto *formulaFactory = KoShapeRegistry::instance()->value(QStringLiteral("FormulaShapeID"));
+        require(formulaFactory, "formula shape factory unavailable");
+        auto *canvas = view->kopaCanvas();
+        KoShape *formula = formulaFactory->createDefaultShape(document->resourceManager());
+        canvas->addCommand(canvas->shapeController()->addShape(formula));
+        QElapsedTimer ribbonWait;
+        ribbonWait.start();
+        while ((!window->findChild<QWidget *>(QStringLiteral("stageEquationPage"))
+                || window->findChild<QWidget *>(QStringLiteral("stageEquationPage"))->findChildren<QWidget *>().isEmpty())
+               && ribbonWait.elapsed() < 3000) {
+            app.processEvents();
+        }
+        auto *equationPage = window->findChild<QWidget *>(QStringLiteral("stageEquationPage"));
+        auto *shapePage = window->findChild<QWidget *>(QStringLiteral("stageShapeFormatPage"));
+        require(equationPage && shapePage, "Stage contextual ribbon pages unavailable");
+        auto *selection = canvas->shapeManager()->selection();
+        selection->deselectAll();
+        auto *ribbon = window->findChild<QWidget *>(QStringLiteral("wordsRibbon"));
+        require(ribbon, "Stage ribbon unavailable");
+        const auto showHome = [&] {
+            QMetaObject::invokeMethod(ribbon, "showRibbonPage", Qt::DirectConnection,
+                                      Q_ARG(QString, QStringLiteral("stageHomePage")));
+        };
+        const auto requireHome = [&] {
+            bool homeSelected = false;
+            for (QTabBar *tabs : ribbon->findChildren<QTabBar *>())
+                homeSelected |= QString(tabs->tabText(tabs->currentIndex())).remove(QLatin1Char('&')) == QStringLiteral("Home");
+            require(homeSelected, "deselecting a Stage object must return Home instead of File");
+        };
+        showHome();
+        selection->select(formula);
+        app.processEvents();
+        require(equationPage->property("ribbonContextActive").toBool(), "equation selection must show Equation");
+        require(!shapePage->property("ribbonContextActive").toBool(), "equation selection must hide Shape Format");
+        const auto verifyEquationControls = [&] {
+            QStringList controls;
+            int groups = 0;
+            for (QWidget *widget : equationPage->findChildren<QWidget *>()) {
+                groups += widget->property("ribbonRoutedGroup").toBool();
+                if (!widget->windowTitle().isEmpty())
+                    controls.append(widget->windowTitle());
+            }
+            for (const QString &title : {QStringLiteral("Symbols"), QStringLiteral("Structures"), QStringLiteral("LaTeX")})
+                require(controls.contains(title), "Equation must contain all math controls");
+            require(groups == 3, "Equation must contain only math control groups");
+        };
+        verifyEquationControls();
+        bool equationTabSelected = false;
+        for (QTabBar *tabs : window->findChildren<QTabBar *>())
+            equationTabSelected |= tabs->tabText(tabs->currentIndex()) == QStringLiteral("Equation");
+        require(equationTabSelected, "selecting math must activate Equation tab");
+        KoToolManager::instance()->switchToolRequested(QStringLiteral("KoFormulaToolFactoryId"));
+        app.processEvents();
+        verifyEquationControls();
+        KoToolManager::instance()->switchToolRequested(QStringLiteral("InteractionTool"));
+        selection->deselectAll();
+        app.processEvents();
+        require(!equationPage->property("ribbonContextActive").toBool(), "deselecting math must hide Equation");
+        requireHome();
+        auto *textFactory = KoShapeRegistry::instance()->value(QStringLiteral("TextShapeID"));
+        require(textFactory, "text shape factory unavailable");
+        KoShape *textShape = textFactory->createDefaultShape(document->resourceManager());
+        canvas->addCommand(canvas->shapeController()->addShape(textShape));
+        for (int repetition = 0; repetition < 3; ++repetition) {
+            showHome();
+            selection->select(textShape);
+            app.processEvents();
+            require(shapePage->property("ribbonContextActive").toBool(), "selecting text must show Shape Format");
+            KoToolManager::instance()->switchToolRequested(QStringLiteral("TextToolFactory_ID"));
+            app.processEvents();
+            KoToolManager::instance()->switchToolRequested(QStringLiteral("InteractionTool"));
+            selection->deselectAll();
+            app.processEvents();
+            requireHome();
+        }
+        // The inline gallery must expose every master and apply it as one
+        // undoable operation, including slides that hid their master artwork.
+        auto *themeButton = window->findChild<QToolButton *>(QStringLiteral("stageThemesButton"));
+        require(themeButton && themeButton->menu(), "Design must provide a Themes dropdown");
+        auto *themeStrip = window->findChild<QWidget *>(QStringLiteral("stageThemeStrip"));
+        require(themeStrip, "Design must provide an inline theme gallery");
+        auto selectedTheme = [](QWidget *strip) {
+            for (auto *tile : strip->findChildren<QToolButton *>()) {
+                if (tile->isChecked())
+                    return tile->accessibleName();
+            }
+            return QString{};
+        };
+        require(!selectedTheme(themeStrip).isEmpty(), "Gallery must identify the active theme");
+        auto *theme = new KPrMasterPage(document);
+        theme->setName(QStringLiteral("Regression Theme"));
+        theme->setPageLayout(document->pages(true).first()->pageLayout());
+        theme->setBackground(QSharedPointer<KoShapeBackground>(new KoColorBackground(QColor(30, 60, 100))));
+        document->insertPage(theme, -1);
+        auto *firstSlide = dynamic_cast<KoPAPage *>(document->pages().first());
+        require(firstSlide, "theme test requires a slide");
+        firstSlide->setDisplayMasterBackground(false);
+        firstSlide->setMasterBackgroundVisible(false);
+        firstSlide->setDisplayMasterShapes(false);
+        QList<KoPAMasterPage *> previousMasters;
+        for (KoPAPageBase *base : document->pages())
+            previousMasters.append(dynamic_cast<KoPAPage *>(base)->masterPage());
+        themeButton->menu()->popup(QPoint(20, 100));
+        app.processEvents();
+        require(themeButton->menu()->isVisible(), "Themes dropdown must open");
+        require(themeButton->menu()->actions().size() == 1, "Themes dropdown must open directly on the grid");
+        auto *gridAction = qobject_cast<QWidgetAction *>(themeButton->menu()->actions().constFirst());
+        require(gridAction && gridAction->defaultWidget()
+                && gridAction->defaultWidget()->objectName() == QStringLiteral("stageProfessionalThemeGrid"),
+                "Themes dropdown must show only the professional grid");
+        themeButton->menu()->hide();
+        QToolButton *themeChoice = nullptr;
+        bool hasOriginal = false;
+        for (auto *tile : themeStrip->findChildren<QToolButton *>()) {
+            if (tile->accessibleName() == QStringLiteral("Original"))
+                hasOriginal = true;
+            if (tile->accessibleName() == QStringLiteral("Regression Theme"))
+                themeChoice = tile;
+        }
+        require(hasOriginal, "Inline gallery must offer the Original theme");
+        require(themeChoice, "Newly added masters must appear in the inline gallery");
+        const int themeUndoIndex = document->undoStack()->index();
+        themeChoice->click();
+        app.processEvents();
+        require(selectedTheme(themeStrip) == QStringLiteral("Regression Theme"), "Gallery must select the applied theme");
+        require(document->undoStack()->index() == themeUndoIndex + 1, "applying a theme must be one undo step");
+        for (KoPAPageBase *base : document->pages()) {
+            auto *slide = dynamic_cast<KoPAPage *>(base);
+            require(slide->masterPage() == theme && slide->displayMasterBackground() && slide->isMasterBackgroundVisible() && slide->displayMasterShapes(),
+                    "chosen theme must be visible on every slide");
+        }
+        document->undoStack()->undo();
+        app.processEvents();
+        for (int index = 0; index < previousMasters.size(); ++index)
+            require(dynamic_cast<KoPAPage *>(document->pages().at(index))->masterPage() == previousMasters.at(index), "undo must restore original themes");
+        require(!firstSlide->displayMasterBackground() && !firstSlide->isMasterBackgroundVisible() && !firstSlide->displayMasterShapes(),
+                "undo must restore master visibility");
+        document->undoStack()->redo();
+        app.processEvents();
+        require(firstSlide->masterPage() == theme && firstSlide->displayMasterBackground(), "redo must apply the theme again");
         document->setModified(false);
         delete window;
         app.processEvents();

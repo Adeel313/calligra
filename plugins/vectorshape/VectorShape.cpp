@@ -120,6 +120,8 @@ void RenderThread::run()
         delete image;
         image = nullptr;
     } else {
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setRenderHint(QPainter::TextAntialiasing);
         painter.scale(m_zoomX, m_zoomY);
         draw(painter);
         painter.end();

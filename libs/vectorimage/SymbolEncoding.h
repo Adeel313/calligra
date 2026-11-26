@@ -175,6 +175,32 @@ inline ushort symbolByteToUnicode(ushort code)
     }
 }
 
+/** Decode a Wingdings-encoded bullet character to Unicode. */
+inline ushort wingdingsByteToUnicode(ushort code)
+{
+    switch (code) {
+    case 0x6c: return 0x25cf; // BLACK CIRCLE
+    case 0x6e: return 0x25a0; // BLACK SQUARE
+    case 0x6f: return 0x25a1; // WHITE SQUARE
+    case 0x70: return 0x25a1; // WHITE SQUARE
+    case 0x71: return 0x2751; // LOWER RIGHT SHADOWED WHITE SQUARE
+    case 0x72: return 0x2752; // UPPER RIGHT SHADOWED WHITE SQUARE
+    case 0x75: return 0x25c6; // BLACK DIAMOND
+    case 0x76: return 0x2756; // BLACK DIAMOND MINUS WHITE X
+    case 0x77: return 0x2b29; // BLACK SMALL DIAMOND
+    case 0x9f: return 0x2022; // BULLET
+    case 0xa0: return 0x25aa; // BLACK SMALL SQUARE
+    case 0xa1: return 0x25cb; // WHITE CIRCLE
+    case 0xa7: return 0x25aa; // BLACK SMALL SQUARE
+    case 0xa8: return 0x25a1; // WHITE SQUARE
+    case 0xd8: return 0x27a2; // THREE-D TOP-LIGHTED RIGHTWARDS ARROWHEAD
+    case 0xe8: return 0x2794; // WIDE RIGHTWARDS ARROW
+    case 0xfb: return 0x2717; // BALLOT X
+    case 0xfc: return 0x2714; // CHECK MARK
+    default: return 0;
+    }
+}
+
 } // namespace Calligra
 
 #endif

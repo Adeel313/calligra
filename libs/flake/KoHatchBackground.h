@@ -25,6 +25,8 @@ public:
     };
 
     KoHatchBackground();
+    QString hatchName() const;
+    QColor lineColor() const;
 
     // reimplemented
     void paint(QPainter &painter, const KoViewConverter &converter, KoShapePaintingContext &context, const QPainterPath &fillPath) const override;

@@ -100,27 +100,6 @@ QString decodeSymbolText(QString text)
     return text;
 }
 
-/** Decode a Wingdings-encoded bullet character to Unicode. */
-ushort wingdingsByteToUnicode(ushort code)
-{
-    switch (code) {
-    case 0x6c: return 0x25cf; // BLACK CIRCLE
-    case 0x6e: return 0x25a0; // BLACK SQUARE
-    case 0x6f: return 0x25a1; // WHITE SQUARE
-    case 0x71: return 0x2751; // LOWER RIGHT SHADOWED WHITE SQUARE
-    case 0x72: return 0x2752; // UPPER RIGHT SHADOWED WHITE SQUARE
-    case 0x75: return 0x25c6; // BLACK DIAMOND
-    case 0x9f: return 0x2022; // BULLET
-    case 0xa1: return 0x25cb; // WHITE CIRCLE
-    case 0xa7: return 0x25aa; // BLACK SMALL SQUARE
-    case 0xa8: return 0x25a1; // WHITE SQUARE
-    case 0xd8: return 0x27a2; // THREE-D TOP-LIGHTED RIGHTWARDS ARROWHEAD
-    case 0xe8: return 0x2794; // WIDE RIGHTWARDS ARROW
-    case 0xfb: return 0x2717; // BALLOT X
-    case 0xfc: return 0x2714; // CHECK MARK
-    default: return 0;
-    }
-}
 
 } // namespace
 
@@ -397,6 +376,20 @@ private:
         out.xml.startElement("draw:object");
         out.xml.addCompleteElement(math.constData());
         out.xml.endElement();
+        // MTEF conversion preserves editable structure, but cannot yet reproduce
+        // all of MathType's fonts, spacing and colors. Keep its original artwork
+        // until the equation is changed in the formula editor.
+        const QString preview = getPicturePath(DrawStyle(nullptr, &shape).pib());
+        if (!preview.isEmpty()) {
+            out.xml.startElement("calligra:equation-preview");
+            out.xml.startElement("draw:frame");
+            out.xml.startElement("draw:image");
+            out.xml.addAttribute("xlink:href", preview);
+            out.xml.addAttribute("xlink:type", "simple");
+            out.xml.endElement();
+            out.xml.endElement();
+            out.xml.endElement();
+        }
         return true;
     }
     bool onlyClientData(const MSO::OfficeArtClientData &o) override;
@@ -1832,7 +1825,7 @@ QChar getBulletChar(const PptTextPFRun &pf, const QString &bulletFontName)
         v &= 0x00ff;
     }
     if (isWingdingsFontFamily(bulletFontName)) {
-        const ushort mapped = wingdingsByteToUnicode(v);
+        const ushort mapped = Calligra::wingdingsByteToUnicode(v);
         if (mapped) {
             return QChar(mapped);
         }

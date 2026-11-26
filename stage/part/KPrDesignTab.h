@@ -7,24 +7,38 @@
 #define KPRDESIGNTAB_H
 
 #include <QObject>
+#include <QHash>
+#include <QPointer>
+#include <memory>
 #include <QSharedPointer>
 
+class QColor;
 class QHBoxLayout;
-class QLabel;
+class QMenu;
 class QToolButton;
 class QWidget;
 
 class KPrView;
+class KoPADocument;
 class KoPAMasterPage;
+class KoPAPage;
 class KoShapeBackground;
 
-/**
- * Builds the Design tab of the Stage ribbon.
- *
- * The tab follows the PowerPoint layout: a horizontal gallery of the document
- * themes (its master slides), a strip of slide background variants, the slide
- * size and background commands, and the design ideas gallery.
- */
+namespace KPrThemeArtwork
+{
+struct Theme;
+}
+
+struct KPrSlideDesign {
+    KoPAMasterPage *master = nullptr;
+    QSharedPointer<KoShapeBackground> background;
+    bool inheritsBackground = false;
+    bool backgroundVisible = false;
+    bool masterShapes = false;
+
+    bool operator==(const KPrSlideDesign &) const = default;
+};
+
 class KPrDesignTab : public QObject
 {
     Q_OBJECT
@@ -32,23 +46,27 @@ public:
     KPrDesignTab(KPrView *view, QWidget *page);
 
 private Q_SLOTS:
-    void rebuildGalleries();
+    void rebuildThemes();
 
 private:
     QWidget *createThemesGroup();
-    QWidget *createVariantsGroup();
+    QWidget *createSlideControls();
     QWidget *createCustomizeGroup();
-    QWidget *createDesignerGroup();
-
-    QToolButton *addGalleryItem(QHBoxLayout *stripLayout, const QPixmap &pixmap, const QString &toolTip);
-
+    void captureOriginal(KoPADocument *document);
+    void applyOriginal();
     void applyTheme(KoPAMasterPage *master);
-    void applyVariant(int index);
+    void applyTemplateTheme(const QString &file, const QString &name);
+    void applyArtworkTheme(const KPrThemeArtwork::Theme &theme);
+    void applyNewMaster(std::unique_ptr<KoPAMasterPage> master);
+    void applyColor(const QColor &color);
 
-    KPrView *m_view;
+    QHash<KoPAPage *, KPrSlideDesign> m_originalDesigns;
+    KPrSlideDesign m_defaultOriginal;
+    QPointer<KPrView> m_view;
     QWidget *m_page;
-    QHBoxLayout *m_themesLayout;
-    QHBoxLayout *m_variantsLayout;
+    QToolButton *m_themesButton;
+    QMenu *m_themesMenu;
+    QHBoxLayout *m_themeStrip;
 };
 
 #endif // KPRDESIGNTAB_H

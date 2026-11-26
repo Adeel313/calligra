@@ -45,6 +45,18 @@ KoHatchBackground::KoHatchBackground()
 {
 }
 
+QString KoHatchBackground::hatchName() const
+{
+    Q_D(const KoHatchBackground);
+    return d->name;
+}
+
+QColor KoHatchBackground::lineColor() const
+{
+    Q_D(const KoHatchBackground);
+    return d->lineColor;
+}
+
 void KoHatchBackground::paint(QPainter &painter, const KoViewConverter &converter, KoShapePaintingContext &context, const QPainterPath &fillPath) const
 {
     Q_D(const KoHatchBackground);

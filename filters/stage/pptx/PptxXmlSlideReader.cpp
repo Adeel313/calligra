@@ -1584,6 +1584,13 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_ph()
     // The possible values for this attribute are defined by the ST_PlaceholderType simple type (§19.7.10), p.2988.
     TRY_READ_ATTR_WITHOUT_NS_INTO(type, d->phType)
     d->isSubtitlePlaceholder = d->phType == QLatin1String("subTitle");
+    if (m_context->type == Slide && !m_drawStyleStack.isEmpty()) {
+        auto *pageStyle = m_drawStyleStack.constFirst();
+        if (d->phType == QLatin1String("sldNum"))
+            pageStyle->addProperty("presentation:display-page-number", "true");
+        else if (d->phType == QLatin1String("ftr"))
+            pageStyle->addProperty("presentation:display-footer", "true");
+    }
     debugPptx << "type:" << d->phType;
     // There is a hardcoded behaviour in MSoffice that ctrTitle refers also to
     // "title".
@@ -1642,7 +1649,7 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_txBody()
     m_prevListLevel = 0;
     m_currentListLevel = 0;
     m_pPr_lvl = 0;
-    m_continueListNumbering.clear();
+    m_numberingByLevel.clear();
     m_prevListStyleName.clear();
 
     MSOOXML::Utils::XmlWriteBuffer listBuf;

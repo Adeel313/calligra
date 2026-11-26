@@ -12,6 +12,21 @@ class KoFileDialogTest : public QObject
 {
     Q_OBJECT
 private Q_SLOTS:
+    void powerPointSaveFiltersUseCanonicalExtensions()
+    {
+        const QStringList formats = {
+            QStringLiteral("application/vnd.ms-powerpoint"),
+            QStringLiteral("application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+        };
+        KoFileDialog dialog(nullptr, KoFileDialog::SaveFile, QString());
+        dialog.setMimeTypeFilters(formats, formats.first());
+        const QStringList filters = dialog.nameFilters();
+        QCOMPARE(filters.size(), 3);
+        QVERIFY(filters.at(0).endsWith(QStringLiteral(" (*.ppt)")));
+        QVERIFY(filters.at(1).endsWith(QStringLiteral(" (*.pptx)")));
+        QVERIFY(filters.at(0).section(QLatin1Char('('), 0, 0) != filters.at(1).section(QLatin1Char('('), 0, 0));
+    }
+
     void saveKeepsSuggestedFilename()
     {
         QTemporaryDir directory;

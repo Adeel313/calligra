@@ -33,6 +33,7 @@
 
 class QPainter;
 class QPaintEvent;
+class QPixmap;
 class KoViewConverter;
 class KoShape;
 class KoPACanvas;
@@ -131,6 +132,7 @@ protected:
 
     // paint the given step to the painter
     void paintStep(QPainter &painter);
+    QPixmap captureSlide();
 
     /**
      * Finish the running shape animations
@@ -149,7 +151,6 @@ protected:
     bool animationRunning() const;
     bool moreAnimationSteps() const;
 
-    bool hasPageEffect() const;
     bool pageEffectRunning() const;
 
     bool hasAutoSlideTransition() const;

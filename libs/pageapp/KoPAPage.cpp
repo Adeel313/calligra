@@ -139,6 +139,19 @@ void KoPAPage::setDisplayMasterBackground(bool display)
     }
 }
 
+bool KoPAPage::isMasterBackgroundVisible() const
+{
+    return m_pageProperties & DisplayMasterBackground;
+}
+
+void KoPAPage::setMasterBackgroundVisible(bool visible)
+{
+    if (visible)
+        m_pageProperties |= DisplayMasterBackground;
+    else
+        m_pageProperties &= ~DisplayMasterBackground;
+}
+
 bool KoPAPage::displayShape(KoShape *shape) const
 {
     Q_UNUSED(shape);

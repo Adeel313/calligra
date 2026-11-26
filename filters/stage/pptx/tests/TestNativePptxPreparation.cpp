@@ -147,6 +147,43 @@ int main(int argc, char **argv)
         }
     }
     if (baseRuns != 1 || scriptRuns != 1) return 32;
+    const QByteArray modelWithPreview = R"(<p:spTree xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+        xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+        xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+        <mc:AlternateContent>
+          <mc:Choice xmlns:model="http://schemas.microsoft.com/office/drawing/2017/model3d" Requires="model">
+            <p:graphicFrame><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/drawing/2017/model3d">
+              <model:model3d/>
+            </a:graphicData></a:graphic></p:graphicFrame>
+          </mc:Choice>
+          <mc:Fallback><p:pic><p:blipFill><a:blip r:embed="preview"/></p:blipFill></p:pic></mc:Fallback>
+        </mc:AlternateContent>
+        </p:spTree>)";
+    QDomDocument model;
+    if (!model.setContent(modelWithPreview, QDomDocument::ParseOption::UseNamespaceProcessing)
+        || !preparePptxMath(model)) return 33;
+    const auto preview = model.documentElement().firstChildElement();
+    const auto blip = preview.elementsByTagNameNS(ans, QStringLiteral("blip")).at(0).toElement();
+    if (preview.localName() != QLatin1String("pic")
+        || blip.attributeNS(QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships"),
+                            QStringLiteral("embed")) != QLatin1String("preview")) return 34;
+    const QByteArray morphWithFade = R"(<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+        <mc:AlternateContent>
+          <mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159">
+            <p:transition><p159:morph option="byObject"/></p:transition>
+          </mc:Choice>
+          <mc:Fallback><p:transition spd="slow" advTm="1800"><p:fade/></p:transition></mc:Fallback>
+        </mc:AlternateContent>
+        </p:sld>)";
+    QDomDocument transitionSlide;
+    if (!transitionSlide.setContent(morphWithFade, QDomDocument::ParseOption::UseNamespaceProcessing)
+        || !preparePptxMath(transitionSlide)) return 35;
+    const auto transition = transitionSlide.documentElement().firstChildElement();
+    if (transition.localName() != QLatin1String("transition")
+        || transition.attribute(QStringLiteral("advTm")) != QLatin1String("1800")
+        || transition.firstChildElement().localName() != QLatin1String("fade")) return 36;
     QDomDocument rotated;
     const QByteArray rectangle = R"(<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
         xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:sp><p:spPr>
@@ -178,6 +215,28 @@ int main(int argc, char **argv)
     QDomDocument packageDocument;
     if (!preparedPart || !packageDocument.setContent(preparedPart->data(), QDomDocument::ParseOption::UseNamespaceProcessing)) return 13;
     if (packageDocument.elementsByTagNameNS(ans, QStringLiteral("xfrm")).at(0).toElement().hasAttribute(QStringLiteral("rot"))) return 14;
-    qInfo("PASS: math, relationships, ordinary slides, cardinal gradient bounds/direction and text-bearing rotation preservation");
+    const QByteArray equationPreview = R"(<p:spTree xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+        xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+        xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main"
+        xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"
+        xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+        <mc:AlternateContent>
+          <mc:Choice Requires="a14"><p:sp><p:txBody><a:p><a14:m><m:oMath/></a14:m></a:p></p:txBody></p:sp></mc:Choice>
+          <mc:Fallback><p:sp><p:nvSpPr><p:cNvPr id="42" name="Equation"/></p:nvSpPr>
+            <p:spPr><a:xfrm/><a:blipFill><a:blip r:embed="rId7"/></a:blipFill></p:spPr>
+            <p:txBody><a:p><a:r><a:t> </a:t></a:r></a:p></p:txBody>
+          </p:sp></mc:Fallback>
+        </mc:AlternateContent>
+        </p:spTree>)";
+    QDomDocument equation;
+    if (!equation.setContent(equationPreview, QDomDocument::ParseOption::UseNamespaceProcessing)
+        || !preparePptxMath(equation)) return 37;
+    const auto equationPicture = equation.documentElement().firstChildElement();
+    const auto equationBlip = equationPicture.elementsByTagNameNS(ans, QStringLiteral("blip")).at(0).toElement();
+    if (equationPicture.localName() != QLatin1String("pic")
+        || equationBlip.attributeNS(QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships"),
+                                    QStringLiteral("embed")) != QLatin1String("rId7")) return 38;
+    qInfo("PASS: math, relationships, ordinary slides, equation and 3D previews, Morph fallback, cardinal gradient bounds/direction and text-bearing rotation preservation");
     return 0;
 }

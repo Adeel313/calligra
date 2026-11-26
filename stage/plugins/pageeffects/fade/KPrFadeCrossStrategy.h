@@ -22,7 +22,6 @@ public:
 
     void next(const KPrPageEffect::Data &data) override;
 
-    void finish(const KPrPageEffect::Data &data) override;
 };
 
 #endif /* KPRFADECROSSSTRATEGY_H */

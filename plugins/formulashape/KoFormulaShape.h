@@ -105,6 +105,9 @@ private:
     /// The renderer that takes care of painting the shape's formula
     std::unique_ptr<FormulaRenderer> m_formulaRenderer;
 
+    // Original legacy equation artwork, retained until its math is edited.
+    std::unique_ptr<KoShape> m_equationPreview;
+
     /// True if this formula is inline, i.e. not embedded in a formula document.
     bool m_isInline;
 

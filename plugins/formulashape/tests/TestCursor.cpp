@@ -52,6 +52,17 @@ void TestCursor::defaultFormulaSize()
     const qreal displayedSize = font.pointSizeF() * QFontMetricsF(font).fontDpi() / 72.0 * formula->displayScale();
     QVERIFY(qAbs(displayedSize - 12.0) < 0.01);
 
+    // A spreadsheet equation can be resized freely as a floating shape. Its
+    // rendering and cursor must use the same uniform scale on both axes.
+    const QSizeF naturalSize = formula->size();
+    formula->setSize(QSizeF(naturalSize.width() * 3, naturalSize.height() * 2));
+    QCOMPARE(formula->displayScale(), 2.0);
+    formula->setEditing(true);
+    QCOMPARE(formula->displayScale(), 2.0);
+    formula->setEditing(false);
+    QCOMPARE(formula->displayScale(), 2.0);
+    formula->setSize(naturalSize);
+
     KoProperties properties;
     properties.setProperty("standalone", true);
     std::unique_ptr<KoShape> displayShape(factory.createShape(&properties));

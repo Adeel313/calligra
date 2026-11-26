@@ -51,6 +51,10 @@ public:
     /// reimplemented
     void setDisplayMasterBackground(bool display) override;
 
+    // ODF controls inheritance and visibility independently.
+    bool isMasterBackgroundVisible() const;
+    void setMasterBackgroundVisible(bool visible);
+
     /// reimplemented
     bool displayShape(KoShape *shape) const override;
 

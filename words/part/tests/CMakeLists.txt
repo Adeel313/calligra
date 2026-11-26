@@ -20,6 +20,11 @@ macro(WORDS_PART_ADD_UNIT_TEST _TEST_NAME)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_PLUGIN_PATH=${CMAKE_BINARY_DIR}/bin:${KDE_INSTALL_FULL_PLUGINDIR};XDG_DATA_DIRS=${CMAKE_INSTALL_PREFIX}/share:/usr/local/share:/usr/share;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/${_TEST_NAME}-config;XDG_CACHE_HOME=${CMAKE_CURRENT_BINARY_DIR}/${_TEST_NAME}-cache;LSAN_OPTIONS=suppressions=${CMAKE_SOURCE_DIR}/sanitizers.supp")
 endmacro()
 
+words_part_add_unit_test(TestEquationRibbon
+    TestEquationRibbon.cpp
+    LINK_LIBRARIES wordsprivate Qt6::Test
+)
+
 # call: words_part_frame_add_unit_test(<test-name> <sources> LINK_LIBRARIES <library> [<library> [...]] [GUI])
 macro(WORDS_PART_FRAME_ADD_UNIT_TEST _TEST_NAME)
     ecm_add_test( ${ARGN}

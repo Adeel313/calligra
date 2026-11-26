@@ -1624,6 +1624,22 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_sp()
 
     body = drawFrameBuf.originalWriter();
 
+#ifdef PPTXXMLSLIDEREADER_CPP
+    if (m_shapeUsesBackgroundFill) {
+        const auto *pageStyle = m_drawStyleStack.constFirst();
+        const QString fill = pageStyle->property("draw:fill");
+        const QString opacity = pageStyle->property("draw:opacity");
+        // A solid page background can be reproduced as a shape fill.
+        if (fill == QLatin1String("solid") && (opacity.isEmpty() || opacity == QLatin1String("100%"))) {
+            m_currentDrawStyle->addProperty("draw:fill", "solid");
+            m_currentDrawStyle->addProperty("draw:fill-color", pageStyle->property("draw:fill-color"));
+        } else if (fill.isEmpty() || fill == QLatin1String("none")) {
+            m_currentDrawStyle->addProperty("draw:fill", "solid");
+            m_currentDrawStyle->addProperty("draw:fill-color", "#ffffff");
+        }
+    }
+#endif
+
     generateFrameSp();
 
     (void)drawFrameBuf.releaseWriter();
@@ -1726,6 +1742,60 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_style()
 }
 
 #undef CURRENT_EL
+#define CURRENT_EL pattFill
+KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_pattFill()
+{
+    READ_PROLOGUE_IF_NS(a)
+    const auto preset = attributes().value(QLatin1String("prst")).toString();
+    QColor foreground(Qt::black);
+    QColor background(Qt::white);
+    while (readNextStartElement()) {
+        QColor *color = name() == QLatin1String("fgClr") ? &foreground : name() == QLatin1String("bgClr") ? &background : nullptr;
+        if (!color) {
+            skipCurrentElement();
+            continue;
+        }
+        m_currentColor = QColor();
+        while (readNextStartElement()) {
+            TRY_READ_IF_NS(a, schemeClr)
+            ELSE_TRY_READ_IF_NS(a, srgbClr)
+            ELSE_TRY_READ_IF_NS(a, scrgbClr)
+            ELSE_TRY_READ_IF_NS(a, sysClr)
+            ELSE_TRY_READ_IF_NS(a, prstClr)
+            ELSE_TRY_READ_IF_NS(a, hslClr)
+            SKIP_UNKNOWN
+        }
+        if (m_currentColor.isValid())
+            *color = m_currentColor;
+    }
+    m_currentColor = QColor();
+    m_currentAlpha = -1;
+
+    int angle;
+    qreal spacing;
+    if (preset == QLatin1String("wdDnDiag")) {
+        angle = 315;
+        spacing = 2.5;
+    } else if (preset == QLatin1String("ltHorz")) {
+        angle = 0;
+        spacing = 1.5;
+    } else {
+        READ_EPILOGUE_IF_NS(a)
+    }
+    KoGenStyle hatch(KoGenStyle::HatchStyle);
+    hatch.addAttribute("draw:display-name", QStringLiteral("DrawingML ") + preset);
+    hatch.addAttribute("draw:style", "single");
+    hatch.addAttribute("draw:color", foreground.name());
+    hatch.addAttribute("draw:rotation", QString::number(angle * 10));
+    hatch.addAttributePt("draw:distance", spacing);
+    m_currentDrawStyle->addProperty("draw:fill", "hatch");
+    m_currentDrawStyle->addProperty("draw:fill-hatch-name", mainStyles->insert(hatch, "hatch"));
+    m_currentDrawStyle->addProperty("draw:fill-hatch-solid", true);
+    m_currentDrawStyle->addProperty("draw:fill-color", background.name());
+    READ_EPILOGUE_IF_NS(a)
+}
+
+#undef CURRENT_EL
 #define CURRENT_EL spPr
 //! spPr handler (Shape Properties)
 //! ECMA-376, 19.3.1.44, p.2855; (PresentationML)
@@ -1817,6 +1887,11 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_spPr()
                         m_currentDrawStyle->addProperty("draw:opacity", QString("%1%").arg(m_currentAlpha));
                     }
                 }
+            } else if (qualifiedName() == QLatin1String("a:pattFill")) {
+                TRY_READ(pattFill)
+#ifdef PPTXXMLSLIDEREADER_CPP
+                d->textBoxHasContent = true;
+#endif
             } else if (qualifiedName() == QLatin1String("a:ln")) {
                 TRY_READ(ln)
             } else if (qualifiedName() == QLatin1String("a:noFill")) {
@@ -2330,6 +2405,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_p()
     m_paragraphStyleNameWritten = false;
     m_listStylePropertiesAltered = false;
     m_explicitBulletProperties = false;
+    m_explicitNumberingStart = false;
 
     m_currentCombinedBulletProperties.clear();
 
@@ -2569,20 +2645,20 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_p()
     // Update Automatic Numbering info
     //---------------------------------------------
     if (m_currentBulletProperties.m_type != MSOOXML::Utils::ParagraphBulletProperties::NumberType) {
-        QList<quint16> levels = m_continueListNumbering.keys();
+        QList<quint16> levels = m_numberingByLevel.keys();
         for (quint16 i = 0; i < levels.size(); i++) {
             if (levels[i] >= m_currentListLevel) {
-                m_continueListNumbering.remove(levels[i]);
+                m_numberingByLevel.remove(levels[i]);
                 m_lvlXmlIdMap.remove(levels[i]);
             }
         }
     }
     if (m_currentBulletProperties.m_type == MSOOXML::Utils::ParagraphBulletProperties::NumberType) {
         if (m_prevListLevel > m_currentListLevel) {
-            QList<quint16> levels = m_continueListNumbering.keys();
+            QList<quint16> levels = m_numberingByLevel.keys();
             for (quint16 i = 0; i < levels.size(); i++) {
                 if (levels[i] > m_currentListLevel) {
-                    m_continueListNumbering.remove(levels[i]);
+                    m_numberingByLevel.remove(levels[i]);
                     m_lvlXmlIdMap.remove(levels[i]);
                 }
             }
@@ -2629,22 +2705,24 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_p()
             body->addAttribute("text:style-name", listStyleName);
             m_currentParagraphStyle.addAttribute("style:list-style-name", listStyleName);
 
-            // continue numbering if applicable
+            for (int i = 1; i < m_currentListLevel; ++i) {
+                body->startElement("text:list-item");
+                body->startElement("text:list");
+            }
+
             if (m_currentBulletProperties.m_type == MSOOXML::Utils::ParagraphBulletProperties::NumberType) {
                 QString xmlId = QString("lvl%1").arg(m_currentListLevel);
                 xmlId.append(QString("_%1").arg(QRandomGenerator::global()->generate()));
                 body->addAttribute("xml:id", xmlId);
 
-                if (m_continueListNumbering.contains(m_currentListLevel) && m_continueListNumbering[m_currentListLevel]) {
-                    body->addAttribute("text:continue-list", m_lvlXmlIdMap[m_currentListLevel]);
+                const auto previous = m_numberingByLevel.constFind(m_currentListLevel);
+                if (!m_explicitNumberingStart && previous != m_numberingByLevel.cend()
+                    && m_currentBulletProperties.sameNumberingFormat(previous.value())) {
+                    body->addAttribute("text:continue-list", m_lvlXmlIdMap.value(m_currentListLevel));
                 }
                 m_lvlXmlIdMap[m_currentListLevel] = xmlId;
             }
             body->startElement("text:list-item");
-            for (int i = 1; i < m_currentListLevel; i++) {
-                body->startElement("text:list");
-                body->startElement("text:list-item");
-            }
 
         } else if (m_prevListLevel < m_currentListLevel) {
             if (m_prevListLevel > 0) {
@@ -2668,21 +2746,10 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_p()
         } else { // m_prevListLevel==m_currentListLevel
             body->startElement("text:list-item");
         }
-        // restart numbering if applicable
         if (m_currentBulletProperties.m_type == MSOOXML::Utils::ParagraphBulletProperties::NumberType) {
-            if (m_continueListNumbering.contains(m_currentListLevel) && (m_continueListNumbering[m_currentListLevel] == false)) {
+            if (m_explicitNumberingStart)
                 body->addAttribute("text:start-value", m_currentBulletProperties.startValue());
-            }
-        }
-        /* #else */
-        /*         for (int i = 0; i < m_currentListLevel; ++i) { */
-        /*             body->startElement("text:list"); */
-        /*             // TODO:, should most likely add the name of the current list style */
-        /*             body->startElement("text:list-item"); */
-        /*         } */
-        /* #endif */
-        if (m_currentBulletProperties.m_type == MSOOXML::Utils::ParagraphBulletProperties::NumberType) {
-            m_continueListNumbering[m_currentListLevel] = true;
+            m_numberingByLevel[m_currentListLevel] = m_currentBulletProperties;
         }
     }
     //---------------------------------------------
@@ -3200,7 +3267,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_rPr()
   - [done] lvl (Level)
   - marL (Left Margin)
   - marR (Right Margin)
-  - rtl (Right To Left)
+  - [done] rtl (Right To Left)
 
  Child elements:
   - [done] buAutoNum (Auto-Numbered Bullet) §21.1.2.4.1
@@ -3253,6 +3320,12 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_pPr()
 
     TRY_READ_ATTR_WITHOUT_NS(algn)
     algnToODF("fo:text-align", algn);
+
+    TRY_READ_ATTR_WITHOUT_NS(rtl)
+    if (!rtl.isEmpty()) {
+        const bool rightToLeft = rtl == QLatin1String("1") || rtl == QLatin1String("true");
+        m_currentParagraphStyle.addProperty("style:writing-mode", rightToLeft ? "rl-tb" : "lr-tb");
+    }
 
     TRY_READ_ATTR_WITHOUT_NS(marL)
     TRY_READ_ATTR_WITHOUT_NS(marR)
@@ -5765,6 +5838,8 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_buAutoNum()
     TRY_READ_ATTR_WITHOUT_NS(type)
 
     if (!type.isEmpty()) {
+        m_currentBulletProperties.setPrefix(QString());
+        m_currentBulletProperties.setSuffix(QString());
         if (type == "alphaLcParenBoth") {
             m_currentBulletProperties.setPrefix("(");
             m_currentBulletProperties.setSuffix(")");
@@ -5826,6 +5901,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_buAutoNum()
     TRY_READ_ATTR_WITHOUT_NS(startAt)
     if (!startAt.isEmpty()) {
         m_currentBulletProperties.setStartValue(startAt);
+        m_explicitNumberingStart = true;
     }
 
     m_listStylePropertiesAltered = true;
@@ -6454,7 +6530,7 @@ KoFilter::ConversionStatus MSOOXML_CURRENT_CLASS::read_DrawingML_txBody(txBodyCa
     m_prevListLevel = 0;
     m_currentListLevel = 0;
     m_pPr_lvl = 0;
-    m_continueListNumbering.clear();
+    m_numberingByLevel.clear();
     m_prevListStyleName.clear();
 
     bool textBoxCreated = false;

@@ -17,6 +17,11 @@ endmacro()
 
 ########### Core Functionality ###############
 
+sheets_add_unit_test(ShapeRibbon
+    TestShapeRibbon.cpp
+    LINK_LIBRARIES komain Qt6::Test
+)
+
 sheets_add_unit_test(TestTime
     TestTime.cpp
     LINK_LIBRARIES calligrasheetsengine Qt6::Test

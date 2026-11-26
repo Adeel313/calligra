@@ -228,6 +228,13 @@ void KoFileDialog::createFileDialog()
     if (!d->defaultFilter.isEmpty()) {
         d->fileDialog->selectNameFilter(d->defaultFilter);
     }
+    if (d->type == SaveFile) {
+        const QString filter = d->fileDialog->selectedNameFilter();
+        if (filter.endsWith(QLatin1String(" (*.ppt)")))
+            d->fileDialog->setDefaultSuffix(QStringLiteral("ppt"));
+        else if (filter.endsWith(QLatin1String(" (*.pptx)")))
+            d->fileDialog->setDefaultSuffix(QStringLiteral("pptx"));
+    }
 
     if (d->type == ImportDirectory || d->type == ImportFile || d->type == ImportFiles || d->type == SaveFile) {
         d->fileDialog->setWindowModality(Qt::WindowModal);
@@ -314,13 +321,12 @@ QStringList KoFileDialog::filenames()
 
 void KoFileDialog::filterSelected(const QString &filter)
 {
-    // "Windows BMP image ( *.bmp )";
-    int start = filter.lastIndexOf(QLatin1String("*.")) + 2;
-    int end = filter.lastIndexOf(QLatin1String(" )"));
-    int n = end - start;
-    QString extension = filter.mid(start, n);
+    const qsizetype start = filter.lastIndexOf(QLatin1String("*."));
+    const qsizetype end = filter.lastIndexOf(QLatin1Char(')'));
     d->defaultFilter = filter;
-    d->fileDialog->setDefaultSuffix(extension);
+    d->fileDialog->setDefaultSuffix(start >= 0 && end > start + 2
+                                        ? filter.mid(start + 2, end - start - 2).trimmed()
+                                        : QString());
 }
 
 QStringList KoFileDialog::splitNameFilter(const QString &nameFilter, QStringList *mimeList)
@@ -371,6 +377,18 @@ const QStringList KoFileDialog::getFilterStringListFromMime(const QStringList &m
             continue;
         }
         if (!mimeSeen.contains(mimeType.name())) {
+            // The MIME database describes both PowerPoint formats identically
+            // and lists slideshow and compressed suffixes for binary PPT.
+            if (d->type == SaveFile && mimeType.name() == QLatin1String("application/vnd.ms-powerpoint")) {
+                ret << i18n("PowerPoint 97–2003 Presentation") + QStringLiteral(" (*.ppt)");
+                mimeSeen << mimeType.name();
+                continue;
+            }
+            if (d->type == SaveFile && mimeType.name() == QLatin1String("application/vnd.openxmlformats-officedocument.presentationml.presentation")) {
+                ret << i18n("PowerPoint Presentation") + QStringLiteral(" (*.pptx)");
+                mimeSeen << mimeType.name();
+                continue;
+            }
             QString oneFilter;
             QStringList patterns = mimeType.globPatterns();
             QStringList::ConstIterator jt;

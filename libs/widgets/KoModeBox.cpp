@@ -130,7 +130,7 @@ public:
     bool ribbonDirty = true;
     /// Tab that was current before a contextual page activated itself, so the
     /// ribbon can go back there when the context ends.
-    int contextReturnIndex = -1;
+    QPointer<QWidget> contextReturnPage;
     /// A band resize re-lays out the page, which can come back here while the
     /// contextual tab is being measured; the outer call owns the height.
     bool fittingRibbonBand = false;
@@ -435,7 +435,10 @@ void KoModeBox::primeToolOptions(const QString &toolId)
     if (widgets.isEmpty()) {
         return;
     }
-    if (d->orientation == Qt::Horizontal && usesCustomRibbonPages(applicationName)) {
+    if (d->orientation == Qt::Horizontal
+        && (usesCustomRibbonPages(applicationName)
+            || (applicationName.contains(QLatin1String("words"), Qt::CaseInsensitive)
+                && toolId == QLatin1String("KoFormulaToolFactoryId")))) {
         routeOfficeOptions(toolId, widgets);
         return;
     }
@@ -805,14 +808,14 @@ bool KoModeBox::eventFilter(QObject *watched, QEvent *event)
                 // tabs, so it normally sits outside the visible width of the
                 // bar. Selecting it scrolls it into view as well as showing its
                 // page, which is what Office does when the cursor enters one.
-                d->contextReturnIndex = d->tabBar->currentIndex();
+                d->contextReturnPage = d->stack->currentWidget();
                 d->tabBar->setCurrentIndex(index);
             }
             if (returnToTool) {
                 // Hiding contextual controls must not activate another tool
                 // or move the cursor. Return to the ribbon the user came from.
-                const int returnIndex = d->contextReturnIndex;
-                d->contextReturnIndex = -1;
+                const int returnIndex = d->contextReturnPage ? d->stack->indexOf(d->contextReturnPage) : -1;
+                d->contextReturnPage = nullptr;
                 if (returnIndex >= 0 && returnIndex < d->tabBar->count()
                     && returnIndex != index && d->tabBar->isTabVisible(returnIndex)) {
                     d->tabBar->setCurrentIndex(returnIndex);
@@ -820,11 +823,12 @@ bool KoModeBox::eventFilter(QObject *watched, QEvent *event)
                     if (usesCustomRibbonPages(applicationName)) {
                         showRibbonPage(applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive)
                             ? QStringLiteral("sheetsHomePage") : QStringLiteral("stageHomePage"));
-                    }
-                    for (int i = 0; i < d->tabBar->count(); ++i) {
-                        if (d->tabBar->isTabVisible(i) && d->tabBar->tabData(i).toInt() == d->activeId) {
-                            d->tabBar->setCurrentIndex(i);
-                            break;
+                    } else {
+                        for (int i = 0; i < d->tabBar->count(); ++i) {
+                            if (d->tabBar->isTabVisible(i) && d->tabBar->tabData(i).toInt() == d->activeId) {
+                                d->tabBar->setCurrentIndex(i);
+                                break;
+                            }
                         }
                     }
                 }
@@ -1303,6 +1307,9 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
         });
     }
     const auto appendToolAction = [this, officeWordRibbon](KoToolAction *toolAction) {
+        if (officeWordRibbon && toolAction->id() == QLatin1String("KoFormulaToolFactoryId")) {
+            return; // The dedicated Equation page owns the math controls.
+        }
         if (d->orientation == Qt::Horizontal && usesCustomRibbonPages(applicationName)) {
             // Named ribbon pages own the native tool controls.
             // Do not append a second tab for each legacy tool.
@@ -1390,6 +1397,12 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
     if (customIndex >= 0 && d->tabBar->isTabVisible(customIndex)) {
         d->tabBar->setCurrentIndex(customIndex);
         d->stack->setCurrentIndex(customIndex);
+    } else if (usesCustomRibbonPages(applicationName)) {
+        // A selection change can rebuild the ribbon after its contextual tab
+        // has disappeared. No tool tab exists in Stage/Sheets to restore, so
+        // explicitly return Home instead of leaving the first (File) tab open.
+        showRibbonPage(applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive)
+            ? QStringLiteral("sheetsHomePage") : QStringLiteral("stageHomePage"));
     }
     // A contextual tab can already be active while the ribbon is built, for
     // example when the document opens with the cursor inside a table. Its
@@ -1405,7 +1418,7 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
         if (contextIndex < 0 || !d->tabBar->isTabVisible(contextIndex) || d->tabBar->currentIndex() == contextIndex) {
             continue;
         }
-        d->contextReturnIndex = d->tabBar->currentIndex();
+        d->contextReturnPage = d->stack->currentWidget();
         d->tabBar->setCurrentIndex(contextIndex);
         d->stack->setCurrentIndex(contextIndex);
         break;
@@ -1435,7 +1448,8 @@ void KoModeBox::updateShownTools(const QList<QString> &codes)
 void KoModeBox::routeOfficeOptions(const QString &toolId, const QList<QPointer<QWidget>> &widgets)
 {
     const bool spreadsheet = applicationName.contains(QLatin1String("sheets"), Qt::CaseInsensitive);
-    const QString prefix = spreadsheet ? QStringLiteral("sheets") : QStringLiteral("stage");
+    const QString prefix = spreadsheet ? QStringLiteral("sheets")
+        : applicationName.contains(QLatin1String("words"), Qt::CaseInsensitive) ? QStringLiteral("words") : QStringLiteral("stage");
     const bool equationTool = toolId == QLatin1String("KoFormulaToolFactoryId");
     const bool drawingTool = toolId == QLatin1String("ConnectionTool") || toolId == QLatin1String("CreatePathTool")
         || toolId == QLatin1String("KoPencilTool") || toolId == QLatin1String("PathToolFactoryId");
@@ -1445,10 +1459,10 @@ void KoModeBox::routeOfficeOptions(const QString &toolId, const QList<QPointer<Q
         defaultPage = prefix + QStringLiteral("HomePage");
     else if (toolId == QLatin1String("KoPABackgroundTool"))
         defaultPage = prefix + QStringLiteral("DesignPage");
-    else if (spreadsheet && equationTool)
-        // Equations have an exclusive contextual tab in Sheets; Words already
+    else if (equationTool)
+        // Equations have an exclusive contextual tab in Stage and Sheets; Words already
         // maps this tool to its Equation tool tab.
-        defaultPage = QStringLiteral("sheetsEquationPage");
+        defaultPage = prefix + QStringLiteral("EquationPage");
     else if (drawingTool)
         // Sheets merges the drawing tools into the one contextual Shape Format
         // tab; Stage keeps its separate Draw tab.
@@ -1472,6 +1486,20 @@ void KoModeBox::routeOfficeOptions(const QString &toolId, const QList<QPointer<Q
                 || widget->property("ribbonRoutedPage").toString() == customPage.page->objectName())
                 break;
             widget->setProperty("ribbonRoutedPage", customPage.page->objectName());
+            if (customPage.page->objectName() == QLatin1String("stageDesignPage") && toolId == QLatin1String("KoPABackgroundTool")) {
+                auto *menu = customPage.page->findChild<QMenu *>(QStringLiteral("stageDesignBackgroundMenu"));
+                if (!menu) {
+                    widget->setProperty("ribbonRoutedPage", QString());
+                    break;
+                }
+                // The Design tab already provides a dedicated slide layout menu.
+                if (widget->objectName() != QLatin1String("Slide Layouts")) {
+                    auto *action = new QWidgetAction(menu);
+                    action->setDefaultWidget(widget);
+                    menu->addAction(action);
+                }
+                break;
+            }
             if (widget->objectName() == QLatin1String("Slide Layouts")) {
                 auto *slides = customPage.page->findChild<QWidget *>(QStringLiteral("stageSlidesGroup"));
                 auto *grid = slides ? slides->findChild<QGridLayout *>() : nullptr;
@@ -1544,6 +1572,14 @@ void KoModeBox::routeOfficeOptions(const QString &toolId, const QList<QPointer<Q
 
 void KoModeBox::setOptionWidgets(const QList<QPointer<QWidget>> &optionWidgetList)
 {
+    if (d->orientation == Qt::Horizontal && applicationName.contains(QLatin1String("words"), Qt::CaseInsensitive)) {
+        for (const KoToolAction *toolAction : std::as_const(d->toolActions)) {
+            if (toolAction->buttonGroupId() == d->activeId && toolAction->id() == QLatin1String("KoFormulaToolFactoryId")) {
+                routeOfficeOptions(toolAction->id(), optionWidgetList);
+                return;
+            }
+        }
+    }
     if (d->orientation == Qt::Horizontal && usesCustomRibbonPages(applicationName)) {
         for (const KoToolAction *toolAction : std::as_const(d->toolActions)) {
             if (toolAction->buttonGroupId() == d->activeId) {

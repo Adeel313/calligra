@@ -113,15 +113,18 @@ void KoPAViewModeNormal::mousePressEvent(QMouseEvent *event, const QPointF &poin
     }
     m_mousePressPoint = event->position();
     m_placeholderClick = false;
-    if (!m_masterMode && event->button() == Qt::LeftButton && event->modifiers() == Qt::NoModifier) {
+    if (!m_masterMode && event->button() == Qt::LeftButton && event->modifiers() == Qt::NoModifier
+        && KoToolManager::instance()->activeToolId() == QLatin1String(KoInteractionTool_ID)) {
         KoShape *shape = m_canvas->shapeManager()->shapeAt(point);
-        if (shape && shape->shapeId() == QLatin1String("KPrPlaceholderShapeId")) {
+        if (shape && (shape->shapeId() == QLatin1String("KPrPlaceholderShapeId")
+                      || shape->shapeId() == QLatin1String("TextShapeID"))) {
             const QString type = shape->additionalAttribute("presentation:class");
             const QPointF margin = m_canvas->viewConverter()->viewToDocument(QPointF(8, 8));
             m_placeholderClick = (type == QLatin1String("title") || type == QLatin1String("outline")
                                   || type == QLatin1String("subtitle") || type == QLatin1String("text")
                                   || type == QLatin1String("notes"))
-                && shape->boundingRect().adjusted(margin.x(), margin.y(), -margin.x(), -margin.y()).contains(point);
+                && shape->outlineRect().adjusted(margin.x(), margin.y(), -margin.x(), -margin.y())
+                       .contains(shape->absoluteTransformation(nullptr).inverted().map(point));
         }
     }
     m_toolProxy->mousePressEvent(event, point);
@@ -148,7 +151,8 @@ void KoPAViewModeNormal::mouseReleaseEvent(QMouseEvent *event, const QPointF &po
     m_toolProxy->mouseReleaseEvent(event, point);
     if (activatePlaceholder) {
         KoShape *shape = m_canvas->shapeManager()->shapeAt(point);
-        if (shape && shape->shapeId() == QLatin1String("KPrPlaceholderShapeId") && shape->isEditable()) {
+        if (shape && (shape->shapeId() == QLatin1String("KPrPlaceholderShapeId")
+                      || shape->shapeId() == QLatin1String("TextShapeID")) && shape->isEditable()) {
             KoSelection *selection = m_canvas->shapeManager()->selection();
             selection->deselectAll();
             selection->select(shape);
