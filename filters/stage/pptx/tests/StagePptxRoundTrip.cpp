@@ -131,10 +131,11 @@ int main(int argc, char **argv)
             result.insert(QStringLiteral("text_layout"), textLayout);
             document->setOutputMimeType(odp);
             const bool savedOdp = document->exportDocument(QUrl::fromLocalFile(output + QStringLiteral("/stage.odp")));
-            document->setOutputMimeType(pptx);
-            const bool savedPptx = document->exportDocument(QUrl::fromLocalFile(output + QStringLiteral("/stage.pptx")));
+            const bool binaryPpt = qEnvironmentVariableIsSet("CALLIGRA_STAGE_TEST_BINARY_PPT");
+            document->setOutputMimeType(binaryPpt ? QByteArray("application/vnd.ms-powerpoint") : pptx);
+            const bool savedPptx = document->exportDocument(QUrl::fromLocalFile(output + (binaryPpt ? QStringLiteral("/stage.ppt") : QStringLiteral("/stage.pptx"))));
             result.insert(QStringLiteral("odp_saved"), savedOdp);
-            result.insert(QStringLiteral("pptx_saved"), savedPptx);
+            result.insert(binaryPpt ? QStringLiteral("ppt_saved") : QStringLiteral("pptx_saved"), savedPptx);
             if (!savedOdp || !savedPptx) {
                 result.insert(QStringLiteral("error"), document->errorMessage());
                 status = 5;

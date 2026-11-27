@@ -701,6 +701,10 @@ void PptToOdp::DrawClient::addTextStyles(const MSO::OfficeArtClientTextBox *clie
         style.addPropertyPt("fo:padding", 0);
     }
 
+    // Legacy PowerPoint text can extend below a fixed anchor. Stage normally
+    // clips text frames there, hiding whole bullets after an edit/save/reload.
+    // Keep the anchor and font sizes while allowing the original overflow.
+    style.addProperty("calligra:clip-text", "false", KoGenStyle::GraphicType);
     const QString styleName = out.styles.insert(style);
 
     if (isPlaceholder(clientData)) {
@@ -708,14 +712,17 @@ void PptToOdp::DrawClient::addTextStyles(const MSO::OfficeArtClientTextBox *clie
         QString className = getPresentationClass(cd->placeholderAtom.data());
         const TextContainer *tc = ppttoodp->getTextContainer(tb, cd);
 
-        // A notes body holds real speaker text, so the general content.xml
-        // rule that drops the class from filled placeholders must not strip
-        // presentation:class="notes" -- without it ODF reload cannot find
-        // the notes text shape and the speaker notes disappear.
-        const bool notesBody = className == QLatin1String("notes");
-        if (className.isEmpty() || (!out.stylesxml && !notesBody && (!potentialPlaceholder || getText(tc).size()))) {
-            className = getPresentationClass(tc);
+        // Filled placeholders still need their class: readers use it to
+        // resolve presentation styles and the master text box alignment.
+        if (className.isEmpty() || (!out.stylesxml && (!potentialPlaceholder || getText(tc).size()))) {
+            const QString fieldClass = getPresentationClass(tc);
+            if (!fieldClass.isEmpty()) {
+                className = fieldClass;
+            }
             out.xml.addAttribute("presentation:placeholder", "false");
+            // Keep the source anchor instead of adopting the master layout
+            // when a reader recognizes the retained placeholder class.
+            out.xml.addAttribute("presentation:user-transformed", "true");
         } else {
             out.xml.addAttribute("presentation:placeholder", "true");
         }
@@ -2222,6 +2229,12 @@ void PptToOdp::defineAutomaticDrawingPageStyles(KoGenStyles &styles)
         // OfficeArtDggContainer has to be ignored
         DrawStyle ds(nullptr, masterSlideShape, slideShape);
         drawclient.setDrawClientData(m, sc, nullptr, nullptr);
+        if (sc->slideAtom.slideFlags.fMasterBackground) {
+            // Materialize the master fill in the slide style. An otherwise
+            // empty slide fill can override the master background on reload.
+            const DrawStyle masterBackground(nullptr, masterSlideShape);
+            defineDrawingPageStyle(dp, masterBackground, styles, odrawtoodf, nullptr);
+        }
         defineDrawingPageStyle(dp, ds, styles, odrawtoodf, &hf, &sc->slideAtom.slideFlags,
                                sc->slideShowSlideInfoAtom.data());
         drawingPageStyles[sc] = styles.insert(dp, "dp");

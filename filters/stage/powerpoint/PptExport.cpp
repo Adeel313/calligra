@@ -484,6 +484,7 @@ struct TextSpan {
 // in points (1/72 inch).  PowerPoint's binary format uses master units
 // (1/576 inch), so positions are multiplied by 8 when written.
 struct SlideText {
+    int stackingOrder = 0;
     QString text;                 // plain text, paragraphs separated by CR
     QVector<TextSpan> spans;      // character-format runs covering the text
     QVector<ParaFmt> paras;       // one entry per paragraph
@@ -502,6 +503,7 @@ struct SlideText {
 };
 
 struct SlideImage {
+    int stackingOrder = 0;
     QByteArray data;      // PNG or JPEG bytes
     QString suffix;
     QByteArray rgbUid;    // 16-byte identifier shared with the FBSE in the Dgg
@@ -517,6 +519,7 @@ struct SlideImage {
 // A preset autoshape or straight line that can be written as a native binary
 // PowerPoint shape instead of being rasterised into a picture.
 struct SlideShape {
+    int stackingOrder = 0;
     quint16 spt = 0;              // MSOSPT preset type
     QList<qint32> adjustments;    // raw OfficeArtFOPTE adjust values
     QRectF rect;                  // position in points
@@ -672,10 +675,11 @@ static QByteArray buildFormulaObject(const QByteArray &math)
 
 static void addImageShape(KoShape *shape, const QByteArray &data, const QString &suffix,
                           QList<SlideImage> &images, const QRectF &rect,
-                          bool behindText = false)
+                          bool behindText = false, int stackingOrder = 0)
 {
     if (data.isEmpty()) return;
     SlideImage img;
+    img.stackingOrder = stackingOrder;
     img.data = data;
     img.suffix = suffix;
     img.rgbUid = QCryptographicHash::hash(data, QCryptographicHash::Md5).left(16);
@@ -699,7 +703,8 @@ static void addBackgroundFill(KoShapeBackground *background, const QRectF &rect,
 {
     if (!background || rect.isEmpty()) return;
 
-    if (auto *pattern = dynamic_cast<KoPatternBackground *>(background)) {
+    if (auto *pattern = dynamic_cast<KoPatternBackground *>(background);
+        pattern && pattern->repeat() == KoPatternBackground::Stretched) {
         if (KoImageData *imageData = pattern->patternData()) {
             QByteArray data;
             QBuffer buffer(&data);
@@ -724,11 +729,11 @@ static void addBackgroundFill(KoShapeBackground *background, const QRectF &rect,
     QImage image(pixelSize, QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
     QPainter painter(&image);
-    painter.setWindow(QRect(0, 0, pixelSize.width(), pixelSize.height()));
+    painter.scale(pixelSize.width() / rect.width(), pixelSize.height() / rect.height());
     QPainterPath fillPath;
-    fillPath.addRect(QRectF(0, 0, pixelSize.width(), pixelSize.height()));
+    fillPath.addRect(QRectF(QPointF(0, 0), rect.size()));
     KoShapePaintingContext context;
-    KoViewConverter converter; // zoom 1: one document point per pixel in setWindow
+    KoViewConverter converter;
     background->paint(painter, converter, context, fillPath);
     QByteArray data;
     QBuffer buffer(&data);
@@ -961,17 +966,27 @@ static bool nativeShapeFromShape(KoShape *shape, QList<SlideShape> &shapes)
     return true;
 }
 
+static QList<KoShape *> orderedShapes(QList<KoShape *> shapes)
+{
+    std::stable_sort(shapes.begin(), shapes.end(), KoShape::compareShapeZIndex);
+    return shapes;
+}
+
 static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<SlideImage> &images,
-                                QList<SlideShape> &shapes, bool insideNativeShape = false)
+                                QList<SlideShape> &shapes, int &nextOrder, bool insideNativeShape = false)
 {
     if (!shape || !shape->isVisible(true) || shape->shapeId() == QLatin1String(KPrPlaceholderShapeId)) return;
+    const int stackingOrder = nextOrder++;
 
     // Native picture or autoshape payload.  Custom shapes keep their text in
     // child text shapes; mark that text as belonging to this shape so the
     // exporter can put it back inside the native PowerPoint object.
     bool handled = insideNativeShape;
     const int nativeIndex = !insideNativeShape && nativeShapeFromShape(shape, shapes) ? shapes.size() - 1 : -1;
-    if (nativeIndex >= 0) handled = true;
+    if (nativeIndex >= 0) {
+        handled = true;
+        shapes[nativeIndex].stackingOrder = stackingOrder;
+    }
     // WMF/EMF files imported from ODP load as VectorShape objects, not image
     // shapes.  The plugin exposes their original bytes as dynamic properties,
     // so emit them as native binary-PPT blips instead of rasterising.  The
@@ -981,7 +996,7 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
     const QByteArray vectorData = shapeObject ? shapeObject->property("calligra-vector-data").toByteArray() : QByteArray();
     const QString vectorSuffix = shapeObject ? shapeObject->property("calligra-vector-suffix").toString() : QString();
     if (!vectorData.isEmpty() && (vectorSuffix == QLatin1String("wmf") || vectorSuffix == QLatin1String("emf"))) {
-        addImageShape(shape, vectorData, vectorSuffix, images, shape->boundingRect());
+        addImageShape(shape, vectorData, vectorSuffix, images, shape->boundingRect(), false, stackingOrder);
         handled = true;
     }
     if (auto *imageData = qobject_cast<KoImageData *>(shape->userData())) {
@@ -996,7 +1011,7 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
             const QString nativeSuffix = (suffix == QLatin1String("jpg") || suffix == QLatin1String("jpeg"))
                                          ? QStringLiteral("jpeg") : suffix;
             addImageShape(shape, data, nativeSuffix,
-                          images, QRectF(shape->absolutePosition(KoFlake::TopLeftCorner), shape->size()));
+                          images, QRectF(shape->absolutePosition(KoFlake::TopLeftCorner), shape->size()), false, stackingOrder);
             handled = true;
         }
         // Unsupported image formats (SVG, ...) fall through to rasterise.
@@ -1038,6 +1053,7 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
                 rect = QRectF(center.x() - w / 2, center.y() - h / 2, w, h);
             }
             SlideText st = extractSlideText(doc, rect);
+            st.stackingOrder = stackingOrder;
             st.rotation = pptRotation;
             SlideShape textStyle;
             collectShapeStyle(shape, textStyle, false);
@@ -1075,8 +1091,8 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
     const int textsBefore = texts.size();
     const int imagesBefore = images.size();
     if (auto *container = dynamic_cast<KoShapeContainer *>(shape)) {
-        for (KoShape *child : container->shapes())
-            collectShapeContent(child, texts, images, shapes, insideNativeShape || nativeIndex >= 0);
+        for (KoShape *child : orderedShapes(container->shapes()))
+            collectShapeContent(child, texts, images, shapes, nextOrder, insideNativeShape || nativeIndex >= 0);
     }
     if (nativeIndex >= 0) {
         for (int i = textsBefore; i < texts.size(); ++i)
@@ -1097,7 +1113,7 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
         // fill and outline have no native PPT representation: rasterise the
         // decoration with the text hidden so it is not painted twice.
         if (dynamic_cast<KoTosContainer *>(shape)) {
-            addImageShape(shape, rasterizeShape(shape, bounds, true), QStringLiteral("png"), images, bounds);
+            addImageShape(shape, rasterizeShape(shape, bounds, true), QStringLiteral("png"), images, bounds, false, stackingOrder);
         }
         return;
     }
@@ -1105,12 +1121,13 @@ static void collectShapeContent(KoShape *shape, QList<SlideText> &texts, QList<S
     // A leaf shape with no native representation (chart, table, autoshape,
     // connector, ...) has no editable equivalent in binary PPT.  Rasterise it
     // as a picture so its visual content survives the round-trip.
-    addImageShape(shape, rasterizeShape(shape, bounds), QStringLiteral("png"), images, bounds);
+    addImageShape(shape, rasterizeShape(shape, bounds), QStringLiteral("png"), images, bounds, false, stackingOrder);
 }
 
 static SlideInfo pageContent(KoPAPageBase *page)
 {
     SlideInfo info;
+    int nextOrder = 0;
 
     // A solid drawing-page fill in the ODP becomes a KoColorBackground on the
     // page.  Carry it into the legacy PPT background shape's FOPT properties.
@@ -1133,11 +1150,11 @@ static SlideInfo pageContent(KoPAPageBase *page)
     }
 
     if (master && normalPage->displayMasterShapes()) {
-        for (KoShape *shape : master->shapes()) {
-            collectShapeContent(shape, info.texts, info.images, info.shapes);
+        for (KoShape *shape : orderedShapes(master->shapes())) {
+            collectShapeContent(shape, info.texts, info.images, info.shapes, nextOrder);
         }
     }
-    for (KoShape *shape : page->shapes()) collectShapeContent(shape, info.texts, info.images, info.shapes);
+    for (KoShape *shape : orderedShapes(page->shapes())) collectShapeContent(shape, info.texts, info.images, info.shapes, nextOrder);
     if (info.texts.isEmpty()) {
         SlideText empty;
         empty.rect = QRectF(0, 0, 100, 20);
@@ -1524,13 +1541,13 @@ static QList<ExportedImage> registerImages(QList<SlideInfo> &slides)
     return images;
 }
 
-// OfficeArtFBSE blip type: 2=WMF, 3=EMF, 4=JPEG, 5=PNG.
+// MSOBLIPTYPE values (distinct from the BLIP record instance signatures).
 static quint8 blipTypeForSuffix(const QString &suffix)
 {
-    if (suffix == QLatin1String("wmf")) return 2;
-    if (suffix == QLatin1String("emf")) return 3;
-    if (suffix == QLatin1String("png")) return 5;
-    return 4; // jpeg
+    if (suffix == QLatin1String("wmf")) return 3;
+    if (suffix == QLatin1String("emf")) return 2;
+    if (suffix == QLatin1String("png")) return 6;
+    return 5; // jpeg
 }
 
 // Build an OfficeArtFBSE record for the Dgg's BStoreContainer.
@@ -1557,6 +1574,45 @@ static Record buildFbse(const ExportedImage &img)
     return fbse;
 }
 
+static QRect metafileBounds(const ExportedImage &img)
+{
+    const QByteArray &data = img.data;
+    if (img.suffix == QLatin1String("emf") && data.size() >= 44 && readU32(data, 0) == 1
+        && readU32(data, 40) == 0x464D4520) {
+        const qint32 left = qint32(readU32(data, 8));
+        const qint32 top = qint32(readU32(data, 12));
+        const qint64 width = qint64(qint32(readU32(data, 16))) - left;
+        const qint64 height = qint64(qint32(readU32(data, 20))) - top;
+        if (width > 0 && height > 0 && width <= std::numeric_limits<int>::max()
+            && height <= std::numeric_limits<int>::max()) {
+            return QRect(left, top, int(width), int(height));
+        }
+    }
+    if (img.suffix == QLatin1String("wmf") && data.size() >= 18) {
+        const bool placeable = readU32(data, 0) == 0x9AC6CDD7;
+        if (placeable && data.size() >= 40) {
+            const qint16 left = qint16(readU16(data, 6));
+            const qint16 top = qint16(readU16(data, 8));
+            return QRect(left, top, qint16(readU16(data, 10)) - left, qint16(readU16(data, 12)) - top);
+        }
+        const int headerSize = readU16(data, 2) * 2;
+        QPoint origin;
+        for (qsizetype pos = qMax(18, headerSize); pos <= data.size() - 6;) {
+            const quint32 words = readU32(data, pos);
+            if (words < 3 || words > quint32((data.size() - pos) / 2)) break;
+            const quint16 function = readU16(data, pos + 4);
+            if (words >= 5) {
+                const qint16 y = qint16(readU16(data, pos + 6));
+                const qint16 x = qint16(readU16(data, pos + 8));
+                if (function == 0x020B) origin = QPoint(x, y); // META_SETWINDOWORG
+                if (function == 0x020C) return QRect(origin, QSize(x, y)).normalized(); // META_SETWINDOWEXT
+            }
+            pos += words * 2;
+        }
+    }
+    return QRect(0, 0, qMax(1, qRound(img.rect.width())), qMax(1, qRound(img.rect.height())));
+}
+
 static QByteArray buildPicturesStream(QList<ExportedImage> &images)
 {
     QByteArray picturesStream;
@@ -1568,28 +1624,30 @@ static QByteArray buildPicturesStream(QList<ExportedImage> &images)
         const bool isEmf = img.suffix == QLatin1String("emf");
         if (isWmf || isEmf) {
             // OfficeArtMetafileHeader: cbSize, rcBounds, ptSize, cbsave,
-            // compression (1 = uncompressed), filter.  Keeping the metafile
+            // compression (0 = DEFLATE), filter. Keeping the metafile
             // native preserves vector text in OLE object previews; rasterising
             // it would turn that text into pixels.
             // EMF is 0x3D4/0xF01A, WMF is 0x216/0xF01B.
             blip.inst = isWmf ? 0x0216 : 0x03D4;
             blip.type = isWmf ? 0xF01B : 0xF01A;
+            // qCompress prepends a Qt-specific size word; OfficeArt stores
+            // only the RFC 1950 stream. LibreOffice expects compressed BLIPs.
+            const QByteArray compressed = qCompress(img.data).mid(4);
             QByteArray mh;
             mh.resize(34);
-            const int w = qMax(1, qRound(img.rect.width()));
-            const int h = qMax(1, qRound(img.rect.height()));
+            const QRect bounds = metafileBounds(img);
             writeU32(mh, 0, quint32(img.data.size())); // cbSize
-            writeU32(mh, 4, 0);                        // rcBounds.left
-            writeU32(mh, 8, 0);                        // rcBounds.top
-            writeU32(mh, 12, quint32(w));              // rcBounds.right
-            writeU32(mh, 16, quint32(h));              // rcBounds.bottom
-            writeU32(mh, 20, quint32(w));              // ptSize.x
-            writeU32(mh, 24, quint32(h));              // ptSize.y
-            writeU32(mh, 28, quint32(img.data.size())); // cbsave
-            mh[32] = char(1);                          // compression: none
-            mh[33] = char(0);                          // filter
+            writeU32(mh, 4, quint32(bounds.x()));      // rcBounds.left, in metafile coordinates
+            writeU32(mh, 8, quint32(bounds.y()));      // rcBounds.top
+            writeU32(mh, 12, quint32(bounds.x() + bounds.width())); // rcBounds.right (exclusive)
+            writeU32(mh, 16, quint32(bounds.y() + bounds.height())); // rcBounds.bottom (exclusive)
+            writeU32(mh, 20, quint32(qMax(1, qRound(img.rect.width() * 12700)))); // ptSize.x in EMUs
+            writeU32(mh, 24, quint32(qMax(1, qRound(img.rect.height() * 12700)))); // ptSize.y in EMUs
+            writeU32(mh, 28, quint32(compressed.size())); // cbSave
+            mh[32] = char(0);                          // compression: DEFLATE
+            mh[33] = char(0xFE);                       // filter: must be 0xFE
             payload += mh;
-            payload += img.data;
+            payload += compressed;
         } else {
             const bool isPng = (img.suffix == QLatin1String("png"));
             blip.inst = isPng ? 0x06E0 : 0x046A;
@@ -1978,6 +2036,7 @@ static Record buildNativeShape(const SlideShape &native, const Record &tpl, quin
     }
 
     setShapeFopt(&sp, 0x0180, native.hasFill ? 0u : 9u); // FillStyle::fillType
+    setShapeFopt(&sp, 0x01BF, (1u << 20) | (native.hasFill ? (1u << 4) : 0u));
     if (native.hasFill) {
         setShapeFopt(&sp, 0x0181, quint32((quint32(native.fillBlue) << 16)
                                           | (quint32(native.fillGreen) << 8)
@@ -2005,13 +2064,14 @@ static Record buildNativeShape(const SlideShape &native, const Record &tpl, quin
 
 // The tiny.ppt template's placeholder text shapes carry a green fill and a
 // dark-green outline.  Those are template decorations, not ODF properties, so
-// every exported text box inherited them.  Clear them by selecting the
-// "background" fill type (msofillBackground == 9) and explicitly disabling
-// the line (LineStyleBooleanProperties fLine + its validity flag).
+// every exported text box inherited them. Explicitly disable the fill and
+// line: a background fill still paints the slide colour over background images.
 static void neutralizeTextShapeStyle(Record *shape)
 {
     if (!shape) return;
     setShapeFopt(shape, 0x0180, 9); // FillStyle::fillType
+    const quint32 fillBits = shapeFopt(shape, 0x01BF);
+    setShapeFopt(shape, 0x01BF, (fillBits | (1u << 20)) & ~(1u << 4));
     const quint32 lineBits = shapeFopt(shape, 0x01FF);
     setShapeFopt(shape, 0x01FF,
                  (lineBits | (1u << 19)) & ~(1u << 3)); // fUsefLine set, fLine clear
@@ -2324,6 +2384,7 @@ static QByteArray buildDocument(QList<SlideInfo> &slides, const QList<ExportedIm
         }
 
         Record *group = findShapeGroup(slide);
+        QHash<int, int> stackingOrders;
 
         // Locate the template's text shapes as indices into group->children.
         // Indices stay valid when clones are appended to that same list.
@@ -2354,6 +2415,7 @@ static QByteArray buildDocument(QList<SlideInfo> &slides, const QList<ExportedIm
                     info.shapes.at(i), group->children.at(cloneSource),
                     quint32(1000 + si * 200 + i)));
                 nativeShapeIndices.append(group->children.size() - 1);
+                stackingOrders.insert(nativeShapeIndices.last(), info.shapes.at(i).stackingOrder);
             }
         }
 
@@ -2376,6 +2438,7 @@ static QByteArray buildDocument(QList<SlideInfo> &slides, const QList<ExportedIm
                 ++plainTextCount;
             }
             if (index < 0) break;
+            if (!isNative) stackingOrders.insert(index, st.stackingOrder);
 
             Record &shape = group->children[index];
             Record *cd = findRecord(shape.children, 0xF00D);
@@ -2398,6 +2461,8 @@ static QByteArray buildDocument(QList<SlideInfo> &slides, const QList<ExportedIm
                 patchShapeAnchor(findRecord(shape.children, 0xF010), st.rect);
                 neutralizeTextShapeStyle(&shape);
                 if (st.hasFill) {
+                    const quint32 fillBits = shapeFopt(&shape, 0x01BF);
+                    setShapeFopt(&shape, 0x01BF, fillBits | (1u << 20) | (1u << 4));
                     setShapeFopt(&shape, 0x0180, 0); // msofillSolid
                     setShapeFopt(&shape, 0x0181, quint32((quint32(st.fillBlue) << 16)
                                                           | (quint32(st.fillGreen) << 8)
@@ -2449,21 +2514,26 @@ static QByteArray buildDocument(QList<SlideInfo> &slides, const QList<ExportedIm
             neutralizeTextShapeStyle(&shape);
         }
 
-        // Add picture shapes for this slide's images into the shape group.
-        // Background fills are inserted before the first text box so they
-        // cannot cover the slide content; ordinary images keep the previous
-        // stacking behaviour and are appended above the text.
+        // Restore the original mixed shape order. A background exported as a
+        // picture becomes an ordinary image on reload; appending every image
+        // above the text would cover the entire slide on its next save.
         if (!info.images.isEmpty() && group) {
-            int behindInsert = textShapeIndices.isEmpty()
-                ? qMin(1, group->children.size())
-                : *std::min_element(textShapeIndices.cbegin(), textShapeIndices.cend());
             for (const SlideImage &img : info.images) {
-                if (img.behindText) {
-                    group->children.insert(behindInsert++, buildPictureShape(img));
-                } else {
-                    group->children.append(buildPictureShape(img));
-                }
+                stackingOrders.insert(group->children.size(), img.behindText ? -1 : img.stackingOrder);
+                group->children.append(buildPictureShape(img));
             }
+        }
+        if (group) {
+            QList<int> indices;
+            for (int i = 0; i < group->children.size(); ++i) indices.append(i);
+            std::stable_sort(indices.begin(), indices.end(), [&](int a, int b) {
+                return stackingOrders.value(a, std::numeric_limits<int>::min())
+                    < stackingOrders.value(b, std::numeric_limits<int>::min());
+            });
+            QList<Record> ordered;
+            ordered.reserve(indices.size());
+            for (int i : indices) ordered.append(std::move(group->children[i]));
+            group->children = std::move(ordered);
         }
         slideBlobs.append(slide.serialize());
     }

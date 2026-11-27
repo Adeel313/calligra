@@ -356,6 +356,9 @@ void TextShape::saveOdf(KoShapeSavingContext &context) const
 
 QString TextShape::saveStyle(KoGenStyle &style, KoShapeSavingContext &context) const
 {
+    if (!m_clip) {
+        style.addProperty("calligra:clip-text", "false", KoGenStyle::GraphicType);
+    }
     Qt::Alignment vAlign(m_textShapeData->verticalAlignment());
     QString verticalAlign = "top";
     if (vAlign == Qt::AlignBottom) {
@@ -389,6 +392,8 @@ void TextShape::loadStyle(const KoXmlElement &element, KoShapeLoadingContext &co
     KoShape::loadStyle(element, context);
     KoStyleStack &styleStack = context.odfLoadingContext().styleStack();
     styleStack.setTypeProperties("graphic");
+
+    m_clip = styleStack.property(KoXmlNS::calligra, "clip-text") != QLatin1String("false");
 
     QString verticalAlign(styleStack.property(KoXmlNS::draw, "textarea-vertical-align"));
     Qt::Alignment alignment(Qt::AlignTop);
