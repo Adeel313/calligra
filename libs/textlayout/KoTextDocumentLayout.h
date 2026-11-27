@@ -300,7 +300,7 @@ protected:
     /// should we continue layout when done with current root area
     bool continuousLayout() const;
 
-    void registerInlineObject(const QTextInlineObject &inlineObject);
+    void registerInlineObject(const QTextInlineObject &inlineObject, int position);
 
 private:
     class Private;

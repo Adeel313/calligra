@@ -9,6 +9,7 @@
 #include "TestDocumentLayout.h"
 #include "MockRootAreaProvider.h"
 #include <QTest>
+#include <QTextInlineObject>
 
 #include <TextLayoutDebug.h>
 
@@ -78,6 +79,53 @@ void TestDocumentLayout::cleanupTest()
 void TestDocumentLayout::cleanupTestCase()
 {
     cleanupTest();
+}
+
+namespace {
+class InlineExtentLayout : public KoTextDocumentLayout
+{
+public:
+    using KoTextDocumentLayout::KoTextDocumentLayout;
+    int resizeCount = 0;
+
+protected:
+    void resizeInlineObject(QTextInlineObject object, int position, const QTextFormat &) override
+    {
+        ++resizeCount;
+        object.setWidth(40);
+        object.setAscent(72);
+        object.setDescent(0);
+        registerInlineObject(object, position);
+    }
+    void positionInlineObject(QTextInlineObject, int, const QTextFormat &) override {}
+};
+}
+
+void TestDocumentLayout::testInlineExtentFromAnotherBlock()
+{
+    MockRootAreaProvider provider;
+    QTextDocument document;
+    auto *layout = new InlineExtentLayout(&document, &provider);
+    document.setDocumentLayout(layout);
+    QTextCursor cursor(&document);
+    cursor.insertText(QStringLiteral("Ordinary text"));
+    cursor.insertBlock();
+    QTextCharFormat format;
+    format.setObjectType(QTextFormat::UserObject);
+    cursor.insertText(QString(QChar::ObjectReplacementCharacter), format);
+
+    // A probe can resize an object outside the block currently being laid out.
+    // Its block-relative offset is zero, just like the ordinary text above.
+    layout->clearInlineObjectRegistry(document.firstBlock());
+    QTextLayout *objectLayout = document.lastBlock().layout();
+    objectLayout->beginLayout();
+    QTextLine line = objectLayout->createLine();
+    QVERIFY(line.isValid());
+    line.setLineWidth(200);
+    objectLayout->endLayout();
+    QVERIFY(layout->resizeCount > 0);
+    QCOMPARE(layout->inlineObjectExtent(document.firstBlock().begin().fragment()).m_ascent, 0.0);
+    QCOMPARE(layout->inlineObjectExtent(document.lastBlock().begin().fragment()).m_ascent, 72.0);
 }
 
 void TestDocumentLayout::testInvalidBlockBoundingRect()

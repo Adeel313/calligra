@@ -94,7 +94,6 @@ public:
     FrameIterator *layoutPosition;
 
     QHash<int, KoInlineObjectExtent> inlineObjectExtents; // maps text-position to whole-line-height of an inline object
-    int inlineObjectOffset;
     QList<KoShapeAnchor *> textAnchors; // list of all inserted inline objects
     QList<KoShapeAnchor *> foundAnchors; // anchors found in an iteration run
     KoTextLayoutRootArea *anchoringRootArea;
@@ -668,7 +667,7 @@ void KoTextDocumentLayout::resizeInlineObject(QTextInlineObject item, int positi
     v.setValue(rootArea->page());
     doc->addResource(KoTextDocument::LayoutTextPage, KoTextDocument::LayoutTextPageUrl, v);
     obj->resize(doc, item, position, cf, paintDevice());
-    registerInlineObject(item);
+    registerInlineObject(item, position);
 }
 
 void KoTextDocumentLayout::emitLayoutIsDirty()
@@ -975,13 +974,16 @@ QRectF KoTextDocumentLayout::frameBoundingRect(QTextFrame *) const
 void KoTextDocumentLayout::clearInlineObjectRegistry(const QTextBlock &block)
 {
     d->inlineObjectExtents.clear();
-    d->inlineObjectOffset = block.position();
+    Q_UNUSED(block);
 }
 
-void KoTextDocumentLayout::registerInlineObject(const QTextInlineObject &inlineObject)
+void KoTextDocumentLayout::registerInlineObject(const QTextInlineObject &inlineObject, int position)
 {
+    // Qt may resize an object from another block while probing or rebuilding
+    // a layout. Use the absolute callback position, not the current block
+    // plus the object's block-relative position.
     KoInlineObjectExtent pos(inlineObject.ascent(), inlineObject.descent());
-    d->inlineObjectExtents.insert(d->inlineObjectOffset + inlineObject.textPosition(), pos);
+    d->inlineObjectExtents.insert(position, pos);
 }
 
 KoInlineObjectExtent KoTextDocumentLayout::inlineObjectExtent(const QTextFragment &fragment)

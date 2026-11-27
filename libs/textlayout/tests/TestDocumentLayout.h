@@ -34,6 +34,7 @@ private Q_SLOTS:
     void testHitTest();
     void testInvalidBlockBoundingRect();
     void testHitTestDirtyArea();
+    void testInlineExtentFromAnotherBlock();
 
     /**
      * Test root-area with zero width.
