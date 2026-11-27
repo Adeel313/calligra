@@ -8,17 +8,11 @@
 #define FULLSCREENPLAYER_H
 
 #include <QWidget>
-#include <phonon/Global>
+#include <QMediaPlayer>
 
-namespace Phonon
-{
-class MediaObject;
-class VideoWidget;
-class AudioOutput;
-class SeekSlider;
-class VolumeSlider;
-}
-
+class QAudioOutput;
+class QSlider;
+class QVideoWidget;
 class QUrl;
 class QLabel;
 class QToolButton;
@@ -41,7 +35,7 @@ protected Q_SLOTS:
     void stop();
     void mute();
     void unmute();
-    void playStateChanged(Phonon::State newState, Phonon::State oldState);
+    void playStateChanged(QMediaPlayer::PlaybackState state);
     void muteStateChanged(bool muted);
     void updatePlaybackTime(qint64 currentTime);
 
@@ -49,11 +43,11 @@ protected:
     void keyPressEvent(QKeyEvent *event) override; /// reimplemented
     void mousePressEvent(QMouseEvent *event) override; /// reimplemented
 
-    Phonon::MediaObject *m_mediaObject;
-    Phonon::VideoWidget *m_videoWidget;
-    Phonon::AudioOutput *m_audioOutput;
-    Phonon::SeekSlider *m_seekSlider;
-    Phonon::VolumeSlider *m_volumeSlider;
+    QMediaPlayer *m_mediaObject;
+    QVideoWidget *m_videoWidget;
+    QAudioOutput *m_audioOutput;
+    QSlider *m_seekSlider;
+    QSlider *m_volumeSlider;
 
     QToolButton *m_volumeIconMuted;
     QToolButton *m_volumeIconUnmuted;

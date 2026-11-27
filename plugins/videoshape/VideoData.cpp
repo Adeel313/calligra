@@ -21,6 +21,7 @@
 #include <QBuffer>
 #include <QByteArrayView>
 #include <QCryptographicHash>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QPainter>
@@ -165,7 +166,6 @@ void VideoData::setVideo(const QString &url, KoStore *store, VideoCollection *co
             if (!device.open(QIODevice::ReadOnly)) {
                 warnVideo << "open file from store " << url << "failed";
                 d->errorCode = OpenFailed;
-                store->close();
                 return;
             }
 
@@ -184,7 +184,7 @@ QUrl VideoData::playableUrl() const
 {
     if (d->dataStoreState == StateSpooled) {
         Q_ASSERT(d);
-        return QUrl(d->temporaryFile->fileName());
+        return QUrl::fromLocalFile(d->temporaryFile->fileName());
     } else {
         return d->videoLocation;
     }
@@ -297,26 +297,25 @@ void VideoData::copyToTemporary(QIODevice &device)
 {
     delete d;
     d = new VideoDataPrivate();
-    d->temporaryFile = new QTemporaryFile(QLatin1String("KoVideoData/") + qAppName() + QLatin1String("_XXXXXX"));
+    d->temporaryFile = new QTemporaryFile(QDir::temp().filePath(QStringLiteral("calligra-video-XXXXXX")));
     d->refCount.ref();
     if (!d->temporaryFile->open()) {
         warnVideo << "open temporary file for writing failed";
         d->errorCode = VideoData::StorageFailed;
-        delete d;
-        d = nullptr;
         return;
     }
     QCryptographicHash md5(QCryptographicHash::Md5);
     char buf[8192];
     while (true) {
-        device.waitForReadyRead(-1);
-        qint64 bytes = device.read(buf, sizeof(buf));
-        if (bytes <= 0)
-            break; // done!
+        const qint64 bytes = device.read(buf, sizeof(buf));
+        if (bytes == 0)
+            break;
+        if (bytes < 0 || d->temporaryFile->write(buf, bytes) != bytes) {
+            d->errorCode = StorageFailed;
+            d->temporaryFile->close();
+            return;
+        }
         md5.addData(QByteArrayView(buf, bytes));
-        do {
-            bytes -= d->temporaryFile->write(buf, bytes);
-        } while (bytes > 0);
     }
     d->key = VideoData::generateKey(md5.result());
     d->temporaryFile->close();

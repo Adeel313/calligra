@@ -150,7 +150,7 @@ namespace
 {
 /// A ribbon group: a title plus the actions to show in it (action name, button label).
 struct RibbonGroup {
-    enum Layout { LargeButtons, LargeAndStacked, Stacked, SingleColumn, CheckBoxes, PreviewNavigation, ZoomButtons, HomeEdit, HomeSearch };
+    enum Layout { LargeButtons, LargeAndStacked, Stacked, CompactStacked, SingleColumn, CheckBoxes, PreviewNavigation, ZoomButtons, HomeEdit, HomeSearch };
     QString title;
     QList<QPair<QString, QString>> actions;
     Layout layout = LargeButtons;
@@ -605,8 +605,12 @@ static void populateRibbonGroups(QWidget *page,
             const QString displayLabel = actionName == QLatin1String("edit_select_all") ? i18n("Select all") : label;
             auto *button = new RibbonActionButton(actionName, displayLabel, findAction, buttons);
             button->setObjectName(actionName + QStringLiteral("RibbonButton"));
-            if (page->objectName() == QLatin1String("insertRibbonPage")) {
-                const QIcon icon = KoRibbonIcons::forCommand(actionName);
+            const bool compactStack = groupInfo.layout == RibbonGroup::CompactStacked;
+            if (compactStack || page->objectName() == QLatin1String("insertRibbonPage")) {
+                QIcon icon = KoRibbonIcons::forCommand(actionName);
+                if (compactStack && actionName == QLatin1String("convert-to-path")) {
+                    icon = QIcon::fromTheme(QStringLiteral("format-convert-to-path"), icon);
+                }
                 if (!icon.isNull()) {
                     button->setProperty("ribbonCommandIcon", icon);
                     button->setIcon(icon);
@@ -640,10 +644,10 @@ static void populateRibbonGroups(QWidget *page,
             if (iconSize.isValid()) {
                 button->setProperty("ribbonPreferredIconSize", iconSize);
             }
-            KoRibbonLayout::configureButton(button, large ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonTextBesideIcon);
+            KoRibbonLayout::configureButton(button, large ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonTextBesideIcon, compactStack);
             // The format painter is a brush, which reads better as one larger
             // picture than as a picture beside its name.
-            const bool iconOnly = actionName == QLatin1String("format_painter") && groupInfo.layout != RibbonGroup::HomeEdit;
+            const bool iconOnly = actionName == QLatin1String("format_painter");
             if (iconOnly) {
                 KoRibbonLayout::configureButton(button, Qt::ToolButtonIconOnly);
                 button->setIconSize(QSize(28, 28));
@@ -653,13 +657,16 @@ static void populateRibbonGroups(QWidget *page,
             }
             const int compactIndex = buttonIndex - largeCount;
             if (groupInfo.layout == RibbonGroup::HomeEdit || groupInfo.layout == RibbonGroup::HomeSearch) {
-                button->setIconSize(large ? QSize(36, 36) : QSize(20, 20));
+                if (!iconOnly) {
+                    button->setIconSize(large ? QSize(36, 36) : QSize(20, 20));
+                }
                 button->setMinimumSize(0, 0);
                 button->setMinimumSize(button->sizeHint().expandedTo(QSize(large ? 60 : 28, large ? 72 : 24)));
                 if (large) {
-                    buttonLayout->addWidget(button, 0, 0, 3, 1, Qt::AlignTop);
+                    buttonLayout->addWidget(button, 0, 0, 2, 1, Qt::AlignTop);
                 } else {
-                    buttonLayout->addWidget(button, compactIndex, 1, Qt::AlignLeft);
+                    // Keep the final shortcut beside the second one so the group fits in two rows.
+                    buttonLayout->addWidget(button, qMin(compactIndex, 1), 1 + compactIndex / 2, Qt::AlignLeft);
                 }
             } else if (large) {
                 buttonLayout->addWidget(button, 0, buttonIndex, 2, 1, Qt::AlignTop);
@@ -1945,8 +1952,8 @@ KWGui::KWGui(const QString &viewMode, KWView *parent)
             {i18n("Draw"),
              {{QStringLiteral("KoPencilTool"), i18n("Freehand")},
               {QStringLiteral("CreatePathTool"), i18n("Draw Path")},
-              {QStringLiteral("ConnectionTool"), i18n("Connect Shapes")},
-              {QStringLiteral("convert-to-path"), i18n("Convert to Path")}}, RibbonGroup::LargeAndStacked},
+              {QStringLiteral("ConnectionTool"), i18n("Connect")},
+              {QStringLiteral("convert-to-path"), i18n("To Path")}}, RibbonGroup::CompactStacked},
             {i18n("Rotate"),
              {{QStringLiteral("rotate-left"), i18n("Rotate Left")},
               {QStringLiteral("rotate-right"), i18n("Rotate Right")}}, RibbonGroup::Stacked},

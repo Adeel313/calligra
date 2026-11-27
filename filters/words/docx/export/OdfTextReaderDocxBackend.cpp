@@ -856,20 +856,17 @@ void OdfTextReaderDocxBackend::elementTableTable(KoXmlStreamReader &reader, OdfR
         // Column widths in ODF are often the widths for a 100% table even
         // when the table itself is only e.g. 80% of the text area.  Scale the
         // grid down so that Word reproduces the original proportions.
-        if (relativeWidth > 0 && hasWidth && tableWidth > 0) {
-            const qint64 textWidth = pageTextWidthTwips(docxContext->sectPrContent());
-            if (textWidth > 0) {
-                const qreal targetWidth = textWidth * relativeWidth / 5000.0;
-                state.widthScale = qBound(0.05, targetWidth / tableWidth, 4.0);
+        const qint64 textWidth = pageTextWidthTwips(docxContext->sectPrContent());
+        state.targetWidth = hasWidth ? tableWidth : textWidth;
+        if (relativeWidth > 0 && textWidth > 0) {
+            state.targetWidth = textWidth * relativeWidth / 5000.0;
+            if (hasWidth) {
+                state.widthScale = qBound(0.05, state.targetWidth / tableWidth, 4.0);
             }
         }
     } else {
         if (!m_tables.isEmpty()) {
-            TableState &state = m_tables.top();
-            if (state.gridOpen) {
-                writer->endElement(); // w:tblGrid
-                state.gridOpen = false;
-            }
+            writeTableGrid(m_tables.top(), writer);
             m_tables.pop();
         }
         writer->endElement(); // w:tbl
@@ -891,10 +888,10 @@ void OdfTextReaderDocxBackend::elementTableTableColumn(KoXmlStreamReader &reader
     if (!docxContext || m_tables.isEmpty()) {
         return;
     }
-    KoXmlWriter *writer = currentWriter(docxContext);
     TableState &state = m_tables.top();
 
     qint64 width = 0;
+    qreal weight = 0.0;
     const QString columnStyle = reader.attributes().value("table:style-name").toString();
     if (!columnStyle.isEmpty()) {
         if (KoOdfStyle *style = docxContext->styleManager()->style(columnStyle, "table-column")) {
@@ -904,10 +901,7 @@ void OdfTextReaderDocxBackend::elementTableTableColumn(KoXmlStreamReader &reader
                     // the remaining space proportionally to the weights.
                     const QString relWidth = properties->attribute("style:rel-column-width");
                     if (relWidth.endsWith(QLatin1Char('*'))) {
-                        const int weight = relWidth.chopped(1).toInt();
-                        if (weight > 0) {
-                            width = weight;
-                        }
+                        weight = qMax(0.0, relWidth.chopped(1).toDouble());
                     }
                 }
             }
@@ -919,14 +913,38 @@ void OdfTextReaderDocxBackend::elementTableTableColumn(KoXmlStreamReader &reader
     const int repeat = qMax(1, reader.attributes().value("table:number-columns-repeated").toInt());
     for (int i = 0; i < qMin(repeat, 64); ++i) {
         state.columnWidths.append(static_cast<int>(width));
-        if (!state.gridOpen) {
-            writer->startElement("w:tblGrid");
-            state.gridOpen = true;
+        state.columnWeights.append(weight);
+    }
+}
+
+void OdfTextReaderDocxBackend::writeTableGrid(TableState &state, KoXmlWriter *writer)
+{
+    if (state.gridWritten) {
+        return;
+    }
+    state.gridWritten = true;
+
+    qreal totalWeight = 0.0;
+    qreal fixedWidth = 0.0;
+    for (qsizetype col = 0; col < state.columnWidths.size(); ++col) {
+        totalWeight += state.columnWeights.at(col);
+        fixedWidth += state.columnWidths.at(col);
+    }
+    // The section can be unavailable while exporting some document parts.
+    const qreal scale = totalWeight > 0.0 && state.targetWidth > fixedWidth
+        ? (state.targetWidth - fixedWidth) / totalWeight
+        : 20.0;
+
+    writer->startElement("w:tblGrid");
+    for (qsizetype col = 0; col < state.columnWidths.size(); ++col) {
+        if (state.columnWeights.at(col) > 0.0) {
+            state.columnWidths[col] = qMax(1, qRound(state.columnWeights.at(col) * scale));
         }
         writer->startElement("w:gridCol");
-        writer->addAttribute("w:w", static_cast<int>(width));
+        writer->addAttribute("w:w", state.columnWidths.at(col));
         writer->endElement(); // w:gridCol
     }
+    writer->endElement(); // w:tblGrid
 }
 
 void OdfTextReaderDocxBackend::elementTableTableHeaderRows(KoXmlStreamReader &reader, OdfReaderContext *context)
@@ -953,15 +971,7 @@ void OdfTextReaderDocxBackend::elementTableTableRow(KoXmlStreamReader &reader, O
             return;
         }
         TableState &state = m_tables.top();
-        if (state.gridOpen) {
-            writer->endElement(); // w:tblGrid
-            state.gridOpen = false;
-        } else if (state.columnWidths.isEmpty()) {
-            // Word expects a w:tblGrid before the first row even when the ODF
-            // table does not declare any columns.
-            writer->startElement("w:tblGrid");
-            writer->endElement(); // w:tblGrid
-        }
+        writeTableGrid(state, writer);
         state.currentColumn = 0;
 
         // Columns still covered by a row span from an earlier row belong to

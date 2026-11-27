@@ -302,11 +302,12 @@ configure_file(config-gsl.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-gsl.h )
 ##
 ## Test for Phonon4Qt6
 ##
+find_package(Qt6MultimediaWidgets QUIET)
 find_package(Phonon4Qt6 QUIET)
 set_package_properties(Phonon4Qt6 PROPERTIES
     DESCRIPTION "Abstraction lib for multimedia applications"
     URL "https://www.kde.org/"
-    PURPOSE "Required by Stage event actions and Videoshape plugin"
+    PURPOSE "Required by Stage sound event actions"
     TYPE OPTIONAL
     )
 
@@ -829,7 +830,7 @@ calligra_drop_product_on_bad_condition( PLUGIN_CHARTSHAPE
     )
 
 calligra_drop_product_on_bad_condition( PLUGIN_VIDEOSHAPE
-    Phonon4Qt6_FOUND "Phonon4Qt6 devel not found"
+    Qt6MultimediaWidgets_FOUND "Qt6 Multimedia Widgets devel not found"
     )
 
 calligra_drop_product_on_bad_condition( FILTER_KEY_TO_ODP

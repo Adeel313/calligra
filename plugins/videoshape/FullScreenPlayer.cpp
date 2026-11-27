@@ -11,11 +11,11 @@
 
 #include <KLocalizedString>
 
-#include <phonon/SeekSlider>
-#include <phonon/VolumeSlider>
-#include <phonon/audiooutput.h>
-#include <phonon/mediaobject.h>
-#include <phonon/videowidget.h>
+#include <QAudioOutput>
+#include <QMessageBox>
+#include <QSignalBlocker>
+#include <QSlider>
+#include <QVideoWidget>
 
 #include <QHBoxLayout>
 #include <QKeyEvent>
@@ -26,26 +26,29 @@
 
 FullScreenPlayer::FullScreenPlayer(const QUrl &url)
     : QWidget(nullptr)
-    , m_seekSlider(new Phonon::SeekSlider(this))
-    , m_volumeSlider(new Phonon::VolumeSlider(this))
+    , m_seekSlider(new QSlider(Qt::Horizontal, this))
+    , m_volumeSlider(new QSlider(Qt::Horizontal, this))
 {
-    m_mediaObject = new Phonon::MediaObject();
-    m_mediaObject->setTickInterval(1000);
+    setAttribute(Qt::WA_DeleteOnClose);
+    m_mediaObject = new QMediaPlayer(this);
+    m_videoWidget = new QVideoWidget(this);
+    m_audioOutput = new QAudioOutput(this);
+    m_mediaObject->setVideoOutput(m_videoWidget);
+    m_mediaObject->setAudioOutput(m_audioOutput);
 
-    m_videoWidget = new Phonon::VideoWidget(this);
-    Phonon::createPath(m_mediaObject, m_videoWidget);
+    m_seekSlider->setRange(0, 1000);
+    m_seekSlider->setEnabled(false);
+    connect(m_mediaObject, &QMediaPlayer::seekableChanged, m_seekSlider, &QSlider::setEnabled);
+    connect(m_seekSlider, &QSlider::valueChanged, this, [this](int value) {
+        m_mediaObject->setPosition(m_mediaObject->duration() * value / m_seekSlider->maximum());
+    });
 
-    m_audioOutput = new Phonon::AudioOutput(Phonon::VideoCategory);
-    connect(m_audioOutput, &Phonon::AudioOutput::mutedChanged, this, &FullScreenPlayer::muteStateChanged);
-
-    Phonon::createPath(m_mediaObject, m_audioOutput);
-
-    m_seekSlider->setMediaObject(m_mediaObject);
-    m_seekSlider->setIconVisible(false);
-
-    m_volumeSlider->setAudioOutput(m_audioOutput);
-    m_volumeSlider->setMuteVisible(false);
+    m_volumeSlider->setRange(0, 100);
+    m_volumeSlider->setValue(qRound(m_audioOutput->volume() * 100));
     m_volumeSlider->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    connect(m_volumeSlider, &QSlider::valueChanged, this, [this](int value) {
+        m_audioOutput->setVolume(value / 100.0f);
+    });
 
     m_playbackTime = new QLabel(QString("00:00:00"), this);
 
@@ -83,25 +86,32 @@ FullScreenPlayer::FullScreenPlayer(const QUrl &url)
     playbackControls->addWidget(m_volumeIconMuted);
     playbackControls->addWidget(m_volumeIconUnmuted);
     playbackControls->addWidget(m_volumeSlider);
-    playbackControls->setSizeConstraint(QLayout::SetFixedSize);
 
     QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget(m_videoWidget);
     layout->addLayout(playbackControls);
     layout->setContentsMargins({});
     setLayout(layout);
-    show();
-    setWindowState(Qt::WindowFullScreen);
+    connect(m_audioOutput, &QAudioOutput::mutedChanged, this, &FullScreenPlayer::muteStateChanged);
+    connect(m_mediaObject, &QMediaPlayer::playbackStateChanged, this, &FullScreenPlayer::playStateChanged);
+    connect(m_mediaObject, &QMediaPlayer::positionChanged, this, &FullScreenPlayer::updatePlaybackTime);
+    connect(m_mediaObject, &QMediaPlayer::durationChanged, this, [this] {
+        updatePlaybackTime(m_mediaObject->position());
+    });
+    connect(m_mediaObject, &QMediaPlayer::mediaStatusChanged, this, [this](QMediaPlayer::MediaStatus status) {
+        if (status == QMediaPlayer::EndOfMedia)
+            stop();
+    });
+    connect(m_mediaObject, &QMediaPlayer::errorOccurred, this, [this](QMediaPlayer::Error, const QString &message) {
+        QMessageBox::warning(this, i18n("Video Playback Error"), message);
+        stop();
+    });
 
-    m_mediaObject->setCurrentSource(url);
-    connect(m_mediaObject, &Phonon::MediaObject::finished, this, &FullScreenPlayer::stop);
-    connect(m_mediaObject, &Phonon::MediaObject::stateChanged, this, &FullScreenPlayer::playStateChanged);
-    connect(m_mediaObject, &Phonon::MediaObject::tick, this, &FullScreenPlayer::updatePlaybackTime);
-
+    muteStateChanged(m_audioOutput->isMuted());
+    playStateChanged(m_mediaObject->playbackState());
+    showFullScreen();
+    m_mediaObject->setSource(url);
     play();
-
-    mute();
-    unmute();
 }
 
 FullScreenPlayer::~FullScreenPlayer() = default;
@@ -119,14 +129,12 @@ void FullScreenPlayer::pause()
 void FullScreenPlayer::stop()
 {
     m_mediaObject->stop();
-    deleteLater();
+    close();
 }
 
 void FullScreenPlayer::mute()
 {
-    qreal volume = m_audioOutput->volume();
     m_audioOutput->setMuted(true);
-    m_audioOutput->setVolume(volume); //
 }
 
 void FullScreenPlayer::unmute()
@@ -138,32 +146,22 @@ void FullScreenPlayer::mousePressEvent(QMouseEvent *event)
 {
     Q_UNUSED(event)
     m_mediaObject->stop();
-    deleteLater();
+    close();
 }
 
 void FullScreenPlayer::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Escape) {
         m_mediaObject->stop();
-        deleteLater();
+        close();
     }
 }
 
-void FullScreenPlayer::playStateChanged(Phonon::State newState, Phonon::State oldState)
+void FullScreenPlayer::playStateChanged(QMediaPlayer::PlaybackState state)
 {
-    Q_UNUSED(oldState);
-
-    switch (newState) {
-    case Phonon::PlayingState:
-        m_play->setVisible(false);
-        m_pause->setVisible(true);
-        break;
-    case Phonon::PausedState:
-        m_play->setVisible(true);
-        m_pause->setVisible(false);
-        break;
-    default:;
-    }
+    const bool playing = state == QMediaPlayer::PlayingState;
+    m_play->setVisible(!playing);
+    m_pause->setVisible(playing);
 }
 
 void FullScreenPlayer::updatePlaybackTime(qint64 currentTime)
@@ -173,7 +171,9 @@ void FullScreenPlayer::updatePlaybackTime(qint64 currentTime)
                                   .arg((currentTime / 60000) % 60, 2, 10, QChar('0'))
                                   .arg((currentTime / 1000) % 60, 2, 10, QChar('0'));
 
-    qint64 time = m_mediaObject->totalTime();
+    const qint64 time = m_mediaObject->duration();
+    const QSignalBlocker blocker(m_seekSlider);
+    m_seekSlider->setValue(time > 0 ? currentTime * m_seekSlider->maximum() / time : 0);
     QString totalTime = QString("%1:%2:%3")
                             .arg((time / 3600000) % 60, 2, 10, QChar('0'))
                             .arg((time / 60000) % 60, 2, 10, QChar('0'))

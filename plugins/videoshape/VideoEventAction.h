@@ -9,7 +9,6 @@
 #include <KoEventAction.h>
 
 class VideoShape;
-class FullScreenPlayer;
 
 /**
  * This class represents the click event action that starts the playing of the video.
@@ -30,7 +29,6 @@ public:
 
 protected:
     VideoShape *m_shape;
-    FullScreenPlayer *m_player;
 };
 
 #endif

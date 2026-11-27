@@ -9,9 +9,10 @@
 
 #include <KLocalizedString>
 #include <kfilewidget.h>
-#include <phonon/BackendCapabilities>
 
 #include <QCheckBox>
+#include <QMediaFormat>
+#include <QMimeType>
 #include <QUrl>
 #include <QVBoxLayout>
 
@@ -21,7 +22,10 @@ SelectVideoWidget::SelectVideoWidget(QWidget *parent)
     QVBoxLayout *layout = new QVBoxLayout(this);
     m_fileWidget = new KFileWidget(QUrl(/*QT5TODO:"kfiledialog:///OpenVideoDialog"*/), this);
     m_fileWidget->setOperationMode(KFileWidget::Opening);
-    m_fileWidget->setFilters(KFileFilter::fromMimeTypes(Phonon::BackendCapabilities::availableMimeTypes()));
+    QStringList mimeTypes;
+    for (auto format : QMediaFormat().supportedFileFormats(QMediaFormat::Decode))
+        mimeTypes.append(QMediaFormat(format).mimeType().name());
+    m_fileWidget->setFilters(KFileFilter::fromMimeTypes(mimeTypes));
     layout->addWidget(m_fileWidget);
 
     m_saveEmbedded = new QCheckBox(i18n("Save as part of document"));

@@ -484,17 +484,17 @@ void KoTextLayoutTableArea::layoutColumns()
     qreal availableWidth = d->tableWidth; // Width available for columns.
     QList<int> fixedWidthColumns; // List of fixed width columns.
     QList<int> relativeWidthColumns; // List of relative width columns.
+    QList<int> unspecifiedWidthColumns;
     qreal relativeWidthSum = 0; // Sum of relative column width values.
-    int numNonStyleColumns = 0;
     for (int col = 0; col < d->table->columns(); ++col) {
         KoTableColumnStyle columnStyle = d->carsManager.columnStyle(col);
 
-        if (columnStyle.hasProperty(KoTableColumnStyle::RelativeColumnWidth)) {
+        if (columnStyle.relativeColumnWidth() > 0.0) {
             // Relative width specified. Will be handled in the next loop.
             d->columnWidths[col] = 0.0;
             relativeWidthColumns.append(col);
             relativeWidthSum += columnStyle.relativeColumnWidth();
-        } else if (columnStyle.hasProperty(KoTableColumnStyle::ColumnWidth)) {
+        } else if (columnStyle.columnWidth() > 0.0) {
             // Only width specified, so use it.
             d->columnWidths[col] = columnStyle.columnWidth();
             fixedWidthColumns.append(col);
@@ -502,8 +502,7 @@ void KoTextLayoutTableArea::layoutColumns()
         } else {
             // Neither width nor relative width specified.
             d->columnWidths[col] = 0.0;
-            relativeWidthColumns.append(col); // handle it as a relative width column without asking for anything
-            ++numNonStyleColumns;
+            unspecifiedWidthColumns.append(col);
         }
     }
 
@@ -520,21 +519,17 @@ void KoTextLayoutTableArea::layoutColumns()
         availableWidth = 0.0;
     }
 
-    // Calculate width to those columns that don't actually request it
-    qreal widthForNonWidthColumn = ((1.0 - qMin<qreal>(relativeWidthSum, 1.0)) * availableWidth);
-    availableWidth -= widthForNonWidthColumn; // might as well do this calc before dividing by numNonStyleColumns
-    if (numNonStyleColumns > 0 && widthForNonWidthColumn > 0.0) {
-        widthForNonWidthColumn /= numNonStyleColumns;
+    // Absent or zero widths share the part of the table unclaimed by weighted columns.
+    if (!unspecifiedWidthColumns.isEmpty()) {
+        const qreal unspecifiedWidth = (1.0 - qMin(relativeWidthSum, 1.0)) * availableWidth;
+        availableWidth -= unspecifiedWidth;
+        for (int col : unspecifiedWidthColumns) {
+            d->columnWidths[col] = unspecifiedWidth / unspecifiedWidthColumns.size();
+        }
     }
 
-    // Relative column widths have now been summed up and can be distributed.
-    foreach (int col, relativeWidthColumns) {
-        KoTableColumnStyle columnStyle = d->carsManager.columnStyle(col);
-        if (columnStyle.hasProperty(KoTableColumnStyle::RelativeColumnWidth) || columnStyle.hasProperty(KoTableColumnStyle::ColumnWidth)) {
-            d->columnWidths[col] = qMax<qreal>(columnStyle.relativeColumnWidth() * availableWidth / relativeWidthSum, 0.0);
-        } else {
-            d->columnWidths[col] = widthForNonWidthColumn;
-        }
+    for (int col : relativeWidthColumns) {
+        d->columnWidths[col] = d->carsManager.columnStyle(col).relativeColumnWidth() / relativeWidthSum * availableWidth;
     }
 
     // Column positions.

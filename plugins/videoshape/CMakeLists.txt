@@ -5,16 +5,6 @@ include_directories(
     ${KOWIDGETS_INCLUDES}
 )
 
-if(PHONON_FOUND_EXPERIMENTAL)
-   set(SHOULD_BUILD_THUMBNAIL TRUE)
-   add_definitions( -DSHOULD_BUILD_THUMBNAIL )
-else()
-    set(SHOULD_BUILD_THUMBNAIL FALSE)
-endif()
-
-
-########### Flake Plugin library ###############
-
 set (videoshape_LIB_SRCS
     VideoDebug.cpp
     VideoData.cpp
@@ -31,8 +21,8 @@ set (videoshape_LIB_SRCS
     SelectVideoWidget.cpp
 )
 
-if(SHOULD_BUILD_THUMBNAIL)
-    set(videoshape_LIB_SRCS ${videoshape_LIB_SRCS} VideoThumbnailer.cpp)
+if(TARGET Phonon::phonon4qt6experimental AND PHONON_FOUND_EXPERIMENTAL)
+    list(APPEND videoshape_LIB_SRCS VideoThumbnailer.cpp)
 endif()
 
 ki18n_wrap_ui(videoshape_LIB_SRCS forms/VideoToolWidget.ui)
@@ -42,10 +32,11 @@ target_link_libraries(calligra_shape_video
     flake
     kowidgets
     KF6::KIOFileWidgets
-    Phonon::phonon4qt6
+    Qt6::MultimediaWidgets
 )
-if(PHONON_FOUND_EXPERIMENTAL)
-    target_link_libraries(calligra_shape_video Phonon::phonon4qt6experimental)
+if(TARGET Phonon::phonon4qt6experimental AND PHONON_FOUND_EXPERIMENTAL)
+    target_compile_definitions(calligra_shape_video PRIVATE SHOULD_BUILD_THUMBNAIL)
+    target_link_libraries(calligra_shape_video Phonon::phonon4qt6 Phonon::phonon4qt6experimental)
 endif()
 
 install(TARGETS calligra_shape_video DESTINATION ${KDE_INSTALL_PLUGINDIR}/calligra/shapes)

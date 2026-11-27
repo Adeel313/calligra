@@ -27,6 +27,7 @@
 #include <KoXmlNS.h>
 #include <KoXmlWriter.h>
 
+#include <QDir>
 #include <QPainter>
 #include <QUrl>
 
@@ -55,8 +56,8 @@ void VideoShape::paint(QPainter &painter, const KoViewConverter &converter, KoSh
 {
     QRectF pixelsF = converter.documentToView(QRectF(QPointF(0, 0), size()));
 
-    VideoData *currentVideoData = videoData();
 #ifdef SHOULD_BUILD_THUMBNAIL
+    VideoData *currentVideoData = videoData();
     if (currentVideoData && currentVideoData != m_oldVideoData) {
         // generate thumbnails
         m_oldVideoData = currentVideoData;
@@ -125,7 +126,7 @@ bool VideoShape::loadOdfFrameElement(const KoXmlElement &element, KoShapeLoading
         const QString href = element.attribute("href");
         // this can happen in case it is a presentation:placeholder
         if (!href.isEmpty()) {
-            QUrl url = QUrl::fromUserInput(href);
+            QUrl url(href);
             VideoData *data = nullptr;
 
             if (href.startsWith("../")) {
@@ -138,9 +139,11 @@ bool VideoShape::loadOdfFrameElement(const KoXmlElement &element, KoShapeLoading
                 path.append(href.mid(3));
                 url.setPath(path);
                 data = m_videoCollection->createExternalVideoData(url, false);
+            } else if (QDir::isAbsolutePath(href)) {
+                data = m_videoCollection->createExternalVideoData(QUrl::fromLocalFile(href), false);
             } else if (!url.isRelative()) {
                 // file is outside store and absolute
-                data = m_videoCollection->createExternalVideoData(QUrl::fromUserInput(href), false);
+                data = m_videoCollection->createExternalVideoData(url, false);
             } else {
                 // file is inside store
                 KoStore *store = context.odfLoadingContext().store();

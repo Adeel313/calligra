@@ -82,14 +82,17 @@ private:
 private:
     /// State of one open table, so nested tables work as well.
     struct TableState {
+        QVector<qreal> columnWeights;
         QVector<int> columnWidths; //!< twips per column, 0 when unknown
         QVector<int> rowSpanRemaining; //!< rows still covered below, per column
         QVector<bool> rowSpanActive; //!< columns covered by a row span in this row
         int currentColumn = 0;
         int headerRowsRemaining = 0; //!< rows still inside table:table-header-rows
-        bool gridOpen = false;
+        bool gridWritten = false;
+        qreal targetWidth = 0.0; //!< preferred table width in twips
         qreal widthScale = 1.0; //!< scale applied to absolute column widths
     };
+    static void writeTableGrid(TableState &state, KoXmlWriter *writer);
 
 private:
     struct RevisionFragment {

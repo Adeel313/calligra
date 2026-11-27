@@ -47,7 +47,8 @@ bool VideoShapeFactory::supports(const KoXmlElement &e, KoShapeLoadingContext &c
     if (e.localName() != "plugin" || e.namespaceURI() != KoXmlNS::draw) {
         return false;
     }
-    return e.attribute("mime-type") == "application/vnd.sun.star.media";
+    const QString mimeType = e.attribute("mime-type");
+    return mimeType == QLatin1String("application/vnd.sun.star.media") || mimeType.startsWith(QLatin1String("video/"));
 }
 
 void VideoShapeFactory::newDocumentResourceManager(KoDocumentResourceManager *manager) const
