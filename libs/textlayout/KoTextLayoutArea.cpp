@@ -1781,6 +1781,7 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
     // mix big glyphs into smaller text.
     qreal tallestFont = 0.0;
     qreal lineBaseFont = 0.0;
+    qreal smallestFont = 0.0;
     // Math is drawn with a font whose ascent and descent are taller than the
     // sentence's own font even at the same point size. Compressed line spacing
     // must leave room for it, or the expression overlaps the line above/below.
@@ -1794,6 +1795,9 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
         const qreal pointSize = format.fontPointSize();
         if (lineBaseFont == 0.0)
             lineBaseFont = pointSize;
+        if (pointSize > 0.0) {
+            smallestFont = smallestFont > 0.0 ? qMin(smallestFont, pointSize) : pointSize;
+        }
         tallestFont = qMax(tallestFont, pointSize);
         if (format.font().family().contains(QLatin1String("Math"), Qt::CaseInsensitive))
             hasMathFont = true;
@@ -2013,9 +2017,11 @@ qreal KoTextLayoutArea::addLine(QTextLine &line, FrameIterator *cursor, const QT
                 // A uniformly oversized title is the exception: its whole run
                 // is larger than the paragraph default, so comparing against
                 // that default would wrongly cancel the proportional spacing.
-                const qreal baseFont = isOversizedTitleLine ? lineBaseFont : paragraphFont;
+                // Compare the fonts actually present on this line. A uniform
+                // run overriding a smaller paragraph default already has its
+                // measured height above; it is not a mixed-size formula.
                 if (tallestFont > 0.0
-                        && (hasMathFont || (!useFontProperties && baseFont > 0.0 && tallestFont > baseFont * 1.15))) {
+                        && (hasMathFont || (!useFontProperties && smallestFont > 0.0 && tallestFont > smallestFont * 1.15))) {
                     height = qMax(height, tallestFont * 1.2);
                 }
             }

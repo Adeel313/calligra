@@ -287,6 +287,40 @@ void TestBlockLayout::testFixedLineSpacing()
     QCOMPARE(blockLayout->lineAt(2).y(), 8.0 - 12.0 + 8.0 + 8.0 + 100.0);
 }
 
+void TestBlockLayout::testUniformRunLineSpacing_data()
+{
+    QTest::addColumn<int>("percent");
+    QTest::newRow("single") << 100;
+    QTest::newRow("115-percent") << 115;
+}
+
+void TestBlockLayout::testUniformRunLineSpacing()
+{
+    QFETCH(int, percent);
+    const auto lineSpacing = [&](qreal paragraphSize) {
+        setupTest(QString("Line one") + QChar(0x2028) + "Line two" + QChar(0x2028) + "Line three");
+        KoParagraphStyle style;
+        style.setFontPointSize(paragraphSize);
+        style.setLineHeightPercent(percent);
+        QTextBlock block = m_doc->begin();
+        style.applyStyle(block);
+        QTextCursor cursor(m_doc);
+        cursor.select(QTextCursor::Document);
+        QTextCharFormat format;
+        format.setFontPointSize(14.0);
+        cursor.mergeCharFormat(format);
+        m_layout->layout();
+        return block.layout()->lineAt(1).y() - block.layout()->lineAt(0).y();
+    };
+
+    // Identical visible fonts must have identical line spacing whether the
+    // paragraph default matches them or is overridden by the text runs.
+    const qreal matchingDefault = lineSpacing(14.0);
+    const qreal smallerDefault = lineSpacing(10.0);
+    QVERIFY2(qAbs(matchingDefault - smallerDefault) < ROUNDING,
+             "A uniform run must not acquire mixed-font minimum leading");
+}
+
 void TestBlockLayout::testPercentageLineSpacing()
 {
     setupTest(QString("Line1") + QChar(0x2028) + "Line2" + QChar(0x2028) + "Line3");
