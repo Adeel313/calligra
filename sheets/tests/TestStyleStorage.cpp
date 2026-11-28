@@ -6,6 +6,7 @@
 
 #include <core/Map.h>
 #include <core/StyleStorage.h>
+#include <core/StyleManager.h>
 
 #include <QTest>
 
@@ -49,6 +50,46 @@ void TestStyleStorage::testGarbageCollection()
         for (int i = 0; i < 100; i++)
             QCOMPARE(storage.contains(rect.adjusted(10 * i, 0, 10 * i, 0)).backgroundColor(), c1);
     }
+}
+
+void TestStyleStorage::testCyclicParentStyles_data()
+{
+    QTest::addColumn<int>("cycle");
+    QTest::newRow("acyclic") << 0;
+    QTest::newRow("self-parent-ancestor") << 1;
+    QTest::newRow("two-ancestor-cycle") << 2;
+    QTest::newRow("cycle-back-to-child") << 3;
+}
+
+void TestStyleStorage::testCyclicParentStyles()
+{
+    QFETCH(int, cycle);
+    Map map;
+    StyleManager *manager = map.styleManager();
+    auto *root = new CustomStyle("Root");
+    root->setFontSize(17);
+    manager->insertStyle(root);
+    auto *parent = new CustomStyle("Parent", root);
+    parent->setFontBold(true);
+    manager->insertStyle(parent);
+    auto *child = new CustomStyle("Child", parent);
+    child->setBackgroundColor(Qt::blue);
+    manager->insertStyle(child);
+    if (cycle == 1)
+        root->setParentName(root->name());
+    else if (cycle == 2)
+        root->setParentName(parent->name());
+    else if (cycle == 3)
+        root->setParentName(child->name());
+
+    MyStyleStorage storage(&map);
+    Style applied;
+    applied.setParentName(child->name());
+    storage.insert(Region(QRect(1, 1, 1, 1)), applied);
+    const Style result = storage.contains(QPoint(1, 1));
+    QCOMPARE(result.fontSize(), 17);
+    QVERIFY(result.bold());
+    QCOMPARE(result.backgroundColor(), QColor(Qt::blue));
 }
 
 QTEST_MAIN(TestStyleStorage)

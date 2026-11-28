@@ -55,7 +55,7 @@ public:
      * \li depth(A2) = 1
      * \li depth(A3) = 2
      */
-    int computeDepth(CellBase cell) const;
+    int computeDepth(CellBase cell);
 
     /**
      * Used in the recalculation events for changed regions.
@@ -125,6 +125,9 @@ public:
     // stores providing regions ordered by their consuming cell locations
     // use QMap rather then QHash cause it's faster for our use-case
     QMap<CellBase, Region> providers;
+    // Temporary row index for large column references during a full rebuild.
+    QHash<SheetBase *, QHash<int, QList<int>>> providerRows;
+
     // stores consuming cell locations ordered by their providing regions
     QHash<SheetBase *, RTree<CellBase> *> consumers;
     // collects consumer entries while all dependencies are generated, so that

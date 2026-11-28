@@ -881,6 +881,16 @@ void TestMathFunctions::testSUMA()
     CHECK_EVAL("SUMA(TRUE();2;3)", Value(6)); // TRUE() is 1.
 }
 
+void TestMathFunctions::testCOUNTIFS()
+{
+    // A single range/criterion pair has only two entries in FuncExtra::ranges.
+    // B4 = 2, B5 = 3.
+    CHECK_EVAL("COUNTIFS(B4:B5;\">0\")", Value(2));
+    CHECK_EVAL("COUNTIFS(B4:B5;\">2\")", Value(1));
+    CHECK_EVAL("COUNTIFS(B4:B5;\">1\";B4:B5;\"<3\")", Value(1));
+    QCOMPARE(evaluate("COUNTIFS(B4:B5;\">1\";B4:B5)"), Value::errorVALUE());
+}
+
 void TestMathFunctions::testSUMIF()
 {
     // B3 = 7

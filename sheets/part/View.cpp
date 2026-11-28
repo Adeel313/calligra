@@ -986,41 +986,63 @@ void SheetsCanvasControllerWidget::recenterPreferred()
     // We don't want this in sheets
 }
 
+void SheetsCanvasControllerWidget::setZoomWithWheel(bool zoom)
+{
+    wheelRemainder = QPointF();
+    zoomWithWheelEnabled = zoom;
+    KoCanvasControllerWidget::setZoomWithWheel(zoom);
+}
+
 void SheetsCanvasControllerWidget::wheelEvent(QWheelEvent *ev)
 {
-    // If we're at the bottom of the vertical scrollbar, extend it
-    // This ensures that wheel-scrolling continues instead of stopping at the bottom of the document
-    QScrollBar *bar = verticalScrollBar();
-    int val = bar->value();
-
-    // Coordinates for the cell on the bottom right
-    CanvasBase *canvas = dynamic_cast<CanvasBase *>(this->canvas());
-    if (!canvas) {
-        // shouldn't happen ...
+    auto *sheetCanvas = dynamic_cast<CanvasBase *>(canvas());
+    Sheet *sheet = view->activeSheet();
+    if (!sheetCanvas || !sheet || zoomWithWheelEnabled != ev->modifiers().testFlag(Qt::ControlModifier)) {
+        wheelRemainder = QPointF();
         KoCanvasControllerWidget::wheelEvent(ev);
         return;
     }
 
-    int scrollStep = abs(ev->pixelDelta().y());
-    QRect visible = canvas->visibleCells();
-    int col = visible.right();
-    int row = visible.bottom();
+    auto *horizontal = horizontalScrollBar();
+    auto *vertical = verticalScrollBar();
+    const QPoint current(horizontal->value(), vertical->value());
+    const bool pixelScroll = !ev->pixelDelta().isNull();
+    QPoint delta = pixelScroll ? ev->pixelDelta() : ev->angleDelta();
+    if (ev->modifiers().testFlag(Qt::ShiftModifier) && delta.x() == 0)
+        delta = QPoint(delta.y(), 0);
+    if (sheet->layoutDirection() == Qt::RightToLeft)
+        delta.setX(-delta.x());
 
-    // How many rows are worth 240px of scrolling?
-    Sheet *sheet = view->activeSheet();
-    SheetView *sheetView = view->sheetView(sheet);
-    int total = 0;
-    int newrow = row;
-    while ((total < scrollStep) && (newrow - row < 10000)) { // also a sanity check - in case something goes awry, we stop at 10k
-        newrow++;
-        total += sheet->rowFormats()->visibleHeight(newrow);
+    QPoint target = current;
+    if (pixelScroll) {
+        wheelRemainder = QPointF();
+        target -= delta;
+    } else if (!delta.isNull()) {
+        wheelRemainder += QPointF(-delta.x() * horizontal->singleStep() / 120.0,
+                                 -delta.y() * vertical->singleStep() / 120.0) * QApplication::wheelScrollLines();
+        const QPoint movement = wheelRemainder.toPoint();
+        wheelRemainder -= movement;
+        target += movement;
+    } else {
+        ev->accept();
+        return;
     }
-    sheetView->updateAccessedCellRange(QPoint(col, newrow));
 
-    // the sheetview may have moved the scrollbar, so let's move it back
-    bar->setValue(val);
+    if (target.x() > horizontal->maximum() || target.y() > vertical->maximum()) {
+        const QRect visible = sheetCanvas->visibleCells();
+        const QPointF extra = sheetCanvas->viewConverter()->viewToDocument(
+            QPointF(qMax(0, target.x() - current.x()), qMax(0, target.y() - current.y())));
+        double edge;
+        const int column = sheet->leftColumn(sheet->columnPosition(visible.right()) + extra.x(), edge);
+        const int row = sheet->topRow(sheet->rowPosition(visible.bottom()) + extra.y(), edge);
+        view->sheetView(sheet)->updateAccessedCellRange(QPoint(column, row));
+    }
 
-    KoCanvasControllerWidget::wheelEvent(ev);
+    target.setX(qBound(horizontal->minimum(), target.x(), horizontal->maximum()));
+    target.setY(qBound(vertical->minimum(), target.y(), vertical->maximum()));
+    horizontal->setValue(target.x());
+    vertical->setValue(target.y());
+    ev->accept();
 }
 
 /*****************************************************************************

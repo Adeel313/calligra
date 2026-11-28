@@ -366,9 +366,17 @@ void CanvasBase::paint(QPainter *painter, const QRectF &painterRect)
 
     // paint visible cells
     const QRect visibleRect = visibleCells();
-    const QPointF topLeft(sheet->columnPosition(visibleRect.left()), sheet->rowPosition(visibleRect.top()));
+    QRect cellsToPaint = visibleRect;
+    if (!layoutReversed && sheet->backgroundImage().isNull()) {
+        // Scrolling normally exposes only a strip. Include neighboring cells
+        // for shared borders while keeping the cache sized for the viewport.
+        const QRect dirtyCells = viewToCellCoordinates(painterRect.adjusted(-2, -2, 2, 2)).intersected(visibleRect);
+        if (dirtyCells.isValid())
+            cellsToPaint = dirtyCells;
+    }
+    const QPointF topLeft(sheet->columnPosition(cellsToPaint.left()), sheet->rowPosition(cellsToPaint.top()));
     sheetView(sheet)->setPaintCellRange(visibleRect);
-    sheetView(sheet)->paintCells(*painter, paintRect, topLeft, this);
+    sheetView(sheet)->paintCells(*painter, paintRect, topLeft, this, cellsToPaint);
 
     const auto sourceRanges = d->chartSourceRanges.constFind(sheet->sheetName());
     if (sourceRanges != d->chartSourceRanges.cend()) {

@@ -90,6 +90,7 @@ private Q_SLOTS:
     void testSQRTPI();
     void testSUBTOTAL();
     void testSUMA();
+    void testCOUNTIFS();
     void testSUMIF();
     void testSUMIF_STRING();
     void testSUMIF_WILDCARDS();

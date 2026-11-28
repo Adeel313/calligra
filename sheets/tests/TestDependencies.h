@@ -24,6 +24,8 @@ private Q_SLOTS:
     void testCircleRemoval();
     void testCircles();
     void testDepths();
+    void testSharedDependencyDepths();
+    void testSparseColumnDepth();
     void cleanupTestCase();
 
 private:

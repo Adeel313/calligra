@@ -17,6 +17,8 @@ class TestStyleStorage : public QObject
     Q_OBJECT
 private Q_SLOTS:
     void testGarbageCollection();
+    void testCyclicParentStyles_data();
+    void testCyclicParentStyles();
 };
 
 } // namespace Sheets

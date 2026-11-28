@@ -53,6 +53,8 @@
 #include "engine/Validity.h"
 
 #include <QBuffer>
+#include <QCoreApplication>
+#include <QEventLoop>
 
 using namespace Qt::StringLiterals;
 
@@ -127,6 +129,19 @@ private:
 struct CellLoadRegions {
     CellRegions styles;
     CellRegions validations;
+    int rowsInBatch = 0;
+    bool yieldBetweenBatches = false;
+
+    void finishRow()
+    {
+        constexpr int rowsPerBatch = 128;
+        if (yieldBetweenBatches && ++rowsInBatch == rowsPerBatch) {
+            rowsInBatch = 0;
+            // The model remains in its loading state. Allow paints and
+            // progress timers to run without dispatching edits or shortcuts.
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents | QEventLoop::ExcludeSocketNotifiers);
+        }
+    }
 };
 
 // Sheet loading - helper functions
@@ -352,6 +367,7 @@ bool Odf::loadSheet(Sheet *sheet,
 
     // Cell style regions
     CellLoadRegions cellRegions;
+    cellRegions.yieldBetweenBatches = !updater.isNull();
     // Cell style regions (row defaults)
     QHash<QString, Region> rowStyleRegions;
     // Cell style regions (column defaults)
@@ -1148,6 +1164,7 @@ int Odf::loadRowFormat(Sheet *sheet,
     }
 
     rowIndex += number;
+    cellRegions.finishRow();
     return columnMaximal;
 }
 

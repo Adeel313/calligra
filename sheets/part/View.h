@@ -431,6 +431,7 @@ class SheetsCanvasControllerWidget : public KoCanvasControllerWidget
 public:
     explicit SheetsCanvasControllerWidget(KActionCollection *actionCollection, View *parent = nullptr);
     ~SheetsCanvasControllerWidget() override;
+    void setZoomWithWheel(bool zoom) override;
 
 protected:
     void wheelEvent(QWheelEvent *ev) override;
@@ -438,6 +439,8 @@ protected:
 
 private:
     View *view;
+    QPointF wheelRemainder;
+    bool zoomWithWheelEnabled = false;
 };
 
 } // namespace Sheets

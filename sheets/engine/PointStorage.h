@@ -860,6 +860,27 @@ public:
         const QPoint offset = keepOffset ? QPoint(0, 0) : region.boundingRect().topLeft() - QPoint(1, 1);
         // this generates an array of values
         PointStorage<T> subStorage;
+        if (!region.isEmpty() && region.isContiguous()) {
+            // A single rectangle can be copied in storage order. Skip columns
+            // outside the range and append without a point insertion per value.
+            const QRect rect = region.firstRange();
+            const auto columns = m_cols.cbegin();
+            for (int row = rect.top(); row <= rect.bottom() && row <= m_rows.size(); ++row) {
+                const auto begin = columns + m_rows.at(row - 1);
+                const auto end = row < m_rows.size() ? columns + m_rows.at(row) : m_cols.cend();
+                auto column = std::lower_bound(begin, end, rect.left());
+                if (column == end || *column > rect.right())
+                    continue;
+
+                const int targetRow = row - offset.y();
+                subStorage.m_rows.insert(subStorage.m_rows.size(), targetRow - subStorage.m_rows.size(), subStorage.m_data.size());
+                for (; column != end && *column <= rect.right(); ++column) {
+                    subStorage.m_cols.append(*column - offset.x());
+                    subStorage.m_data.append(m_data.at(column - columns));
+                }
+            }
+            return subStorage;
+        }
         Region::ConstIterator end(region.constEnd());
         for (Region::ConstIterator it(region.constBegin()); it != end; ++it) {
             const QRect rect = (*it)->rect();

@@ -21,6 +21,8 @@
 #include "Value.h"
 #include "ValueStorage.h"
 
+#include <algorithm>
+
 using namespace Calligra::Sheets;
 
 // This is currently not called - but it's really convenient to call it from
@@ -201,6 +203,12 @@ void DependencyManager::updateAllDependencies(const MapBase *map, Updater *updat
         d->consumers.insert(it.key(), tree);
     }
     d->pendingConsumers.clear();
+    // Providers are ordered by sheet, row and column, so the rows for
+    // each column arrive sorted.
+    for (auto it = d->providers.cbegin(); it != d->providers.cend(); ++it) {
+        const CellBase &cell = it.key();
+        d->providerRows[cell.sheet()][cell.column()].append(cell.row());
+    }
     cellCurrent = 0;
     for (SheetBase *sheet : map->sheetList()) {
         for (int c = 0; c < sheet->formulaStorage()->count(); ++c, ++cellCurrent) {
@@ -215,6 +223,8 @@ void DependencyManager::updateAllDependencies(const MapBase *map, Updater *updat
                 updater->setProgress(50 + int(qreal(cellCurrent) / qreal(cellsCount) * 50.));
         }
     }
+
+    d->providerRows.clear();
 
     if (updater)
         updater->setProgress(100);
@@ -483,7 +493,7 @@ void DependencyManager::Private::generateDepths(CellBase cell, QSet<CellBase> &c
     processedCells.remove(cell);
 }
 
-int DependencyManager::Private::computeDepth(CellBase cell) const
+int DependencyManager::Private::computeDepth(CellBase cell)
 {
     // a set of cell, which depth is currently calculated
     static QSet<CellBase> processedCells;
@@ -507,31 +517,39 @@ int DependencyManager::Private::computeDepth(CellBase cell) const
     for (Region::ConstIterator it(region.constBegin()); it != end; ++it) {
         const QRect range = (*it)->rect();
         SheetBase *sheet = (*it)->sheet();
-        const int right = range.right();
-        const int bottom = range.bottom();
-        for (int col = range.left(); col <= right; ++col) {
-            for (int row = range.top(); row <= bottom; ++row) {
-                CellBase referencedCell = CellBase(sheet, col, row);
-                if (!providers.contains(referencedCell)) {
-                    // no further references
-                    // depth is one at least
-                    depth = qMax(depth, 1);
-                    continue;
-                }
+        depth = qMax(depth, 1);
+        const auto visitProvider = [&](const CellBase &referencedCell) {
+            const auto cached = depths.constFind(referencedCell);
+            const int providerDepth = cached != depths.cend() ? cached.value() : computeDepth(referencedCell);
+            depth = qMax(depth, providerDepth + 1);
+        };
 
-                QMap<CellBase, int>::ConstIterator it = depths.constFind(referencedCell);
-                if (it != depths.constEnd()) {
-                    // the referenced cell depth was already computed
-                    depth = qMax(it.value() + 1, depth);
-                    continue;
-                }
+        if (!providerRows.isEmpty() && range.width() == 1 && range.height() >= 64) {
+            const auto sheetRows = providerRows.constFind(sheet);
+            if (sheetRows == providerRows.cend())
+                continue;
+            const auto rows = sheetRows->constFind(range.left());
+            if (rows == sheetRows->cend())
+                continue;
+            for (auto row = std::lower_bound(rows->cbegin(), rows->cend(), range.top());
+                 row != rows->cend() && *row <= range.bottom(); ++row) {
+                visitProvider(CellBase(sheet, range.left(), *row));
+            }
+            continue;
+        }
 
-                // compute the depth of the referenced cell, add one and
-                // take it as new depth, if it's greater than the current one
-                depth = qMax(computeDepth(referencedCell) + 1, depth);
+        for (int col = range.left(); col <= range.right(); ++col) {
+            for (int row = range.top(); row <= range.bottom(); ++row) {
+                const CellBase referencedCell(sheet, col, row);
+                if (providers.contains(referencedCell))
+                    visitProvider(referencedCell);
             }
         }
     }
+
+    // Cache recursively visited cells as well as the outermost cell. Without
+    // this, shared dependency chains are traversed again for every branch.
+    depths.insert(cell, depth);
 
     // clear the computing reference depth flag
     processedCells.remove(cell);

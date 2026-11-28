@@ -638,7 +638,10 @@ Style StyleStorage::composeStyle(const QList<SharedSubStyle> &subStyles) const
             // first, load the attributes of the parent style(s)
             QList<CustomStyle *> parentStyles;
             CustomStyle *parentStyle = styleManager()->style(namedStyle->parentName());
-            while (parentStyle) {
+            // Imported default styles can name themselves as their parent.
+            // Stop at any repeated ancestor, including a cycle back to the
+            // cell's own named style, while merging each ancestor once.
+            while (parentStyle && parentStyle != namedStyle && !parentStyles.contains(parentStyle)) {
                 // debugSheetsStyle <<"StyleStorage:" << parentStyle->name() <<"'s parent =" << parentStyle->parentName();
                 parentStyles.prepend(parentStyle);
                 parentStyle = styleManager()->style(parentStyle->parentName());

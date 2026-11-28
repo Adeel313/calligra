@@ -13,6 +13,7 @@
 #include "SheetsDebug.h"
 #include "ValueConverter.h"
 
+#include <QCache>
 #include <QRegularExpression>
 #include <cfloat>
 #include <cmath>
@@ -2777,22 +2778,26 @@ bool ValueCalc::matches(const Condition &cond, Value val)
                 return true;
             break;
 
-        case regexMatch: {
-            QRegularExpression rx(QRegularExpression::anchoredPattern(cond.stringValue), QRegularExpression::CaseInsensitiveOption);
-            const auto match = rx.match(d);
-            if (match.hasMatch()) {
-                return true;
-            }
-        } break;
-
+        case regexMatch:
         case wildcardMatch: {
-            auto rx = QRegularExpression::fromWildcard(cond.stringValue);
-            rx.setPatternOptions(QRegularExpression::CaseInsensitiveOption);
-            const auto match = rx.match(d);
-            if (match.hasMatch()) {
-                return true;
+            // A criterion is tested against every cell in a range. Reuse its
+            // compiled expression instead of compiling it again for each cell.
+            // Bound the cache and keep it local to the calculation thread.
+            using PatternKey = QPair<Comp, QString>;
+            static thread_local QCache<PatternKey, QRegularExpression> expressions(128);
+            const PatternKey key(cond.comp, cond.stringValue);
+            QRegularExpression *rx = expressions.object(key);
+            if (!rx) {
+                QRegularExpression pattern = cond.comp == regexMatch
+                    ? QRegularExpression(QRegularExpression::anchoredPattern(cond.stringValue))
+                    : QRegularExpression::fromWildcard(cond.stringValue);
+                pattern.setPatternOptions(QRegularExpression::CaseInsensitiveOption);
+                pattern.optimize();
+                rx = new QRegularExpression(pattern);
+                expressions.insert(key, rx);
             }
-        } break;
+            return rx->match(d).hasMatch();
+        }
         }
     }
     return false;

@@ -71,6 +71,39 @@ void TestDependencies::testCircles()
     QCOMPARE(m_storage->value(1, 3), Value::errorCIRCLE());
 }
 
+void TestDependencies::testSharedDependencyDepths()
+{
+    MapBase map;
+    SheetBase *sheet = map.addNewSheet();
+    auto *manager = map.dependencyManager();
+    constexpr int count = 12;
+    // A forward chain with two shared branches per cell must visit each
+    // provider once, rather than recursively expanding every possible path.
+    for (int row = 1; row <= count; ++row) {
+        manager->d->providers.insert(CellBase(sheet, 1, row), Region(QRect(1, row + 1, 1, 2), sheet));
+    }
+    QCOMPARE(manager->d->computeDepth(CellBase(sheet, 1, 1)), count);
+    QCOMPARE(manager->depths().size(), count);
+    for (int row = 1; row <= count; ++row) {
+        QCOMPARE(manager->depths().value(CellBase(sheet, 1, row)), count - row + 1);
+    }
+}
+
+void TestDependencies::testSparseColumnDepth()
+{
+    MapBase map;
+    SheetBase *sheet = map.addNewSheet();
+    CellBase(sheet, 1, 100).setUserInput("=1");
+    CellBase(sheet, 1, 101).setUserInput("=A100");
+    CellBase(sheet, 1, 201).setUserInput("=A101");
+    const CellBase consumer(sheet, 2, 1);
+    CellBase(consumer).setUserInput("=SUM(A1:A200)");
+
+    auto *manager = map.dependencyManager();
+    manager->updateAllDependencies(&map);
+    QCOMPARE(manager->depths().value(consumer), 2);
+}
+
 void TestDependencies::testDepths()
 {
     CellBase a1(m_sheet, 1, 1);

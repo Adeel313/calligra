@@ -1148,8 +1148,11 @@ Value func_countif(valVector args, ValueCalc *calc, FuncExtra *e)
 // Function: COUNTIFS
 Value func_countifs(valVector args, ValueCalc *calc, FuncExtra *e)
 {
+    // COUNTIFS takes complete range/criterion pairs, including just one pair.
+    if (args.count() % 2 != 0)
+        return Value::errorVALUE();
     // the first parameter must be a reference
-    if ((e->ranges[0].col1 == -1) || (e->ranges[0].row1 == -1))
+    if (e->ranges.isEmpty() || (e->ranges[0].col1 == -1) || (e->ranges[0].row1 == -1))
         return Value::errorNA();
 
     int lim = (int)(args.count() - 1) / 2;
@@ -1165,7 +1168,7 @@ Value func_countifs(valVector args, ValueCalc *calc, FuncExtra *e)
         calc->getCond(c, Value(condition.last()));
         cond.append(c);
     }
-    CellBase cntRangeStart(e->sheet, e->ranges[2].col1, e->ranges[2].row1);
+    CellBase cntRangeStart(e->sheet, e->ranges[0].col1, e->ranges[0].row1);
     return calc->countIfs(cntRangeStart, c_Range, cond, lim);
 }
 
