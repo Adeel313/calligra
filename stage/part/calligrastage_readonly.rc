@@ -1,5 +1,10 @@
 <!DOCTYPE gui SYSTEM "kpartgui.dtd">
-<gui name="KPresenter" version="7" translationDomain="calligrastage">
+<gui name="KPresenter" version="8" translationDomain="calligrastage">
+    <MenuBar>
+        <Menu name="view"><text>&amp;View</text>
+            <Action name="view_equation_reading"/>
+        </Menu>
+    </MenuBar>
     <ToolBar name="mainToolBar">
         <Action name="view_zoom"/>
         <Action name="view_zoom_out"/>

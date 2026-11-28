@@ -34,6 +34,7 @@ public:
     bool showSelections;
     bool showInlineObjectVisualization;
     bool showAnnotations;
+    bool enhanceMetafileReadability;
 };
 
 #endif /* KOSHAPEPAINTINGCONTEXT_H */

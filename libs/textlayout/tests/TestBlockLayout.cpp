@@ -1417,4 +1417,32 @@ void TestBlockLayout::testExplicitTabUsesDocumentDevice()
     QVERIFY2(qAbs(line.cursorToX(2) - line.cursorToX(0) - 90) < 0.2, qPrintable(QString::number(line.cursorToX(2) - line.cursorToX(0))));
 }
 
+void TestBlockLayout::testHangingIndentTabs_data()
+{
+    QTest::addColumn<bool>("wordprocessing");
+    QTest::addColumn<qreal>("secondTab");
+    QTest::newRow("presentation") << false << 72.0;
+    QTest::newRow("wordprocessor") << true << 114.0;
+}
+
+void TestBlockLayout::testHangingIndentTabs()
+{
+    QFETCH(bool, wordprocessing);
+    QFETCH(qreal, secondTab);
+    setupTest(QStringLiteral("\t\tMinimize"));
+    m_provider->setSuggestedRect(QRectF(0, 0, 500, 1000));
+    if (wordprocessing) {
+        m_layout->setWordprocessingMode();
+    }
+    m_paragraphStyle->setLeftMargin(QTextLength(QTextLength::FixedLength, 42));
+    m_paragraphStyle->setTextIndent(QTextLength(QTextLength::FixedLength, -42));
+    m_paragraphStyle->setTabStopDistance(72);
+    m_paragraphStyle->applyStyle(m_block);
+    m_layout->layout();
+    QCOMPARE(m_block.layout()->lineCount(), 1);
+    const auto line = m_block.layout()->lineAt(0);
+    QVERIFY(qAbs(line.cursorToX(1) - 42.0) < 0.2);
+    QVERIFY2(qAbs(line.cursorToX(2) - secondTab) < 0.2, qPrintable(QString::number(line.cursorToX(2))));
+}
+
 QTEST_MAIN(TestBlockLayout)

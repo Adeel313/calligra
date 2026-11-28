@@ -32,6 +32,7 @@
 #include <KoEmbeddedDocumentSaver.h>
 #include <KoOdfLoadingContext.h>
 #include <KoShapeLoadingContext.h>
+#include <KoShapePaintingContext.h>
 #include <KoShapeBackground.h>
 #include <KoShapeSavingContext.h>
 #include <KoViewConverter.h>
@@ -248,7 +249,44 @@ void VectorShape::paint(QPainter &painter, const KoViewConverter &converter, KoS
     QPaintEngine *engine = painter.paintEngine();
     const bool vectorOutput = engine && (engine->type() == QPaintEngine::Pdf || engine->type() == QPaintEngine::SVG || engine->type() == QPaintEngine::Picture);
 
-    if (vectorOutput && m_type != VectorTypeNone && !m_contents.isEmpty()) {
+    // WMF and EMF equations contain small text and thin rules. Paint these at the
+    // destination's resolution instead of rasterizing them into a cache that
+    // may be resampled by the canvas transform (including display scaling).
+    const bool directOutput = vectorOutput || m_type == VectorTypeWmf || m_type == VectorTypeEmf;
+    if (!vectorOutput && context.enhanceMetafileReadability && (m_type == VectorTypeWmf || m_type == VectorTypeEmf) && !m_contents.isEmpty()) {
+        // Render at twice the display resolution, then expand the ink by one
+        // sample in each direction. Darken preserves white bitmap backgrounds.
+        const qreal enlargement = 1.13;
+        const QSizeF viewSize = converter.documentToView(size()) * enlargement;
+        const qreal sampleScale = 2.0 * painter.device()->devicePixelRatioF();
+        const QSize pixels(qBound(1, qCeil(viewSize.width() * sampleScale), 4096),
+                           qBound(1, qCeil(viewSize.height() * sampleScale), 4096));
+        QImage image(pixels, QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        {
+            QPainter reader(&image);
+            reader.setRenderHint(QPainter::Antialiasing);
+            reader.setRenderHint(QPainter::TextAntialiasing);
+            QMutexLocker locker(&m_mutex);
+            RenderThread::drawContents(reader, qUncompress(m_contents), m_type, pixels);
+        }
+        const QImage original = image;
+        {
+            QPainter bold(&image);
+            bold.setCompositionMode(QPainter::CompositionMode_Darken);
+            for (const QPoint &offset : {QPoint(-1, 0), QPoint(1, 0), QPoint(0, -1), QPoint(0, 1)}) {
+                bold.drawImage(offset, original);
+            }
+        }
+        painter.save();
+        applyConversion(painter, converter);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform);
+        const QSizeF enlarged = size() * enlargement;
+        painter.drawImage(QRectF(QPointF((size().width() - enlarged.width()) / 2, (size().height() - enlarged.height()) / 2), enlarged), image);
+        painter.restore();
+        return;
+    }
+    if (directOutput && m_type != VectorTypeNone && !m_contents.isEmpty()) {
         QMutexLocker locker(&m_mutex);
         const QByteArray contents = qUncompress(m_contents);
 

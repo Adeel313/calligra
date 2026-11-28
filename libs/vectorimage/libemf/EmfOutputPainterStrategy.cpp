@@ -1352,13 +1352,19 @@ void OutputPainterStrategy::stretchDiBits(StretchDiBitsRecord &record)
 
 #endif
 
-    QPainter::RenderHints oldRenderHints = m_painter->renderHints();
-    QPainter::CompositionMode oldCompMode = m_painter->compositionMode();
-    m_painter->setRenderHints({}); // Antialiasing makes composition modes invalid
-    m_painter->setCompositionMode(rasteropToQtComposition(record.rasterOperation()));
+    m_painter->save();
+    const auto compositionMode = rasteropToQtComposition(record.rasterOperation());
+    // Ordinary bitmap copies need filtering when reduced to the slide's display
+    // size. Nearest-neighbour sampling can erase thin equation strokes and
+    // expose the coloured subpixel edges in captured text.
+    const bool smoothCopy = compositionMode == QPainter::CompositionMode_Source || compositionMode == QPainter::CompositionMode_SourceOver;
+    if (!smoothCopy) {
+        m_painter->setRenderHint(QPainter::Antialiasing, false);
+    }
+    m_painter->setRenderHint(QPainter::SmoothPixmapTransform, smoothCopy);
+    m_painter->setCompositionMode(compositionMode);
     m_painter->drawImage(target, record.image(), source);
-    m_painter->setCompositionMode(oldCompMode);
-    m_painter->setRenderHints(oldRenderHints);
+    m_painter->restore();
 }
 
 // ----------------------------------------------------------------

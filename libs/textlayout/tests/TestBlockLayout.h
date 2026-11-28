@@ -40,6 +40,8 @@ private Q_SLOTS:
     void initTestCase();
     void testTabDistanceUsesDocumentDevice();
     void testExplicitTabUsesDocumentDevice();
+    void testHangingIndentTabs_data();
+    void testHangingIndentTabs();
     void cleanupTestCase();
 
     /// make sure empty paragraphs are initialized properly

@@ -263,6 +263,11 @@ void PictureShape::paint(QPainter &painter, const KoViewConverter &converter, Ko
     paintBorder(painter, converter);
     painter.restore();
 
+    painter.save();
+    // The cached pixmap may be smaller than the displayed picture, especially
+    // when enlarging low-resolution images. Smooth the final scaling as well.
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+
     QSize pixmapSize = calcOptimalPixmapSize(viewRect.size(), imageData()->image().size());
 
     // Normalize the clipping rect if it isn't already done.
@@ -334,6 +339,7 @@ void PictureShape::paint(QPainter &painter, const KoViewConverter &converter, Ko
             painter.drawPixmap(viewRect, pixmap, cropRect);
         }
     }
+    painter.restore();
 }
 
 void PictureShape::waitUntilReady(const KoViewConverter &converter, bool asynchronous) const

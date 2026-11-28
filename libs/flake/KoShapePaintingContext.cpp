@@ -18,6 +18,7 @@ KoShapePaintingContext::KoShapePaintingContext()
     , showSelections(true)
     , showInlineObjectVisualization(false)
     , showAnnotations(false)
+    , enhanceMetafileReadability(false)
 {
 }
 
@@ -49,6 +50,7 @@ KoShapePaintingContext::KoShapePaintingContext(KoCanvasBase *canvas, bool forPri
     showSpellChecking = !forPrint;
     showSelections = !forPrint;
     showAnnotations = !forPrint;
+    enhanceMetafileReadability = !forPrint && rm->boolResource(KoCanvasResourceManager::EnhanceMetafileReadability);
 }
 
 KoShapePaintingContext::~KoShapePaintingContext() = default;

@@ -1309,18 +1309,31 @@ bool KoTextLayoutArea::layoutBlock(FrameIterator *cursor)
         tabStopDistance = d->documentLayout->defaultTabSpacing() * qt_defaultDpiY() / 72.0;
     }
 
+    // Presentation paragraphs with a hanging indent first tab to the text
+    // margin, then to regular stops measured from the text frame. Offsetting
+    // every regular stop by the hanging indent shifts tabbed labels right.
+    qreal regularTabOffset = tabOffset;
+    if (!d->documentLayout->wordprocessingMode() && tabs.isEmpty() && d->indent < 0.0) {
+        if (qTabs.isEmpty()) {
+            QTextOption::Tab tab;
+            tab.position = -d->indent * qt_defaultDpiY() / 72.0;
+            qTabs.append(tab);
+        }
+        regularTabOffset = -d->indent - startMargin;
+    }
+
     qreal regularSpacedTabPos = -d->indent * qt_defaultDpiY() / 72.0 - 0.1; // first possible position
     if (!qTabs.isEmpty()) {
         regularSpacedTabPos = qTabs.last().position;
     }
 
-    regularSpacedTabPos -= tabOffset * qt_defaultDpiY() / 72.0;
+    regularSpacedTabPos -= regularTabOffset * qt_defaultDpiY() / 72.0;
     if (regularSpacedTabPos < 0) {
         regularSpacedTabPos = -int(-regularSpacedTabPos / tabStopDistance) * tabStopDistance;
     } else {
         regularSpacedTabPos = (int(regularSpacedTabPos / tabStopDistance) + 1) * tabStopDistance;
     }
-    regularSpacedTabPos += tabOffset * qt_defaultDpiY() / 72.0;
+    regularSpacedTabPos += regularTabOffset * qt_defaultDpiY() / 72.0;
 
     // Tabs beyond the right edge of the text area can never be reached by a
     // line, so generating them for every block is wasted work.  This used to

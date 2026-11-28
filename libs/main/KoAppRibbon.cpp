@@ -976,6 +976,7 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
     group("stageViewPage", i18n("Master Views"), {"view_masterpages"}, 1);
     group("stageViewPage", i18n("Show"), {"view_rulers", "view_grid", "view_show_guides", "view_snaptogrid", "view_page_margins"});
     group("stageViewPage", i18n("Zoom"), {"zoom_out", "zoom_in", "view_zoom", "view_fullscreen"}, 1);
+    group("stageViewPage", i18n("Reading"), {"view_equation_reading"}, 1);
     group("stageViewPage", i18n("Window"), {"view_newview"}, 1);
 
     // Keep the complete native menus accessible without spreading their

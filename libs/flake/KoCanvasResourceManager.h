@@ -64,6 +64,7 @@ public:
         ShowSectionBounds, ///< Paint of sections bounds ?
         ShowInlineObjectVisualization, ///< paint a different  background for inline objects
         ApplicationSpeciality, ///< Special features and limitations of the application
+        EnhanceMetafileReadability, ///< Enlarge and strengthen metafiles for screen reading.
         KarbonStart = 1000, ///< Base number for Karbon specific values.
         KexiStart = 2000, ///< Base number for Kexi specific values.
         FlowStart = 3000, ///< Base number for Flow specific values.

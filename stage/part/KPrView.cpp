@@ -30,6 +30,7 @@
 #include <KoIcon.h>
 
 #include <KoChartInterface.h>
+#include <KoCanvasResourceManager.h>
 #include <KoComponentData.h>
 #include <KoDocumentInfo.h>
 #include <KoMainWindow.h>
@@ -393,6 +394,20 @@ void KPrView::initActions()
     actionCollection()->setDefaultShortcut(m_actionViewModeSlidesSorter, QKeySequence("CTRL+F7"));
     actionCollection()->addAction("view_slides_sorter", m_actionViewModeSlidesSorter);
     connect(m_actionViewModeSlidesSorter, &QAction::triggered, this, &KPrView::showSlidesSorter);
+
+    auto *readingAction = new KToggleAction(koIcon("zoom-in"), i18n("Larger, Bolder Equations"), this);
+    readingAction->setToolTip(i18n("Enlarge equations and WMF/EMF diagrams by 13% and strengthen their strokes on screen. Printing and export keep the original appearance."));
+    actionCollection()->addAction("view_equation_reading", readingAction);
+    const KConfigGroup readingConfig(KPrFactory::componentData().config(), "Interface");
+    readingAction->setChecked(readingConfig.readEntry("EquationReadingMode", true));
+    kopaCanvas()->resourceManager()->setResource(KoCanvasResourceManager::EnhanceMetafileReadability, readingAction->isChecked());
+    connect(readingAction, &QAction::toggled, this, [this](bool enabled) {
+        kopaCanvas()->resourceManager()->setResource(KoCanvasResourceManager::EnhanceMetafileReadability, enabled);
+        KConfigGroup config(KPrFactory::componentData().config(), "Interface");
+        config.writeEntry("EquationReadingMode", enabled);
+        config.sync();
+        kopaCanvas()->canvasWidget()->update();
+    });
 
     if (QAction *action = actionCollection()->action("view_masterpages"))
         actionCollection()->setDefaultShortcut(action, QKeySequence("CTRL+F8"));
