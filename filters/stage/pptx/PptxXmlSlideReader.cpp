@@ -1854,6 +1854,9 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_nvPr()
     READ_PROLOGUE
     const QXmlStreamAttributes attrs(attributes());
 
+    QString linkedMedia;
+    QString embeddedMedia;
+    const QString relationshipsNs = QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships");
     d->phRead = false;
     d->phType.clear();
     d->phIdx.clear();
@@ -1865,22 +1868,50 @@ KoFilter::ConversionStatus PptxXmlSlideReader::read_nvPr()
         if (isStartElement()) {
             TRY_READ_IF(ph)
             else if (name() == QLatin1String("videoFile") && namespaceUri() == QLatin1String("http://schemas.openxmlformats.org/drawingml/2006/main")) {
-                const QString relation = attributes().value(QLatin1String("http://schemas.openxmlformats.org/officeDocument/2006/relationships"), QLatin1String("link")).toString();
-                const QString source = m_context->relationships->target(m_context->path, m_context->file, relation);
-                if (!source.isEmpty()) {
-                    m_mediaMimeType = QMimeDatabase().mimeTypeForFile(QUrl(source).path(), QMimeDatabase::MatchExtension).name();
-                    if (source.contains(QLatin1String("://"))) {
-                        m_mediaHref = source;
-                    } else {
-                        m_mediaHref = QStringLiteral("Media/") + QString::fromLatin1(QCryptographicHash::hash(source.toUtf8(), QCryptographicHash::Sha256).toHex().left(12)) + QLatin1Char('_') + source.mid(source.lastIndexOf('/')+1);
-                        RETURN_IF_ERROR(m_context->import->copyFile(source, m_mediaHref, false))
-                        addManifestEntryForFile(m_mediaHref);
+                const QString relation = attributes().value(relationshipsNs, QLatin1String("link")).toString();
+                linkedMedia = m_context->relationships->target(m_context->path, m_context->file, relation);
+                skipCurrentElement();
+            } else if (name() == QLatin1String("extLst")) {
+                // PowerPoint keeps the embedded video in p14:media, while
+                // a:videoFile may contain only an external NULL placeholder.
+                while (!atEnd()) {
+                    readNext();
+                    if (isEndElement() && name() == QLatin1String("extLst"))
+                        break;
+                    if (isStartElement() && name() == QLatin1String("media")
+                        && namespaceUri() == QLatin1String("http://schemas.microsoft.com/office/powerpoint/2010/main")) {
+                        const QString relation = attributes().value(relationshipsNs, QLatin1String("embed")).toString();
+                        if (!relation.isEmpty())
+                            embeddedMedia = m_context->relationships->target(m_context->path, m_context->file, relation);
+                        skipCurrentElement();
                     }
                 }
-                skipCurrentElement();
             }
             SKIP_UNKNOWN
             //! @todo add ELSE_WRONG_FORMAT
+        }
+    }
+
+    const QString source = embeddedMedia.isEmpty() ? linkedMedia : embeddedMedia;
+    if (!source.isEmpty() && source != QLatin1String("NULL")) {
+        const QString mimeType = QMimeDatabase().mimeTypeForFile(QUrl(source).path(), QMimeDatabase::MatchExtension).name();
+        if (source.contains(QLatin1String("://"))) {
+            m_mediaHref = source;
+            m_mediaMimeType = mimeType;
+        } else {
+            const QString destination = QStringLiteral("Media/")
+                + QString::fromLatin1(QCryptographicHash::hash(source.toUtf8(), QCryptographicHash::Sha256).toHex().left(12))
+                + QLatin1Char('_') + source.mid(source.lastIndexOf('/') + 1);
+            const KoFilter::ConversionStatus status = m_context->import->copyFile(source, destination, false);
+            // A missing optional video must not prevent opening the slides.
+            // Leave the picture preview in place instead.
+            if (status == KoFilter::OK) {
+                m_mediaHref = destination;
+                m_mediaMimeType = mimeType;
+                addManifestEntryForFile(destination);
+            } else if (status != KoFilter::FileNotFound) {
+                return status;
+            }
         }
     }
     READ_EPILOGUE
