@@ -429,13 +429,7 @@ void KPrFormatTab::applyStyle(const QColor &fill, const QColor &stroke, bool fil
     if (!canvas) {
         return;
     }
-    QList<KoShape *> shapes;
-    for (KoShape *shape : canvas->shapeManager()->selection()->selectedShapes()) {
-        // Pictures are not shapes for Stage's formatting tools.
-        if (shape->shapeId() != QLatin1String("PictureShape")) {
-            shapes.append(shape);
-        }
-    }
+    const QList<KoShape *> shapes = canvas->shapeManager()->selection()->selectedShapes();
     if (shapes.isEmpty()) {
         return;
     }

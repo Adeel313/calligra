@@ -8,6 +8,7 @@
 #include <KoColorBackground.h>
 #include <KoDocumentResourceManager.h>
 #include <KoPatternBackground.h>
+#include <KoProperties.h>
 #include <KoGlobal.h>
 #include <KoMainWindow.h>
 #include <KoPart.h>
@@ -234,6 +235,33 @@ int main(int argc, char **argv)
         selection->deselectAll();
         app.processEvents();
         require(!equationPage->property("ribbonContextActive").toBool(), "deselecting math must hide Equation");
+        requireHome();
+        require(!window->findChild<QWidget *>(QStringLiteral("stagePictureToolsPage")), "pictures must share Shape Format");
+        auto *pictureFactory = KoShapeRegistry::instance()->value(QStringLiteral("PictureShape"));
+        require(pictureFactory, "picture shape factory unavailable");
+        QImage pictureImage(40, 20, QImage::Format_RGB32);
+        pictureImage.fill(Qt::red);
+        KoProperties pictureProperties;
+        pictureProperties.setProperty("qimage", pictureImage);
+        KoShape *picture = pictureFactory->createShape(&pictureProperties, document->resourceManager());
+        canvas->addCommand(canvas->shapeController()->addShape(picture));
+        showHome();
+        selection->select(picture);
+        app.processEvents();
+        require(shapePage->property("ribbonContextActive").toBool(), "selecting a picture must show Shape Format");
+        QToolButton *changePicture = nullptr;
+        QToolButton *cropPicture = nullptr;
+        for (auto *button : shapePage->findChildren<QToolButton *>()) {
+            if (button->text() == QStringLiteral("Change Picture"))
+                changePicture = button;
+            if (button->text() == QStringLiteral("Crop"))
+                cropPicture = button;
+        }
+        require(changePicture && cropPicture, "Shape Format must contain picture controls");
+        require(changePicture->isEnabled() && cropPicture->isEnabled(), "picture controls must work with the selection tool");
+        selection->deselectAll();
+        app.processEvents();
+        require(!changePicture->isEnabled() && !cropPicture->isEnabled(), "picture controls must disable without a picture");
         requireHome();
         auto *textFactory = KoShapeRegistry::instance()->value(QStringLiteral("TextShapeID"));
         require(textFactory, "text shape factory unavailable");

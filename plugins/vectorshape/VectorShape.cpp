@@ -32,6 +32,7 @@
 #include <KoEmbeddedDocumentSaver.h>
 #include <KoOdfLoadingContext.h>
 #include <KoShapeLoadingContext.h>
+#include <KoShapeBackground.h>
 #include <KoShapeSavingContext.h>
 #include <KoViewConverter.h>
 
@@ -229,8 +230,17 @@ void RenderThread::drawSvg(QPainter &painter, const QByteArray &contents, const 
     renderer.render(&painter, QRectF(0, 0, size.width(), size.height()));
 }
 
-void VectorShape::paint(QPainter &painter, const KoViewConverter &converter, KoShapePaintingContext &)
+void VectorShape::paint(QPainter &painter, const KoViewConverter &converter, KoShapePaintingContext &context)
 {
+    // Metafiles can be transparent while their enclosing frame has a fill
+    // (for example, black Equation Editor text on a white PowerPoint panel).
+    if (background()) {
+        painter.save();
+        applyConversion(painter, converter);
+        background()->paint(painter, converter, context, outline());
+        painter.restore();
+    }
+
     // When printing to a vector-capable device (PDF, SVG or QPicture), render
     // the metafile directly onto the painter.  Going through the raster cache
     // would discard all vector information and embedded text, and would render

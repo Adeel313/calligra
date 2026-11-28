@@ -93,7 +93,10 @@ void PictureTool::activate(ToolActivation toolActivation, const QSet<KoShape *> 
 
 void PictureTool::deactivate()
 {
-    m_pictureshape = nullptr;
+    // Stage keeps the picture controls live on the shared Shape Format page.
+    if (!qApp->applicationName().contains(QLatin1String("stage"), Qt::CaseInsensitive)) {
+        m_pictureshape = nullptr;
+    }
 }
 
 QList<QPointer<QWidget>> PictureTool::createOptionWidgets()
@@ -128,7 +131,7 @@ QList<QPointer<QWidget>> PictureTool::createOptionWidgets()
     adjust->setWindowTitle(i18n("Adjust"));
     adjust->setProperty("ribbonGroupOrder", 10);
     if (stageRibbon) {
-        adjust->setProperty("ribbonTargetPage", QStringLiteral("stagePictureToolsPage"));
+        adjust->setProperty("ribbonTargetPage", QStringLiteral("stageShapeFormatPage"));
     }
     auto *adjustLayout = new QHBoxLayout(adjust);
     adjustLayout->setContentsMargins(2, 1, 2, 1);
@@ -151,7 +154,7 @@ QList<QPointer<QWidget>> PictureTool::createOptionWidgets()
     size->setWindowTitle(i18n("Size"));
     size->setProperty("ribbonGroupOrder", 20);
     if (stageRibbon) {
-        size->setProperty("ribbonTargetPage", QStringLiteral("stagePictureToolsPage"));
+        size->setProperty("ribbonTargetPage", QStringLiteral("stageShapeFormatPage"));
     }
     auto *crop = new QToolButton(size);
     crop->setText(i18n("Crop"));
@@ -165,6 +168,25 @@ QList<QPointer<QWidget>> PictureTool::createOptionWidgets()
     crop->setMenu(menu);
     crop->setPopupMode(QToolButton::InstantPopup);
     KoRibbonLayout::arrange(size, {crop}, {});
+    if (stageRibbon) {
+        size->setWindowTitle(i18n("Crop"));
+        const auto updateSelection = [this, adjust, size] {
+            m_pictureshape = nullptr;
+            const auto shapes = canvas()->shapeManager()->selection()->selectedShapes(KoFlake::StrippedSelection);
+            if (shapes.size() == 1) {
+                m_pictureshape = dynamic_cast<PictureShape *>(shapes.first());
+            }
+            const bool hasPicture = m_pictureshape && m_pictureshape->imageData();
+            adjust->setEnabled(hasPicture);
+            size->setEnabled(hasPicture);
+            m_pictureToolUI->cropWidget->setPictureShape(hasPicture ? m_pictureshape : nullptr);
+            if (hasPicture) {
+                updateControlElements();
+            }
+        };
+        connect(canvas()->shapeManager()->selection(), &KoSelection::selectionChanged, adjust, updateSelection);
+        updateSelection();
+    }
     return {adjust, size};
 }
 

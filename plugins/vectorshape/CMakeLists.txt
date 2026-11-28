@@ -33,6 +33,13 @@ target_link_libraries(calligra_shape_vector
 
 install(TARGETS calligra_shape_vector DESTINATION ${KDE_INSTALL_PLUGINDIR}/calligra/shapes)
 
+if(BUILD_TESTING)
+    ecm_add_test(tests/TestVectorShape.cpp VectorShape.cpp VectorDebug.cpp
+        TEST_NAME TestVectorShape
+        LINK_LIBRARIES flake kowidgets kovectorimage KF6::I18n KF6::KIOFileWidgets Qt6::Svg Qt6::Test)
+    set_tests_properties(TestVectorShape PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
 ########### install files ###############
 
 if (SharedMimeInfo_FOUND)

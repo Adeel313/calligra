@@ -27,6 +27,7 @@
 #include <KoOdfWorkaround.h>
 #include <KoPathShape.h>
 #include <KoShapeLoadingContext.h>
+#include <KoShapeBackground.h>
 #include <KoShapePaintingContext.h>
 #include <KoShapeSavingContext.h>
 #include <KoStyleStack.h>
@@ -248,8 +249,6 @@ QPainterPath PictureShape::shadowOutline() const
 
 void PictureShape::paint(QPainter &painter, const KoViewConverter &converter, KoShapePaintingContext &paintContext)
 {
-    Q_UNUSED(paintContext);
-
     QRectF viewRect = converter.documentToView(QRectF(QPointF(0, 0), size()));
     if (imageData() == nullptr) {
         painter.fillRect(viewRect, QColor(Qt::gray));
@@ -258,6 +257,9 @@ void PictureShape::paint(QPainter &painter, const KoViewConverter &converter, Ko
 
     painter.save();
     applyConversion(painter, converter);
+    if (background()) {
+        background()->paint(painter, converter, paintContext, outline());
+    }
     paintBorder(painter, converter);
     painter.restore();
 

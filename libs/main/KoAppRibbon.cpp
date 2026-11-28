@@ -998,7 +998,6 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
     }
     auto *shapePage = page("stageShapeFormatPage");
     auto *tablePage = page("stageTableFormatPage");
-    auto *picturePage = page("stagePictureToolsPage");
     auto *equationPage = page("stageEquationPage");
     const auto updateContext = [=] {
         bool pictureSelected = false;
@@ -1020,11 +1019,8 @@ void populateStage(KoView *view, KoCanvasBase *canvas, const QList<Page> &pages)
                 shapeSelected = true;
             }
         }
-        // A picture is not a generic shape in Stage: it gets its own tab and
-        // never activates Shape Format on its own.
         const bool equationOnly = equationSelected && !shapeSelected && !pictureSelected;
-        shapePage->setProperty("ribbonContextActive", shapeSelected || (equationSelected && !equationOnly));
-        picturePage->setProperty("ribbonContextActive", pictureSelected && !shapeSelected && !equationSelected);
+        shapePage->setProperty("ribbonContextActive", shapeSelected || pictureSelected || (equationSelected && !equationOnly));
         KoTextEditor *editor = KoTextEditor::getTextEditorFromCanvas(canvas);
         tablePage->setProperty("ribbonContextActive", !equationSelected && editor && editor->tableAtCursor());
         equationPage->setProperty("ribbonContextActive", equationOnly);
@@ -1437,9 +1433,6 @@ void KoAppRibbon::configure(KoModeBoxFactory &factory, KoView *view, KoCanvasBas
         // the page with both the design commands and the chart options.
         auto *chartDesign = stagePage(i18n("Chart Design"), QStringLiteral("stageChartDesignPage"));
         chartDesign->setProperty("ribbonContextActive", false);
-        // Picture tools, shown instead of Shape Format when only pictures are selected.
-        auto *pictureTools = stagePage(i18n("Picture tools"), QStringLiteral("stagePictureToolsPage"));
-        pictureTools->setProperty("ribbonContextActive", false);
         auto *equation = stagePage(i18n("Equation"), QStringLiteral("stageEquationPage"));
         equation->setProperty("ribbonContextActive", false);
         stagePage(i18n("Help"), QStringLiteral("stageHelpPage"), {QStringLiteral("help")});

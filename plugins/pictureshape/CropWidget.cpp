@@ -170,6 +170,10 @@ void CropWidget::setPictureShape(PictureShape *shape)
     m_pictureShape = shape;
 
     calcImageRect();
+    if (!shape) {
+        update();
+        return;
+    }
     m_oldSelectionRect = shape->cropRect();
     m_selectionRect.setRect(shape->cropRect());
     m_selectionRect.setConstrainingRect(QRectF(0, 0, 1, 1));
